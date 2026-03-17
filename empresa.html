@@ -1,0 +1,776 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>Gestión de Empresas</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<!-- LEAFLET -->
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+
+<style>
+/* =====================================================
+   VARIABLES
+===================================================== */
+:root{
+ --bg:#f4f7fb;
+ --card:#ffffff;
+ --text:#0f172a;
+ --muted:#6b7280;
+ --accent:#14b8a6;
+ --blue:#3b82f6;
+ --danger:#ef4444;
+ --border:#e5e7eb;
+}
+
+/* =====================================================
+   RESET / BASE
+===================================================== */
+*{
+ box-sizing:border-box;
+ font-family:Inter, system-ui, Arial, sans-serif;
+}
+
+body{
+ margin:0;
+ background:var(--bg);
+ color:var(--text);
+}
+
+/* =====================================================
+   HEADER
+===================================================== */
+header{
+ padding:18px 24px;
+ background:var(--card);
+ border-bottom:1px solid var(--border);
+ font-weight:800;
+ font-size:18px;
+ box-shadow:0 4px 14px rgba(0,0,0,.05);
+}
+
+/* =====================================================
+   LAYOUT
+===================================================== */
+.container{
+ max-width:1400px;
+ margin:auto;
+ padding:26px;
+}
+
+.flex{
+ display:flex;
+ gap:12px;
+ flex-wrap:wrap;
+ align-items:center;
+ justify-content:space-between;
+}
+
+.mt{ margin-top:18px; }
+
+/* =====================================================
+   INPUTS / SELECT
+===================================================== */
+input, select{
+ width:100%;                 /* 👉 OCUPA TODO EL ANCHO */
+ padding:12px 14px;
+ border-radius:12px;
+ border:1px solid var(--border);
+ font-size:14px;
+ background:#fff;
+}
+input::placeholder{ color:var(--muted); }
+
+.modal-content input,
+.modal-content select{
+ width:100%;
+}
+
+
+/* =====================================================
+   BOTONES
+===================================================== */
+button{
+ background:var(--accent);
+ color:#fff;
+ border:none;
+ padding:11px 18px;
+ border-radius:12px;
+ cursor:pointer;
+ font-weight:700;
+ display:inline-flex;
+ align-items:center;
+ gap:6px;
+}
+
+button.secondary{ background:var(--blue); }
+button.danger{ background:var(--danger); }
+
+/* =====================================================
+   TABLA ESCRITORIO
+===================================================== */
+table{
+ width:100%;
+ border-collapse:separate;
+ border-spacing:0;
+ background:var(--card);
+ border-radius:18px;
+ overflow:hidden;
+ box-shadow:0 12px 28px rgba(0,0,0,.06);
+}
+
+thead{ background:#f9fafb; }
+
+th{
+ padding:14px;
+ font-size:12px;
+ text-transform:uppercase;
+ color:var(--muted);
+ text-align:left;
+}
+
+td{
+ padding:14px;
+ border-top:1px solid var(--border);
+ font-size:14px;
+ vertical-align:middle;
+}
+
+/* =====================================================
+   EMPRESA (LOGO + NOMBRE)
+===================================================== */
+.empresa-cell{
+ display:flex;
+ align-items:center;
+ gap:12px;
+ font-weight:700;
+}
+
+.logo-tabla{
+ width:44px;
+ height:44px;
+ object-fit:contain;
+ border-radius:10px;
+ border:1px solid var(--border);
+ background:#fff;
+}
+
+/* =====================================================
+   ESTADOS / BADGES
+===================================================== */
+.badge{
+ min-width:110px;
+ padding:6px 16px;
+ border-radius:999px;
+ font-size:12px;
+ font-weight:800;
+ text-align:center;
+}
+
+.badge.activa{ background:#dcfce7; color:#166534; }
+.badge.inactiva{ background:#fee2e2; color:#991b1b; }
+
+/* =====================================================
+   RESPONSIVE → TARJETAS MÓVIL
+===================================================== */
+@media(max-width:768px){
+
+ table, thead, tbody, tr{ display:block; }
+ thead{ display:none; }
+
+ tbody tr{
+  background:#fff;
+  margin-bottom:18px;
+  padding:16px;
+  border-radius:18px;
+  box-shadow:0 10px 24px rgba(0,0,0,.08);
+ }
+
+ tbody td{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  padding:8px 0;
+  border:none;
+ }
+
+ tbody td::before{
+  content:attr(data-label);
+  font-weight:700;
+  color:var(--muted);
+ }
+}
+
+/* =====================================================
+   MODAL
+===================================================== */
+.modal{
+ position:fixed;
+ inset:0;
+ background:rgba(0,0,0,.55);
+ display:none;
+ align-items:center;
+ justify-content:center;
+ z-index:1000;
+}
+
+.modal-content{
+ background:#fff;
+ padding:26px;
+ border-radius:22px;
+ width:100%;
+ max-width:900px;
+ max-height:90vh;
+ overflow:auto;
+ display:grid;
+ grid-template-columns:1fr 1fr;
+ gap:18px;
+}
+
+.modal-content h3{
+ grid-column:1/-1;
+ margin:0;
+}
+
+/* =====================================================
+   FORM CAMPOS
+===================================================== */
+.modal label{
+ font-size:13px;
+ font-weight:700;
+ color:var(--muted);
+}
+
+.field{
+ display:flex;
+ flex-direction:column;
+ gap:6px;
+}
+
+/* =====================================================
+   LOGO
+===================================================== */
+.logo-preview{
+ width:140px;
+ height:140px;
+ border-radius:16px;
+ object-fit:contain;
+ border:1px solid var(--border);
+ background:#fff;
+}
+
+/* =====================================================
+   MAPA
+===================================================== */
+#map{
+ grid-column:1/-1;
+ height:260px;
+ border-radius:16px;
+ margin-top:6px;
+}
+
+/* =====================================================
+   ACCIONES MODAL
+===================================================== */
+.acciones-modal{
+ grid-column:1/-1;
+ display:flex;
+ justify-content:flex-end;
+ gap:12px;
+ padding-top:12px;
+ border-top:1px solid var(--border);
+}
+
+/* =====================================================
+   LOADER GLOBAL
+===================================================== */
+#globalLoader{
+ position:fixed;
+ inset:0;
+ background:rgba(255,255,255,.7);
+ display:none;
+ align-items:center;
+ justify-content:center;
+ z-index:2000;
+}
+
+#globalLoader::after{
+ content:"";
+ width:52px;
+ height:52px;
+ border:6px solid var(--accent);
+ border-top-color:transparent;
+ border-radius:50%;
+ animation:spin 1s linear infinite;
+}
+
+@keyframes spin{
+ to{ transform:rotate(360deg); }
+}
+
+@media(max-width:768px){
+
+  /* Empresa (logo + nombre) alineados a la derecha */
+  td[data-label="Empresa"] .empresa-cell{
+    justify-content:flex-end;
+    text-align:right;
+    width:100%;
+  }
+
+  td[data-label="Empresa"] .empresa-cell span{
+    display:block;
+  }
+}
+
+/* =====================================================
+   MODAL – CORRECCIÓN MOBILE
+===================================================== */
+@media(max-width:768px){
+
+  /* Modal a una sola columna */
+  .modal-content{
+    grid-template-columns: 1fr;
+    padding:20px;
+  }
+
+  /* Label arriba, input abajo */
+  .modal-content label{
+    font-size:13px;
+    margin-bottom:4px;
+  }
+
+  /* Inputs ocupan todo el ancho */
+  .modal-content input,
+  .modal-content select{
+    width:100%;
+    min-width:100%;
+  }
+
+  /* Campo archivo */
+  .modal-content input[type="file"]{
+    padding:10px;
+  }
+
+  /* Logo centrado */
+  .logo-preview{
+    margin:0 auto;
+  }
+
+  /* Acciones del modal centradas */
+  .acciones-modal{
+    justify-content:center;
+    gap:16px;
+  }
+}
+
+@media(max-width:768px){
+
+  /* Empresa: logo separado del texto */
+  td[data-label="Empresa"] .empresa-cell{
+    flex-direction:column;        /* 🔥 logo arriba, texto abajo */
+    align-items:flex-end;         /* alineado a la derecha */
+    gap:6px;
+    width:100%;
+    text-align:right;
+  }
+
+  td[data-label="Empresa"] .logo-tabla{
+    width:56px;                   /* logo un poco más grande */
+    height:56px;
+  }
+
+  td[data-label="Empresa"] .empresa-cell span{
+    font-size:15px;
+    font-weight:800;
+    line-height:1.2;
+  }
+}
+</style>
+</head>
+
+<body>
+
+<header>🏢 Gestión de Empresas</header>
+
+<div class="container">
+
+ <div class="flex mt">
+  <div class="flex">
+   <input id="buscarEmpresa" placeholder="Buscar empresa">
+   <select id="filtroEstado">
+    <option value="TODAS">Todas</option>
+    <option value="ACTIVA">Activas</option>
+    <option value="INACTIVA">Inactivas</option>
+   </select>
+  </div>
+  <div class="flex">
+   <button id="btnCargar" class="secondary">⟳ Recargar</button>
+   <button id="btnNueva">＋ Nueva Empresa</button>
+  </div>
+ </div>
+
+ <div class="mt">
+  <table>
+   <thead>
+    <tr>
+     <th>ID</th>
+     <th>Empresa</th>
+     <th>RUT</th>
+     <th>Comuna</th>
+     <th>Estado</th>
+     <th>Acciones</th>
+    </tr>
+   </thead>
+   <tbody id="tablaEmpresas"></tbody>
+  </table>
+ </div>
+
+</div>
+
+<div id="globalLoader"></div>
+
+<!-- LEAFLET -->
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+<!-- ================= MODAL EMPRESA ================= -->
+<div id="modalEmpresa" class="modal">
+   <div class="modal-content">
+ 
+     <h3 id="modalTitulo">Empresa</h3>
+ 
+     <input type="hidden" id="empresaId">
+ 
+     <label>Nombre</label>
+     <input id="empresaNombre">
+ 
+     <label>RUT</label>
+     <input id="empresaRut">
+ 
+     <label>Giro</label>
+     <input id="empresaGiro">
+ 
+     <label>Correo</label>
+     <input id="empresaCorreo" type="email">
+ 
+     <label>Teléfono</label>
+     <input id="empresaTelefono">
+ 
+     <label>Dirección</label>
+     <input id="empresaDireccion">
+ 
+     <label>Comuna</label>
+     <input id="empresaComuna">
+ 
+     <label>Logo</label>
+     <input type="file" id="empresaLogo" accept="image/*">
+     <img id="logoPreview" class="logo-preview" style="display:none">
+ 
+     <div id="map"></div>
+ 
+     <label>Estado</label>
+     <select id="empresaEstado">
+       <option value="ACTIVA">ACTIVA</option>
+       <option value="INACTIVA">INACTIVA</option>
+     </select>
+ 
+     <div class="acciones-modal">
+       <button id="btnGuardar">💾 Guardar</button>
+       <button id="btnCancelar" class="danger">Cancelar</button>
+     </div>
+ 
+   </div>
+ </div>
+
+ <script>
+   document.addEventListener("DOMContentLoaded", () => {
+
+/* =====================================================
+   CONFIGURACIÓN
+===================================================== */
+const API = "https://script.google.com/macros/s/AKfycbyHl6EiTfVB9qoyUSRNMmr9qgrzz7C1yEIDRHQmDw0nAGnDJWKjbvF_PgCsFMPfzcV3/exec";
+
+/* =====================================================
+   ESTADO GLOBAL
+===================================================== */
+let empresasCache = [];
+let logoBase64 = "";
+let map = null;
+let marker = null;
+let circle = null;
+let cargando = false;
+
+const RADIO_METROS = 200;
+
+/* =====================================================
+   HELPERS
+===================================================== */
+const $ = id => document.getElementById(id);
+
+function showLoader(){
+  const l = $("globalLoader");
+  if(l) l.style.display = "flex";
+}
+function hideLoader(){
+  const l = $("globalLoader");
+  if(l) l.style.display = "none";
+}
+
+function normalizarEstado(v){
+  return String(v || "INACTIVA").trim().toUpperCase();
+}
+
+/* =====================================================
+   EVENTOS
+===================================================== */
+$("btnNueva")?.addEventListener("click", () => abrirModal());
+$("btnCargar")?.addEventListener("click", cargarEmpresas);
+
+$("buscarEmpresa")?.addEventListener("input", aplicarFiltros);
+$("filtroEstado")?.addEventListener("change", aplicarFiltros);
+
+$("btnCancelar")?.addEventListener("click", () => {
+  $("modalEmpresa").style.display = "none";
+});
+
+$("btnGuardar")?.addEventListener("click", guardarEmpresa);
+
+/* =====================================================
+   LOGO PREVIEW
+===================================================== */
+$("empresaLogo")?.addEventListener("change", function(){
+  const file = this.files[0];
+  if(!file) return;
+
+  const reader = new FileReader();
+  reader.onload = e => {
+    logoBase64 = e.target.result;
+    $("logoPreview").src = logoBase64;
+    $("logoPreview").style.display = "block";
+  };
+  reader.readAsDataURL(file);
+});
+
+/* =====================================================
+   MODAL
+===================================================== */
+function abrirModal(e = null){
+  $("modalEmpresa").style.display = "flex";
+  $("modalTitulo").textContent = e ? "Editar Empresa" : "Nueva Empresa";
+
+  $("empresaId").value        = e?.id || "";
+  $("empresaNombre").value    = e?.nombre || "";
+  $("empresaRut").value       = e?.rut || "";
+  $("empresaGiro").value      = e?.giro || "";
+  $("empresaCorreo").value    = e?.correo || "";
+  $("empresaTelefono").value  = e?.telefono || "";
+  $("empresaDireccion").value = e?.direccion || "";
+  $("empresaComuna").value    = e?.comuna || "";
+  $("empresaEstado").value    = normalizarEstado(e?.estado);
+
+  if(e?.logo){
+    $("logoPreview").src = e.logo;
+    $("logoPreview").style.display = "block";
+  }else{
+    $("logoPreview").style.display = "none";
+  }
+
+  logoBase64 = "";
+  $("empresaLogo").value = "";
+
+  setTimeout(() => {
+    initMap(
+      e?.lat ? Number(e.lat) : null,
+      e?.lng ? Number(e.lng) : null
+    );
+  }, 300);
+}
+
+/* =====================================================
+   MAPA
+===================================================== */
+function initMap(lat = null, lng = null){
+  if(!map){
+    map = L.map("map").setView([-33.45, -70.66], 14);
+
+    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+      attribution: "© OpenStreetMap"
+    }).addTo(map);
+
+    marker = L.marker([-33.45, -70.66]).addTo(map);
+  }
+
+  if(lat && lng){
+    const pos = [lat, lng];
+    marker.setLatLng(pos);
+    map.setView(pos, 16);
+
+    if(circle) map.removeLayer(circle);
+
+    circle = L.circle(pos, {
+      radius: RADIO_METROS,
+      color: "#2563eb",
+      fillColor: "#3b82f6",
+      fillOpacity: 0.25
+    }).addTo(map);
+  }
+
+  setTimeout(() => map.invalidateSize(), 200);
+}
+
+/* =====================================================
+   CARGAR EMPRESAS
+===================================================== */
+async function cargarEmpresas(){
+  if(cargando) return;
+  cargando = true;
+  showLoader();
+
+  try{
+    const r = await fetch(API + "?action=listarEmpresas");
+    const d = await r.json();
+    if(!d.ok) throw d.msg;
+
+    empresasCache = d.data.map(e => ({
+      ...e,
+      estado: normalizarEstado(e.estado)
+    }));
+
+    aplicarFiltros();
+
+  }catch(err){
+    alert("Error al cargar empresas: " + err);
+  }finally{
+    hideLoader();
+    cargando = false;
+  }
+}
+
+/* =====================================================
+   FILTROS + RENDER
+===================================================== */
+function aplicarFiltros(){
+  const tbody  = $("tablaEmpresas");
+  const texto  = $("buscarEmpresa").value.toLowerCase();
+  const estado = $("filtroEstado").value;
+
+  tbody.innerHTML = "";
+
+  empresasCache
+    .filter(e =>
+      (!texto || e.nombre.toLowerCase().includes(texto)) &&
+      (estado === "TODAS" || e.estado === estado)
+    )
+    .forEach(e => {
+
+      const tr = document.createElement("tr");
+      tr.innerHTML = `
+        <td data-label="ID">${e.id}</td>
+        <td data-label="Empresa">
+          <div class="empresa-cell">
+            <img class="logo-tabla" src="${e.logo || 'https://via.placeholder.com/42'}">
+            <span>${e.nombre}</span>
+          </div>
+        </td>
+        <td data-label="RUT">${e.rut}</td>
+        <td data-label="Comuna">${e.comuna || ""}</td>
+        <td data-label="Estado">
+          <span class="badge ${e.estado === "ACTIVA" ? "activa" : "inactiva"}">${e.estado}</span>
+        </td>
+        <td data-label="Acciones">
+          <button class="secondary">✏️</button>
+          <button class="danger">🗑</button>
+        </td>
+      `;
+
+      tr.querySelector(".secondary").onclick = () => abrirModal(e);
+      tr.querySelector(".danger").onclick    = () => eliminarEmpresa(e.id);
+
+      tbody.appendChild(tr);
+    });
+}
+
+/* =====================================================
+   GUARDAR
+===================================================== */
+async function guardarEmpresa(){
+  showLoader();
+
+  try{
+    const payload = {
+      action: $("empresaId").value ? "editarEmpresa" : "crearEmpresa",
+      id: $("empresaId").value,
+      nombre: $("empresaNombre").value.trim(),
+      rut: $("empresaRut").value.trim(),
+      giro: $("empresaGiro").value,
+      correo: $("empresaCorreo").value,
+      telefono: $("empresaTelefono").value,
+      direccion: $("empresaDireccion").value,
+      comuna: $("empresaComuna").value,
+      estado: $("empresaEstado").value,
+      logoBase64
+    };
+
+    if(!payload.nombre || !payload.rut)
+      throw "Nombre y RUT son obligatorios";
+
+    const r = await fetch(API,{
+      method:"POST",
+      headers:{ "Content-Type":"text/plain;charset=utf-8" },
+      body:JSON.stringify(payload)
+    });
+
+    const d = await r.json();
+    if(!d.ok) throw d.msg;
+
+    $("modalEmpresa").style.display = "none";
+    await cargarEmpresas();
+
+  }catch(err){
+    alert("Error al guardar: " + err);
+  }finally{
+    hideLoader();
+  }
+}
+
+/* =====================================================
+   ELIMINAR
+===================================================== */
+async function eliminarEmpresa(id){
+  if(!confirm("¿Marcar empresa como INACTIVA?")) return;
+
+  showLoader();
+
+  try{
+    const r = await fetch(API,{
+      method:"POST",
+      headers:{ "Content-Type":"text/plain;charset=utf-8" },
+      body:JSON.stringify({ action:"eliminarEmpresa", id:String(id) })
+    });
+
+    const d = await r.json();
+    if(!d.ok) throw d.msg;
+
+    await cargarEmpresas();
+
+  }catch(err){
+    alert("Error al eliminar: " + err);
+  }finally{
+    hideLoader();
+  }
+}
+
+/* =====================================================
+   INIT
+===================================================== */
+cargarEmpresas();
+
+});
+   </script>
+
+<script src="app-global.js"></script>
+
+  <script src="segurity.js"></script>
+  <script src="auth.js"></script>
+
+</body>
+</html>

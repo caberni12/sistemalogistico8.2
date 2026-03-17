@@ -1,0 +1,810 @@
+<!DOCTYPE html> 
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>Sistema Logístico</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<!-- jsPDF -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<!-- jsPDF AutoTable -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
+<!-- QRCode -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<style>
+:root{
+--primary:#14b8a6;
+--primary-dark:#0d9488;
+--danger:#dc2626;
+--warning:#f59e0b;
+--success:#22c55e;
+--bg:#f8fafc;
+--card:#ffffff;
+--text:#111827;
+--muted:#6b7280;
+--shadow:0 10px 25px rgba(0,0,0,.08);
+}
+
+/* BODY */
+
+body{
+margin:0;
+font-family:Arial, sans-serif;
+background:var(--bg);
+padding:20px;
+color:var(--text);
+}
+
+/* HEADER */
+
+.header{
+display:flex;
+justify-content:space-between;
+align-items:center;
+flex-wrap:wrap;
+margin-bottom:25px;
+}
+
+/* BOTONES */
+
+button{
+border:0;
+border-radius:10px;
+padding:10px 16px;
+font-weight:700;
+cursor:pointer;
+background:var(--primary);
+color:#fff;
+display:flex;
+align-items:center;
+gap:6px;
+transition:.2s;
+}
+
+button:hover{
+background:var(--primary-dark);
+}
+
+button.loading .btn-text{display:none}
+button.loading .btn-loader{display:inline-block}
+
+/* LOADER */
+
+.btn-loader{
+display:none;
+width:16px;
+height:16px;
+border:3px solid rgba(255,255,255,.4);
+border-top:3px solid #fff;
+border-radius:50%;
+animation:spin .8s linear infinite;
+}
+
+@keyframes spin{
+to{transform:rotate(360deg)}
+}
+
+/* FILTROS */
+
+.filters{
+display:flex;
+flex-wrap:wrap;
+gap:12px;
+margin-bottom:25px;
+}
+
+.filters.hidden{
+display:none;
+}
+
+/* INPUTS */
+
+input,select,textarea{
+padding:10px 12px;
+border-radius:10px;
+border:1px solid #d1d5db;
+font-size:14px;
+width:100%;
+box-sizing:border-box;
+background:#fff;
+}
+
+/* LABEL */
+
+label{
+display:block;
+font-size:13px;
+font-weight:800;
+margin-bottom:5px;
+}
+
+/* CONTADORES */
+
+.stats{
+display:flex;
+gap:30px;
+margin-bottom:25px;
+font-weight:bold;
+font-size:18px;
+}
+
+/* GRID TARJETAS */
+
+.cards-grid{
+display:grid;
+grid-template-columns:repeat(auto-fill,minmax(340px,1fr));
+gap:22px;
+}
+
+/* TARJETA */
+
+.card{
+background:var(--card);
+border-radius:18px;
+padding:20px;
+box-shadow:var(--shadow);
+display:flex;
+flex-direction:column;
+gap:12px;
+overflow:hidden;
+transition:.2s;
+}
+
+.card:hover{
+transform:translateY(-2px);
+box-shadow:0 14px 30px rgba(0,0,0,.12);
+}
+
+/* ALERTAS TARJETAS */
+
+.card-atraso{
+border-left:6px solid var(--danger);
+background:#fff1f2;
+}
+
+.card-alerta{
+border-left:6px solid var(--warning);
+background:#fffbeb;
+}
+
+/* HEADER TARJETA */
+
+.card-header{
+display:flex;
+justify-content:space-between;
+align-items:center;
+}
+
+/* NUMERO PEDIDO */
+
+.pedido-numero{
+font-size:30px;
+font-weight:900;
+}
+
+/* ESTADO */
+
+.estado{
+padding:6px 12px;
+border-radius:20px;
+font-size:12px;
+font-weight:800;
+color:#fff;
+}
+
+.estado-pendiente{background:#f59e0b;}
+.estado-ruta{background:#3b82f6;}
+.estado-recibido{background:#7c3aed;}
+.estado-entregado{background:#22c55e;}
+.estado-cancelado{background:#ef4444;}
+
+/* SECCIONES */
+
+.section{
+display:flex;
+flex-direction:column;
+gap:3px;
+}
+
+.section-title{
+font-size:11px;
+font-weight:800;
+color:var(--muted);
+text-transform:uppercase;
+}
+
+.section-value{
+font-size:15px;
+font-weight:600;
+}
+
+/* CAJAS */
+
+.cajas-box{
+background:#0f172a;
+color:#fff;
+border-radius:16px;
+padding:14px;
+text-align:center;
+margin-top:6px;
+}
+
+.cajas-box span{
+font-size:34px;
+font-weight:900;
+display:block;
+}
+
+/* PDF */
+
+.btn-pdf{
+background:#111827;
+color:#fff;
+padding:10px 16px;
+border-radius:10px;
+font-size:13px;
+text-decoration:none;
+display:flex;
+align-items:center;
+justify-content:center;
+gap:6px;
+font-weight:700;
+width:100%;
+box-sizing:border-box;
+}
+
+.btn-pdf:hover{
+background:#dc2626;
+}
+
+/* BOTONES TARJETA */
+
+.card-actions{
+display:flex;
+flex-direction:column;
+gap:8px;
+margin-top:8px;
+}
+
+.card-actions button,
+.card-actions .btn-pdf{
+width:100%;
+justify-content:center;
+}
+
+/* MAPA */
+
+.map-container{
+display:none;
+margin-top:8px;
+border-radius:10px;
+overflow:hidden;
+}
+
+.map-container iframe{
+width:100%;
+height:200px;
+border:0;
+}
+
+/* MODAL */
+
+.modal{
+position:fixed;
+inset:0;
+background:rgba(0,0,0,.65);
+display:none;
+align-items:center;
+justify-content:center;
+z-index:9999;
+padding:20px;
+}
+
+.modal-box{
+background:#fff;
+border-radius:20px;
+padding:30px;
+width:1150px;
+max-width:96%;
+max-height:90vh;
+overflow:auto;
+box-shadow:0 25px 60px rgba(0,0,0,.25);
+}
+
+/* TABLA PRODUCTOS */
+
+.detalle{
+width:100%;
+border-collapse:collapse;
+margin:10px 0;
+}
+
+.detalle th{
+background:#111;
+color:#fff;
+padding:8px;
+}
+
+.detalle td{
+border:1px solid #ddd;
+padding:6px;
+}
+
+.detalle input{
+width:100%;
+padding:6px;
+}
+
+.modal-actions{
+display:flex;
+gap:10px;
+margin-top:20px;
+justify-content:flex-start;
+align-items:center;
+}
+
+/* RESPONSIVE */
+
+@media (max-width:1000px){
+
+.form-grid{
+grid-template-columns:repeat(2,1fr);
+}
+
+}
+
+@media (max-width:600px){
+
+.cards-grid{
+grid-template-columns:1fr;
+}
+
+}
+
+/* PRODUCTOS MOVIL */
+
+@media (max-width:768px){
+
+.detalle thead{
+display:none;
+}
+
+.detalle tr{
+display:block;
+background:#f9fafb;
+border:1px solid #e5e7eb;
+border-radius:12px;
+padding:12px;
+margin-bottom:12px;
+}
+
+.detalle td{
+display:block;
+border:none;
+padding:6px 0;
+}
+
+.detalle input{
+width:100%;
+padding:12px;
+font-size:15px;
+border-radius:8px;
+}
+
+.detalle button{
+width:100%;
+margin-top:6px;
+padding:10px;
+border-radius:8px;
+background:#ef4444;
+color:#fff;
+}
+
+}
+
+/* ================= DOCUMENTOS MODAL ================= */
+
+.docs-area{
+display:grid;
+grid-template-columns:repeat(3,1fr);
+gap:14px;
+margin-top:12px;
+width:100%;
+}
+
+/* CONTENEDOR CADA DOCUMENTO */
+
+.doc-item{
+display:flex;
+flex-direction:column;
+gap:6px;
+width:100%;
+}
+
+/* TITULO DOCUMENTO */
+
+.doc-title{
+font-size:12px;
+font-weight:800;
+color:#6b7280;
+text-transform:uppercase;
+}
+
+/* BOTON DOCUMENTO */
+
+.doc-btn{
+width:100%;
+padding:14px;
+border-radius:12px;
+border:0;
+font-weight:800;
+display:flex;
+align-items:center;
+justify-content:center;
+gap:8px;
+cursor:pointer;
+color:#fff;
+font-size:14px;
+transition:.2s;
+}
+
+/* ICONO */
+
+.doc-icon{
+font-size:16px;
+}
+
+/* COLORES BOTONES */
+
+.doc-btn.foto{
+background:#0ea5e9;
+}
+
+.doc-btn.foto:hover{
+background:#0284c7;
+}
+
+.doc-btn.pdf{
+background:#111827;
+}
+
+.doc-btn.pdf:hover{
+background:#dc2626;
+}
+
+.doc-btn.traslado{
+background:#16a34a;
+}
+
+.doc-btn.traslado:hover{
+background:#15803d;
+}
+
+/* RESPONSIVE TABLET */
+
+@media (max-width:900px){
+
+.docs-area{
+grid-template-columns:repeat(2,1fr);
+}
+
+}
+
+/* RESPONSIVE MOVIL */
+
+@media (max-width:600px){
+
+.docs-area{
+grid-template-columns:1fr;
+}
+
+.doc-btn{
+padding:16px;
+font-size:15px;
+}
+
+}
+
+</style>
+
+</head>
+
+<body>
+
+<div class="header">
+
+<h2>🚚 Sistema Logístico</h2>
+
+<div style="display:flex;gap:10px">
+
+<button onclick="toggleFullscreen()">Modo TV</button>
+
+<button onclick="toggleFiltros()">Filtros</button>
+
+<button id="btnReload">
+<span class="btn-text">Recargar</span>
+<span class="btn-loader"></span>
+</button>
+
+</div>
+
+</div>
+
+<!-- FILTROS -->
+
+<div class="filters hidden" id="filtersPanel">
+
+<input id="fBuscar" placeholder="Buscar pedido, cliente, comuna">
+
+<select id="fStatus">
+<option value="">Todos</option>
+<option>PENDIENTE</option>
+<option>EN RUTA</option>
+<option>RECIBIDO</option>
+<option>ENTREGADO</option>
+<option>CANCELADO</option>
+<option value="ATRASO">CON ATRASO</option>
+</select>
+
+<input type="date" id="fDesde">
+<input type="date" id="fHasta">
+
+</div>
+
+<!-- CONTADORES -->
+
+<div class="stats">
+<div>Pedidos: <span id="totalPedidos">0</span></div>
+<div>Cajas: <span id="totalCajas">0</span></div>
+</div>
+
+<!-- TARJETAS -->
+
+<div class="cards-grid" id="cardsGrid"></div>
+
+<!-- MODAL -->
+
+<div class="modal" id="editModal">
+
+<div class="modal-box">
+
+<h3>Editar Pedido</h3>
+
+<div class="form-grid">
+
+<div>
+<label>Fecha Ingreso</label>
+<input id="mFechaIngreso" type="date">
+</div>
+
+<div>
+<label>Número Pedido</label>
+<input id="mPedido">
+</div>
+
+<div>
+<label>Tipo Documento</label>
+<input id="mTipoDocumento">
+</div>
+
+<div>
+<label>Número Documento</label>
+<input id="mNumeroDocumento">
+</div>
+
+<div>
+<label>Cliente</label>
+<input id="mCliente">
+</div>
+
+<div>
+<label>Dirección</label>
+<input id="mDireccion">
+</div>
+
+<div>
+<label>Comuna</label>
+<input id="mComuna">
+</div>
+
+<div>
+<label>Transporte</label>
+<input id="mTransporte">
+</div>
+
+<div>
+<label>Cajas</label>
+<input id="mCajas">
+</div>
+
+<div>
+<label>Responsable</label>
+<input id="mResponsable">
+</div>
+
+<div>
+<label>Fecha Probable de Entrega</label>
+<input id="mFechaEntrega" type="date">
+</div>
+
+<div>
+<label>Status Pedido</label>
+<select id="mStatus">
+<option>PENDIENTE</option>
+<option>EN RUTA</option>
+<option>RECIBIDO</option>
+<option>ENTREGADO</option>
+<option>CANCELADO</option>
+</select>
+</div>
+
+<div>
+<label>Status Entrega</label>
+<input id="mStatusEntrega">
+</div>
+
+<div>
+<label>Semáforo</label>
+<input id="mSemaforo">
+</div>
+
+<div>
+<label>Días Atraso</label>
+<input id="mDiasAtraso">
+</div>
+
+<div class="full">
+<label>Observaciones</label>
+<textarea id="mObservaciones"></textarea>
+</div>
+
+<!-- DOCUMENTOS -->
+
+<div class="full docs-area">
+
+<div class="doc-item hidden" id="boxFoto">
+<div class="doc-title">FOTO</div>
+<button type="button" class="doc-btn foto" id="previewFoto">
+<span class="doc-icon">📷</span>
+<span>Ver Foto</span>
+</button>
+<input type="hidden" id="mFoto">
+</div>
+
+<div class="doc-item hidden" id="boxPDF">
+<div class="doc-title">PDF DOCUMENTO</div>
+<button type="button" class="doc-btn pdf" id="previewPDF">
+<span class="doc-icon">📄</span>
+<span>Abrir PDF</span>
+</button>
+<input type="hidden" id="mPDF">
+</div>
+
+<div class="doc-item hidden" id="boxTraslado">
+<div class="doc-title">PDF TRASLADO</div>
+<button type="button" class="doc-btn traslado" id="previewTraslado">
+<span class="doc-icon">📦</span>
+<span>Traslado</span>
+</button>
+<input type="hidden" id="mPDFTraslado">
+</div>
+
+</div>
+
+</div>
+
+<div class="modal-actions">
+
+<button id="btnGuardar">
+<span class="btn-text">Guardar</span>
+<span class="btn-loader"></span>
+</button>
+
+<button class="btn-close" onclick="closeEdit()">Cerrar</button>
+
+</div>
+
+</div>
+
+</div>
+
+<div class="modal" id="trasladoModal">
+
+    <div class="modal-box">
+    
+    <h3>Documento de Traslado</h3>
+    
+    <label for="tPedido">Pedido</label>
+    <input id="tPedido" readonly>
+    
+    <label for="tCliente">Cliente</label>
+    <input id="tCliente" readonly>
+    
+    <label for="tDireccion">Dirección</label>
+    <input id="tDireccion" readonly>
+    
+    <label for="tComuna">Comuna</label>
+    <input id="tComuna" readonly>
+    
+    <label for="tTransporte">Transporte</label>
+    <input id="tTransporte" readonly>
+
+
+    <label>Agregar Producto</label>
+
+    <div class="producto-add">
+    
+    <input id="pProducto" placeholder="Producto">
+    <input id="pDetalle" placeholder="Detalle">
+    <input id="pCantidad" type="number" placeholder="Cantidad">
+    
+    <button type="button" onclick="addProducto()" id="btnAddProducto">
+    + Agregar Producto
+    </button>
+    
+    
+
+    </div>
+
+     
+    
+    <table class="detalle">
+    <thead>
+    <tr>
+    <th>Producto</th>
+    <th>Detalle</th>
+    <th>Cantidad</th>
+    <th></th>
+    </tr>
+    </thead>
+    <tbody id="detalleTable"></tbody>
+    </table>
+    
+    <label for="tObs">Observaciones</label>
+    <textarea id="tObs" placeholder="Observaciones"></textarea>
+    
+    <label for="tTotal">Total</label>
+    <input id="tTotal" placeholder="Total" readonly>
+    
+    <div class="modal-actions">
+    
+        <button id="btnGuardarTraslado" onclick="guardarTraslado()">
+            <span class="btn-text">Generar Traslado</span>
+            <span class="btn-loader"></span>
+            </button>
+            
+            <button type="button" onclick="document.getElementById('trasladoModal').style.display='none'">
+            Cerrar
+            </button>
+   
+    
+    </div>
+
+    
+
+<script>
+
+function toggleFullscreen(){
+if(!document.fullscreenElement){
+document.documentElement.requestFullscreen();
+}else{
+document.exitFullscreen();
+}
+}
+
+function toggleFiltros(){
+const panel=document.getElementById("filtersPanel");
+panel.classList.toggle("hidden");
+}
+
+</script>
+
+
+
+
+
+
+<script src="envio2.js"></script>
+
+
+</body>
+</html>
