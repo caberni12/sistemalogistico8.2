@@ -9,7 +9,7 @@
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
 <style>
-/* --- CSS COMPLETO, RESPONSIVE Y ADAPTADO --- */
+/* --- CSS COMPLETO --- */
 body{
   margin:0;
   font-family:Arial;
@@ -241,12 +241,8 @@ th{
   flex:1;
 }
 @media(max-width:768px){
-  .table-wrap table thead {
-    display: none;
-  }
-  .table-wrap table, .table-wrap tbody, .table-wrap th, .table-wrap td, .table-wrap tr{
-    display:block;
-  }
+  .table-wrap table thead {display:none;}
+  .table-wrap table, .table-wrap tbody, .table-wrap th, .table-wrap td, .table-wrap tr{display:block;}
   .table-wrap tr{
     margin-bottom:15px;
     border-bottom:1px solid #ccc;
@@ -310,7 +306,7 @@ th{
         <ul id="frecuenciaClientes"></ul>
       </div>
       <div class="kpi-card">
-        <h4>Antigüedad</h4>
+        <h4>Antigüedad (días)</h4>
         <ul id="antiguedadClientes"></ul>
       </div>
     </div>
@@ -344,7 +340,7 @@ th{
 </div>
 
 <script>
-const API="https://script.google.com/macros/s/AKfycbzhcMNoGOOZTDdB-wlk4RGiSb-8mGYN8Zb9kzp90gZFSXO2DG8fue_u_WdQ1Ck-LcBm/exec";
+const API="TU_URL_APPSCRIPT_AQUI";
 let DATA=[], chart;
 
 function cls(s){
@@ -357,6 +353,14 @@ function cls(s){
   if(s.includes("cancelado"))return"cancelado";
   if(s.includes("atras"))return"atrasado";
   return"pendiente";
+}
+
+function diasAntiguedad(fecha){
+  if(!fecha) return 0;
+  let f=new Date(fecha);
+  let hoy=new Date();
+  let diff=Math.floor((hoy-f)/(1000*60*60*24));
+  return diff;
 }
 
 function fetchData(){
@@ -400,13 +404,16 @@ function filtrar(){
 
 function kpiClientes(d){
   let conteo={};
+  let antiguedad={};
   d.forEach(r=>{
     let c=r.cliente||"Sin nombre";
     conteo[c]=(conteo[c]||0)+1;
+    antiguedad[c]=diasAntiguedad(r.fechaIngreso);
   });
   let top=Object.entries(conteo).sort((a,b)=>b[1]-a[1]).slice(0,5);
   topClientes.innerHTML=top.map(x=>`<li data-progress="${x[1]}"><span>${x[0]}</span><b>${x[1]}</b></li>`).join("");
   frecuenciaClientes.innerHTML=top.map(x=>`<li data-progress="${x[1]}"><span>${x[0]}</span><b>${x[1]} compras</b></li>`).join("");
+  antiguedadClientes.innerHTML=top.map(x=>`<li data-progress="${antiguedad[x[0]]}"><span>${x[0]}</span><b>${antiguedad[x[0]]} días</b></li>`).join("");
 }
 
 function draw(d){
@@ -462,7 +469,11 @@ function ver(r){
 <b>Cliente:</b> ${r.cliente}<br>
 <b>Tipo Documento:</b> ${r.tipoDocumento}<br>
 <b>Nº Documento:</b> ${r.numeroDocumento}<br>
-<b>Estado:</b> <span class="status ${cls(r.status)}">${r.status}</span>
+<b>Estado:</b> <span class="status ${cls(r.status)}">${r.status}</span><br>
+<b>Ingreso:</b> ${r.fechaIngreso||"—"}<br>
+<b>Modificación:</b> ${r.fechaModificacion||"—"}<br>
+<b>Entrega:</b> ${r.fechaEntrega||"Pendiente"}<br>
+<b>Antigüedad:</b> ${diasAntiguedad(r.fechaIngreso)} días
 </div>
 <div class="timeline">
 <div class="timeline-item"><div class="timeline-icon info"><i class="fa fa-box"></i></div><div class="timeline-content">Creado: ${r.fechaIngreso||"—"}</div></div>
