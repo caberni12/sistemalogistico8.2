@@ -47,32 +47,69 @@ input,select{
 }
 .kpi-card{
   background:#fff;
-  padding:15px;
-  border-radius:14px;
-  box-shadow:0 10px 20px rgba(0,0,0,.05);
-  height:220px;
+  padding:20px;
+  border-radius:20px;
+  box-shadow:0 10px 25px rgba(0,0,0,.08);
   display:flex;
   flex-direction:column;
+  justify-content:flex-start;
+  height:auto;
+  transition: transform .2s ease, box-shadow .2s ease;
+}
+.kpi-card:hover{
+  transform: translateY(-5px);
+  box-shadow:0 15px 30px rgba(0,0,0,.12);
+}
+.kpi-card h4{
+  font-size:16px;
+  color:#111827;
+  margin-bottom:15px;
+  text-transform: uppercase;
+  letter-spacing:0.5px;
 }
 .kpi-card ul{
-  flex:1;
-  overflow:auto;
   list-style:none;
   padding:0;
   margin:0;
+  display:flex;
+  flex-direction:column;
+  gap:12px;
 }
 .kpi-card li{
   display:flex;
   justify-content:space-between;
-  font-size:13px;
-  padding:6px 0;
-  border-bottom:1px solid #eee;
+  align-items:center;
+  font-size:14px;
+  position:relative;
+}
+.kpi-card li span{
+  font-weight:500;
+  color:#374151;
+}
+.kpi-card li b{
+  font-weight:700;
+  color:#111827;
+}
+.kpi-card li::before{
+  content:"";
+  position:absolute;
+  left:0;
+  top:50%;
+  transform:translateY(-50%);
+  height:8px;
+  border-radius:4px;
+  background:#14b8a6;
+  width:0;
+  transition: width .5s ease;
+}
+.kpi-card li[data-progress]::before{
+  width: calc(var(--progress) * 1%);
 }
 .kpi-box{
   background:#fff;
   padding:20px;
-  border-radius:14px;
-  box-shadow:0 10px 20px rgba(0,0,0,.05);
+  border-radius:20px;
+  box-shadow:0 10px 25px rgba(0,0,0,.08);
   margin-bottom:20px;
   height:260px;
   display:flex;
@@ -240,45 +277,6 @@ th{
   .table-wrap td:nth-of-type(5)::before{content:"Archivos";}
   .table-wrap td:nth-of-type(6)::before{content:"Acción";}
 }
-
-@media(max-width:768px){
-  .table-wrap table thead {
-    display: none; /* Oculta el encabezado de la tabla en móvil */
-  }
-  .table-wrap table, .table-wrap tbody, .table-wrap th, .table-wrap td, .table-wrap tr{
-    display:block;
-  }
-  .table-wrap tr{
-    margin-bottom:15px;
-    border-bottom:1px solid #ccc;
-    padding:10px;
-    background:#fff;
-    border-radius:14px;
-    box-shadow:0 5px 10px rgba(0,0,0,.05);
-  }
-  .table-wrap td{
-    padding:6px 0;
-    position:relative;
-    padding-left:50%;
-    text-align:left;
-  }
-  .table-wrap td::before{
-    position:absolute;
-    top:6px;
-    left:12px;
-    width:45%;
-    white-space:nowrap;
-    font-weight:bold;
-    font-size:12px;
-  }
-  .table-wrap td:nth-of-type(1)::before{content:"Pedido";}
-  .table-wrap td:nth-of-type(2)::before{content:"Cliente";}
-  .table-wrap td:nth-of-type(3)::before{content:"Etiquetas";}
-  .table-wrap td:nth-of-type(4)::before{content:"Status";}
-  .table-wrap td:nth-of-type(5)::before{content:"Archivos";}
-  .table-wrap td:nth-of-type(6)::before{content:"Acción";}
-}
-
 </style>
 </head>
 <body>
@@ -396,8 +394,8 @@ function kpiClientes(d){
     if(r.fechaIngreso) fechas[c].push(new Date(r.fechaIngreso));
   });
   let top=Object.entries(conteo).sort((a,b)=>b[1]-a[1]).slice(0,5);
-  topClientes.innerHTML=top.map(x=>`<li><span>${x[0]}</span><b>${x[1]}</b></li>`).join("");
-  frecuenciaClientes.innerHTML=top.map(x=>`<li><span>${x[0]}</span><b>${x[1]} compras</b></li>`).join("");
+  topClientes.innerHTML=top.map(x=>`<li data-progress style="--progress:${x[1]*20}"><span>${x[0]}</span><b>${x[1]}</b></li>`).join("");
+  frecuenciaClientes.innerHTML=top.map(x=>`<li data-progress style="--progress:${x[1]*20}"><span>${x[0]}</span><b>${x[1]} compras</b></li>`).join("");
 
   let antig=Object.entries(fechas).map(([c,f])=>{
     if(!f.length)return[c,"—"];
@@ -405,7 +403,7 @@ function kpiClientes(d){
     let diff=Math.floor((Date.now()-min)/(1000*60*60*24));
     return[c,diff+" días"];
   }).sort((a,b)=>parseInt(b[1])-parseInt(a[1])).slice(0,5);
-  antiguedadClientes.innerHTML=antig.map(x=>`<li><span>${x[0]}</span><b>${x[1]}</b></li>`).join("");
+  antiguedadClientes.innerHTML=antig.map(x=>`<li data-progress style="--progress:${Math.min(parseInt(x[1]),100)}"><span>${x[0]}</span><b>${x[1]}</b></li>`).join("");
 }
 
 function draw(d){
