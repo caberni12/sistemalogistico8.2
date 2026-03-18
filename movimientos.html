@@ -9,7 +9,6 @@
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
 <style>
-/* --- CSS COMPLETO --- */
 body{
   margin:0;
   font-family:Arial;
@@ -17,6 +16,7 @@ body{
 }
 .wrap{
   max-width:1200px;
+  width:95%;
   margin:auto;
   padding:20px;
 }
@@ -216,7 +216,7 @@ th{
 .timeline-item{
   display:flex;
   gap:12px;
-  margin-bottom:15px;
+  margin-bottom:20px; /* aumentado para separar encabezados */
   align-items:flex-start;
 }
 .timeline-icon{
@@ -235,14 +235,19 @@ th{
 .danger{background:#ef4444}
 .timeline-content{
   background:#f8fafc;
-  padding:10px;
+  padding:12px;
   border-radius:10px;
   font-size:13px;
   flex:1;
+  line-height:1.5; /* mejora legibilidad */
 }
 @media(max-width:768px){
-  .table-wrap table thead {display:none;}
-  .table-wrap table, .table-wrap tbody, .table-wrap th, .table-wrap td, .table-wrap tr{display:block;}
+  .table-wrap table thead {
+    display: none;
+  }
+  .table-wrap table, .table-wrap tbody, .table-wrap th, .table-wrap td, .table-wrap tr{
+    display:block;
+  }
   .table-wrap tr{
     margin-bottom:15px;
     border-bottom:1px solid #ccc;
@@ -268,12 +273,10 @@ th{
   }
   .table-wrap td:nth-of-type(1)::before{content:"Pedido";}
   .table-wrap td:nth-of-type(2)::before{content:"Cliente";}
-  .table-wrap td:nth-of-type(3)::before{content:"Tipo Doc";}
-  .table-wrap td:nth-of-type(4)::before{content:"Nº Doc";}
-  .table-wrap td:nth-of-type(5)::before{content:"Etiquetas";}
-  .table-wrap td:nth-of-type(6)::before{content:"Status";}
-  .table-wrap td:nth-of-type(7)::before{content:"Archivos";}
-  .table-wrap td:nth-of-type(8)::before{content:"Acción";}
+  .table-wrap td:nth-of-type(3)::before{content:"Etiquetas";}
+  .table-wrap td:nth-of-type(4)::before{content:"Status";}
+  .table-wrap td:nth-of-type(5)::before{content:"Archivos";}
+  .table-wrap td:nth-of-type(6)::before{content:"Acción";}
 }
 </style>
 </head>
