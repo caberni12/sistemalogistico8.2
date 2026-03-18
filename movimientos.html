@@ -9,16 +9,22 @@
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
 <style>
+/* RESET Y ESTILOS GENERALES */
 body{
   margin:0;
   font-family:Arial;
   background:#f1f5f9;
+  min-height:100vh;
 }
 .wrap{
-  max-width:1200px;
+  width:100%;
+  max-width:1200px; /* límite máximo en escritorio grande */
   margin:auto;
   padding:20px;
+  box-sizing:border-box;
 }
+
+/* TOOLBAR */
 .toolbar{
   display:flex;
   gap:10px;
@@ -38,6 +44,8 @@ input,select{
   border-radius:10px;
   cursor:pointer;
 }
+
+/* KPI GRID */
 .kpi-grid{
   display:grid;
   grid-template-columns:repeat(auto-fit,minmax(260px,1fr));
@@ -101,6 +109,8 @@ input,select{
 .kpi-card li[data-progress]::after{
   width: calc(var(--progress) * 1%);
 }
+
+/* KPI BOX */
 .kpi-box{
   background:#fff;
   padding:20px;
@@ -115,6 +125,8 @@ input,select{
 .kpi-box canvas{
   max-height:220px;
 }
+
+/* TABLA */
 .table-wrap{
   background:#fff;
   border-radius:14px;
@@ -183,6 +195,8 @@ th{
   object-fit:cover;
   cursor:pointer;
 }
+
+/* MODAL */
 .modal{
   position:fixed;
   top:0;
@@ -209,6 +223,8 @@ th{
   from{transform:scale(.9);opacity:0}
   to{transform:scale(1);opacity:1}
 }
+
+/* TIMELINE */
 .timeline{
   margin-top:20px;
 }
@@ -239,7 +255,16 @@ th{
   font-size:13px;
   flex:1;
 }
+
+/* RESPONSIVE */
+@media(max-width:1199px){
+  .wrap{
+    max-width:95%;
+    padding:20px;
+  }
+}
 @media(max-width:768px){
+  /* Tabla tipo tarjeta en móviles */
   .table-wrap table thead {
     display: none;
   }
@@ -275,6 +300,17 @@ th{
   .table-wrap td:nth-of-type(4)::before{content:"Status";}
   .table-wrap td:nth-of-type(5)::before{content:"Archivos";}
   .table-wrap td:nth-of-type(6)::before{content:"Acción";}
+}
+
+/* ESCRITORIO: ancho total y KPIs más grandes */
+@media(min-width:1200px){
+  .wrap{
+    max-width:100%;
+    padding:30px 40px;
+  }
+  .kpi-grid{
+    grid-template-columns:repeat(3, 1fr);
+  }
 }
 </style>
 </head>
