@@ -3,7 +3,6 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
 <title>Dashboard Tracking PRO</title>
 
 <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" rel="stylesheet">
@@ -63,7 +62,7 @@ input,select{
 .kpi-card h4{
   font-size:16px;
   color:#111827;
-  margin-bottom:15px;
+  margin-bottom:10px;
   text-transform: uppercase;
   letter-spacing:0.5px;
 }
@@ -73,43 +72,40 @@ input,select{
   margin:0;
   display:flex;
   flex-direction:column;
-  gap:12px;
+  gap:20px;
 }
 .kpi-card li{
   display:flex;
-  justify-content:space-between;
-  align-items:center;
+  flex-direction:column;
   font-size:14px;
   position:relative;
 }
 .kpi-card li span{
   font-weight:500;
   color:#374151;
+  margin-bottom:4px;
 }
 .kpi-card li b{
   font-weight:700;
   color:#111827;
 }
-.kpi-card li::before{
+.kpi-card li::after{
   content:"";
-  position:absolute;
-  left:0;
-  top:50%;
-  transform:translateY(-50%);
+  display:block;
   height:8px;
   border-radius:4px;
   background:#14b8a6;
   width:0;
   transition: width .5s ease;
 }
-.kpi-card li[data-progress]::before{
+.kpi-card li[data-progress]::after{
   width: calc(var(--progress) * 1%);
 }
 .kpi-box{
   background:#fff;
   padding:20px;
-  border-radius:20px;
-  box-shadow:0 10px 25px rgba(0,0,0,.08);
+  border-radius:14px;
+  box-shadow:0 10px 20px rgba(0,0,0,.05);
   margin-bottom:20px;
   height:260px;
   display:flex;
@@ -244,7 +240,10 @@ th{
   flex:1;
 }
 @media(max-width:768px){
-  .table-wrap table, .table-wrap thead, .table-wrap tbody, .table-wrap th, .table-wrap td, .table-wrap tr{
+  .table-wrap table thead {
+    display: none;
+  }
+  .table-wrap table, .table-wrap tbody, .table-wrap th, .table-wrap td, .table-wrap tr{
     display:block;
   }
   .table-wrap tr{
@@ -282,7 +281,6 @@ th{
 <body>
 
 <div class="wrap">
-
   <div class="toolbar">
     <input id="buscador" placeholder="Buscar...">
     <select id="fEstado">
@@ -394,8 +392,8 @@ function kpiClientes(d){
     if(r.fechaIngreso) fechas[c].push(new Date(r.fechaIngreso));
   });
   let top=Object.entries(conteo).sort((a,b)=>b[1]-a[1]).slice(0,5);
-  topClientes.innerHTML=top.map(x=>`<li data-progress style="--progress:${x[1]*20}"><span>${x[0]}</span><b>${x[1]}</b></li>`).join("");
-  frecuenciaClientes.innerHTML=top.map(x=>`<li data-progress style="--progress:${x[1]*20}"><span>${x[0]}</span><b>${x[1]} compras</b></li>`).join("");
+  topClientes.innerHTML=top.map(x=>`<li data-progress="${x[1]}"><span>${x[0]}</span><b>${x[1]}</b></li>`).join("");
+  frecuenciaClientes.innerHTML=top.map(x=>`<li data-progress="${x[1]}"><span>${x[0]}</span><b>${x[1]} compras</b></li>`).join("");
 
   let antig=Object.entries(fechas).map(([c,f])=>{
     if(!f.length)return[c,"—"];
@@ -403,7 +401,7 @@ function kpiClientes(d){
     let diff=Math.floor((Date.now()-min)/(1000*60*60*24));
     return[c,diff+" días"];
   }).sort((a,b)=>parseInt(b[1])-parseInt(a[1])).slice(0,5);
-  antiguedadClientes.innerHTML=antig.map(x=>`<li data-progress style="--progress:${Math.min(parseInt(x[1]),100)}"><span>${x[0]}</span><b>${x[1]}</b></li>`).join("");
+  antiguedadClientes.innerHTML=antig.map(x=>`<li data-progress="${parseInt(x[1])}"><span>${x[0]}</span><b>${x[1]}</b></li>`).join("");
 }
 
 function draw(d){
