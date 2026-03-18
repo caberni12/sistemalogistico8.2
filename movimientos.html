@@ -9,289 +9,66 @@
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
 <style>
-body{
-  margin:0;
-  font-family:Arial;
-  background:#f1f5f9;
-}
-.wrap{
-  max-width:1200px;
-  width:95%;
-  margin:auto;
-  padding:20px;
-}
-.toolbar{
-  display:flex;
-  gap:10px;
-  flex-wrap:wrap;
-  margin-bottom:20px;
-}
-input,select{
-  padding:10px;
-  border-radius:10px;
-  border:1px solid #ddd;
-}
-.btn{
-  background:#14b8a6;
-  color:#fff;
-  border:none;
-  padding:8px 12px;
-  border-radius:10px;
-  cursor:pointer;
-}
-.kpi-grid{
-  display:grid;
-  grid-template-columns:repeat(auto-fit,minmax(260px,1fr));
-  gap:15px;
-  margin-bottom:20px;
-}
-.kpi-card{
-  background:#fff;
-  padding:20px;
-  border-radius:20px;
-  box-shadow:0 10px 25px rgba(0,0,0,.08);
-  display:flex;
-  flex-direction:column;
-  justify-content:flex-start;
-  height:auto;
-  transition: transform .2s ease, box-shadow .2s ease;
-}
-.kpi-card:hover{
-  transform: translateY(-5px);
-  box-shadow:0 15px 30px rgba(0,0,0,.12);
-}
-.kpi-card h4{
-  font-size:16px;
-  color:#111827;
-  margin-bottom:10px;
-  text-transform: uppercase;
-  letter-spacing:0.5px;
-}
-.kpi-card ul{
-  list-style:none;
-  padding:0;
-  margin:0;
-  display:flex;
-  flex-direction:column;
-  gap:20px;
-}
-.kpi-card li{
-  display:flex;
-  flex-direction:column;
-  font-size:14px;
-  position:relative;
-}
-.kpi-card li span{
-  font-weight:500;
-  color:#374151;
-  margin-bottom:4px;
-}
-.kpi-card li b{
-  font-weight:700;
-  color:#111827;
-}
-.kpi-card li::after{
-  content:"";
-  display:block;
-  height:8px;
-  border-radius:4px;
-  background:#14b8a6;
-  width:0;
-  transition: width .5s ease;
-}
-.kpi-card li[data-progress]::after{
-  width: calc(var(--progress) * 1%);
-}
-.kpi-box{
-  background:#fff;
-  padding:20px;
-  border-radius:14px;
-  box-shadow:0 10px 20px rgba(0,0,0,.05);
-  margin-bottom:20px;
-  height:260px;
-  display:flex;
-  justify-content:center;
-  align-items:center;
-}
-.kpi-box canvas{
-  max-height:220px;
-}
-.table-wrap{
-  background:#fff;
-  border-radius:14px;
-  overflow:hidden;
-  box-shadow:0 10px 20px rgba(0,0,0,.05);
-}
-table{
-  width:100%;
-  border-collapse:collapse;
-}
-th,td{
-  padding:12px;
-  border-bottom:1px solid #eee;
-  font-size:13px;
-}
-th{
-  background:#f8fafc;
-  color:#666;
-}
-.status{
-  padding:5px 10px;
-  border-radius:999px;
-  font-size:12px;
-  color:#fff;
-}
-.entregado{background:#22c55e}
-.enruta{background:#3b82f6}
-.pendiente{background:#facc15;color:#000}
-.recibido{background:#14b8a6}
-.cancelado{background:#ef4444}
-.atrasado{background:#ef4444}
-.tag{
-  background:#14b8a6;
-  color:#fff;
-  padding:4px 8px;
-  border-radius:999px;
-  font-size:12px;
-}
-.btn-ver{
-  background:#14b8a6;
-  color:#fff;
-  border:none;
-  padding:6px 10px;
-  border-radius:8px;
-  cursor:pointer;
-  font-size:12px;
-}
-.btn-icon{
-  background:#ef4444;
-  color:#fff;
-  padding:6px;
-  border-radius:8px;
-  cursor:pointer;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  font-size:14px;
-  width:32px;
-  height:32px;
-  margin-right:5px;
-}
-.img-preview{
-  width:40px;
-  height:40px;
-  border-radius:8px;
-  object-fit:cover;
-  cursor:pointer;
-}
-.modal{
-  position:fixed;
-  top:0;
-  left:0;
-  width:100%;
-  height:100%;
-  background:rgba(0,0,0,.6);
-  display:none;
-  justify-content:center;
-  align-items:center;
-  z-index:999;
-}
-.modal-content{
-  background:#fff;
-  padding:25px;
-  border-radius:18px;
-  width:95%;
-  max-width:520px;
-  max-height:90vh;
-  overflow:auto;
-  animation:fade .25s ease;
-}
-@keyframes fade{
-  from{transform:scale(.9);opacity:0}
-  to{transform:scale(1);opacity:1}
-}
-.timeline{
-  margin-top:20px;
-}
-.timeline-item{
-  display:flex;
-  gap:12px;
-  margin-bottom:20px; /* aumentado para separar encabezados */
-  align-items:flex-start;
-}
-.timeline-icon{
-  width:28px;
-  height:28px;
-  border-radius:50%;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  color:#fff;
-  font-size:12px;
-}
-.ok{background:#22c55e}
-.info{background:#3b82f6}
-.warn{background:#facc15;color:#000}
-.danger{background:#ef4444}
-.timeline-content{
-  background:#f8fafc;
-  padding:12px;
-  border-radius:10px;
-  font-size:13px;
-  flex:1;
-  line-height:1.5; /* mejora legibilidad */
-}
+body{margin:0;font-family:Arial;background:#f1f5f9;}
+.wrap{max-width:1200px;width:95%;margin:auto;padding:20px;}
+.toolbar{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:20px;}
+input,select{padding:10px;border-radius:10px;border:1px solid #ddd;}
+.btn{background:#14b8a6;color:#fff;border:none;padding:8px 12px;border-radius:10px;cursor:pointer;}
+.kpi-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:15px;margin-bottom:20px;}
+.kpi-card{background:#fff;padding:20px;border-radius:20px;box-shadow:0 10px 25px rgba(0,0,0,.08);display:flex;flex-direction:column;justify-content:flex-start;height:auto;transition: transform .2s ease, box-shadow .2s ease;}
+.kpi-card:hover{transform: translateY(-5px);box-shadow:0 15px 30px rgba(0,0,0,.12);}
+.kpi-card h4{font-size:16px;color:#111827;margin-bottom:10px;text-transform: uppercase;letter-spacing:0.5px;}
+.kpi-card ul{list-style:none;padding:0;margin:0;display:flex;flex-direction:column;gap:20px;}
+.kpi-card li{display:flex;flex-direction:column;font-size:14px;position:relative;}
+.kpi-card li span{font-weight:500;color:#374151;margin-bottom:4px;}
+.kpi-card li b{font-weight:700;color:#111827;}
+.kpi-card li::after{content:"";display:block;height:8px;border-radius:4px;background:#14b8a6;width:0;transition: width .5s ease;}
+.kpi-card li[data-progress]::after{width: calc(var(--progress) * 1%);}
+.kpi-box{background:#fff;padding:20px;border-radius:14px;box-shadow:0 10px 20px rgba(0,0,0,.05);margin-bottom:20px;height:260px;display:flex;justify-content:center;align-items:center;}
+.kpi-box canvas{max-height:220px;}
+.table-wrap{background:#fff;border-radius:14px;overflow:hidden;box-shadow:0 10px 20px rgba(0,0,0,.05);}
+table{width:100%;border-collapse:collapse;}
+th,td{padding:12px;border-bottom:1px solid #eee;font-size:13px;}
+th{background:#f8fafc;color:#666;}
+.status{padding:5px 10px;border-radius:999px;font-size:12px;color:#fff;}
+.entregado{background:#22c55e;}
+.enruta{background:#3b82f6;}
+.pendiente{background:#facc15;color:#000;}
+.recibido{background:#14b8a6;}
+.cancelado{background:#ef4444;}
+.atrasado{background:#ef4444;}
+.tag{background:#14b8a6;color:#fff;padding:4px 8px;border-radius:999px;font-size:12px;}
+.btn-ver{background:#14b8a6;color:#fff;border:none;padding:6px 10px;border-radius:8px;cursor:pointer;font-size:12px;}
+.btn-icon{background:#ef4444;color:#fff;padding:6px;border-radius:8px;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:14px;width:32px;height:32px;margin-right:5px;}
+.img-preview{width:40px;height:40px;border-radius:8px;object-fit:cover;cursor:pointer;}
+.modal{position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.6);display:none;justify-content:center;align-items:center;z-index:999;}
+.modal-content{background:#fff;padding:25px;border-radius:18px;width:95%;max-width:520px;max-height:90vh;overflow:auto;animation:fade .25s ease;}
+@keyframes fade{from{transform:scale(.9);opacity:0}to{transform:scale(1);opacity:1}}
+.timeline{margin-top:20px;}
+.timeline-item{display:flex;gap:12px;margin-bottom:20px;align-items:flex-start;}
+.timeline-icon{width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:#fff;font-size:12px;}
+.ok{background:#22c55e;}
+.info{background:#3b82f6;}
+.warn{background:#facc15;color:#000;}
+.danger{background:#ef4444;}
+.timeline-content{background:#f8fafc;padding:12px;border-radius:10px;font-size:13px;flex:1;line-height:1.5;}
 @media(max-width:768px){
-  .table-wrap table thead {
-    display: none;
-  }
-  .table-wrap table, .table-wrap tbody, .table-wrap th, .table-wrap td, .table-wrap tr{
-    display:block;
-  }
-  .table-wrap tr{
-    margin-bottom:15px;
-    border-bottom:1px solid #ccc;
-    padding:10px;
-    background:#fff;
-    border-radius:14px;
-    box-shadow:0 5px 10px rgba(0,0,0,.05);
-  }
-  .table-wrap td{
-    padding:6px 0;
-    position:relative;
-    padding-left:50%;
-    text-align:left;
-  }
-  .table-wrap td::before{
-    position:absolute;
-    top:6px;
-    left:12px;
-    width:45%;
-    white-space:nowrap;
-    font-weight:bold;
-    font-size:12px;
-  }
+  .table-wrap table thead{display:none;}
+  .table-wrap table, .table-wrap tbody, .table-wrap th, .table-wrap td, .table-wrap tr{display:block;}
+  .table-wrap tr{margin-bottom:15px;border-bottom:1px solid #ccc;padding:10px;background:#fff;border-radius:14px;box-shadow:0 5px 10px rgba(0,0,0,.05);}
+  .table-wrap td{padding:6px 0;position:relative;padding-left:50%;text-align:left;}
+  .table-wrap td::before{position:absolute;top:6px;left:12px;width:45%;white-space:nowrap;font-weight:bold;font-size:12px;}
   .table-wrap td:nth-of-type(1)::before{content:"Pedido";}
   .table-wrap td:nth-of-type(2)::before{content:"Cliente";}
-  .table-wrap td:nth-of-type(3)::before{content:"Etiquetas";}
-  .table-wrap td:nth-of-type(4)::before{content:"Status";}
-  .table-wrap td:nth-of-type(5)::before{content:"Archivos";}
-  .table-wrap td:nth-of-type(6)::before{content:"Acción";}
+  .table-wrap td:nth-of-type(3)::before{content:"Tipo Doc";}
+  .table-wrap td:nth-of-type(4)::before{content:"Nº Doc";}
+  .table-wrap td:nth-of-type(5)::before{content:"Cajas";}
+  .table-wrap td:nth-of-type(6)::before{content:"Status";}
+  .table-wrap td:nth-of-type(7)::before{content:"Archivos";}
+  .table-wrap td:nth-of-type(8)::before{content:"Acción";}
 }
-/* Mejor separación entre encabezados y valores en el modal */
-.modal-content div{
-  margin-bottom:16px;   /* aumenta el espacio entre bloques de información */
-  font-size:14px;
-  color:#555;
-  line-height:1.6;      /* mejora la legibilidad vertical */
-}
-
-.modal-content b{
-  display:block;
-  margin-bottom:8px;    /* más espacio debajo de cada encabezado */
-  font-weight:700;
-  color:#111827;
-}
+.modal-content div{margin-bottom:16px;font-size:14px;color:#555;line-height:1.6;}
+.modal-content b{display:block;margin-bottom:8px;font-weight:700;color:#111827;}
 </style>
 </head>
 <body>
@@ -314,23 +91,11 @@ th{
 
   <div id="kpiWrapper">
     <div class="kpi-grid" id="kpiContainer">
-      <div class="kpi-card">
-        <h4>Top 5 Clientes</h4>
-        <ul id="topClientes"></ul>
-      </div>
-      <div class="kpi-card">
-        <h4>Frecuencia</h4>
-        <ul id="frecuenciaClientes"></ul>
-      </div>
-      <div class="kpi-card">
-        <h4>Antigüedad (días)</h4>
-        <ul id="antiguedadClientes"></ul>
-      </div>
+      <div class="kpi-card"><h4>Top 5 Clientes</h4><ul id="topClientes"></ul></div>
+      <div class="kpi-card"><h4>Frecuencia</h4><ul id="frecuenciaClientes"></ul></div>
+      <div class="kpi-card"><h4>Antigüedad (días)</h4><ul id="antiguedadClientes"></ul></div>
     </div>
-
-    <div class="kpi-box">
-      <canvas id="chart"></canvas>
-    </div>
+    <div class="kpi-box"><canvas id="chart"></canvas></div>
   </div>
 
   <div class="table-wrap">
@@ -359,161 +124,17 @@ th{
 <script>
 const API="https://script.google.com/macros/s/AKfycbzhcMNoGOOZTDdB-wlk4RGiSb-8mGYN8Zb9kzp90gZFSXO2DG8fue_u_WdQ1Ck-LcBm/exec";
 let DATA=[], chart;
-
-function cls(s){
-  if(!s)return"pendiente";
-  s=s.toLowerCase();
-  if(s.includes("entregado"))return"entregado";
-  if(s.includes("en ruta")||s.includes("transito"))return"enruta";
-  if(s.includes("pendiente"))return"pendiente";
-  if(s.includes("recibido"))return"recibido";
-  if(s.includes("cancelado"))return"cancelado";
-  if(s.includes("atras"))return"atrasado";
-  return"pendiente";
-}
-
-function diasAntiguedad(fecha){
-  if(!fecha) return 0;
-  let f=new Date(fecha);
-  let hoy=new Date();
-  let diff=Math.floor((hoy-f)/(1000*60*60*24));
-  return diff;
-}
-
-function fetchData(){
-  fetch(API)
-  .then(res=>res.json())
-  .then(json=>{
-    DATA=json.map(x=>({
-      pedido:x.pedido||"",
-      cliente:x.cliente||"",
-      status:x.status||"",
-      etiquetas:x.etiquetas||"",
-      pdfTraslado:x.pdfTraslado||"",
-      imagen:x.imagen||"",
-      fechaIngreso:x.fechaIngreso||"",
-      fechaModificacion:x.fechaModificacion||"",
-      fechaEntrega:x.fechaEntrega||"",
-      observaciones:x.observaciones||"",
-      tipoDocumento:x.tipoDocumento||"",
-      numeroDocumento:x.numeroDocumento||""
-    }));
-    render();
-  });
-}
-
-function filtrar(){
-  let txt=buscador.value.toLowerCase();
-  let est=fEstado.value.toLowerCase();
-  let desde=fDesde.value?new Date(fDesde.value):null;
-  let hasta=fHasta.value?new Date(fHasta.value):null;
-  return DATA.filter(x=>{
-    let str=JSON.stringify(x).toLowerCase();
-    let okTexto=str.includes(txt);
-    let okEstado=est?x.status.toLowerCase().includes(est):true;
-    let fecha=x.fechaIngreso?new Date(x.fechaIngreso):null;
-    let okFecha=true;
-    if(desde && fecha) okFecha=fecha>=desde;
-    if(hasta && fecha) okFecha=fecha<=hasta;
-    return okTexto && okEstado && okFecha;
-  });
-}
-
-function kpiClientes(d){
-  let conteo={};
-  let antiguedad={};
-  d.forEach(r=>{
-    let c=r.cliente||"Sin nombre";
-    conteo[c]=(conteo[c]||0)+1;
-    antiguedad[c]=diasAntiguedad(r.fechaIngreso);
-  });
-  let top=Object.entries(conteo).sort((a,b)=>b[1]-a[1]).slice(0,5);
-  topClientes.innerHTML=top.map(x=>`<li data-progress="${x[1]}"><span>${x[0]}</span><b>${x[1]}</b></li>`).join("");
-  frecuenciaClientes.innerHTML=top.map(x=>`<li data-progress="${x[1]}"><span>${x[0]}</span><b>${x[1]} compras</b></li>`).join("");
-  antiguedadClientes.innerHTML=top.map(x=>`<li data-progress="${antiguedad[x[0]]}"><span>${x[0]}</span><b>${antiguedad[x[0]]} días</b></li>`).join("");
-}
-
-function draw(d){
-  let c={entregado:0,enruta:0,pendiente:0,recibido:0,cancelado:0,atrasado:0};
-  d.forEach(x=>{
-    let s=x.status.toLowerCase();
-    if(s.includes("entregado"))c.entregado++;
-    else if(s.includes("en ruta")||s.includes("transito"))c.enruta++;
-    else if(s.includes("pendiente"))c.pendiente++;
-    else if(s.includes("recibido"))c.recibido++;
-    else if(s.includes("cancelado"))c.cancelado++;
-    else if(s.includes("atras"))c.atrasado++;
-  });
-  if(chart) chart.destroy();
-  const ctx=document.getElementById("chart").getContext("2d");
-  chart=new Chart(ctx,{
-    type:"doughnut",
-    data:{
-      labels:["ENTREGADO","EN RUTA","PENDIENTE","RECIBIDO","CANCELADO","ATRASADO"],
-      datasets:[{data:[c.entregado,c.enruta,c.pendiente,c.recibido,c.cancelado,c.atrasado],
-                 backgroundColor:["#22c55e","#3b82f6","#facc15","#14b8a6","#ef4444","#ef4444"]}]
-    },
-    options:{cutout:"65%"}
-  });
-}
-
-function render(){
-  let d=filtrar();
-  tb.innerHTML=d.map(r=>`
-<tr>
-<td>${r.pedido}</td>
-<td>${r.cliente}</td>
-<td>${r.tipoDocumento}</td>
-<td>${r.numeroDocumento}</td>
-<td><span class="tag">${r.etiquetas||"—"}</span></td>
-<td><span class="status ${cls(r.status)}">${r.status}</span></td>
-<td>
-${r.pdfTraslado?`<button class="btn-icon" onclick="window.open('${r.pdfTraslado}')"><i class="fa fa-file-pdf"></i></button>`:""}
-${r.imagen?`<img src="${r.imagen}" class="img-preview" onclick="window.open('${r.imagen}')">`:""}
-</td>
-<td><button class="btn-ver" onclick='ver(${JSON.stringify(r)})'>Ver</button></td>
-</tr>
-  `).join("");
-  kpiClientes(d);
-  draw(d);
-}
-
-function ver(r){
-  modal.style.display="flex";
-  modalContent.innerHTML=`
-<h3>Pedido ${r.pedido}</h3>
-<div style="font-size:13px;color:#555">
-<b>Cliente:</b> ${r.cliente}<br>
-<b>Tipo Documento:</b> ${r.tipoDocumento}<br>
-<b>Nº Documento:</b> ${r.numeroDocumento}<br>
-<b>Estado:</b> <span class="status ${cls(r.status)}">${r.status}</span><br>
-<b>Ingreso:</b> ${r.fechaIngreso||"—"}<br>
-<b>Modificación:</b> ${r.fechaModificacion||"—"}<br>
-<b>Entrega:</b> ${r.fechaEntrega||"Pendiente"}<br>
-<b>Antigüedad:</b> ${diasAntiguedad(r.fechaIngreso)} días
-</div>
-<div class="timeline">
-<div class="timeline-item"><div class="timeline-icon info"><i class="fa fa-box"></i></div><div class="timeline-content">Creado: ${r.fechaIngreso||"—"}</div></div>
-<div class="timeline-item"><div class="timeline-icon ok"><i class="fa fa-edit"></i></div><div class="timeline-content">Modificado: ${r.fechaModificacion||"—"}</div></div>
-<div class="timeline-item"><div class="timeline-icon ok"><i class="fa fa-truck"></i></div><div class="timeline-content">Entrega: ${r.fechaEntrega||"Pendiente"}</div></div>
-<div class="timeline-item"><div class="timeline-icon warn"><i class="fa fa-exclamation-triangle"></i></div><div class="timeline-content">Observaciones: ${r.observaciones||"—"}</div></div>
-</div>
-`;
-}
-
-modal.addEventListener("click",e=>{
-  if(e.target===modal) modal.style.display="none";
-});
-
-buscador.addEventListener("input",render);
-fEstado.addEventListener("change",render);
-fDesde.addEventListener("change",render);
-fHasta.addEventListener("change",render);
-
-function toggleKPI(){
-  kpiWrapper.style.display=kpiWrapper.style.display==="none"?"block":"none";
-}
-
+function cls(s){if(!s)return"pendiente";s=s.toLowerCase();if(s.includes("entregado"))return"entregado";if(s.includes("en ruta")||s.includes("transito"))return"enruta";if(s.includes("pendiente"))return"pendiente";if(s.includes("recibido"))return"recibido";if(s.includes("cancelado"))return"cancelado";if(s.includes("atras"))return"atrasado";return"pendiente";}
+function diasAntiguedad(fecha){if(!fecha) return 0;let f=new Date(fecha);let hoy=new Date();let diff=Math.floor((hoy-f)/(1000*60*60*24));return diff;}
+function fetchData(){fetch(API).then(res=>res.json()).then(json=>{DATA=json.map(x=>({pedido:x.pedido||"",cliente:x.cliente||"",status:x.status||"",etiquetas:x.etiquetas||"",pdfTraslado:x.pdfTraslado||"",imagen:x.imagen||"",fechaIngreso:x.fechaIngreso||"",fechaModificacion:x.fechaModificacion||"",fechaEntrega:x.fechaEntrega||"",observaciones:x.observaciones||"",tipoDocumento:x.tipoDocumento||"",numeroDocumento:x.numeroDocumento||""}));render();});}
+function filtrar(){let txt=buscador.value.toLowerCase();let est=fEstado.value.toLowerCase();let desde=fDesde.value?new Date(fDesde.value):null;let hasta=fHasta.value?new Date(fHasta.value):null;return DATA.filter(x=>{let str=JSON.stringify(x).toLowerCase();let okTexto=str.includes(txt);let okEstado=est?x.status.toLowerCase().includes(est):true;let fecha=x.fechaIngreso?new Date(x.fechaIngreso):null;let okFecha=true;if(desde && fecha) okFecha=fecha>=desde;if(hasta && fecha) okFecha=fecha<=hasta;return okTexto && okEstado && okFecha;});}
+function kpiClientes(d){let conteo={},antiguedad={};d.forEach(r=>{let c=r.cliente||"Sin nombre";conteo[c]=(conteo[c]||0)+1;antiguedad[c]=diasAntiguedad(r.fechaIngreso);});let top=Object.entries(conteo).sort((a,b)=>b[1]-a[1]).slice(0,5);topClientes.innerHTML=top.map(x=>`<li data-progress="${x[1]}"><span>${x[0]}</span><b>${x[1]}</b></li>`).join("");frecuenciaClientes.innerHTML=top.map(x=>`<li data-progress="${x[1]}"><span>${x[0]}</span><b>${x[1]} compras</b></li>`).join("");antiguedadClientes.innerHTML=top.map(x=>`<li data-progress="${antiguedad[x[0]]}"><span>${x[0]}</span><b>${antiguedad[x[0]]} días</b></li>`).join("");}
+function draw(d){let c={entregado:0,enruta:0,pendiente:0,recibido:0,cancelado:0,atrasado:0};d.forEach(x=>{let s=x.status.toLowerCase();if(s.includes("entregado"))c.entregado++;else if(s.includes("en ruta")||s.includes("transito"))c.enruta++;else if(s.includes("pendiente"))c.pendiente++;else if(s.includes("recibido"))c.recibido++;else if(s.includes("cancelado"))c.cancelado++;else if(s.includes("atras"))c.atrasado++;});if(chart) chart.destroy();const ctx=document.getElementById("chart").getContext("2d");chart=new Chart(ctx,{type:"doughnut",data:{labels:["ENTREGADO","EN RUTA","PENDIENTE","RECIBIDO","CANCELADO","ATRASADO"],datasets:[{data:[c.entregado,c.enruta,c.pendiente,c.recibido,c.cancelado,c.atrasado],backgroundColor:["#22c55e","#3b82f6","#facc15","#14b8a6","#ef4444","#ef4444"]}]},options:{cutout:"65%"}});}
+function render(){let d=filtrar();tb.innerHTML=d.map(r=>`<tr><td>${r.pedido}</td><td>${r.cliente}</td><td>${r.tipoDocumento}</td><td>${r.numeroDocumento}</td><td><span class="tag">${r.etiquetas||"—"}</span></td><td><span class="status ${cls(r.status)}">${r.status}</span></td><td>${r.pdfTraslado?`<button class="btn-icon" onclick="window.open('${r.pdfTraslado}')"><i class="fa fa-file-pdf"></i></button>`:""}${r.imagen?`<img src="${r.imagen}" class="img-preview" onclick="window.open('${r.imagen}')">`:""}</td><td><button class="btn-ver" onclick='ver(${JSON.stringify(r)})'>Ver</button></td></tr>`).join("");kpiClientes(d);draw(d);}
+function ver(r){modal.style.display="flex";modalContent.innerHTML=`<h3>Pedido ${r.pedido}</h3><div style="font-size:13px;color:#555"><b>Cliente:</b> ${r.cliente}<br><b>Tipo Documento:</b> ${r.tipoDocumento}<br><b>Nº Documento:</b> ${r.numeroDocumento}<br><b>Estado:</b> <span class="status ${cls(r.status)}">${r.status}</span><br><b>Ingreso:</b> ${r.fechaIngreso||"—"}<br><b>Modificación:</b> ${r.fechaModificacion||"—"}<br><b>Entrega:</b> ${r.fechaEntrega||"Pendiente"}<br><b>Antigüedad:</b> ${diasAntiguedad(r.fechaIngreso)} días</div><div class="timeline"><div class="timeline-item"><div class="timeline-icon info"><i class="fa fa-box"></i></div><div class="timeline-content">Creado: ${r.fechaIngreso||"—"}</div></div><div class="timeline-item"><div class="timeline-icon ok"><i class="fa fa-edit"></i></div><div class="timeline-content">Modificado: ${r.fechaModificacion||"—"}</div></div><div class="timeline-item"><div class="timeline-icon ok"><i class="fa fa-truck"></i></div><div class="timeline-content">Entrega: ${r.fechaEntrega||"Pendiente"}</div></div><div class="timeline-item"><div class="timeline-icon warn"><i class="fa fa-exclamation-triangle"></i></div><div class="timeline-content">Observaciones: ${r.observaciones||"—"}</div></div></div>`;}
+modal.addEventListener("click",e=>{if(e.target===modal) modal.style.display="none";});
+buscador.addEventListener("input",render);fEstado.addEventListener("change",render);fDesde.addEventListener("change",render);fHasta.addEventListener("change",render);
+function toggleKPI(){kpiWrapper.style.display=kpiWrapper.style.display==="none"?"block":"none";}
 fetchData();
 </script>
 </body>
