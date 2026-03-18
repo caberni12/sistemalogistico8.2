@@ -196,7 +196,7 @@ from{transform:scale(.9);opacity:0}
 to{transform:scale(1);opacity:1}
 }
 
-/* TIMELINE MODERNO */
+/* TIMELINE */
 .timeline{
 margin-top:20px;
 }
@@ -231,6 +231,58 @@ border-radius:10px;
 font-size:13px;
 flex:1;
 }
+
+/* ===== MOBILE CARDS ===== */
+.card-list{
+display:none;
+gap:12px;
+}
+
+.card{
+background:#fff;
+padding:14px;
+border-radius:14px;
+box-shadow:0 8px 18px rgba(0,0,0,.06);
+display:flex;
+flex-direction:column;
+gap:8px;
+}
+
+.card h4{
+margin:0;
+font-size:14px;
+}
+
+.card-row{
+display:flex;
+justify-content:space-between;
+font-size:12px;
+}
+
+.card-footer{
+display:flex;
+justify-content:space-between;
+align-items:center;
+margin-top:8px;
+}
+
+/* RESPONSIVE */
+@media(max-width:768px){
+
+.table-wrap{
+display:none;
+}
+
+.card-list{
+display:flex;
+flex-direction:column;
+}
+
+.kpi-grid{
+grid-template-columns:1fr;
+}
+
+}
 </style>
 </head>
 
@@ -255,10 +307,8 @@ flex:1;
 <button class="btn" onclick="toggleKPI()">KPI</button>
 </div>
 
-<!-- KPI WRAPPER (AGREGADO) -->
 <div id="kpiWrapper">
 
-<!-- KPI -->
 <div class="kpi-grid" id="kpiContainer">
 
 <div class="kpi-card">
@@ -278,13 +328,11 @@ flex:1;
 
 </div>
 
-<!-- GRAFICO -->
 <div class="kpi-box">
 <canvas id="chart"></canvas>
 </div>
 
 </div>
-<!-- FIN KPI WRAPPER -->
 
 <div class="table-wrap">
 <table>
@@ -302,29 +350,30 @@ flex:1;
 </table>
 </div>
 
+<!-- TARJETAS MOBILE -->
+<div class="card-list" id="cards"></div>
+
 </div>
 
-<!-- MODAL -->
 <div class="modal" id="modal">
 <div class="modal-content" id="modalContent"></div>
 </div>
+
 <script>
 const API="https://script.google.com/macros/s/AKfycbzhcMNoGOOZTDdB-wlk4RGiSb-8mGYN8Zb9kzp90gZFSXO2DG8fue_u_WdQ1Ck-LcBm/exec";
 
 let DATA=[];
 let chart;
 
-/* NORMALIZAR */
 function normalizar(data){
 return data.map(x=>({
 ...x,
-etiquetas:x.etiquetas||x.etiqueta||"",
+etiquetas:x.etiquetas||"",
 pdfTraslado:x.pdfTraslado||"",
 imagen:x.imagen||""
 }));
 }
 
-/* STATUS */
 function cls(s){
 if(!s)return"pendiente";
 s=s.toLowerCase();
@@ -334,9 +383,7 @@ if(s.includes("atras"))return"atrasado";
 return"pendiente";
 }
 
-/* FILTRO */
 function filtrar(){
-
 let txt=buscador.value.toLowerCase();
 let est=fEstado.value.toLowerCase();
 
@@ -344,7 +391,6 @@ let desde=fDesde.value ? new Date(fDesde.value) : null;
 let hasta=fHasta.value ? new Date(fHasta.value) : null;
 
 return DATA.filter(x=>{
-
 let str=JSON.stringify(x).toLowerCase();
 let okTexto=str.includes(txt);
 let okEstado=est?(x.status||"").toLowerCase().includes(est):true;
@@ -356,77 +402,18 @@ if(desde && fecha) okFecha=fecha>=desde;
 if(hasta && fecha) okFecha=fecha<=hasta;
 
 return okTexto && okEstado && okFecha;
-
 });
 }
 
-/* KPI CLIENTES */
-function kpiClientes(d){
-
-let conteo={},fechas={};
-
-d.forEach(r=>{
-let c=r.cliente||"Sin nombre";
-conteo[c]=(conteo[c]||0)+1;
-
-if(!fechas[c]) fechas[c]=[];
-if(r.fechaIngreso) fechas[c].push(new Date(r.fechaIngreso));
-});
-
-let top=Object.entries(conteo).sort((a,b)=>b[1]-a[1]).slice(0,5);
-
-topClientes.innerHTML=top.map(x=>`<li><span>${x[0]}</span><b>${x[1]}</b></li>`).join("");
-
-frecuenciaClientes.innerHTML=top.map(x=>`<li><span>${x[0]}</span><b>${x[1]} compras</b></li>`).join("");
-
-let antig=Object.entries(fechas).map(([c,f])=>{
-if(!f.length)return[c,"—"];
-let min=new Date(Math.min(...f));
-let diff=Math.floor((Date.now()-min)/(1000*60*60*24));
-return[c,diff+" días"];
-}).sort((a,b)=>parseInt(b[1])-parseInt(a[1])).slice(0,5);
-
-antiguedadClientes.innerHTML=antig.map(x=>`<li><span>${x[0]}</span><b>${x[1]}</b></li>`).join("");
-}
-
-/* KPI DONUT */
-function draw(d){
-
-let c={entregado:0,transito:0,pendiente:0,atrasado:0};
-
-d.forEach(x=>{
-let s=(x.status||"").toLowerCase();
-
-if(s.includes("entregado"))c.entregado++;
-else if(s.includes("transito"))c.transito++;
-else if(s.includes("atras"))c.atrasado++;
-else c.pendiente++;
-});
-
-if(chart)chart.destroy();
-
-const ctx=document.getElementById("chart").getContext("2d");
-
-chart=new Chart(ctx,{
-type:"doughnut",
-data:{
-labels:["Entregado","Transito","Pendiente","Atrasado"],
-datasets:[{
-data:[c.entregado,c.transito,c.pendiente,c.atrasado],
-backgroundColor:["#22c55e","#3b82f6","#facc15","#ef4444"]
-}]
-},
-options:{cutout:"65%"}
-});
-}
-
-/* RENDER */
 function render(){
 
 let d=filtrar();
+
 tb.innerHTML="";
+cards.innerHTML="";
 
 d.forEach(r=>{
+
 tb.innerHTML+=`
 <tr>
 <td>${r.pedido||""}</td>
@@ -438,74 +425,82 @@ ${r.pdfTraslado?`<span class="btn-pdf" onclick="window.open('${r.pdfTraslado}')"
 ${r.imagen?`<img src="${r.imagen}" class="img-preview" onclick="window.open('${r.imagen}')">`:""}
 </td>
 <td><button class="btn-ver" onclick='ver(${JSON.stringify(r)})'>Ver</button></td>
-</tr>
-`;
+</tr>`;
+
+cards.innerHTML+=`
+<div class="card">
+
+<h4>Pedido ${r.pedido||""}</h4>
+
+<div class="card-row">
+<span>${r.cliente||""}</span>
+<span class="status ${cls(r.status)}">${r.status||""}</span>
+</div>
+
+<div class="card-row">
+<span class="tag">${r.etiquetas||"—"}</span>
+</div>
+
+<div class="card-footer">
+
+<div>
+${r.pdfTraslado?`<span class="btn-pdf" onclick="window.open('${r.pdfTraslado}')">PDF</span>`:""}
+${r.imagen?`<img src="${r.imagen}" class="img-preview" onclick="window.open('${r.imagen}')">`:""}
+</div>
+
+<button class="btn-ver" onclick='ver(${JSON.stringify(r)})'>Ver</button>
+
+</div>
+
+</div>`;
 });
 
 kpiClientes(d);
 draw(d);
 }
 
-/* MODAL MODERNO */
-function ver(r){
-
-let estado = cls(r.status);
-
-modal.style.display="flex";
-
-modalContent.innerHTML=`
-<h3>Pedido ${r.pedido}</h3>
-
-<div style="font-size:13px;color:#555">
-<b>Cliente:</b> ${r.cliente||""}<br>
-<b>Dirección:</b> ${r.direccion||""}<br>
-<b>Estado:</b> <span class="status ${estado}">${r.status||""}</span>
-</div>
-
-<div class="timeline">
-
-<div class="timeline-item">
-<div class="timeline-icon info"><i class="fa fa-box"></i></div>
-<div class="timeline-content">Creado<br>${r.fechaIngreso||"—"}</div>
-</div>
-
-<div class="timeline-item">
-<div class="timeline-icon ok"><i class="fa fa-edit"></i></div>
-<div class="timeline-content">Modificado<br>${r.fechaModificacion||"—"}</div>
-</div>
-
-<div class="timeline-item">
-<div class="timeline-icon ${estado==="entregado"?"ok":"warn"}">
-<i class="fa fa-truck"></i></div>
-<div class="timeline-content">Entrega<br>${r.fechaEntrega||"Pendiente"}</div>
-</div>
-
-<div class="timeline-item">
-<div class="timeline-icon ${estado==="atrasado"?"danger":"info"}">
-<i class="fa fa-exclamation-triangle"></i></div>
-<div class="timeline-content">Observaciones<br>${r.observaciones||"—"}</div>
-</div>
-
-</div>
-`;
+function kpiClientes(d){
+let conteo={};
+d.forEach(r=>{
+let c=r.cliente||"Sin nombre";
+conteo[c]=(conteo[c]||0)+1;
+});
+let top=Object.entries(conteo).sort((a,b)=>b[1]-a[1]).slice(0,5);
+topClientes.innerHTML=top.map(x=>`<li><span>${x[0]}</span><b>${x[1]}</b></li>`).join("");
+frecuenciaClientes.innerHTML=top.map(x=>`<li><span>${x[0]}</span><b>${x[1]} compras</b></li>`).join("");
+antiguedadClientes.innerHTML="";
 }
 
-/* TOGGLE KPI */
+function draw(d){
+let c={entregado:0,transito:0,pendiente:0,atrasado:0};
+
+d.forEach(x=>{
+let s=(x.status||"").toLowerCase();
+if(s.includes("entregado"))c.entregado++;
+else if(s.includes("transito"))c.transito++;
+else if(s.includes("atras"))c.atrasado++;
+else c.pendiente++;
+});
+
+if(chart)chart.destroy();
+
+chart=new Chart(document.getElementById("chart"),{
+type:"doughnut",
+data:{
+labels:["Entregado","Transito","Pendiente","Atrasado"],
+datasets:[{data:Object.values(c)}]
+}
+});
+}
+
 function toggleKPI(){
-
-const wrapper = document.getElementById("kpiWrapper");
-const chart = document.getElementById("chart");
-
-if(!wrapper) return;
-
-const oculto = wrapper.style.display === "none";
-
-wrapper.style.display = oculto ? "block" : "none";
-
-if(chart){
-chart.style.display = oculto ? "block" : "none";
+const wrapper=document.getElementById("kpiWrapper");
+wrapper.style.display = wrapper.style.display==="none"?"block":"none";
 }
 
+function ver(r){
+modal.style.display="flex";
+modalContent.innerHTML=`<h3>Pedido ${r.pedido}</h3>`;
 }
 
 modal.onclick=()=>modal.style.display="none";
