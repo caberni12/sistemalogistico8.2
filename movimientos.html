@@ -9,22 +9,17 @@
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
 <style>
-/* RESET Y ESTILOS GENERALES */
+/* --- CSS COMPLETO, RESPONSIVE Y ADAPTADO --- */
 body{
   margin:0;
   font-family:Arial;
   background:#f1f5f9;
-  min-height:100vh;
 }
 .wrap{
-  width:100%;
-  max-width:1200px; /* límite máximo en escritorio grande */
+  max-width:1200px;
   margin:auto;
   padding:20px;
-  box-sizing:border-box;
 }
-
-/* TOOLBAR */
 .toolbar{
   display:flex;
   gap:10px;
@@ -44,8 +39,6 @@ input,select{
   border-radius:10px;
   cursor:pointer;
 }
-
-/* KPI GRID */
 .kpi-grid{
   display:grid;
   grid-template-columns:repeat(auto-fit,minmax(260px,1fr));
@@ -109,8 +102,6 @@ input,select{
 .kpi-card li[data-progress]::after{
   width: calc(var(--progress) * 1%);
 }
-
-/* KPI BOX */
 .kpi-box{
   background:#fff;
   padding:20px;
@@ -125,8 +116,6 @@ input,select{
 .kpi-box canvas{
   max-height:220px;
 }
-
-/* TABLA */
 .table-wrap{
   background:#fff;
   border-radius:14px;
@@ -195,8 +184,6 @@ th{
   object-fit:cover;
   cursor:pointer;
 }
-
-/* MODAL */
 .modal{
   position:fixed;
   top:0;
@@ -223,8 +210,6 @@ th{
   from{transform:scale(.9);opacity:0}
   to{transform:scale(1);opacity:1}
 }
-
-/* TIMELINE */
 .timeline{
   margin-top:20px;
 }
@@ -255,16 +240,7 @@ th{
   font-size:13px;
   flex:1;
 }
-
-/* RESPONSIVE */
-@media(max-width:1199px){
-  .wrap{
-    max-width:95%;
-    padding:20px;
-  }
-}
 @media(max-width:768px){
-  /* Tabla tipo tarjeta en móviles */
   .table-wrap table thead {
     display: none;
   }
@@ -296,21 +272,12 @@ th{
   }
   .table-wrap td:nth-of-type(1)::before{content:"Pedido";}
   .table-wrap td:nth-of-type(2)::before{content:"Cliente";}
-  .table-wrap td:nth-of-type(3)::before{content:"Etiquetas";}
-  .table-wrap td:nth-of-type(4)::before{content:"Status";}
-  .table-wrap td:nth-of-type(5)::before{content:"Archivos";}
-  .table-wrap td:nth-of-type(6)::before{content:"Acción";}
-}
-
-/* ESCRITORIO: ancho total y KPIs más grandes */
-@media(min-width:1200px){
-  .wrap{
-    max-width:100%;
-    padding:30px 40px;
-  }
-  .kpi-grid{
-    grid-template-columns:repeat(3, 1fr);
-  }
+  .table-wrap td:nth-of-type(3)::before{content:"Tipo Doc";}
+  .table-wrap td:nth-of-type(4)::before{content:"Nº Doc";}
+  .table-wrap td:nth-of-type(5)::before{content:"Etiquetas";}
+  .table-wrap td:nth-of-type(6)::before{content:"Status";}
+  .table-wrap td:nth-of-type(7)::before{content:"Archivos";}
+  .table-wrap td:nth-of-type(8)::before{content:"Acción";}
 }
 </style>
 </head>
@@ -359,6 +326,8 @@ th{
         <tr>
           <th>Pedido</th>
           <th>Cliente</th>
+          <th>Tipo Doc</th>
+          <th>Nº Doc</th>
           <th>Etiquetas</th>
           <th>Status</th>
           <th>Archivos</th>
@@ -375,17 +344,8 @@ th{
 </div>
 
 <script>
-const API="https://script.google.com/macros/s/AKfycbzhcMNoGOOZTDdB-wlk4RGiSb-8mGYN8Zb9kzp90gZFSXO2DG8fue_u_WdQ1Ck-LcBm/exec";
+const API="TU_URL_APPSCRIPT_AQUI";
 let DATA=[], chart;
-
-function normalizar(data){
-  return data.map(x=>({
-    ...x,
-    etiquetas:x.etiquetas||x.etiqueta||"",
-    pdfTraslado:x.pdfTraslado||"",
-    imagen:x.imagen||""
-  }));
-}
 
 function cls(s){
   if(!s)return"pendiente";
@@ -399,51 +359,60 @@ function cls(s){
   return"pendiente";
 }
 
+function fetchData(){
+  fetch(API)
+  .then(res=>res.json())
+  .then(json=>{
+    DATA=json.map(x=>({
+      pedido:x.pedido||"",
+      cliente:x.cliente||"",
+      status:x.status||"",
+      etiquetas:x.etiquetas||"",
+      pdfTraslado:x.pdfTraslado||"",
+      imagen:x.imagen||"",
+      fechaIngreso:x.fechaIngreso||"",
+      fechaModificacion:x.fechaModificacion||"",
+      fechaEntrega:x.fechaEntrega||"",
+      observaciones:x.observaciones||"",
+      tipoDocumento:x.tipoDocumento||"",
+      numeroDocumento:x.numeroDocumento||""
+    }));
+    render();
+  });
+}
+
 function filtrar(){
   let txt=buscador.value.toLowerCase();
   let est=fEstado.value.toLowerCase();
-  let desde=fDesde.value ? new Date(fDesde.value) : null;
-  let hasta=fHasta.value ? new Date(fHasta.value) : null;
-
+  let desde=fDesde.value?new Date(fDesde.value):null;
+  let hasta=fHasta.value?new Date(fHasta.value):null;
   return DATA.filter(x=>{
     let str=JSON.stringify(x).toLowerCase();
     let okTexto=str.includes(txt);
-    let okEstado=est?(x.status||"").toLowerCase().includes(est):true;
-
+    let okEstado=est?x.status.toLowerCase().includes(est):true;
     let fecha=x.fechaIngreso?new Date(x.fechaIngreso):null;
     let okFecha=true;
     if(desde && fecha) okFecha=fecha>=desde;
     if(hasta && fecha) okFecha=fecha<=hasta;
-
     return okTexto && okEstado && okFecha;
   });
 }
 
 function kpiClientes(d){
-  let conteo={},fechas={};
+  let conteo={};
   d.forEach(r=>{
     let c=r.cliente||"Sin nombre";
     conteo[c]=(conteo[c]||0)+1;
-    if(!fechas[c]) fechas[c]=[];
-    if(r.fechaIngreso) fechas[c].push(new Date(r.fechaIngreso));
   });
   let top=Object.entries(conteo).sort((a,b)=>b[1]-a[1]).slice(0,5);
   topClientes.innerHTML=top.map(x=>`<li data-progress="${x[1]}"><span>${x[0]}</span><b>${x[1]}</b></li>`).join("");
   frecuenciaClientes.innerHTML=top.map(x=>`<li data-progress="${x[1]}"><span>${x[0]}</span><b>${x[1]} compras</b></li>`).join("");
-
-  let antig=Object.entries(fechas).map(([c,f])=>{
-    if(!f.length)return[c,"—"];
-    let min=new Date(Math.min(...f));
-    let diff=Math.floor((Date.now()-min)/(1000*60*60*24));
-    return[c,diff+" días"];
-  }).sort((a,b)=>parseInt(b[1])-parseInt(a[1])).slice(0,5);
-  antiguedadClientes.innerHTML=antig.map(x=>`<li data-progress="${parseInt(x[1])}"><span>${x[0]}</span><b>${x[1]}</b></li>`).join("");
 }
 
 function draw(d){
   let c={entregado:0,enruta:0,pendiente:0,recibido:0,cancelado:0,atrasado:0};
   d.forEach(x=>{
-    let s=(x.status||"").toLowerCase();
+    let s=x.status.toLowerCase();
     if(s.includes("entregado"))c.entregado++;
     else if(s.includes("en ruta")||s.includes("transito"))c.enruta++;
     else if(s.includes("pendiente"))c.pendiente++;
@@ -451,8 +420,7 @@ function draw(d){
     else if(s.includes("cancelado"))c.cancelado++;
     else if(s.includes("atras"))c.atrasado++;
   });
-
-  if(chart)chart.destroy();
+  if(chart) chart.destroy();
   const ctx=document.getElementById("chart").getContext("2d");
   chart=new Chart(ctx,{
     type:"doughnut",
@@ -467,67 +435,58 @@ function draw(d){
 
 function render(){
   let d=filtrar();
-  tb.innerHTML="";
-  d.forEach(r=>{
-    tb.innerHTML+=`
+  tb.innerHTML=d.map(r=>`
 <tr>
-<td>${r.pedido||""}</td>
-<td>${r.cliente||""}</td>
+<td>${r.pedido}</td>
+<td>${r.cliente}</td>
+<td>${r.tipoDocumento}</td>
+<td>${r.numeroDocumento}</td>
 <td><span class="tag">${r.etiquetas||"—"}</span></td>
-<td><span class="status ${cls(r.status)}">${r.status||""}</span></td>
+<td><span class="status ${cls(r.status)}">${r.status}</span></td>
 <td>
 ${r.pdfTraslado?`<button class="btn-icon" onclick="window.open('${r.pdfTraslado}')"><i class="fa fa-file-pdf"></i></button>`:""}
 ${r.imagen?`<img src="${r.imagen}" class="img-preview" onclick="window.open('${r.imagen}')">`:""}
 </td>
 <td><button class="btn-ver" onclick='ver(${JSON.stringify(r)})'>Ver</button></td>
 </tr>
-    `;
-  });
+  `).join("");
   kpiClientes(d);
   draw(d);
 }
 
 function ver(r){
-  let estado = cls(r.status);
   modal.style.display="flex";
   modalContent.innerHTML=`
 <h3>Pedido ${r.pedido}</h3>
 <div style="font-size:13px;color:#555">
-<b>Cliente:</b> ${r.cliente||""}<br>
-<b>Dirección:</b> ${r.direccion||""}<br>
-<b>Estado:</b> <span class="status ${estado}">${r.status||""}</span>
+<b>Cliente:</b> ${r.cliente}<br>
+<b>Tipo Documento:</b> ${r.tipoDocumento}<br>
+<b>Nº Documento:</b> ${r.numeroDocumento}<br>
+<b>Estado:</b> <span class="status ${cls(r.status)}">${r.status}</span>
 </div>
 <div class="timeline">
-<div class="timeline-item"><div class="timeline-icon info"><i class="fa fa-box"></i></div><div class="timeline-content">Creado<br>${r.fechaIngreso||"—"}</div></div>
-<div class="timeline-item"><div class="timeline-icon ok"><i class="fa fa-edit"></i></div><div class="timeline-content">Modificado<br>${r.fechaModificacion||"—"}</div></div>
-<div class="timeline-item"><div class="timeline-icon ${estado==="entregado"?"ok":"warn"}"><i class="fa fa-truck"></i></div><div class="timeline-content">Entrega<br>${r.fechaEntrega||"Pendiente"}</div></div>
-<div class="timeline-item"><div class="timeline-icon ${estado==="atrasado"?"danger":"info"}"><i class="fa fa-exclamation-triangle"></i></div><div class="timeline-content">Observaciones<br>${r.observaciones||"—"}</div></div>
-<div class="timeline-item"><div class="timeline-icon info"><i class="fa fa-file-pdf"></i></div><div class="timeline-content">${r.pdfTraslado?`<button class="btn-icon" onclick="window.open('${r.pdfTraslado}')"><i class="fa fa-file-pdf"></i></button>`:"No hay PDF"}</div></div>
+<div class="timeline-item"><div class="timeline-icon info"><i class="fa fa-box"></i></div><div class="timeline-content">Creado: ${r.fechaIngreso||"—"}</div></div>
+<div class="timeline-item"><div class="timeline-icon ok"><i class="fa fa-edit"></i></div><div class="timeline-content">Modificado: ${r.fechaModificacion||"—"}</div></div>
+<div class="timeline-item"><div class="timeline-icon ok"><i class="fa fa-truck"></i></div><div class="timeline-content">Entrega: ${r.fechaEntrega||"Pendiente"}</div></div>
+<div class="timeline-item"><div class="timeline-icon warn"><i class="fa fa-exclamation-triangle"></i></div><div class="timeline-content">Observaciones: ${r.observaciones||"—"}</div></div>
 </div>
-${r.imagen?`<img src="${r.imagen}" style="width:100%;margin-top:10px;border-radius:8px;">`:""}
 `;
 }
 
+modal.addEventListener("click",e=>{
+  if(e.target===modal) modal.style.display="none";
+});
+
+buscador.addEventListener("input",render);
+fEstado.addEventListener("change",render);
+fDesde.addEventListener("change",render);
+fHasta.addEventListener("change",render);
+
 function toggleKPI(){
-  const wrapper = document.getElementById("kpiWrapper");
-  wrapper.style.display = wrapper.style.display === "none" ? "block" : "none";
+  kpiWrapper.style.display=kpiWrapper.style.display==="none"?"block":"none";
 }
 
-modal.onclick=()=>modal.style.display="none";
-buscador.oninput=render;
-fEstado.onchange=render;
-fDesde.onchange=render;
-fHasta.onchange=render;
-
-async function cargar(){
-  let r=await fetch(API);
-  let raw=await r.json();
-  DATA=normalizar(raw);
-  render();
-}
-
-window.onload=cargar;
+fetchData();
 </script>
-
 </body>
 </html>
