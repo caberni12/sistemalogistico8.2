@@ -240,6 +240,45 @@ th{
   .table-wrap td:nth-of-type(5)::before{content:"Archivos";}
   .table-wrap td:nth-of-type(6)::before{content:"Acción";}
 }
+
+@media(max-width:768px){
+  .table-wrap table thead {
+    display: none; /* Oculta el encabezado de la tabla en móvil */
+  }
+  .table-wrap table, .table-wrap tbody, .table-wrap th, .table-wrap td, .table-wrap tr{
+    display:block;
+  }
+  .table-wrap tr{
+    margin-bottom:15px;
+    border-bottom:1px solid #ccc;
+    padding:10px;
+    background:#fff;
+    border-radius:14px;
+    box-shadow:0 5px 10px rgba(0,0,0,.05);
+  }
+  .table-wrap td{
+    padding:6px 0;
+    position:relative;
+    padding-left:50%;
+    text-align:left;
+  }
+  .table-wrap td::before{
+    position:absolute;
+    top:6px;
+    left:12px;
+    width:45%;
+    white-space:nowrap;
+    font-weight:bold;
+    font-size:12px;
+  }
+  .table-wrap td:nth-of-type(1)::before{content:"Pedido";}
+  .table-wrap td:nth-of-type(2)::before{content:"Cliente";}
+  .table-wrap td:nth-of-type(3)::before{content:"Etiquetas";}
+  .table-wrap td:nth-of-type(4)::before{content:"Status";}
+  .table-wrap td:nth-of-type(5)::before{content:"Archivos";}
+  .table-wrap td:nth-of-type(6)::before{content:"Acción";}
+}
+
 </style>
 </head>
 <body>
