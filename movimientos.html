@@ -10,278 +10,70 @@
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
 <style>
-body{
-margin:0;
-font-family:Arial;
-background:#f1f5f9;
-}
-
-.wrap{
-max-width:1200px;
-margin:auto;
-padding:20px;
-}
+body{margin:0;font-family:Arial;background:#f1f5f9;}
+.wrap{max-width:1200px;margin:auto;padding:20px;}
 
 /* TOOLBAR */
-.toolbar{
-display:flex;
-gap:10px;
-flex-wrap:wrap;
-margin-bottom:20px;
-}
-input,select{
-padding:10px;
-border-radius:10px;
-border:1px solid #ddd;
-}
+.toolbar{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:20px;}
+input,select{padding:10px;border-radius:10px;border:1px solid #ddd;}
+.btn{background:#14b8a6;color:#fff;border:none;padding:8px 12px;border-radius:10px;cursor:pointer;}
 
-.btn{
-background:#14b8a6;
-color:#fff;
-border:none;
-padding:8px 12px;
-border-radius:10px;
-cursor:pointer;
-}
+/* KPI */
+.kpi-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:15px;margin-bottom:20px;}
+.kpi-card{background:#fff;padding:15px;border-radius:14px;box-shadow:0 10px 20px rgba(0,0,0,.05);height:220px;display:flex;flex-direction:column;}
+.kpi-card ul{flex:1;overflow:auto;list-style:none;padding:0;margin:0;}
+.kpi-card li{display:flex;justify-content:space-between;font-size:13px;padding:6px 0;border-bottom:1px solid #eee;}
 
-/* KPI GRID */
-.kpi-grid{
-display:grid;
-grid-template-columns:repeat(auto-fit,minmax(260px,1fr));
-gap:15px;
-margin-bottom:20px;
-}
-
-.kpi-card{
-background:#fff;
-padding:15px;
-border-radius:14px;
-box-shadow:0 10px 20px rgba(0,0,0,.05);
-height:220px;
-display:flex;
-flex-direction:column;
-}
-
-.kpi-card ul{
-flex:1;
-overflow:auto;
-list-style:none;
-padding:0;
-margin:0;
-}
-
-.kpi-card li{
-display:flex;
-justify-content:space-between;
-font-size:13px;
-padding:6px 0;
-border-bottom:1px solid #eee;
-}
-
-/* KPI DONUT */
-.kpi-box{
-background:#fff;
-padding:20px;
-border-radius:14px;
-box-shadow:0 10px 20px rgba(0,0,0,.05);
-margin-bottom:20px;
-height:260px;
-display:flex;
-justify-content:center;
-align-items:center;
-}
-
-.kpi-box canvas{
-max-height:220px;
-}
+.kpi-box{background:#fff;padding:20px;border-radius:14px;box-shadow:0 10px 20px rgba(0,0,0,.05);margin-bottom:20px;height:260px;display:flex;justify-content:center;align-items:center;}
 
 /* TABLA */
-.table-wrap{
-background:#fff;
-border-radius:14px;
-overflow:hidden;
-box-shadow:0 10px 20px rgba(0,0,0,.05);
-}
-
-table{
-width:100%;
-border-collapse:collapse;
-}
-
-th,td{
-padding:12px;
-border-bottom:1px solid #eee;
-font-size:13px;
-}
-
-th{
-background:#f8fafc;
-color:#666;
-}
+.table-wrap{background:#fff;border-radius:14px;overflow:hidden;box-shadow:0 10px 20px rgba(0,0,0,.05);}
+table{width:100%;border-collapse:collapse;}
+th,td{padding:12px;border-bottom:1px solid #eee;font-size:13px;}
+th{background:#f8fafc;color:#666;}
 
 /* STATUS */
-.status{
-padding:5px 10px;
-border-radius:999px;
-font-size:12px;
-color:#fff;
-}
+.status{padding:5px 10px;border-radius:999px;font-size:12px;color:#fff;}
 .entregado{background:#22c55e}
 .transito{background:#3b82f6}
 .pendiente{background:#facc15;color:#000}
 .atrasado{background:#ef4444}
 
 /* TAG */
-.tag{
-background:#14b8a6;
-color:#fff;
-padding:4px 8px;
-border-radius:999px;
-font-size:12px;
-}
+.tag{background:#14b8a6;color:#fff;padding:4px 8px;border-radius:999px;font-size:12px;}
 
 /* BOTONES */
-.btn-ver{
-background:#14b8a6;
-color:#fff;
-border:none;
-padding:6px 10px;
-border-radius:8px;
-cursor:pointer;
-font-size:12px;
-}
-
-.btn-pdf{
-background:#ef4444;
-color:#fff;
-padding:6px;
-border-radius:8px;
-cursor:pointer;
-margin-right:5px;
-}
+.btn-ver{background:#14b8a6;color:#fff;border:none;padding:6px 10px;border-radius:8px;cursor:pointer;font-size:12px;}
+.btn-pdf{background:#ef4444;color:#fff;padding:6px;border-radius:8px;cursor:pointer;margin-right:5px;}
 
 /* IMG */
-.img-preview{
-width:40px;
-height:40px;
-border-radius:8px;
-object-fit:cover;
-cursor:pointer;
-}
+.img-preview{width:40px;height:40px;border-radius:8px;object-fit:cover;cursor:pointer;}
 
 /* MODAL */
-.modal{
-position:fixed;
-top:0;
-left:0;
-width:100%;
-height:100%;
-background:rgba(0,0,0,.6);
-display:none;
-justify-content:center;
-align-items:center;
-}
-
-.modal-content{
-background:#fff;
-padding:25px;
-border-radius:18px;
-width:95%;
-max-width:520px;
-animation:fade .25s ease;
-}
-
-@keyframes fade{
-from{transform:scale(.9);opacity:0}
-to{transform:scale(1);opacity:1}
-}
+.modal{position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.6);display:none;justify-content:center;align-items:center;}
+.modal-content{background:#fff;padding:25px;border-radius:18px;width:95%;max-width:520px;}
 
 /* TIMELINE */
-.timeline{
-margin-top:20px;
-}
-
-.timeline-item{
-display:flex;
-gap:12px;
-margin-bottom:15px;
-align-items:flex-start;
-}
-
-.timeline-icon{
-width:28px;
-height:28px;
-border-radius:50%;
-display:flex;
-align-items:center;
-justify-content:center;
-color:#fff;
-font-size:12px;
-}
-
+.timeline{margin-top:20px;}
+.timeline-item{display:flex;gap:12px;margin-bottom:15px;align-items:flex-start;}
+.timeline-icon{width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:#fff;font-size:12px;}
 .ok{background:#22c55e}
 .info{background:#3b82f6}
 .warn{background:#facc15;color:#000}
 .danger{background:#ef4444}
+.timeline-content{background:#f8fafc;padding:10px;border-radius:10px;font-size:13px;flex:1;}
 
-.timeline-content{
-background:#f8fafc;
-padding:10px;
-border-radius:10px;
-font-size:13px;
-flex:1;
-}
+/* MOBILE CARDS */
+.card-list{display:none;gap:12px;}
+.card{background:#fff;padding:14px;border-radius:14px;box-shadow:0 8px 18px rgba(0,0,0,.06);display:flex;flex-direction:column;gap:8px;}
+.card h4{margin:0;font-size:14px;}
+.card-row{display:flex;justify-content:space-between;font-size:12px;}
+.card-footer{display:flex;justify-content:space-between;align-items:center;margin-top:8px;}
 
-/* ===== MOBILE CARDS ===== */
-.card-list{
-display:none;
-gap:12px;
-}
-
-.card{
-background:#fff;
-padding:14px;
-border-radius:14px;
-box-shadow:0 8px 18px rgba(0,0,0,.06);
-display:flex;
-flex-direction:column;
-gap:8px;
-}
-
-.card h4{
-margin:0;
-font-size:14px;
-}
-
-.card-row{
-display:flex;
-justify-content:space-between;
-font-size:12px;
-}
-
-.card-footer{
-display:flex;
-justify-content:space-between;
-align-items:center;
-margin-top:8px;
-}
-
-/* RESPONSIVE */
 @media(max-width:768px){
-
-.table-wrap{
-display:none;
-}
-
-.card-list{
-display:flex;
-flex-direction:column;
-}
-
-.kpi-grid{
-grid-template-columns:1fr;
-}
-
+.table-wrap{display:none;}
+.card-list{display:flex;flex-direction:column;}
+.kpi-grid{grid-template-columns:1fr;}
 }
 </style>
 </head>
@@ -292,7 +84,6 @@ grid-template-columns:1fr;
 
 <div class="toolbar">
 <input id="buscador" placeholder="Buscar...">
-
 <select id="fEstado">
 <option value="">Estado</option>
 <option>Entregado</option>
@@ -300,32 +91,17 @@ grid-template-columns:1fr;
 <option>Pendiente</option>
 <option>Atrasado</option>
 </select>
-
 <input type="date" id="fDesde">
 <input type="date" id="fHasta">
-
 <button class="btn" onclick="toggleKPI()">KPI</button>
 </div>
 
 <div id="kpiWrapper">
 
-<div class="kpi-grid" id="kpiContainer">
-
-<div class="kpi-card">
-<h4>Top 5 Clientes</h4>
-<ul id="topClientes"></ul>
-</div>
-
-<div class="kpi-card">
-<h4>Frecuencia</h4>
-<ul id="frecuenciaClientes"></ul>
-</div>
-
-<div class="kpi-card">
-<h4>Antigüedad</h4>
-<ul id="antiguedadClientes"></ul>
-</div>
-
+<div class="kpi-grid">
+<div class="kpi-card"><h4>Top 5 Clientes</h4><ul id="topClientes"></ul></div>
+<div class="kpi-card"><h4>Frecuencia</h4><ul id="frecuenciaClientes"></ul></div>
+<div class="kpi-card"><h4>Antigüedad</h4><ul id="antiguedadClientes"></ul></div>
 </div>
 
 <div class="kpi-box">
@@ -338,19 +114,13 @@ grid-template-columns:1fr;
 <table>
 <thead>
 <tr>
-<th>Pedido</th>
-<th>Cliente</th>
-<th>Etiquetas</th>
-<th>Status</th>
-<th>Archivos</th>
-<th>Acción</th>
+<th>Pedido</th><th>Cliente</th><th>Etiquetas</th><th>Status</th><th>Archivos</th><th>Acción</th>
 </tr>
 </thead>
 <tbody id="tb"></tbody>
 </table>
 </div>
 
-<!-- TARJETAS MOBILE -->
 <div class="card-list" id="cards"></div>
 
 </div>
@@ -362,16 +132,10 @@ grid-template-columns:1fr;
 <script>
 const API="https://script.google.com/macros/s/AKfycbzhcMNoGOOZTDdB-wlk4RGiSb-8mGYN8Zb9kzp90gZFSXO2DG8fue_u_WdQ1Ck-LcBm/exec";
 
-let DATA=[];
-let chart;
+let DATA=[],chart;
 
-function normalizar(data){
-return data.map(x=>({
-...x,
-etiquetas:x.etiquetas||"",
-pdfTraslado:x.pdfTraslado||"",
-imagen:x.imagen||""
-}));
+function normalizar(d){
+return d.map(x=>({...x,etiquetas:x.etiquetas||"",pdfTraslado:x.pdfTraslado||"",imagen:x.imagen||""}));
 }
 
 function cls(s){
@@ -386,36 +150,27 @@ return"pendiente";
 function filtrar(){
 let txt=buscador.value.toLowerCase();
 let est=fEstado.value.toLowerCase();
-
-let desde=fDesde.value ? new Date(fDesde.value) : null;
-let hasta=fHasta.value ? new Date(fHasta.value) : null;
+let desde=fDesde.value?new Date(fDesde.value):null;
+let hasta=fHasta.value?new Date(fHasta.value):null;
 
 return DATA.filter(x=>{
-let str=JSON.stringify(x).toLowerCase();
-let okTexto=str.includes(txt);
-let okEstado=est?(x.status||"").toLowerCase().includes(est):true;
-
-let fecha=x.fechaIngreso?new Date(x.fechaIngreso):null;
-let okFecha=true;
-
-if(desde && fecha) okFecha=fecha>=desde;
-if(hasta && fecha) okFecha=fecha<=hasta;
-
-return okTexto && okEstado && okFecha;
+let ok=JSON.stringify(x).toLowerCase().includes(txt);
+let ok2=est?(x.status||"").toLowerCase().includes(est):true;
+let f=x.fechaIngreso?new Date(x.fechaIngreso):null;
+let ok3=true;
+if(desde&&f)ok3=f>=desde;
+if(hasta&&f)ok3=f<=hasta;
+return ok&&ok2&&ok3;
 });
 }
 
 function render(){
-
 let d=filtrar();
-
-tb.innerHTML="";
-cards.innerHTML="";
+tb.innerHTML="";cards.innerHTML="";
 
 d.forEach(r=>{
 
-tb.innerHTML+=`
-<tr>
+tb.innerHTML+=`<tr>
 <td>${r.pedido||""}</td>
 <td>${r.cliente||""}</td>
 <td><span class="tag">${r.etiquetas||"—"}</span></td>
@@ -427,31 +182,21 @@ ${r.imagen?`<img src="${r.imagen}" class="img-preview" onclick="window.open('${r
 <td><button class="btn-ver" onclick='ver(${JSON.stringify(r)})'>Ver</button></td>
 </tr>`;
 
-cards.innerHTML+=`
-<div class="card">
-
+cards.innerHTML+=`<div class="card">
 <h4>Pedido ${r.pedido||""}</h4>
-
 <div class="card-row">
 <span>${r.cliente||""}</span>
 <span class="status ${cls(r.status)}">${r.status||""}</span>
 </div>
-
 <div class="card-row">
 <span class="tag">${r.etiquetas||"—"}</span>
 </div>
-
 <div class="card-footer">
-
 <div>
-${r.pdfTraslado?`<span class="btn-pdf" onclick="window.open('${r.pdfTraslado}')">PDF</span>`:""}
-${r.imagen?`<img src="${r.imagen}" class="img-preview" onclick="window.open('${r.imagen}')">`:""}
+${r.pdfTraslado?`<span class="btn-pdf">PDF</span>`:""}
 </div>
-
 <button class="btn-ver" onclick='ver(${JSON.stringify(r)})'>Ver</button>
-
 </div>
-
 </div>`;
 });
 
@@ -459,13 +204,53 @@ kpiClientes(d);
 draw(d);
 }
 
+function ver(r){
+let estado=cls(r.status);
+modal.style.display="flex";
+
+modalContent.innerHTML=`
+<h3>Pedido ${r.pedido}</h3>
+
+<b>Cliente:</b> ${r.cliente||""}<br>
+<b>Dirección:</b> ${r.direccion||""}<br>
+<b>Estado:</b> <span class="status ${estado}">${r.status||""}</span><br>
+
+${r.pdfTraslado?`<b>PDF:</b> <a href="${r.pdfTraslado}" target="_blank">Abrir</a><br>`:""}
+
+${r.imagen?`<img src="${r.imagen}" style="width:100%;margin-top:10px;border-radius:10px">`:""}
+
+<div class="timeline">
+
+<div class="timeline-item">
+<div class="timeline-icon info"><i class="fa fa-box"></i></div>
+<div class="timeline-content">Creado<br>${r.fechaIngreso||"—"}</div>
+</div>
+
+<div class="timeline-item">
+<div class="timeline-icon ok"><i class="fa fa-edit"></i></div>
+<div class="timeline-content">Modificado<br>${r.fechaModificacion||"—"}</div>
+</div>
+
+<div class="timeline-item">
+<div class="timeline-icon ${estado==="entregado"?"ok":"warn"}">
+<i class="fa fa-truck"></i></div>
+<div class="timeline-content">Entrega<br>${r.fechaEntrega||"Pendiente"}</div>
+</div>
+
+<div class="timeline-item">
+<div class="timeline-icon ${estado==="atrasado"?"danger":"info"}">
+<i class="fa fa-exclamation-triangle"></i></div>
+<div class="timeline-content">Observaciones<br>${r.observaciones||"—"}</div>
+</div>
+
+</div>
+`;
+}
+
 function kpiClientes(d){
-let conteo={};
-d.forEach(r=>{
-let c=r.cliente||"Sin nombre";
-conteo[c]=(conteo[c]||0)+1;
-});
-let top=Object.entries(conteo).sort((a,b)=>b[1]-a[1]).slice(0,5);
+let c={};
+d.forEach(r=>{let k=r.cliente||"—";c[k]=(c[k]||0)+1});
+let top=Object.entries(c).sort((a,b)=>b[1]-a[1]).slice(0,5);
 topClientes.innerHTML=top.map(x=>`<li><span>${x[0]}</span><b>${x[1]}</b></li>`).join("");
 frecuenciaClientes.innerHTML=top.map(x=>`<li><span>${x[0]}</span><b>${x[1]} compras</b></li>`).join("");
 antiguedadClientes.innerHTML="";
@@ -473,7 +258,6 @@ antiguedadClientes.innerHTML="";
 
 function draw(d){
 let c={entregado:0,transito:0,pendiente:0,atrasado:0};
-
 d.forEach(x=>{
 let s=(x.status||"").toLowerCase();
 if(s.includes("entregado"))c.entregado++;
@@ -486,21 +270,14 @@ if(chart)chart.destroy();
 
 chart=new Chart(document.getElementById("chart"),{
 type:"doughnut",
-data:{
-labels:["Entregado","Transito","Pendiente","Atrasado"],
-datasets:[{data:Object.values(c)}]
-}
+data:{labels:["Entregado","Transito","Pendiente","Atrasado"],
+datasets:[{data:Object.values(c)}]}
 });
 }
 
 function toggleKPI(){
-const wrapper=document.getElementById("kpiWrapper");
-wrapper.style.display = wrapper.style.display==="none"?"block":"none";
-}
-
-function ver(r){
-modal.style.display="flex";
-modalContent.innerHTML=`<h3>Pedido ${r.pedido}</h3>`;
+let w=document.getElementById("kpiWrapper");
+w.style.display=w.style.display==="none"?"block":"none";
 }
 
 modal.onclick=()=>modal.style.display="none";
