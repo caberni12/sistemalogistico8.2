@@ -5,179 +5,69 @@
 <title>Dashboard Pedidos</title>
 
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
-
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
 <style>
+body{font-family:Arial;background:#f5f7fb;margin:0;padding:20px;}
+.container{max-width:1200px;margin:auto;}
 
-/* ===== GENERAL ===== */
-body{
-font-family:Arial;
-background:#f5f7fb;
-margin:0;
-padding:20px;
-}
+.top{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:15px;}
+select,input{padding:8px;border-radius:8px;border:1px solid #ddd;}
 
-.container{
-max-width:1200px;
-margin:auto;
-}
+.table-wrap{overflow:auto;background:#fff;border-radius:12px;}
+table{width:100%;border-collapse:collapse;}
+th,td{padding:10px;border-bottom:1px solid #eee;font-size:13px;}
 
-/* ===== FILTROS ===== */
-.top{
-display:flex;
-gap:10px;
-flex-wrap:wrap;
-margin-bottom:15px;
-}
-
-select,input{
-padding:8px;
-border-radius:8px;
-border:1px solid #ddd;
-}
-
-/* ===== TABLA ===== */
-.table-wrap{
-overflow:auto;
-background:#fff;
-border-radius:12px;
-}
-
-table{
-width:100%;
-border-collapse:collapse;
-}
-
-th,td{
-padding:10px;
-border-bottom:1px solid #eee;
-font-size:13px;
-}
-
-/* ===== STATUS ===== */
-.status{
-padding:4px 8px;
-border-radius:8px;
-color:#fff;
-font-size:11px;
-}
-
+.status{padding:4px 8px;border-radius:8px;color:#fff;font-size:11px;}
 .enruta{background:#3b82f6}
 .pendiente{background:#facc15;color:#000}
 .recibido{background:#06b6d4}
 .cancelado{background:#6b7280}
 .entregado{background:#22c55e}
 
-/* ===== TAG ===== */
-.tag{
-background:#eee;
-padding:3px 6px;
-border-radius:6px;
-}
+.tag{background:#eee;padding:3px 6px;border-radius:6px;}
 
-/* ===== BOTONES ===== */
-.btn-ver{
-padding:6px 10px;
-border:none;
-background:#6366f1;
-color:#fff;
-border-radius:8px;
-cursor:pointer;
-}
+.btn-ver{padding:6px 10px;border:none;background:#6366f1;color:#fff;border-radius:8px;cursor:pointer;}
 
-/* ===== ICONOS ===== */
 .icon-btn{
-display:inline-flex;
-align-items:center;
-justify-content:center;
-width:34px;
-height:34px;
-border-radius:10px;
-background:#ef4444;
-color:#fff;
-cursor:pointer;
+display:inline-flex;align-items:center;justify-content:center;
+width:38px;height:38px;border-radius:12px;
+background:linear-gradient(135deg,#ef4444,#dc2626);
+color:#fff;cursor:pointer;transition:.25s;
 }
 
 .img-preview{
-width:34px;
-height:34px;
-object-fit:cover;
-border-radius:8px;
-cursor:pointer;
+width:38px;height:38px;object-fit:cover;border-radius:8px;cursor:pointer;
 }
 
-/* ===== CARDS MOBILE ===== */
-.card-list{
-display:none;
-gap:10px;
-}
+.card-list{display:none;gap:10px;}
+.card{background:#fff;padding:12px;border-radius:12px;box-shadow:0 4px 10px rgba(0,0,0,.05);}
+.card-row{display:flex;justify-content:space-between;font-size:12px;}
 
-.card{
-background:#fff;
-padding:12px;
-border-radius:12px;
-box-shadow:0 4px 10px rgba(0,0,0,.05);
-}
-
-.card-row{
-display:flex;
-justify-content:space-between;
-font-size:12px;
-}
-
-/* ===== MODAL ===== */
 .modal{
-position:fixed;
-top:0;left:0;
-width:100%;
-height:100%;
+position:fixed;top:0;left:0;width:100%;height:100%;
 background:rgba(0,0,0,.5);
-display:none;
-align-items:center;
-justify-content:center;
+display:none;align-items:center;justify-content:center;
 }
-
 .modal-content{
-background:#fff;
-padding:20px;
-border-radius:12px;
-width:90%;
-max-width:500px;
+background:#fff;padding:20px;border-radius:12px;width:90%;max-width:500px;
 }
 
-/* ===== TIMELINE ===== */
-.timeline{
-margin-top:15px;
-}
-
-.timeline-item{
-display:flex;
-gap:10px;
-margin-bottom:10px;
-}
-
+.timeline{margin-top:15px;}
+.timeline-item{display:flex;gap:10px;margin-bottom:10px;}
 .timeline-icon{
-width:30px;
-height:30px;
-border-radius:50%;
-display:flex;
-align-items:center;
-justify-content:center;
-color:#fff;
+width:30px;height:30px;border-radius:50%;
+display:flex;align-items:center;justify-content:center;color:#fff;
 }
-
 .ok{background:#22c55e}
 .warn{background:#facc15}
 .danger{background:#ef4444}
 .info{background:#3b82f6}
 
-/* ===== RESPONSIVE ===== */
 @media(max-width:768px){
 .table-wrap{display:none}
 .card-list{display:flex;flex-direction:column}
 }
-
 </style>
 </head>
 
@@ -185,7 +75,6 @@ color:#fff;
 
 <div class="container">
 
-<!-- FILTROS -->
 <div class="top">
 <input id="buscador" placeholder="Buscar...">
 <select id="fEstado">
@@ -198,10 +87,8 @@ color:#fff;
 </select>
 </div>
 
-<!-- KPI -->
 <canvas id="chart"></canvas>
 
-<!-- TABLA -->
 <div class="table-wrap">
 <table>
 <thead>
@@ -218,32 +105,21 @@ color:#fff;
 </table>
 </div>
 
-<!-- CARDS -->
 <div class="card-list" id="cards"></div>
 
 </div>
 
-<!-- MODAL -->
 <div class="modal" id="modal">
 <div class="modal-content" id="modalContent"></div>
 </div>
 
 <script>
 
-/* ===== DATA DEMO ===== */
-let DATA=[
-{
-pedido:"1001",
-cliente:"Juan",
-status:"EN RUTA",
-imagen:"",
-pdfTraslado:"",
-fechaIngreso:"2026-03-01",
-fechaModificacion:"2026-03-02",
-fechaEntrega:"",
-observaciones:"En camino"
-}
-];
+/* ===== TU API ===== */
+const API="https://script.google.com/macros/s/AKfycbxVHz5CJ935_IkzTDnWptCRy63E1Wqne-I7Ns683_klkd1924dzp5AgJgGqjsvYSnjHfg/exec";
+
+/* ===== DATA ===== */
+let DATA=[];
 
 /* ===== HELPERS ===== */
 function cls(s){
@@ -263,6 +139,23 @@ let id=url.match(/[-\w]{25,}/);
 if(id) return `https://drive.google.com/uc?export=view&id=${id[0]}`;
 }
 return url;
+}
+
+/* ===== FETCH REAL ===== */
+async function cargar(){
+
+try{
+
+let res = await fetch(API);
+let data = await res.json();
+
+DATA = data;
+
+render();
+
+}catch(e){
+console.error("Error API",e);
+}
 }
 
 /* ===== FILTRO ===== */
@@ -294,10 +187,10 @@ let img=fixImg(r.imagen);
 /* TABLA */
 tb.innerHTML+=`
 <tr>
-<td>${r.pedido}</td>
-<td>${r.cliente}</td>
+<td>${r.pedido||""}</td>
+<td>${r.cliente||""}</td>
 <td><span class="tag">${r.etiquetas||"—"}</span></td>
-<td><span class="status ${cls(r.status)}">${r.status}</span></td>
+<td><span class="status ${cls(r.status)}">${r.status||""}</span></td>
 <td>
 
 ${r.pdfTraslado?`<span class="icon-btn" onclick="window.open('${r.pdfTraslado}')"><i class="fa fa-file-pdf"></i></span>`:""}
@@ -307,21 +200,16 @@ ${img?`<img src="${img}" class="img-preview" onclick="window.open('${img}')">`:"
 </td>
 
 <td><button class="btn-ver" onclick='ver(${JSON.stringify(r)})'>Ver</button></td>
-
 </tr>`;
 
 /* CARD */
 cards.innerHTML+=`
 <div class="card">
-<h4>Pedido ${r.pedido}</h4>
+<h4>Pedido ${r.pedido||""}</h4>
 
 <div class="card-row">
-<span>${r.cliente}</span>
-<span class="status ${cls(r.status)}">${r.status}</span>
-</div>
-
-<div class="card-row">
-<span>${r.observaciones||""}</span>
+<span>${r.cliente||""}</span>
+<span class="status ${cls(r.status)}">${r.status||""}</span>
 </div>
 
 <div style="display:flex;gap:6px;margin-top:8px">
@@ -346,29 +234,42 @@ let modalContent=document.getElementById("modalContent");
 function ver(r){
 
 let img=fixImg(r.imagen);
+let estado=cls(r.status);
 
 modal.style.display="flex";
 
 modalContent.innerHTML=`
 <h3>Pedido ${r.pedido}</h3>
 
-<b>Cliente:</b> ${r.cliente}<br>
-<b>Estado:</b> ${r.status}<br>
+<b>Cliente:</b> ${r.cliente||""}<br>
 
-${r.pdfTraslado?`<span class="icon-btn" onclick="window.open('${r.pdfTraslado}')"><i class="fa fa-file-pdf"></i></span>`:""}
+<b>Estado:</b> 
+<span class="status ${estado}">
+${r.status||""}
+</span><br><br>
 
-${img?`<img src="${img}" style="width:100%;margin-top:10px;border-radius:10px">`:""}
+<div style="display:flex;gap:10px">
+
+${r.pdfTraslado?`
+<span class="icon-btn" onclick="window.open('${r.pdfTraslado}')">
+<i class="fa fa-file-pdf"></i>
+</span>`:""}
+
+${img?`
+<img src="${img}" class="img-preview" onclick="window.open('${img}')">`:""}
+
+</div>
 
 <div class="timeline">
 
 <div class="timeline-item">
 <div class="timeline-icon info"><i class="fa fa-box"></i></div>
-<div>Ingreso<br>${r.fechaIngreso}</div>
+<div>Ingreso<br>${r.fechaIngreso||"—"}</div>
 </div>
 
 <div class="timeline-item">
 <div class="timeline-icon ok"><i class="fa fa-edit"></i></div>
-<div>Modificación<br>${r.fechaModificacion}</div>
+<div>Modificación<br>${r.fechaModificacion||"—"}</div>
 </div>
 
 <div class="timeline-item">
@@ -395,7 +296,7 @@ function draw(d){
 let c={e:0,r:0,p:0,re:0,cancel:0};
 
 d.forEach(x=>{
-let s=x.status.toLowerCase();
+let s=(x.status||"").toLowerCase();
 if(s.includes("entregado")) c.e++;
 else if(s.includes("en ruta")) c.r++;
 else if(s.includes("recibido")) c.re++;
@@ -405,7 +306,7 @@ else c.p++;
 
 if(chart) chart.destroy();
 
-chart=new Chart(chart,{
+chart=new Chart(document.getElementById("chart"),{
 type:"doughnut",
 data:{
 labels:["Entregado","En Ruta","Pendiente","Recibido","Cancelado"],
@@ -414,12 +315,12 @@ datasets:[{data:[c.e,c.r,c.p,c.re,c.cancel]}]
 });
 }
 
-/* ===== EVENTOS ===== */
+/* EVENTOS */
 buscador.oninput=render;
 fEstado.onchange=render;
 
-/* INIT */
-render();
+/* INIT REAL */
+cargar();
 
 </script>
 
