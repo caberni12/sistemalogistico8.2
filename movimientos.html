@@ -2,89 +2,192 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dashboard Pedidos</title>
 
-<title>Dashboard Tracking PRO</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
 
-<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
 <style>
-body{margin:0;font-family:Arial;background:#f1f5f9;}
-.wrap{max-width:1200px;margin:auto;padding:20px;}
 
-/* TOOLBAR */
-.toolbar{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:20px;}
-input,select{padding:10px;border-radius:10px;border:1px solid #ddd;}
-.btn{background:#14b8a6;color:#fff;border:none;padding:8px 12px;border-radius:10px;cursor:pointer;}
+/* ===== GENERAL ===== */
+body{
+font-family:Arial;
+background:#f5f7fb;
+margin:0;
+padding:20px;
+}
 
-/* KPI */
-.kpi-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:15px;margin-bottom:20px;}
-.kpi-card{background:#fff;padding:15px;border-radius:14px;box-shadow:0 10px 20px rgba(0,0,0,.05);height:220px;display:flex;flex-direction:column;}
-.kpi-card ul{flex:1;overflow:auto;list-style:none;padding:0;margin:0;}
-.kpi-card li{display:flex;justify-content:space-between;font-size:13px;padding:6px 0;border-bottom:1px solid #eee;}
-.kpi-box{background:#fff;padding:20px;border-radius:14px;box-shadow:0 10px 20px rgba(0,0,0,.05);margin-bottom:20px;height:260px;display:flex;justify-content:center;align-items:center;}
+.container{
+max-width:1200px;
+margin:auto;
+}
 
-/* TABLA */
-.table-wrap{background:#fff;border-radius:14px;overflow:hidden;box-shadow:0 10px 20px rgba(0,0,0,.05);}
-table{width:100%;border-collapse:collapse;}
-th,td{padding:12px;border-bottom:1px solid #eee;font-size:13px;}
-th{background:#f8fafc;color:#666;}
+/* ===== FILTROS ===== */
+.top{
+display:flex;
+gap:10px;
+flex-wrap:wrap;
+margin-bottom:15px;
+}
 
-/* STATUS */
-.status{padding:5px 10px;border-radius:999px;font-size:12px;color:#fff;}
-.entregado{background:#22c55e}
+select,input{
+padding:8px;
+border-radius:8px;
+border:1px solid #ddd;
+}
+
+/* ===== TABLA ===== */
+.table-wrap{
+overflow:auto;
+background:#fff;
+border-radius:12px;
+}
+
+table{
+width:100%;
+border-collapse:collapse;
+}
+
+th,td{
+padding:10px;
+border-bottom:1px solid #eee;
+font-size:13px;
+}
+
+/* ===== STATUS ===== */
+.status{
+padding:4px 8px;
+border-radius:8px;
+color:#fff;
+font-size:11px;
+}
+
 .enruta{background:#3b82f6}
 .pendiente{background:#facc15;color:#000}
 .recibido{background:#06b6d4}
 .cancelado{background:#6b7280}
+.entregado{background:#22c55e}
 
-/* TAG */
-.tag{background:#14b8a6;color:#fff;padding:4px 8px;border-radius:999px;font-size:12px;}
-
-/* BOTONES */
-.btn-ver{background:#14b8a6;color:#fff;border:none;padding:6px 10px;border-radius:8px;cursor:pointer;font-size:12px;}
-.btn-pdf{background:#ef4444;color:#fff;padding:6px;border-radius:8px;cursor:pointer;margin-right:5px;}
-
-/* IMG */
-.img-preview{width:40px;height:40px;border-radius:8px;object-fit:cover;cursor:pointer;}
-
-/* MODAL */
-.modal{position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.6);display:none;justify-content:center;align-items:center;}
-.modal-content{background:#fff;padding:25px;border-radius:18px;width:95%;max-width:520px;}
-
-/* TIMELINE */
-.timeline{margin-top:20px;}
-.timeline-item{display:flex;gap:12px;margin-bottom:15px;}
-.timeline-icon{width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:#fff;font-size:12px;}
-.ok{background:#22c55e}
-.info{background:#3b82f6}
-.warn{background:#facc15;color:#000}
-.danger{background:#ef4444}
-.timeline-content{background:#f8fafc;padding:10px;border-radius:10px;font-size:13px;flex:1;}
-
-/* MOBILE */
-.card-list{display:none;gap:12px;}
-.card{background:#fff;padding:14px;border-radius:14px;box-shadow:0 8px 18px rgba(0,0,0,.06);display:flex;flex-direction:column;gap:8px;}
-.card h4{margin:0;font-size:14px;}
-.card-row{display:flex;justify-content:space-between;font-size:12px;}
-.card-footer{display:flex;justify-content:space-between;align-items:center;margin-top:8px;}
-
-@media(max-width:768px){
-.table-wrap{display:none;}
-.card-list{display:flex;flex-direction:column;}
-.kpi-grid{grid-template-columns:1fr;}
+/* ===== TAG ===== */
+.tag{
+background:#eee;
+padding:3px 6px;
+border-radius:6px;
 }
+
+/* ===== BOTONES ===== */
+.btn-ver{
+padding:6px 10px;
+border:none;
+background:#6366f1;
+color:#fff;
+border-radius:8px;
+cursor:pointer;
+}
+
+/* ===== ICONOS ===== */
+.icon-btn{
+display:inline-flex;
+align-items:center;
+justify-content:center;
+width:34px;
+height:34px;
+border-radius:10px;
+background:#ef4444;
+color:#fff;
+cursor:pointer;
+}
+
+.img-preview{
+width:34px;
+height:34px;
+object-fit:cover;
+border-radius:8px;
+cursor:pointer;
+}
+
+/* ===== CARDS MOBILE ===== */
+.card-list{
+display:none;
+gap:10px;
+}
+
+.card{
+background:#fff;
+padding:12px;
+border-radius:12px;
+box-shadow:0 4px 10px rgba(0,0,0,.05);
+}
+
+.card-row{
+display:flex;
+justify-content:space-between;
+font-size:12px;
+}
+
+/* ===== MODAL ===== */
+.modal{
+position:fixed;
+top:0;left:0;
+width:100%;
+height:100%;
+background:rgba(0,0,0,.5);
+display:none;
+align-items:center;
+justify-content:center;
+}
+
+.modal-content{
+background:#fff;
+padding:20px;
+border-radius:12px;
+width:90%;
+max-width:500px;
+}
+
+/* ===== TIMELINE ===== */
+.timeline{
+margin-top:15px;
+}
+
+.timeline-item{
+display:flex;
+gap:10px;
+margin-bottom:10px;
+}
+
+.timeline-icon{
+width:30px;
+height:30px;
+border-radius:50%;
+display:flex;
+align-items:center;
+justify-content:center;
+color:#fff;
+}
+
+.ok{background:#22c55e}
+.warn{background:#facc15}
+.danger{background:#ef4444}
+.info{background:#3b82f6}
+
+/* ===== RESPONSIVE ===== */
+@media(max-width:768px){
+.table-wrap{display:none}
+.card-list{display:flex;flex-direction:column}
+}
+
 </style>
 </head>
 
 <body>
 
-<div class="wrap">
+<div class="container">
 
-<div class="toolbar">
+<!-- FILTROS -->
+<div class="top">
 <input id="buscador" placeholder="Buscar...">
-
 <select id="fEstado">
 <option value="">Estado</option>
 <option>EN RUTA</option>
@@ -93,231 +196,231 @@ th{background:#f8fafc;color:#666;}
 <option>CANCELADO</option>
 <option>ENTREGADO</option>
 </select>
-
-<input type="date" id="fDesde">
-<input type="date" id="fHasta">
-
-<button class="btn" onclick="toggleKPI()">KPI</button>
 </div>
 
-<div id="kpiWrapper">
-
-<div class="kpi-grid">
-<div class="kpi-card"><h4>Top 5 Clientes</h4><ul id="topClientes"></ul></div>
-<div class="kpi-card"><h4>Frecuencia</h4><ul id="frecuenciaClientes"></ul></div>
-<div class="kpi-card"><h4>Antigüedad</h4><ul id="antiguedadClientes"></ul></div>
-</div>
-
-<div class="kpi-box">
+<!-- KPI -->
 <canvas id="chart"></canvas>
-</div>
 
-</div>
-
+<!-- TABLA -->
 <div class="table-wrap">
 <table>
 <thead>
 <tr>
 <th>Pedido</th>
 <th>Cliente</th>
-<th>Etiquetas</th>
+<th>Etiqueta</th>
 <th>Status</th>
 <th>Archivos</th>
-<th>Acción</th>
+<th></th>
 </tr>
 </thead>
 <tbody id="tb"></tbody>
 </table>
 </div>
 
+<!-- CARDS -->
 <div class="card-list" id="cards"></div>
 
 </div>
 
+<!-- MODAL -->
 <div class="modal" id="modal">
 <div class="modal-content" id="modalContent"></div>
 </div>
 
 <script>
-const API="https://script.google.com/macros/s/AKfycbzhcMNoGOOZTDdB-wlk4RGiSb-8mGYN8Zb9kzp90gZFSXO2DG8fue_u_WdQ1Ck-LcBm/exec";
 
-let DATA=[],chart;
-
-function normalizar(d){
-return d.map(x=>({...x,etiquetas:x.etiquetas||"",pdfTraslado:x.pdfTraslado||"",imagen:x.imagen||""}));
+/* ===== DATA DEMO ===== */
+let DATA=[
+{
+pedido:"1001",
+cliente:"Juan",
+status:"EN RUTA",
+imagen:"",
+pdfTraslado:"",
+fechaIngreso:"2026-03-01",
+fechaModificacion:"2026-03-02",
+fechaEntrega:"",
+observaciones:"En camino"
 }
+];
 
+/* ===== HELPERS ===== */
 function cls(s){
-if(!s)return"pendiente";
+if(!s) return "pendiente";
 s=s.toLowerCase();
-if(s.includes("entregado"))return"entregado";
-if(s.includes("en ruta"))return"enruta";
-if(s.includes("recibido"))return"recibido";
-if(s.includes("cancelado"))return"cancelado";
-if(s.includes("pendiente"))return"pendiente";
-return"pendiente";
+if(s.includes("entregado")) return "entregado";
+if(s.includes("en ruta")) return "enruta";
+if(s.includes("recibido")) return "recibido";
+if(s.includes("cancelado")) return "cancelado";
+return "pendiente";
 }
 
+function fixImg(url){
+if(!url) return "";
+if(url.includes("drive.google.com")){
+let id=url.match(/[-\w]{25,}/);
+if(id) return `https://drive.google.com/uc?export=view&id=${id[0]}`;
+}
+return url;
+}
+
+/* ===== FILTRO ===== */
 function filtrar(){
-let txt=buscador.value.toLowerCase();
-let est=fEstado.value.toLowerCase();
-let desde=fDesde.value?new Date(fDesde.value):null;
-let hasta=fHasta.value?new Date(fHasta.value):null;
+let b=buscador.value.toLowerCase();
+let e=fEstado.value;
 
 return DATA.filter(x=>{
-let ok=JSON.stringify(x).toLowerCase().includes(txt);
-let ok2=est?(x.status||"").toLowerCase().includes(est):true;
-let f=x.fechaIngreso?new Date(x.fechaIngreso):null;
-let ok3=true;
-if(desde&&f)ok3=f>=desde;
-if(hasta&&f)ok3=f<=hasta;
-return ok&&ok2&&ok3;
+return (!b || JSON.stringify(x).toLowerCase().includes(b)) &&
+(!e || x.status===e);
 });
 }
 
+/* ===== RENDER ===== */
+let tb=document.getElementById("tb");
+let cards=document.getElementById("cards");
+
 function render(){
+
 let d=filtrar();
-tb.innerHTML="";cards.innerHTML="";
+
+tb.innerHTML="";
+cards.innerHTML="";
 
 d.forEach(r=>{
-tb.innerHTML+=`<tr>
-<td>${r.pedido||""}</td>
-<td>${r.cliente||""}</td>
+
+let img=fixImg(r.imagen);
+
+/* TABLA */
+tb.innerHTML+=`
+<tr>
+<td>${r.pedido}</td>
+<td>${r.cliente}</td>
 <td><span class="tag">${r.etiquetas||"—"}</span></td>
-<td><span class="status ${cls(r.status)}">${r.status||""}</span></td>
+<td><span class="status ${cls(r.status)}">${r.status}</span></td>
 <td>
-${r.pdfTraslado?`<span class="btn-pdf" onclick="window.open('${r.pdfTraslado}')">PDF</span>`:""}
-${r.imagen?`<img src="${r.imagen}" class="img-preview" onclick="window.open('${r.imagen}')">`:""}
+
+${r.pdfTraslado?`<span class="icon-btn" onclick="window.open('${r.pdfTraslado}')"><i class="fa fa-file-pdf"></i></span>`:""}
+
+${img?`<img src="${img}" class="img-preview" onclick="window.open('${img}')">`:""}
+
 </td>
+
 <td><button class="btn-ver" onclick='ver(${JSON.stringify(r)})'>Ver</button></td>
+
 </tr>`;
 
-cards.innerHTML+=`<div class="card">
-<h4>Pedido ${r.pedido||""}</h4>
+/* CARD */
+cards.innerHTML+=`
+<div class="card">
+<h4>Pedido ${r.pedido}</h4>
+
 <div class="card-row">
-<span>${r.cliente||""}</span>
-<span class="status ${cls(r.status)}">${r.status||""}</span>
+<span>${r.cliente}</span>
+<span class="status ${cls(r.status)}">${r.status}</span>
 </div>
+
 <div class="card-row">
-<span class="tag">${r.etiquetas||"—"}</span>
+<span>${r.observaciones||""}</span>
 </div>
-<div class="card-footer">
-<div>
-${r.pdfTraslado?`<span class="btn-pdf" onclick="window.open('${r.pdfTraslado}')">PDF</span>`:""}
-</div>
+
+<div style="display:flex;gap:6px;margin-top:8px">
+
+${r.pdfTraslado?`<span class="icon-btn" onclick="window.open('${r.pdfTraslado}')"><i class="fa fa-file-pdf"></i></span>`:""}
+
+${img?`<img src="${img}" class="img-preview" onclick="window.open('${img}')">`:""}
+
 <button class="btn-ver" onclick='ver(${JSON.stringify(r)})'>Ver</button>
+
 </div>
 </div>`;
 });
 
-kpiClientes(d);
 draw(d);
 }
 
-function draw(d){
-let c={entregado:0,enruta:0,pendiente:0,recibido:0,cancelado:0};
-
-d.forEach(x=>{
-let s=(x.status||"").toLowerCase();
-if(s.includes("entregado"))c.entregado++;
-else if(s.includes("en ruta"))c.enruta++;
-else if(s.includes("recibido"))c.recibido++;
-else if(s.includes("cancelado"))c.cancelado++;
-else c.pendiente++;
-});
-
-if(chart)chart.destroy();
-
-chart=new Chart(document.getElementById("chart"),{
-type:"doughnut",
-data:{
-labels:["Entregado","En Ruta","Pendiente","Recibido","Cancelado"],
-datasets:[{
-data:Object.values(c),
-backgroundColor:["#22c55e","#3b82f6","#facc15","#06b6d4","#6b7280"]
-}]
-}
-});
-}
+/* ===== MODAL ===== */
+let modal=document.getElementById("modal");
+let modalContent=document.getElementById("modalContent");
 
 function ver(r){
-let estado=cls(r.status);
+
+let img=fixImg(r.imagen);
+
 modal.style.display="flex";
 
 modalContent.innerHTML=`
 <h3>Pedido ${r.pedido}</h3>
 
-<b>Cliente:</b> ${r.cliente||""}<br>
-<b>Dirección:</b> ${r.direccion||""}<br>
-<b>Estado:</b> <span class="status ${estado}">${r.status||""}</span><br>
+<b>Cliente:</b> ${r.cliente}<br>
+<b>Estado:</b> ${r.status}<br>
 
-${r.pdfTraslado?`<b>PDF:</b> <a href="${r.pdfTraslado}" target="_blank">Abrir</a><br>`:""}
+${r.pdfTraslado?`<span class="icon-btn" onclick="window.open('${r.pdfTraslado}')"><i class="fa fa-file-pdf"></i></span>`:""}
 
-${r.imagen?`<img src="${r.imagen}" style="width:100%;margin-top:10px;border-radius:10px">`:""}
+${img?`<img src="${img}" style="width:100%;margin-top:10px;border-radius:10px">`:""}
 
 <div class="timeline">
 
 <div class="timeline-item">
 <div class="timeline-icon info"><i class="fa fa-box"></i></div>
-<div class="timeline-content">Creado<br>${r.fechaIngreso||"—"}</div>
+<div>Ingreso<br>${r.fechaIngreso}</div>
 </div>
 
 <div class="timeline-item">
 <div class="timeline-icon ok"><i class="fa fa-edit"></i></div>
-<div class="timeline-content">Modificado<br>${r.fechaModificacion||"—"}</div>
+<div>Modificación<br>${r.fechaModificacion}</div>
 </div>
 
 <div class="timeline-item">
-<div class="timeline-icon ${estado==="entregado"?"ok":estado==="cancelado"?"danger":"info"}">
-<i class="fa fa-truck"></i></div>
-<div class="timeline-content">Estado actual<br>${r.status||"—"}</div>
+<div class="timeline-icon warn"><i class="fa fa-truck"></i></div>
+<div>Entrega<br>${r.fechaEntrega||"Pendiente"}</div>
 </div>
 
 <div class="timeline-item">
-<div class="timeline-icon warn">
-<i class="fa fa-clock"></i></div>
-<div class="timeline-content">Entrega<br>${r.fechaEntrega||"Pendiente"}</div>
-</div>
-
-<div class="timeline-item">
-<div class="timeline-icon info">
-<i class="fa fa-exclamation-triangle"></i></div>
-<div class="timeline-content">Observaciones<br>${r.observaciones||"—"}</div>
+<div class="timeline-icon danger"><i class="fa fa-info"></i></div>
+<div>${r.observaciones||""}</div>
 </div>
 
 </div>
 `;
 }
 
-function kpiClientes(d){
-let c={};
-d.forEach(r=>{let k=r.cliente||"—";c[k]=(c[k]||0)+1});
-let top=Object.entries(c).sort((a,b)=>b[1]-a[1]).slice(0,5);
-topClientes.innerHTML=top.map(x=>`<li><span>${x[0]}</span><b>${x[1]}</b></li>`).join("");
-frecuenciaClientes.innerHTML=top.map(x=>`<li><span>${x[0]}</span><b>${x[1]} compras</b></li>`).join("");
-antiguedadClientes.innerHTML="";
-}
-
-function toggleKPI(){
-let w=document.getElementById("kpiWrapper");
-w.style.display=w.style.display==="none"?"block":"none";
-}
-
 modal.onclick=()=>modal.style.display="none";
 
-buscador.oninput=render;
-fEstado.onchange=render;
-fDesde.onchange=render;
-fHasta.onchange=render;
+/* ===== KPI ===== */
+let chart;
 
-async function cargar(){
-let r=await fetch(API);
-let raw=await r.json();
-DATA=normalizar(raw);
-render();
+function draw(d){
+
+let c={e:0,r:0,p:0,re:0,cancel:0};
+
+d.forEach(x=>{
+let s=x.status.toLowerCase();
+if(s.includes("entregado")) c.e++;
+else if(s.includes("en ruta")) c.r++;
+else if(s.includes("recibido")) c.re++;
+else if(s.includes("cancelado")) c.cancel++;
+else c.p++;
+});
+
+if(chart) chart.destroy();
+
+chart=new Chart(chart,{
+type:"doughnut",
+data:{
+labels:["Entregado","En Ruta","Pendiente","Recibido","Cancelado"],
+datasets:[{data:[c.e,c.r,c.p,c.re,c.cancel]}]
+}
+});
 }
 
-window.onload=cargar;
+/* ===== EVENTOS ===== */
+buscador.oninput=render;
+fEstado.onchange=render;
+
+/* INIT */
+render();
+
 </script>
 
 </body>
