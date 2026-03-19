@@ -13,258 +13,267 @@ body{margin:0;font-family:Arial;background:#f1f5f9;}
 .wrap{max-width:1200px;width:95%;margin:auto;padding:20px;}
 .toolbar{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:20px;}
 input,select{padding:10px;border-radius:10px;border:1px solid #ddd;}
-.btn{background:#14b8a6;color:#fff;border:none;padding:8px 12px;border-radius:10px;cursor:pointer;transition:0.3s;}
-.btn:hover{opacity:0.9;}
-.kpi-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:15px;margin-bottom:20px;}
-.kpi-card{background:#fff;padding:20px;border-radius:20px;box-shadow:0 10px 25px rgba(0,0,0,.08);display:flex;flex-direction:column;justify-content:flex-start;height:auto;transition: transform .2s ease, box-shadow .2s ease;}
-.kpi-card:hover{transform: translateY(-5px);box-shadow:0 15px 30px rgba(0,0,0,.12);}
-.kpi-card h4{font-size:16px;color:#111827;margin-bottom:10px;text-transform: uppercase;letter-spacing:0.5px;}
-.kpi-card ul{list-style:none;padding:0;margin:0;display:flex;flex-direction:column;gap:8px;}
-.kpi-card li{display:flex;flex-direction:column;font-size:14px;position:relative;}
-.kpi-card li span{font-weight:500;color:#374151;margin-bottom:4px;}
-.kpi-card li b{font-weight:700;color:#111827;}
-.table-wrap{background:#fff;border-radius:14px;overflow:hidden;box-shadow:0 10px 20px rgba(0,0,0,.05);}
+.btn{background:#14b8a6;color:#fff;border:none;padding:8px 12px;border-radius:10px;cursor:pointer;}
+
+.kpi-wrapper{background:#fff;padding:15px;border-radius:20px;margin-bottom:20px;}
+.kpi-grid{display:grid;grid-template-columns:1fr 1fr 1fr 250px;gap:10px;}
+
+.table-wrap{background:#fff;border-radius:14px;overflow:auto;max-height:500px;}
 table{width:100%;border-collapse:collapse;}
-th,td{padding:12px;border-bottom:1px solid #eee;font-size:13px;}
-th{background:#f8fafc;color:#666;}
-.status{padding:5px 10px;border-radius:999px;font-size:12px;color:#fff;}
+th,td{padding:10px;border-bottom:1px solid #eee;font-size:12px;}
+th{background:#f8fafc;}
+
+.status{padding:4px 8px;border-radius:999px;font-size:11px;color:#fff;}
 .entregado{background:#22c55e;}
 .enruta{background:#3b82f6;}
 .pendiente{background:#facc15;color:#000;}
 .recibido{background:#14b8a6;}
 .cancelado{background:#ef4444;}
-.atrasado{background:#ef4444;}
-.tag{background:#14b8a6;color:#fff;padding:4px 8px;border-radius:999px;font-size:12px;}
-.btn-ver {background: linear-gradient(145deg, #14b8a6, #0f766e); color:#fff; border:none; padding:8px 14px; border-radius:12px; cursor:pointer; font-size:13px; font-weight:500; display:inline-flex; align-items:center; gap:6px;}
-.btn-ver:hover {background: linear-gradient(145deg, #0f766e, #14b8a6); transform: translateY(-2px);}
-.pdf-icon {color:red; font-size:16px;}
-.img-preview{width:40px;height:40px;border-radius:8px;object-fit:cover;cursor:pointer;transition:0.3s;}
-.img-preview:hover{transform:scale(1.1);}
-#imgModal{position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.8);display:none;justify-content:center;align-items:center;z-index:1000;}
-#imgModal img{max-width:90%;max-height:90%;border-radius:12px;}
-.modal{position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.6);display:none;justify-content:center;align-items:flex-start;padding-top:50px;z-index:999;}
-.modal-content{background:#fff;padding:25px;border-radius:18px;width:95%;max-width:700px;max-height:90vh;overflow:auto;animation:fade .25s ease;}
-@keyframes fade{from{transform:scale(.9);opacity:0}to{transform:scale(1);opacity:1}}
-.timeline{margin-top:20px;border-left:3px solid #14b8a6;padding-left:20px;}
-.timeline-item{display:flex;gap:12px;margin-bottom:20px;align-items:flex-start;position:relative;}
-.timeline-item::before{content:'';position:absolute;left:-12px;top:0;width:6px;height:100%;background:#e5e7eb;border-radius:3px;}
-.timeline-icon{width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:#fff;font-size:12px;flex-shrink:0;}
+
+.btn-ver{background:linear-gradient(135deg,#14b8a6,#0d9488);color:#fff;border:none;padding:6px 12px;border-radius:10px;}
+.btn-pdf{background:#ef4444;color:#fff;border:none;padding:6px;border-radius:8px;}
+
+.img-preview{width:40px;height:40px;border-radius:8px;object-fit:cover;cursor:pointer;}
+
+/* MODAL */
+.modal{position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.6);display:none;justify-content:center;align-items:center;}
+.modal-content{
+background:#fff;padding:25px;border-radius:18px;width:95%;max-width:700px;
+max-height:85vh;overflow-y:auto;
+box-shadow:0 20px 50px rgba(0,0,0,.2);
+}
+
+/* SCROLL */
+.modal-content::-webkit-scrollbar{width:6px;}
+.modal-content::-webkit-scrollbar-thumb{background:#14b8a6;border-radius:10px;}
+
+/* TIMELINE */
+.timeline{position:relative;margin-top:20px;padding-left:45px;}
+.timeline::before{
+content:"";
+position:absolute;
+left:18px;top:0;bottom:0;
+width:3px;
+background:#14b8a6;
+}
+
+.timeline-item{display:flex;gap:15px;margin-bottom:25px;}
+
+.timeline-icon{
+min-width:34px;height:34px;border-radius:50%;
+display:flex;align-items:center;justify-content:center;
+color:#fff;font-size:14px;
+}
+
 .ok{background:#22c55e;}
 .info{background:#3b82f6;}
 .warn{background:#facc15;color:#000;}
 .danger{background:#ef4444;}
-.timeline-content{background:#f8fafc;padding:12px;border-radius:10px;font-size:13px;flex:1;line-height:1.5;}
-.timeline-content b{display:block;margin-bottom:5px;color:#111827;}
-@media(max-width:768px){
-  .table-wrap table thead{display:none;}
-  .table-wrap table, .table-wrap tbody, .table-wrap th, .table-wrap td, .table-wrap tr{display:block;}
-  .table-wrap tr{margin-bottom:15px;border-bottom:1px solid #ccc;padding:10px;background:#fff;border-radius:14px;box-shadow:0 5px 10px rgba(0,0,0,.05);}
-  .table-wrap td{padding:6px 0;position:relative;padding-left:50%;text-align:left;}
-  .table-wrap td::before{position:absolute;top:6px;left:12px;width:45%;white-space:nowrap;font-weight:bold;font-size:12px;}
-  .table-wrap td:nth-of-type(1)::before{content:"Pedido";}
-  .table-wrap td:nth-of-type(2)::before{content:"Cliente";}
-  .table-wrap td:nth-of-type(3)::before{content:"Tipo Doc";}
-  .table-wrap td:nth-of-type(4)::before{content:"Nº Doc";}
-  .table-wrap td:nth-of-type(5)::before{content:"Etiquetas";}
-  .table-wrap td:nth-of-type(6)::before{content:"Status";}
-  .table-wrap td:nth-of-type(7)::before{content:"PDF";}
-  .table-wrap td:nth-of-type(8)::before{content:"PDF Traslado";}
-  .table-wrap td:nth-of-type(9)::before{content:"Foto";}
-  .table-wrap td:nth-of-type(10)::before{content:"TR";}
-  .table-wrap td:nth-of-type(11)::before{content:"Acción";}
+
+.timeline-content{
+background:#f8fafc;padding:14px;border-radius:12px;font-size:13px;flex:1;
 }
+.timeline-content b{display:block;margin-bottom:6px;color:#111;}
 </style>
 </head>
+
 <body>
+
 <div class="wrap">
-  <div class="toolbar">
-    <input id="buscador" placeholder="Buscar...">
-    <select id="fEstado">
-      <option value="">Estado</option>
-      <option>EN RUTA</option>
-      <option>PENDIENTE</option>
-      <option>RECIBIDO</option>
-      <option>CANCELADO</option>
-      <option>ENTREGADO</option>
-    </select>
-    <input type="date" id="fDesde">
-    <input type="date" id="fHasta">
-    <button class="btn" onclick="toggleKPI()">KPI</button>
-  </div>
 
-  <div id="kpiWrapper">
-    <div class="kpi-grid">
-      <div class="kpi-card"><h4>Top 5 Clientes</h4><canvas id="topClientesChart" width="200" height="200"></canvas></div>
-      <div class="kpi-card"><h4>Frecuencia</h4><canvas id="frecuenciaChart" width="200" height="200"></canvas></div>
-      <div class="kpi-card"><h4>Antigüedad (días)</h4><canvas id="antiguedadChart" width="200" height="200"></canvas></div>
-    </div>
-  </div>
-
-  <div class="table-wrap">
-    <table>
-      <thead>
-        <tr>
-          <th>Pedido</th>
-          <th>Cliente</th>
-          <th>Tipo Doc</th>
-          <th>Nº Doc</th>
-          <th>Etiquetas</th>
-          <th>Status</th>
-          <th>PDF</th>
-          <th>PDF Traslado</th>
-          <th>Foto</th>
-          <th>TR</th>
-          <th>Acción</th>
-        </tr>
-      </thead>
-      <tbody id="tb"></tbody>
-    </table>
-  </div>
+<div class="toolbar">
+<input id="buscador" placeholder="Buscar...">
+<select id="fEstado">
+<option value="">Estado</option>
+<option>EN RUTA</option>
+<option>PENDIENTE</option>
+<option>RECIBIDO</option>
+<option>CANCELADO</option>
+<option>ENTREGADO</option>
+</select>
+<button class="btn" onclick="toggleKPI()">KPI</button>
 </div>
 
-<!-- Modal línea de tiempo -->
+<div id="kpiWrapper" class="kpi-wrapper">
+<div class="kpi-grid">
+<div><ul id="topClientes"></ul></div>
+<div><ul id="frecuenciaClientes"></ul></div>
+<div><ul id="antiguedadClientes"></ul></div>
+<div><canvas id="chart"></canvas></div>
+</div>
+</div>
+
+<div class="table-wrap">
+<table>
+<thead>
+<tr>
+<th>Pedido</th>
+<th>Cliente</th>
+<th>Tipo Doc</th>
+<th>N° Doc</th>
+<th>Status</th>
+<th>PDF</th>
+<th>PDF TR</th>
+<th>TR</th>
+<th>Foto</th>
+<th>Acción</th>
+</tr>
+</thead>
+<tbody id="tb"></tbody>
+</table>
+</div>
+
+</div>
+
 <div class="modal" id="modal">
-  <div class="modal-content" id="modalContent"></div>
+<div class="modal-content" id="modalContent"></div>
 </div>
-<!-- Modal Imagen -->
-<div id="imgModal"><img id="imgModalImg"></div>
 
 <script>
 const API="https://script.google.com/macros/s/AKfycbziDTv6GxSKyvUYDbUltvS1rhv03VKOxFzPwwct90T2Yhg_Eyp7m7kaGX6xxX1zBryw/exec";
-let DATA=[];
-let charts={};
+let DATA=[],chart;
 
-function cls(s){if(!s)return"pendiente";s=s.toLowerCase();if(s.includes("entregado"))return"entregado";if(s.includes("en ruta")||s.includes("transito"))return"enruta";if(s.includes("pendiente"))return"pendiente";if(s.includes("recibido"))return"recibido";if(s.includes("cancelado"))return"cancelado";if(s.includes("atras"))return"atrasado";return"pendiente";}
-
+/* FETCH */
 function fetchData(){
-  fetch(API).then(res=>res.json()).then(json=>{
-    DATA=json.map(x=>({
-      pedido:x.pedido||"",
-      cliente:x.cliente||"",
-      status:x.status||"",
-      etiquetas:x.etiquetas||"",
-      pdf:x.pdf||"",
-      pdfTraslado:x.pdfTraslado||"",
-      imagen:x.foto||"",
-      TR:x.pdfTraslado ? x.solicitudTraslado || x.TR || "" : "",
-      fechaIngreso:x.fechaIngreso||"",
-      fechaModificacion:x.fechaModificacion||"",
-      fechaEntrega:x.fechaEntrega||"",
-      observaciones:x.observaciones||"",
-      tipoDocumento:x.tipoDocumento||"",
-      numeroDocumento:x.numeroDocumento||""
-    }));
-    render();
-  });
+fetch(API).then(r=>r.json()).then(json=>{
+DATA=json.map(x=>({
+pedido:x.pedido||"",
+cliente:x.cliente||"",
+tipoDocumento:x.tipoDocumento||"",
+numeroDocumento:x.numeroDocumento||"",
+status:x.status||"",
+pdf:x.pdf||"",
+pdfTraslado:x.pdfTraslado||"",
+TR:x.solicitudTraslado||"",
+imagen:x.foto||"",
+fechaIngreso:x.fechaIngreso||"",
+fechaModificacion:x.fechaModificacion||"",
+fechaEntrega:x.fechaEntrega||"",
+observaciones:x.observaciones||""
+})).reverse();
+
+render();
+});
 }
 
+/* FILTRO */
 function filtrar(){
-  let txt=buscador.value.toLowerCase();
-  let est=fEstado.value.toLowerCase();
-  let desde=fDesde.value?new Date(fDesde.value):null;
-  let hasta=fHasta.value?new Date(fHasta.value):null;
-  return DATA.filter(x=>{
-    let str=JSON.stringify(x).toLowerCase();
-    let okTexto=str.includes(txt);
-    let okEstado=est?x.status.toLowerCase().includes(est):true;
-    let fecha=x.fechaIngreso?new Date(x.fechaIngreso):null;
-    let okFecha=true;if(desde && fecha) okFecha=fecha>=desde;if(hasta && fecha) okFecha=fecha<=hasta;
-    return okTexto && okEstado && okFecha;
-  });
+let txt=buscador.value.toLowerCase();
+let est=fEstado.value.toLowerCase();
+return DATA.filter(x=>{
+let str=JSON.stringify(x).toLowerCase();
+return str.includes(txt) && (!est || x.status.toLowerCase().includes(est));
+});
 }
 
+/* RENDER */
 function render(){
-  const filas=filtrar();
-  const tb=document.getElementById("tb");
-  tb.innerHTML="";
-  filas.forEach(r=>{
-    const tr=document.createElement("tr");
-    tr.innerHTML=`
-      <td>${r.pedido}</td>
-      <td>${r.cliente}</td>
-      <td>${r.tipoDocumento}</td>
-      <td>${r.numeroDocumento}</td>
-      <td><span class="tag">${r.etiquetas}</span></td>
-      <td><span class="status ${cls(r.status)}">${r.status}</span></td>
-      <td>${r.pdf ? `<a href="${r.pdf}" target="_blank" class="pdf-icon"><i class="fa fa-file-pdf"></i></a>`:""}</td>
-      <td>${r.pdfTraslado ? `<a href="${r.pdfTraslado}" target="_blank" class="pdf-icon"><i class="fa fa-file-pdf"></i></a>`:""}</td>
-      <td>${r.imagen ? `<img src="${r.imagen}" class="img-preview" onclick="expandImg(this)">`:""}</td>
-      <td>${r.TR}</td>
-      <td><button class="btn-ver" onclick="verDetalle('${r.pedido}')"><i class="fa fa-eye"></i> Ver</button></td>
-    `;
-    tb.appendChild(tr);
-  });
-  renderKPI();
+let d=filtrar();
+
+tb.innerHTML=d.map(r=>`
+<tr>
+<td>${r.pedido}</td>
+<td>${r.cliente}</td>
+<td>${r.tipoDocumento}</td>
+<td>${r.numeroDocumento}</td>
+<td><span class="status ${cls(r.status)}">${r.status}</span></td>
+
+<td>${r.pdf?`<button class="btn-pdf" onclick="window.open('${r.pdf}')"><i class="fa fa-file-pdf"></i></button>`:""}</td>
+
+<td>${r.pdfTraslado?`<button class="btn-pdf" onclick="window.open('${r.pdfTraslado}')"><i class="fa fa-file-pdf"></i></button>`:""}</td>
+
+<td>${r.TR||"—"}</td>
+
+<td>${r.imagen?`<img src="${r.imagen}" class="img-preview" onclick="expandImg('${r.imagen}')">`:"—"}</td>
+
+<td><button class="btn-ver" onclick='ver(${JSON.stringify(r)})'><i class="fa fa-eye"></i></button></td>
+
+</tr>
+`).join("");
+
+kpi(d);
+grafico(d);
 }
 
-// KPI circulares
-function renderKPI(){
-  const filas=filtrar();
-  let topClientes={}; let freq={}; let antiguedad={};
-  filas.forEach(x=>{
-    topClientes[x.cliente]=(topClientes[x.cliente]||0)+1;
-    freq[x.cliente]=(freq[x.cliente]||0)+1;
-    if(x.fechaIngreso){
-      let dias=Math.floor((new Date()-new Date(x.fechaIngreso))/86400000);
-      antiguedad[x.cliente]=(antiguedad[x.cliente]||0)+dias;
-    }
-  });
+/* KPI */
+function kpi(d){
+let map={};
+d.forEach(x=>{
+let c=x.cliente||"X";
+map[c]=(map[c]||0)+1;
+});
+let arr=Object.entries(map).sort((a,b)=>b[1]-a[1]);
 
-  const topData=Object.entries(topClientes).slice(0,5);
-  const freqData=Object.entries(freq).slice(0,5);
-  const antiData=Object.entries(antiguedad).slice(0,5);
-
-  if(charts.top) charts.top.destroy();
-  charts.top=new Chart(document.getElementById("topClientesChart"),{
-    type:'doughnut',
-    data:{labels:topData.map(d=>d[0]),datasets:[{data:topData.map(d=>d[1]),backgroundColor:['#3b82f6','#14b8a6','#facc15','#ef4444','#22c55e']}]},
-    options:{responsive:true}
-  });
-
-  if(charts.freq) charts.freq.destroy();
-  charts.freq=new Chart(document.getElementById("frecuenciaChart"),{
-    type:'doughnut',
-    data:{labels:freqData.map(d=>d[0]),datasets:[{data:freqData.map(d=>d[1]),backgroundColor:['#ef4444','#3b82f6','#22c55e','#facc15','#14b8a6']}]},
-    options:{responsive:true}
-  });
-
-  if(charts.anti) charts.anti.destroy();
-  charts.anti=new Chart(document.getElementById("antiguedadChart"),{
-    type:'doughnut',
-    data:{labels:antiData.map(d=>d[0]),datasets:[{data:antiData.map(d=>Math.round(d[1]/Math.max(freq[d[0]],1))),backgroundColor:['#facc15','#3b82f6','#14b8a6','#ef4444','#22c55e']}]},
-    options:{responsive:true}
-  });
+topClientes.innerHTML=arr.slice(0,5).map(x=>`<li>${x[0]} (${x[1]})</li>`).join("");
+frecuenciaClientes.innerHTML=arr.slice(0,5).map(x=>`<li>${x[1]} pedidos</li>`).join("");
+antiguedadClientes.innerHTML="";
 }
 
-// MODAL
-function verDetalle(pedido){
-  const r=DATA.find(x=>x.pedido===pedido);
-  if(!r) return;
-  const modal=document.getElementById("modal");
-  const content=document.getElementById("modalContent");
-  content.innerHTML=`
-    <div class="timeline">
-      <div class="timeline-item"><div class="timeline-icon ok"><i class="fa fa-check"></i></div><div class="timeline-content"><b>Pedido:</b> ${r.pedido} <br><b>Fecha Ingreso:</b> ${r.fechaIngreso}</div></div>
-      <div class="timeline-item"><div class="timeline-icon info"><i class="fa fa-user"></i></div><div class="timeline-content"><b>Cliente:</b> ${r.cliente}</div></div>
-      <div class="timeline-item"><div class="timeline-icon warn"><i class="fa fa-file"></i></div><div class="timeline-content"><b>Tipo Documento:</b> ${r.tipoDocumento} - ${r.numeroDocumento}</div></div>
-      <div class="timeline-item"><div class="timeline-icon danger"><i class="fa fa-truck"></i></div><div class="timeline-content"><b>Status:</b> ${r.status}</div></div>
-      <div class="timeline-item"><div class="timeline-icon info"><i class="fa fa-calendar-alt"></i></div><div class="timeline-content"><b>Fecha Modificación:</b> ${r.fechaModificacion}</div></div>
-      <div class="timeline-item"><div class="timeline-icon ok"><i class="fa fa-calendar-check"></i></div><div class="timeline-content"><b>Fecha Entrega:</b> ${r.fechaEntrega}</div></div>
-      <div class="timeline-item"><div class="timeline-icon ok"><i class="fa fa-file-pdf"></i></div><div class="timeline-content"><b>TR:</b> ${r.TR}</div></div>
-    </div>
-  `;
-  modal.style.display="flex";
+/* GRAFICO */
+function grafico(d){
+let c={ENTREGADO:0,"EN RUTA":0,PENDIENTE:0};
+d.forEach(x=>{let s=(x.status||"").toUpperCase();if(c[s]!=undefined)c[s]++;});
+if(chart) chart.destroy();
+chart=new Chart(document.getElementById("chart"),{
+type:"doughnut",
+data:{labels:Object.keys(c),datasets:[{data:Object.values(c)}]}
+});
 }
 
-document.getElementById("modal").addEventListener("click",e=>{if(e.target.id==="modal") e.target.style.display="none";});
-function expandImg(img){document.getElementById("imgModalImg").src=img.src;document.getElementById("imgModal").style.display="flex";}
-document.getElementById("imgModal").addEventListener("click",()=>{document.getElementById("imgModal").style.display="none";});
-document.getElementById("buscador").addEventListener("input",render);
-document.getElementById("fEstado").addEventListener("change",render);
-document.getElementById("fDesde").addEventListener("change",render);
-document.getElementById("fHasta").addEventListener("change",render);
-function toggleKPI(){document.getElementById("kpiWrapper").style.display=document.getElementById("kpiWrapper").style.display==="none"?"block":"none";}
+/* MODAL */
+function ver(r){
+modal.style.display="flex";
+
+modalContent.innerHTML=`
+<h3>Pedido ${r.pedido}</h3>
+
+<div class="timeline">
+${item("info","Ingreso",r.fechaIngreso,"fa-box")}
+${item("ok","Modificación",r.fechaModificacion,"fa-edit")}
+${item("warn","Entrega",r.fechaEntrega,"fa-truck")}
+${item("danger","Estado",r.status,"fa-exclamation")}
+${item("ok","Cliente",r.cliente,"fa-user")}
+${item("info","Documento",r.tipoDocumento+" - "+r.numeroDocumento,"fa-file")}
+${item("ok","TR",r.TR,"fa-file-pdf")}
+${item("warn","Observaciones",r.observaciones,"fa-comment")}
+</div>
+`;
+}
+
+function item(color,titulo,valor,icon){
+return `
+<div class="timeline-item">
+<div class="timeline-icon ${color}"><i class="fa ${icon}"></i></div>
+<div class="timeline-content">
+<b>${titulo}</b>${valor||"—"}
+</div>
+</div>`;
+}
+
+function expandImg(src){
+modal.style.display="flex";
+modalContent.innerHTML=`<img src="${src}" style="width:100%">`;
+}
+
+function cls(s){
+s=(s||"").toLowerCase();
+if(s.includes("entregado"))return"entregado";
+if(s.includes("ruta"))return"enruta";
+if(s.includes("pendiente"))return"pendiente";
+return"pendiente";
+}
+
+modal.onclick=e=>{if(e.target.id==="modal") modal.style.display="none";}
+
+buscador.oninput=render;
+fEstado.onchange=render;
+
+function toggleKPI(){
+kpiWrapper.style.display=kpiWrapper.style.display==="none"?"block":"none";
+}
+
 fetchData();
 </script>
+
 </body>
 </html>
