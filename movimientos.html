@@ -74,6 +74,60 @@ color:#fff;font-size:14px;
 background:#f8fafc;padding:14px;border-radius:12px;font-size:13px;flex:1;
 }
 .timeline-content b{display:block;margin-bottom:6px;color:#111;}
+
+/* =========================
+   MOBILE CARDS
+========================= */
+.cards-container{
+display:none;
+flex-direction:column;
+gap:12px;
+}
+
+.card{
+background:#fff;
+border-radius:16px;
+padding:14px;
+box-shadow:0 8px 20px rgba(0,0,0,.05);
+display:flex;
+flex-direction:column;
+gap:8px;
+}
+
+.card-header{
+display:flex;
+justify-content:space-between;
+align-items:center;
+font-weight:bold;
+font-size:14px;
+}
+
+.card-row{
+display:flex;
+justify-content:space-between;
+font-size:13px;
+border-bottom:1px solid #f1f5f9;
+padding:4px 0;
+}
+
+.card-actions{
+display:flex;
+justify-content:space-between;
+align-items:center;
+margin-top:8px;
+}
+
+/* RESPONSIVE */
+@media(max-width:768px){
+
+.table-wrap{display:none;}
+.cards-container{display:flex;}
+
+.kpi-grid{
+grid-template-columns:1fr;
+}
+
+}
 </style>
 </head>
 
@@ -123,6 +177,9 @@ background:#f8fafc;padding:14px;border-radius:12px;font-size:13px;flex:1;
 </table>
 </div>
 
+<!-- CARDS MOBILE -->
+<div id="cardsContainer" class="cards-container"></div>
+
 </div>
 
 <div class="modal" id="modal">
@@ -133,7 +190,6 @@ background:#f8fafc;padding:14px;border-radius:12px;font-size:13px;flex:1;
 const API="https://script.google.com/macros/s/AKfycbziDTv6GxSKyvUYDbUltvS1rhv03VKOxFzPwwct90T2Yhg_Eyp7m7kaGX6xxX1zBryw/exec";
 let DATA=[],chart;
 
-/* FETCH */
 function fetchData(){
 fetch(API).then(r=>r.json()).then(json=>{
 DATA=json.map(x=>({
@@ -156,7 +212,6 @@ render();
 });
 }
 
-/* FILTRO */
 function filtrar(){
 let txt=buscador.value.toLowerCase();
 let est=fEstado.value.toLowerCase();
@@ -166,10 +221,10 @@ return str.includes(txt) && (!est || x.status.toLowerCase().includes(est));
 });
 }
 
-/* RENDER */
 function render(){
 let d=filtrar();
 
+/* TABLA */
 tb.innerHTML=d.map(r=>`
 <tr>
 <td>${r.pedido}</td>
@@ -177,25 +232,48 @@ tb.innerHTML=d.map(r=>`
 <td>${r.tipoDocumento}</td>
 <td>${r.numeroDocumento}</td>
 <td><span class="status ${cls(r.status)}">${r.status}</span></td>
-
 <td>${r.pdf?`<button class="btn-pdf" onclick="window.open('${r.pdf}')"><i class="fa fa-file-pdf"></i></button>`:""}</td>
-
 <td>${r.pdfTraslado?`<button class="btn-pdf" onclick="window.open('${r.pdfTraslado}')"><i class="fa fa-file-pdf"></i></button>`:""}</td>
-
 <td>${r.TR||"—"}</td>
-
 <td>${r.imagen?`<img src="${r.imagen}" class="img-preview" onclick="expandImg('${r.imagen}')">`:"—"}</td>
-
 <td><button class="btn-ver" onclick='ver(${JSON.stringify(r)})'><i class="fa fa-eye"></i></button></td>
-
 </tr>
+`).join("");
+
+/* CARDS */
+cardsContainer.innerHTML=d.map(r=>`
+<div class="card">
+
+<div class="card-header">
+<span>Pedido #${r.pedido}</span>
+<span class="status ${cls(r.status)}">${r.status}</span>
+</div>
+
+<div class="card-row"><span>Cliente</span><span>${r.cliente}</span></div>
+<div class="card-row"><span>Documento</span><span>${r.tipoDocumento}</span></div>
+<div class="card-row"><span>N°</span><span>${r.numeroDocumento}</span></div>
+<div class="card-row"><span>TR</span><span>${r.TR||"—"}</span></div>
+
+<div class="card-actions">
+
+<div>
+${r.pdf?`<button class="btn-pdf" onclick="window.open('${r.pdf}')"><i class="fa fa-file-pdf"></i></button>`:""}
+${r.pdfTraslado?`<button class="btn-pdf" onclick="window.open('${r.pdfTraslado}')"><i class="fa fa-file-pdf"></i></button>`:""}
+</div>
+
+<div>
+${r.imagen?`<img src="${r.imagen}" class="img-preview" onclick="expandImg('${r.imagen}')">`:""}
+<button class="btn-ver" onclick='ver(${JSON.stringify(r)})'><i class="fa fa-eye"></i></button>
+</div>
+
+</div>
+</div>
 `).join("");
 
 kpi(d);
 grafico(d);
 }
 
-/* KPI */
 function kpi(d){
 let map={};
 d.forEach(x=>{
@@ -209,7 +287,6 @@ frecuenciaClientes.innerHTML=arr.slice(0,5).map(x=>`<li>${x[1]} pedidos</li>`).j
 antiguedadClientes.innerHTML="";
 }
 
-/* GRAFICO */
 function grafico(d){
 let c={ENTREGADO:0,"EN RUTA":0,PENDIENTE:0};
 d.forEach(x=>{let s=(x.status||"").toUpperCase();if(c[s]!=undefined)c[s]++;});
@@ -220,7 +297,6 @@ data:{labels:Object.keys(c),datasets:[{data:Object.values(c)}]}
 });
 }
 
-/* MODAL */
 function ver(r){
 modal.style.display="flex";
 

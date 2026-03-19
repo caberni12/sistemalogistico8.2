@@ -652,101 +652,96 @@ margin-top:20px;
 
 </div>
 
+
 <!-- FORMULARIO -->
 
 <div class="modal" id="modalForm">
 
     <div class="modal-content">
-    
-    <h3 id="mtitle">Editar Pedido</h3>
-    
-    <label>Pedido</label>
-    <input id="mPedido" placeholder="Número de pedido">
-    
-    <label>Tipo Documento</label>
-    <select id="mTipoDoc">
-    <option>BOLETA</option>
-    <option>FACTURA</option>
-    <option>GUIA</option>
-    <option>ORDEN DE COMPRA</option>
-    <option>NOTA DE VENTA</option>
-    </select>
-    
-    
-    
-    <label>Consultar Cliente por RUT</label>
-    
-    <div style="display:flex;gap:6px">
-    
-    <input id="mRutConsulta" placeholder="Ej: 12345678-9">
-    
-    <button type="button" id="btnConsultarRut">🔎</button>
-    <div id="consultaMsg" style="font-size:12px;color:#64748b;margin-bottom:10px"></div>
-   </div>
-    <label>Número Documento</label>
-    <input id="mNumeroDoc" placeholder="Número documento">
-    
-    <!-- CONSULTA CLIENTE EN APPS SCRIPT -->
-    
-    
-    
-    
-    
-    
-    
-    <!-- DATOS CLIENTE -->
-    
-    <label>Cliente</label>
-    <input id="mCliente" placeholder="Nombre del cliente">
-    
-    <label>Dirección</label>
-    <input id="mDireccion" placeholder="Dirección entrega">
-    
-    <label>Comuna</label>
-    <input id="mComuna" placeholder="Comuna">
-    
-    <label>Transporte</label>
-    <input id="mTransporte" placeholder="Empresa transporte">
-    
-    <label>Cantidad de Cajas</label>
-    <input id="mCajas" type="number" min="1">
-    
-    <label>Estado del Pedido</label>
-    <select id="mStatus">
-    <option>PENDIENTE</option>
-    <option>EN RUTA</option>
-    <option>RECIBIDO</option>
-    <option>ENTREGADO</option>
-    <option>CANCELADO</option>
-    </select>
-    
-    <label>Fecha / Hora Entrega</label>
-    <input id="mHoraEntrega" type="datetime-local">
-    
-    <label>Responsable</label>
-    <input id="mResponsable" placeholder="Responsable entrega">
-    
-    <label>Observaciones</label>
-    <input id="mObs" placeholder="Observaciones del pedido">
-    
-    <label>Subir Fotos</label>
-    <input type="file" id="mFotos" accept="image/*" multiple>
-    <div id="fotoPreview"></div>
-    
-    <label>Subir PDF</label>
-    <input type="file" id="mPdf" accept="application/pdf">
-    <div id="pdfPreview"></div>
-    
-    <div style="display:flex;gap:10px;margin-top:14px">
-    
-    <button id="btnGuardar">Guardar</button>
-    <button id="btnCancelar">Cancelar</button>
-    
+  
+      <h3 id="mtitle">Editar Pedido</h3>
+  
+      <label>Pedido</label>
+      <input id="mPedido" placeholder="Número de pedido">
+  
+      <label>Tipo Documento</label>
+      <select id="mTipoDoc">
+        <option>BOLETA</option>
+        <option>FACTURA</option>
+        <option>GUIA</option>
+        <option>ORDEN DE COMPRA</option>
+        <option>NOTA DE VENTA</option>
+      </select>
+  
+      <!-- CONSULTA -->
+      <label>Consulta</label>
+  
+      <div style="display:flex;gap:6px">
+        <input id="mConsulta" placeholder="Ingrese Nº de pedido">
+        <button type="button" id="btnConsultar">🔎</button>
+      </div>
+  
+      <div id="consultaMsg" style="font-size:12px;color:#64748b;margin-bottom:10px"></div>
+  
+      <label>Número Documento</label>
+      <input id="mNumeroDoc" placeholder="Número documento">
+  
+      <!-- DATOS CLIENTE -->
+  
+      <label>Cliente</label>
+      <input id="mCliente" placeholder="Nombre del cliente">
+  
+      <label>Dirección</label>
+      <input id="mDireccion" placeholder="Dirección entrega">
+  
+      <label>Comuna</label>
+      <input id="mComuna" placeholder="Comuna">
+  
+      <label>Transporte</label>
+      <input id="mTransporte" placeholder="Empresa transporte">
+  
+      <label>Cantidad de Cajas</label>
+      <input id="mCajas" type="number" min="1">
+  
+      <label>Estado del Pedido</label>
+      <select id="mStatus">
+        <option>PENDIENTE</option>
+        <option>EN RUTA</option>
+        <option>RECIBIDO</option>
+        <option>ENTREGADO</option>
+        <option>CANCELADO</option>
+      </select>
+  
+      <label>Fecha / Hora Entrega</label>
+      <input id="mHoraEntrega" type="datetime-local">
+  
+      <label>Responsable</label>
+      <input id="mResponsable" placeholder="Responsable entrega">
+  
+      <label>Observaciones</label>
+      <input id="mObs" placeholder="Observaciones del pedido">
+  
+      <!-- ARCHIVOS -->
+  
+      <label>Subir Fotos</label>
+      <input type="file" id="mFotos" accept="image/*" multiple>
+      <div id="fotoPreview"></div>
+  
+      <label>Subir PDF</label>
+      <input type="file" id="mPdf" accept="application/pdf">
+      <div id="pdfPreview"></div>
+  
+      <!-- BOTONES -->
+  
+      <div style="display:flex;gap:10px;margin-top:14px">
+        <button id="btnGuardar">Guardar</button>
+        <button id="btnCancelar">Cancelar</button>
+      </div>
+  
     </div>
+  
+  </div>
     
-    </div>
-    
-    </div>
 <script src="segurity.js"></script>
 <script src="envio.js"></script>
 <script src="consulta.js"></script>
