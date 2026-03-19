@@ -857,7 +857,7 @@ function exportPDF(btn){
         'Dirección',
         'Comuna',
         'Transporte',
-        'Cajas',
+        'Unidades',
         'Responsable',
         'Hora Entrega',
         'Estado',
