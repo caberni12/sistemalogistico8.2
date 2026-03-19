@@ -286,7 +286,7 @@ function renderMore() {
         </div>
   
         <div class="cajas-box">
-          CAJAS <span>${r.etiquetas || 0}</span>
+          UNIDADES <span>${r.etiquetas || 0}</span>
         </div>
   
         ${r.solicitudTraslado ? `
