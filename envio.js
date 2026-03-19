@@ -488,7 +488,7 @@ function renderCards(data){
 
     <div style="margin-top:6px">
       <span style="color:#8b5cf6">📦</span>
-      <b> Cajas:</b> ${r.etiquetas||""}
+      <b> Unidades:</b> ${r.etiquetas||""}
     </div>
 
     <div style="margin-top:6px">
@@ -754,7 +754,7 @@ btnGuardar.onclick=async()=>{
    "DIRECCION":mDireccion.value,
    "COMUNA":mComuna.value,
    "TRANSPORTE":mTransporte.value,
-   "ETIQUETAS":mCajas.value,
+   "UNIDADES":mCajas.value,
    "STATUS":mStatus.value,
    "FECHA ENTREGA":mHoraEntrega.value,
    "RESPONSABLE":mResponsable.value,
@@ -889,7 +889,7 @@ function exportPDF(btn){
         '',
         '',
         'TOTALES →',
-        `CAJAS: ${totalBultos}`,
+        `UNIDADES: ${totalBultos}`,
         '',
         '',
         `PEDIDOS: ${totalPedidos}`,
@@ -938,7 +938,7 @@ function exportExcel(btn){
       "Dirección": r.direccion || '',
       "Comuna": r.comuna || '',
       "Transporte": r.transporte || '',
-      "Cajas": r.etiquetas || 0,
+      "Unidades": r.etiquetas || 0,
       "Responsable": r.responsable || '',
       "Hora Entrega": r.horaEntrega || '',
       "Estado": r.status || '',
@@ -959,7 +959,7 @@ function exportExcel(btn){
       [""],
       ["Fecha generación", new Date().toLocaleString()],
       ["Total Pedidos", totalPedidos],
-      ["Total Cajas", totalBultos]
+      ["Total Unidades", totalBultos]
 
     ];
 
