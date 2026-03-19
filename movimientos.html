@@ -9,25 +9,20 @@
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
 <style>
-/* General */
 body{margin:0;font-family:Arial;background:#f1f5f9;}
 .wrap{max-width:1200px;width:95%;margin:auto;padding:20px;}
 .toolbar{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:20px;}
 input,select{padding:10px;border-radius:10px;border:1px solid #ddd;}
 .btn{background:#14b8a6;color:#fff;border:none;padding:8px 12px;border-radius:10px;cursor:pointer;transition:0.3s;}
 .btn:hover{opacity:0.9;}
-
-/* KPI */
 .kpi-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:15px;margin-bottom:20px;}
 .kpi-card{background:#fff;padding:20px;border-radius:20px;box-shadow:0 10px 25px rgba(0,0,0,.08);display:flex;flex-direction:column;justify-content:flex-start;height:auto;transition: transform .2s ease, box-shadow .2s ease;}
 .kpi-card:hover{transform: translateY(-5px);box-shadow:0 15px 30px rgba(0,0,0,.12);}
 .kpi-card h4{font-size:16px;color:#111827;margin-bottom:10px;text-transform: uppercase;letter-spacing:0.5px;}
-.kpi-card ul{list-style:none;padding:0;margin:0;display:flex;flex-direction:column;gap:20px;}
+.kpi-card ul{list-style:none;padding:0;margin:0;display:flex;flex-direction:column;gap:8px;}
 .kpi-card li{display:flex;flex-direction:column;font-size:14px;position:relative;}
 .kpi-card li span{font-weight:500;color:#374151;margin-bottom:4px;}
 .kpi-card li b{font-weight:700;color:#111827;}
-
-/* Table */
 .table-wrap{background:#fff;border-radius:14px;overflow:hidden;box-shadow:0 10px 20px rgba(0,0,0,.05);}
 table{width:100%;border-collapse:collapse;}
 th,td{padding:12px;border-bottom:1px solid #eee;font-size:13px;}
@@ -40,44 +35,26 @@ th{background:#f8fafc;color:#666;}
 .cancelado{background:#ef4444;}
 .atrasado{background:#ef4444;}
 .tag{background:#14b8a6;color:#fff;padding:4px 8px;border-radius:999px;font-size:12px;}
-.btn-ver{background:#14b8a6;color:#fff;border:none;padding:6px 10px;border-radius:8px;cursor:pointer;font-size:12px;}
-.btn-icon{background:#ef4444;color:#fff;padding:6px;border-radius:8px;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:14px;width:32px;height:32px;margin-right:5px;}
-.img-preview{width:40px;height:40px;border-radius:8px;object-fit:cover;cursor:pointer;}
-
-/* Botones PDF rojos */
-.btn-ver-pdf {
-  background:#ef4444;
-  color:#fff;
-  border:none;
-  padding:6px 10px;
-  border-radius:8px;
-  cursor:pointer;
-  font-size:12px;
-  display:inline-flex;
-  align-items:center;
-  justify-content:center;
-  gap:5px;
-  text-decoration:none;
-}
-.btn-ver-pdf i { font-size:14px; }
-
-/* Modal linea de tiempo */
-.modal{position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.6);display:none;justify-content:center;align-items:center;z-index:999;}
+.btn-ver {background: linear-gradient(145deg, #14b8a6, #0f766e); color:#fff; border:none; padding:8px 14px; border-radius:12px; cursor:pointer; font-size:13px; font-weight:500; display:inline-flex; align-items:center; gap:6px;}
+.btn-ver:hover {background: linear-gradient(145deg, #0f766e, #14b8a6); transform: translateY(-2px);}
+.pdf-icon {color:red; font-size:16px;}
+.img-preview{width:40px;height:40px;border-radius:8px;object-fit:cover;cursor:pointer;transition:0.3s;}
+.img-preview:hover{transform:scale(1.1);}
+#imgModal{position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.8);display:none;justify-content:center;align-items:center;z-index:1000;}
+#imgModal img{max-width:90%;max-height:90%;border-radius:12px;}
+.modal{position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.6);display:none;justify-content:center;align-items:flex-start;padding-top:50px;z-index:999;}
 .modal-content{background:#fff;padding:25px;border-radius:18px;width:95%;max-width:700px;max-height:90vh;overflow:auto;animation:fade .25s ease;}
 @keyframes fade{from{transform:scale(.9);opacity:0}to{transform:scale(1);opacity:1}}
-.timeline{margin-top:20px;position:relative;padding-left:30px;}
-.timeline::before{content:"";position:absolute;left:14px;top:0;bottom:0;width:2px;background:#ddd;}
+.timeline{margin-top:20px;border-left:3px solid #14b8a6;padding-left:20px;}
 .timeline-item{display:flex;gap:12px;margin-bottom:20px;align-items:flex-start;position:relative;}
+.timeline-item::before{content:'';position:absolute;left:-12px;top:0;width:6px;height:100%;background:#e5e7eb;border-radius:3px;}
 .timeline-icon{width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:#fff;font-size:12px;flex-shrink:0;}
 .ok{background:#22c55e;}
 .info{background:#3b82f6;}
 .warn{background:#facc15;color:#000;}
 .danger{background:#ef4444;}
-.timeline-content{background:#f8fafc;padding:12px;border-radius:10px;font-size:13px;flex:1;line-height:1.5;position:relative;}
+.timeline-content{background:#f8fafc;padding:12px;border-radius:10px;font-size:13px;flex:1;line-height:1.5;}
 .timeline-content b{display:block;margin-bottom:5px;color:#111827;}
-.timeline-content .fecha{font-size:11px;color:#555;margin-top:4px;}
-
-/* Responsive */
 @media(max-width:768px){
   .table-wrap table thead{display:none;}
   .table-wrap table, .table-wrap tbody, .table-wrap th, .table-wrap td, .table-wrap tr{display:block;}
@@ -116,12 +93,11 @@ th{background:#f8fafc;color:#666;}
   </div>
 
   <div id="kpiWrapper">
-    <div class="kpi-grid" id="kpiContainer">
-      <div class="kpi-card"><h4>Top 5 Clientes</h4><ul id="topClientes"></ul></div>
-      <div class="kpi-card"><h4>Frecuencia</h4><ul id="frecuenciaClientes"></ul></div>
-      <div class="kpi-card"><h4>Antigüedad (días)</h4><ul id="antiguedadClientes"></ul></div>
+    <div class="kpi-grid">
+      <div class="kpi-card"><h4>Top 5 Clientes</h4><canvas id="topClientesChart" width="200" height="200"></canvas></div>
+      <div class="kpi-card"><h4>Frecuencia</h4><canvas id="frecuenciaChart" width="200" height="200"></canvas></div>
+      <div class="kpi-card"><h4>Antigüedad (días)</h4><canvas id="antiguedadChart" width="200" height="200"></canvas></div>
     </div>
-    <div class="kpi-box"><canvas id="chart"></canvas></div>
   </div>
 
   <div class="table-wrap">
@@ -150,10 +126,13 @@ th{background:#f8fafc;color:#666;}
 <div class="modal" id="modal">
   <div class="modal-content" id="modalContent"></div>
 </div>
+<!-- Modal Imagen -->
+<div id="imgModal"><img id="imgModalImg"></div>
 
 <script>
 const API="https://script.google.com/macros/s/AKfycbziDTv6GxSKyvUYDbUltvS1rhv03VKOxFzPwwct90T2Yhg_Eyp7m7kaGX6xxX1zBryw/exec";
 let DATA=[];
+let charts={};
 
 function cls(s){if(!s)return"pendiente";s=s.toLowerCase();if(s.includes("entregado"))return"entregado";if(s.includes("en ruta")||s.includes("transito"))return"enruta";if(s.includes("pendiente"))return"pendiente";if(s.includes("recibido"))return"recibido";if(s.includes("cancelado"))return"cancelado";if(s.includes("atras"))return"atrasado";return"pendiente";}
 
@@ -207,67 +186,84 @@ function render(){
       <td>${r.numeroDocumento}</td>
       <td><span class="tag">${r.etiquetas}</span></td>
       <td><span class="status ${cls(r.status)}">${r.status}</span></td>
-      <td>${r.pdf ? `<a href="${r.pdf}" target="_blank" class="btn-ver-pdf"><i class="fa fa-file-pdf"></i></a>`:""}</td>
-      <td>${r.pdfTraslado ? `<a href="${r.pdfTraslado}" target="_blank" class="btn-ver-pdf"><i class="fa fa-file-pdf"></i></a>`:""}</td>
-      <td>${r.imagen ? `<img src="${r.imagen}" class="img-preview">`:""}</td>
+      <td>${r.pdf ? `<a href="${r.pdf}" target="_blank" class="pdf-icon"><i class="fa fa-file-pdf"></i></a>`:""}</td>
+      <td>${r.pdfTraslado ? `<a href="${r.pdfTraslado}" target="_blank" class="pdf-icon"><i class="fa fa-file-pdf"></i></a>`:""}</td>
+      <td>${r.imagen ? `<img src="${r.imagen}" class="img-preview" onclick="expandImg(this)">`:""}</td>
       <td>${r.TR}</td>
-      <td><button class="btn-ver" onclick="verDetalle('${r.pedido}')">Ver</button></td>
+      <td><button class="btn-ver" onclick="verDetalle('${r.pedido}')"><i class="fa fa-eye"></i> Ver</button></td>
     `;
     tb.appendChild(tr);
   });
+  renderKPI();
 }
 
-function toggleKPI(){document.getElementById("kpiWrapper").style.display=document.getElementById("kpiWrapper").style.display==="none"?"block":"none";}
+// KPI circulares
+function renderKPI(){
+  const filas=filtrar();
+  let topClientes={}; let freq={}; let antiguedad={};
+  filas.forEach(x=>{
+    topClientes[x.cliente]=(topClientes[x.cliente]||0)+1;
+    freq[x.cliente]=(freq[x.cliente]||0)+1;
+    if(x.fechaIngreso){
+      let dias=Math.floor((new Date()-new Date(x.fechaIngreso))/86400000);
+      antiguedad[x.cliente]=(antiguedad[x.cliente]||0)+dias;
+    }
+  });
 
+  const topData=Object.entries(topClientes).slice(0,5);
+  const freqData=Object.entries(freq).slice(0,5);
+  const antiData=Object.entries(antiguedad).slice(0,5);
+
+  if(charts.top) charts.top.destroy();
+  charts.top=new Chart(document.getElementById("topClientesChart"),{
+    type:'doughnut',
+    data:{labels:topData.map(d=>d[0]),datasets:[{data:topData.map(d=>d[1]),backgroundColor:['#3b82f6','#14b8a6','#facc15','#ef4444','#22c55e']}]},
+    options:{responsive:true}
+  });
+
+  if(charts.freq) charts.freq.destroy();
+  charts.freq=new Chart(document.getElementById("frecuenciaChart"),{
+    type:'doughnut',
+    data:{labels:freqData.map(d=>d[0]),datasets:[{data:freqData.map(d=>d[1]),backgroundColor:['#ef4444','#3b82f6','#22c55e','#facc15','#14b8a6']}]},
+    options:{responsive:true}
+  });
+
+  if(charts.anti) charts.anti.destroy();
+  charts.anti=new Chart(document.getElementById("antiguedadChart"),{
+    type:'doughnut',
+    data:{labels:antiData.map(d=>d[0]),datasets:[{data:antiData.map(d=>Math.round(d[1]/Math.max(freq[d[0]],1))),backgroundColor:['#facc15','#3b82f6','#14b8a6','#ef4444','#22c55e']}]},
+    options:{responsive:true}
+  });
+}
+
+// MODAL
 function verDetalle(pedido){
   const r=DATA.find(x=>x.pedido===pedido);
   if(!r) return;
   const modal=document.getElementById("modal");
   const content=document.getElementById("modalContent");
-  
   content.innerHTML=`
     <div class="timeline">
-      <div class="timeline-item">
-        <div class="timeline-icon ok"><i class="fa fa-check"></i></div>
-        <div class="timeline-content"><b>Pedido:</b> ${r.pedido}<div class="fecha">${r.fechaIngreso||""}</div></div>
-      </div>
-      <div class="timeline-item">
-        <div class="timeline-icon info"><i class="fa fa-user"></i></div>
-        <div class="timeline-content"><b>Cliente:</b> ${r.cliente}</div>
-      </div>
-      <div class="timeline-item">
-        <div class="timeline-icon warn"><i class="fa fa-file"></i></div>
-        <div class="timeline-content"><b>Tipo Documento:</b> ${r.tipoDocumento} - ${r.numeroDocumento}</div>
-      </div>
-      <div class="timeline-item">
-        <div class="timeline-icon danger"><i class="fa fa-truck"></i></div>
-        <div class="timeline-content"><b>Status:</b> ${r.status}<div class="fecha">${r.fechaModificacion||""}</div></div>
-      </div>
-      <div class="timeline-item">
-        <div class="timeline-icon ok"><i class="fa fa-file-pdf"></i></div>
-        <div class="timeline-content"><b>PDF:</b> ${r.pdf?`<a href="${r.pdf}" target="_blank" class="btn-ver-pdf"><i class="fa fa-file-pdf"></i></a>`:"No"}</div>
-      </div>
-      <div class="timeline-item">
-        <div class="timeline-icon info"><i class="fa fa-file-pdf"></i></div>
-        <div class="timeline-content"><b>PDF Traslado:</b> ${r.pdfTraslado?`<a href="${r.pdfTraslado}" target="_blank" class="btn-ver-pdf"><i class="fa fa-file-pdf"></i></a>`:"No"}</div>
-      </div>
-      <div class="timeline-item">
-        <div class="timeline-icon ok"><i class="fa fa-calendar-check"></i></div>
-        <div class="timeline-content"><b>Fecha Entrega:</b> ${r.fechaEntrega||""}</div>
-      </div>
-      <div class="timeline-item">
-        <div class="timeline-icon info"><i class="fa fa-comment"></i></div>
-        <div class="timeline-content"><b>Observaciones:</b> ${r.observaciones||""}</div>
-      </div>
+      <div class="timeline-item"><div class="timeline-icon ok"><i class="fa fa-check"></i></div><div class="timeline-content"><b>Pedido:</b> ${r.pedido} <br><b>Fecha Ingreso:</b> ${r.fechaIngreso}</div></div>
+      <div class="timeline-item"><div class="timeline-icon info"><i class="fa fa-user"></i></div><div class="timeline-content"><b>Cliente:</b> ${r.cliente}</div></div>
+      <div class="timeline-item"><div class="timeline-icon warn"><i class="fa fa-file"></i></div><div class="timeline-content"><b>Tipo Documento:</b> ${r.tipoDocumento} - ${r.numeroDocumento}</div></div>
+      <div class="timeline-item"><div class="timeline-icon danger"><i class="fa fa-truck"></i></div><div class="timeline-content"><b>Status:</b> ${r.status}</div></div>
+      <div class="timeline-item"><div class="timeline-icon info"><i class="fa fa-calendar-alt"></i></div><div class="timeline-content"><b>Fecha Modificación:</b> ${r.fechaModificacion}</div></div>
+      <div class="timeline-item"><div class="timeline-icon ok"><i class="fa fa-calendar-check"></i></div><div class="timeline-content"><b>Fecha Entrega:</b> ${r.fechaEntrega}</div></div>
+      <div class="timeline-item"><div class="timeline-icon ok"><i class="fa fa-file-pdf"></i></div><div class="timeline-content"><b>TR:</b> ${r.TR}</div></div>
     </div>
   `;
   modal.style.display="flex";
 }
 
-document.getElementById("modal").addEventListener("click",e=>{
-  if(e.target.id==="modal") e.target.style.display="none";
-});
-
+document.getElementById("modal").addEventListener("click",e=>{if(e.target.id==="modal") e.target.style.display="none";});
+function expandImg(img){document.getElementById("imgModalImg").src=img.src;document.getElementById("imgModal").style.display="flex";}
+document.getElementById("imgModal").addEventListener("click",()=>{document.getElementById("imgModal").style.display="none";});
+document.getElementById("buscador").addEventListener("input",render);
+document.getElementById("fEstado").addEventListener("change",render);
+document.getElementById("fDesde").addEventListener("change",render);
+document.getElementById("fHasta").addEventListener("change",render);
+function toggleKPI(){document.getElementById("kpiWrapper").style.display=document.getElementById("kpiWrapper").style.display==="none"?"block":"none";}
 fetchData();
 </script>
 </body>
