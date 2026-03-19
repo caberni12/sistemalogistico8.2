@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Dashboard Tracking PRO</title>
+<title>Consulta de Bordado</title>
 
 <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -42,91 +42,33 @@ background:#fff;padding:25px;border-radius:18px;width:95%;max-width:700px;
 max-height:85vh;overflow-y:auto;
 box-shadow:0 20px 50px rgba(0,0,0,.2);
 }
-
-/* SCROLL */
 .modal-content::-webkit-scrollbar{width:6px;}
 .modal-content::-webkit-scrollbar-thumb{background:#14b8a6;border-radius:10px;}
 
 /* TIMELINE */
 .timeline{position:relative;margin-top:20px;padding-left:45px;}
-.timeline::before{
-content:"";
-position:absolute;
-left:18px;top:0;bottom:0;
-width:3px;
-background:#14b8a6;
-}
-
+.timeline::before{content:"";position:absolute;left:18px;top:0;bottom:0;width:3px;background:#14b8a6;}
 .timeline-item{display:flex;gap:15px;margin-bottom:25px;}
-
-.timeline-icon{
-min-width:34px;height:34px;border-radius:50%;
-display:flex;align-items:center;justify-content:center;
-color:#fff;font-size:14px;
-}
-
+.timeline-icon{min-width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:#fff;font-size:14px;}
 .ok{background:#22c55e;}
 .info{background:#3b82f6;}
 .warn{background:#facc15;color:#000;}
 .danger{background:#ef4444;}
-
-.timeline-content{
-background:#f8fafc;padding:14px;border-radius:12px;font-size:13px;flex:1;
-}
+.timeline-content{background:#f8fafc;padding:14px;border-radius:12px;font-size:13px;flex:1;}
 .timeline-content b{display:block;margin-bottom:6px;color:#111;}
 
-/* =========================
-   MOBILE CARDS
-========================= */
-.cards-container{
-display:none;
-flex-direction:column;
-gap:12px;
-}
+/* CARDS MÓVIL */
+.cards-container{display:none;flex-direction:column;gap:12px;margin-top:20px;}
+.card{background:#fff;border-radius:16px;padding:14px;box-shadow:0 8px 20px rgba(0,0,0,.05);display:flex;flex-direction:column;gap:8px;}
+.card-header{display:flex;justify-content:space-between;align-items:center;font-weight:bold;font-size:14px;}
+.card-row{display:flex;justify-content:space-between;font-size:13px;border-bottom:1px solid #f1f5f9;padding:4px 0;}
+.card-actions{margin-top:10px;}
 
-.card{
-background:#fff;
-border-radius:16px;
-padding:14px;
-box-shadow:0 8px 20px rgba(0,0,0,.05);
-display:flex;
-flex-direction:column;
-gap:8px;
-}
-
-.card-header{
-display:flex;
-justify-content:space-between;
-align-items:center;
-font-weight:bold;
-font-size:14px;
-}
-
-.card-row{
-display:flex;
-justify-content:space-between;
-font-size:13px;
-border-bottom:1px solid #f1f5f9;
-padding:4px 0;
-}
-
-.card-actions{
-display:flex;
-justify-content:space-between;
-align-items:center;
-margin-top:8px;
-}
-
-/* RESPONSIVE */
+/* MÓVIL: OCULTA TABLA, MUESTRA TARJETAS */
 @media(max-width:768px){
-
 .table-wrap{display:none;}
 .cards-container{display:flex;}
-
-.kpi-grid{
-grid-template-columns:1fr;
-}
-
+.kpi-grid{grid-template-columns:1fr;}
 }
 </style>
 </head>
@@ -145,6 +87,8 @@ grid-template-columns:1fr;
 <option>CANCELADO</option>
 <option>ENTREGADO</option>
 </select>
+<label>Desde: <input type="date" id="fechaDesde"></label>
+<label>Hasta: <input type="date" id="fechaHasta"></label>
 <button class="btn" onclick="toggleKPI()">KPI</button>
 </div>
 
@@ -157,6 +101,7 @@ grid-template-columns:1fr;
 </div>
 </div>
 
+<!-- TABLA ESCRITORIO -->
 <div class="table-wrap">
 <table>
 <thead>
@@ -166,6 +111,7 @@ grid-template-columns:1fr;
 <th>Tipo Doc</th>
 <th>N° Doc</th>
 <th>Status</th>
+<th>Etiquetas</th>
 <th>PDF</th>
 <th>PDF TR</th>
 <th>TR</th>
@@ -177,7 +123,7 @@ grid-template-columns:1fr;
 </table>
 </div>
 
-<!-- CARDS MOBILE -->
+<!-- CARDS MÓVIL -->
 <div id="cardsContainer" class="cards-container"></div>
 
 </div>
@@ -198,6 +144,7 @@ cliente:x.cliente||"",
 tipoDocumento:x.tipoDocumento||"",
 numeroDocumento:x.numeroDocumento||"",
 status:x.status||"",
+etiquetas:x.etiquetas||"",
 pdf:x.pdf||"",
 pdfTraslado:x.pdfTraslado||"",
 TR:x.solicitudTraslado||"",
@@ -207,7 +154,6 @@ fechaModificacion:x.fechaModificacion||"",
 fechaEntrega:x.fechaEntrega||"",
 observaciones:x.observaciones||""
 })).reverse();
-
 render();
 });
 }
@@ -215,16 +161,23 @@ render();
 function filtrar(){
 let txt=buscador.value.toLowerCase();
 let est=fEstado.value.toLowerCase();
+let desde=fechaDesde.value;
+let hasta=fechaHasta.value;
+
 return DATA.filter(x=>{
 let str=JSON.stringify(x).toLowerCase();
-return str.includes(txt) && (!est || x.status.toLowerCase().includes(est));
+let cumpleTexto=str.includes(txt) && (!est || x.status.toLowerCase().includes(est));
+let cumpleFecha=true;
+if(desde) cumpleFecha = x.fechaIngreso >= desde;
+if(desde && hasta) cumpleFecha = x.fechaIngreso >= desde && x.fechaIngreso <= hasta;
+return cumpleTexto && cumpleFecha;
 });
 }
 
 function render(){
 let d=filtrar();
 
-/* TABLA */
+// Tabla escritorio
 tb.innerHTML=d.map(r=>`
 <tr>
 <td>${r.pedido}</td>
@@ -232,41 +185,31 @@ tb.innerHTML=d.map(r=>`
 <td>${r.tipoDocumento}</td>
 <td>${r.numeroDocumento}</td>
 <td><span class="status ${cls(r.status)}">${r.status}</span></td>
-<td>${r.pdf?`<button class="btn-pdf" onclick="window.open('${r.pdf}')"><i class="fa fa-file-pdf"></i></button>`:""}</td>
-<td>${r.pdfTraslado?`<button class="btn-pdf" onclick="window.open('${r.pdfTraslado}')"><i class="fa fa-file-pdf"></i></button>`:""}</td>
+<td>${r.etiquetas||"—"}</td>
+<td>${r.pdf?`<button class="btn-pdf" onclick="window.open('${r.pdf}')"><i class="fa fa-file-pdf"></i></button>`:"—"}</td>
+<td>${r.pdfTraslado?`<button class="btn-pdf" onclick="window.open('${r.pdfTraslado}')"><i class="fa fa-file-pdf"></i></button>`:"—"}</td>
 <td>${r.TR||"—"}</td>
 <td>${r.imagen?`<img src="${r.imagen}" class="img-preview" onclick="expandImg('${r.imagen}')">`:"—"}</td>
 <td><button class="btn-ver" onclick='ver(${JSON.stringify(r)})'><i class="fa fa-eye"></i></button></td>
 </tr>
 `).join("");
 
-/* CARDS */
+// Cards móvil
 cardsContainer.innerHTML=d.map(r=>`
 <div class="card">
-
 <div class="card-header">
 <span>Pedido #${r.pedido}</span>
 <span class="status ${cls(r.status)}">${r.status}</span>
 </div>
-
-<div class="card-row"><span>Cliente</span><span>${r.cliente}</span></div>
-<div class="card-row"><span>Documento</span><span>${r.tipoDocumento}</span></div>
-<div class="card-row"><span>N°</span><span>${r.numeroDocumento}</span></div>
-<div class="card-row"><span>TR</span><span>${r.TR||"—"}</span></div>
-
-<div class="card-actions">
-
-<div>
-${r.pdf?`<button class="btn-pdf" onclick="window.open('${r.pdf}')"><i class="fa fa-file-pdf"></i></button>`:""}
-${r.pdfTraslado?`<button class="btn-pdf" onclick="window.open('${r.pdfTraslado}')"><i class="fa fa-file-pdf"></i></button>`:""}
-</div>
-
-<div>
-${r.imagen?`<img src="${r.imagen}" class="img-preview" onclick="expandImg('${r.imagen}')">`:""}
-<button class="btn-ver" onclick='ver(${JSON.stringify(r)})'><i class="fa fa-eye"></i></button>
-</div>
-
-</div>
+<div class="card-row"><span><b>Cliente:</b></span><span>${r.cliente}</span></div>
+<div class="card-row"><span><b>Tipo Doc:</b></span><span>${r.tipoDocumento}</span></div>
+<div class="card-row"><span><b>N° Doc:</b></span><span>${r.numeroDocumento}</span></div>
+<div class="card-row"><span><b>Etiquetas:</b></span><span>${r.etiquetas||"—"}</span></div>
+<div class="card-row"><span><b>TR:</b></span><span>${r.TR||"—"}</span></div>
+<div class="card-row"><span><b>PDF Pedido:</b></span><span>${r.pdf?`<button class="btn-pdf" onclick="window.open('${r.pdf}')"><i class="fa fa-file-pdf"></i></button>`:"—"}</span></div>
+<div class="card-row"><span><b>PDF Traslado:</b></span><span>${r.pdfTraslado?`<button class="btn-pdf" onclick="window.open('${r.pdfTraslado}')"><i class="fa fa-file-pdf"></i></button>`:"—"}</span></div>
+<div class="card-row"><span><b>Foto:</b></span><span>${r.imagen?`<img src="${r.imagen}" class="img-preview" onclick="expandImg('${r.imagen}')">`:"—"}</span></div>
+<div class="card-actions"><button class="btn-ver" style="width:100%" onclick='ver(${JSON.stringify(r)})'><i class="fa fa-eye"></i> Ver Detalle</button></div>
 </div>
 `).join("");
 
@@ -276,12 +219,8 @@ grafico(d);
 
 function kpi(d){
 let map={};
-d.forEach(x=>{
-let c=x.cliente||"X";
-map[c]=(map[c]||0)+1;
-});
+d.forEach(x=>{let c=x.cliente||"X";map[c]=(map[c]||0)+1;});
 let arr=Object.entries(map).sort((a,b)=>b[1]-a[1]);
-
 topClientes.innerHTML=arr.slice(0,5).map(x=>`<li>${x[0]} (${x[1]})</li>`).join("");
 frecuenciaClientes.innerHTML=arr.slice(0,5).map(x=>`<li>${x[1]} pedidos</li>`).join("");
 antiguedadClientes.innerHTML="";
@@ -299,10 +238,8 @@ data:{labels:Object.keys(c),datasets:[{data:Object.values(c)}]}
 
 function ver(r){
 modal.style.display="flex";
-
 modalContent.innerHTML=`
 <h3>Pedido ${r.pedido}</h3>
-
 <div class="timeline">
 ${item("info","Ingreso",r.fechaIngreso,"fa-box")}
 ${item("ok","Modificación",r.fechaModificacion,"fa-edit")}
@@ -312,25 +249,17 @@ ${item("ok","Cliente",r.cliente,"fa-user")}
 ${item("info","Documento",r.tipoDocumento+" - "+r.numeroDocumento,"fa-file")}
 ${item("ok","TR",r.TR,"fa-file-pdf")}
 ${item("warn","Observaciones",r.observaciones,"fa-comment")}
-</div>
-`;
-}
-
-function item(color,titulo,valor,icon){
-return `
-<div class="timeline-item">
-<div class="timeline-icon ${color}"><i class="fa ${icon}"></i></div>
-<div class="timeline-content">
-<b>${titulo}</b>${valor||"—"}
-</div>
 </div>`;
 }
 
-function expandImg(src){
-modal.style.display="flex";
-modalContent.innerHTML=`<img src="${src}" style="width:100%">`;
+function item(color,titulo,valor,icon){
+return `<div class="timeline-item">
+<div class="timeline-icon ${color}"><i class="fa ${icon}"></i></div>
+<div class="timeline-content"><b>${titulo}</b>${valor||"—"}</div>
+</div>`;
 }
 
+function expandImg(src){modal.style.display="flex";modalContent.innerHTML=`<img src="${src}" style="width:100%">`; }
 function cls(s){
 s=(s||"").toLowerCase();
 if(s.includes("entregado"))return"entregado";
@@ -338,16 +267,13 @@ if(s.includes("ruta"))return"enruta";
 if(s.includes("pendiente"))return"pendiente";
 return"pendiente";
 }
-
 modal.onclick=e=>{if(e.target.id==="modal") modal.style.display="none";}
-
 buscador.oninput=render;
 fEstado.onchange=render;
+fechaDesde.onchange=render;
+fechaHasta.onchange=render;
 
-function toggleKPI(){
-kpiWrapper.style.display=kpiWrapper.style.display==="none"?"block":"none";
-}
-
+function toggleKPI(){kpiWrapper.style.display=kpiWrapper.style.display==="none"?"block":"none";}
 fetchData();
 </script>
 
