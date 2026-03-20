@@ -35,7 +35,7 @@ th{background:#f8fafc;}
 .recibido{background:#14b8a6;}
 .cancelado{background:#ef4444;}
 
-.btn-ver{background:#14b8a6;color:#fff;border:none;padding:6px 12px;border-radius:10px;}
+.btn-ver{background:linear-gradient(135deg,#14b8a6,#0d9488);color:#fff;border:none;padding:6px 12px;border-radius:10px;}
 .btn-pdf{background:#ef4444;color:#fff;border:none;padding:6px;border-radius:8px;}
 
 .img-preview{width:40px;height:40px;border-radius:8px;object-fit:cover;cursor:pointer}
@@ -44,20 +44,24 @@ th{background:#f8fafc;}
 .modal{position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.6);display:none;justify-content:center;align-items:center;}
 .modal-content{background:#fff;padding:20px;border-radius:18px;width:95%;max-width:700px;max-height:85vh;overflow:auto;}
 
-.modal-header{display:flex;justify-content:space-between;align-items:center;}
+.modal-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;}
 .btn-close{background:#ef4444;color:#fff;border:none;padding:6px 10px;border-radius:8px;cursor:pointer;}
 
-.timeline{margin-top:15px;padding-left:40px;position:relative;}
+.modal-actions{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:10px;}
+
+.timeline{position:relative;margin-top:10px;padding-left:40px;}
 .timeline::before{content:"";position:absolute;left:15px;top:0;bottom:0;width:3px;background:#14b8a6;}
-.timeline-item{display:flex;gap:10px;margin-bottom:10px;}
+.timeline-item{display:flex;gap:10px;margin-bottom:15px;}
 .timeline-icon{width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:#fff;}
 .ok{background:#22c55e;}
 .info{background:#3b82f6;}
 .warn{background:#facc15;color:#000;}
 .danger{background:#ef4444;}
 
-.cards-container{display:none;flex-direction:column;gap:10px;margin-top:20px;}
-.card{background:#fff;padding:12px;border-radius:14px;}
+/* CARDS */
+.cards-container{display:none;flex-direction:column;gap:12px;margin-top:20px;}
+.card{background:#fff;border-radius:16px;padding:14px;box-shadow:0 8px 20px rgba(0,0,0,.05);}
+.card-header{display:flex;justify-content:space-between;font-weight:bold;}
 
 @media(max-width:768px){
 .table-wrap{display:none;}
@@ -80,6 +84,8 @@ th{background:#f8fafc;}
 <option>CANCELADO</option>
 <option>ENTREGADO</option>
 </select>
+<label>Desde <input type="date" id="fechaDesde"></label>
+<label>Hasta <input type="date" id="fechaHasta"></label>
 <button class="btn" onclick="toggleKPI()">KPI</button>
 </div>
 
@@ -98,8 +104,13 @@ th{background:#f8fafc;}
 <tr>
 <th>Pedido</th>
 <th>Cliente</th>
+<th>Tipo Doc</th>
+<th>N° Doc</th>
 <th>Status</th>
+<th>Etiquetas</th>
 <th>PDF</th>
+<th>PDF TR</th>
+<th>TR</th>
 <th>Foto</th>
 <th>Acción</th>
 </tr>
@@ -119,6 +130,7 @@ th{background:#f8fafc;}
 
 <script>
 const API="https://script.google.com/macros/s/AKfycbziDTv6GxSKyvUYDbUltvS1rhv03VKOxFzPwwct90T2Yhg_Eyp7m7kaGX6xxX1zBryw/exec";
+
 let DATA=[],chart;
 
 function fetchData(){
@@ -128,9 +140,13 @@ fetch(API)
 DATA=json.map(x=>({
 pedido:x.pedido||"",
 cliente:x.cliente||"",
+tipoDocumento:x.tipoDocumento||"",
+numeroDocumento:x.numeroDocumento||"",
 status:x.status||"",
+etiquetas:x.etiquetas||"",
 pdf:x.pdf||"",
 pdfTraslado:x.pdfTraslado||"",
+TR:x.solicitudTraslado||"",
 imagen:x.foto||"",
 fechaIngreso:x.fechaIngreso||"",
 fechaModificacion:x.fechaModificacion||"",
@@ -141,33 +157,80 @@ render();
 });
 }
 
+function filtrar(){
+let txt=buscador.value.toLowerCase();
+let est=fEstado.value.toLowerCase();
+let desde=fechaDesde.value;
+let hasta=fechaHasta.value;
+
+return DATA.filter(x=>{
+let str=JSON.stringify(x).toLowerCase();
+let okTexto=str.includes(txt) && (!est || x.status.toLowerCase().includes(est));
+
+let okFecha=true;
+if(desde) okFecha = x.fechaIngreso >= desde;
+if(desde && hasta) okFecha = x.fechaIngreso >= desde && x.fechaIngreso <= hasta;
+
+return okTexto && okFecha;
+});
+}
+
 function render(){
-tb.innerHTML=DATA.map(r=>`
+let d=filtrar();
+
+tb.innerHTML=d.map(r=>`
 <tr>
 <td>${r.pedido}</td>
 <td>${r.cliente}</td>
+<td>${r.tipoDocumento}</td>
+<td>${r.numeroDocumento}</td>
 <td><span class="status ${cls(r.status)}">${r.status}</span></td>
-<td>${r.pdf?`<button class="btn-pdf" onclick="window.open('${r.pdf}')">PDF</button>`:"—"}</td>
-<td>${r.imagen?`<img src="${r.imagen}" class="img-preview">`:"—"}</td>
-<td><button class="btn-ver" onclick='ver(${JSON.stringify(r)})'>Ver</button></td>
-</tr>`).join("");
+<td>${r.etiquetas||"—"}</td>
+<td>${r.pdf?`<button class="btn-pdf" onclick="window.open('${r.pdf}')"><i class="fa fa-file-pdf"></i></button>`:"—"}</td>
+<td>${r.pdfTraslado?`<button class="btn-pdf" onclick="window.open('${r.pdfTraslado}')"><i class="fa fa-file-pdf"></i></button>`:"—"}</td>
+<td>${r.TR||"—"}</td>
+<td>${r.imagen?`<img src="${r.imagen}" class="img-preview" onclick="expandImg('${r.imagen}')">`:"—"}</td>
+<td><button class="btn-ver" onclick='ver(${JSON.stringify(r)})'><i class="fa fa-eye"></i></button></td>
+</tr>
+`).join("");
 
-cardsContainer.innerHTML=DATA.map(r=>`
+cardsContainer.innerHTML=d.map(r=>`
 <div class="card">
-<b>#${r.pedido}</b> - ${r.cliente}<br>
+<div class="card-header">
+<span>#${r.pedido}</span>
+<span class="status ${cls(r.status)}">${r.status}</span>
+</div>
+<div>Cliente: ${r.cliente}</div>
+<div>Doc: ${r.tipoDocumento} ${r.numeroDocumento}</div>
 <button class="btn-ver" onclick='ver(${JSON.stringify(r)})'>Ver</button>
-</div>`).join("");
+</div>
+`).join("");
 
-kpi();
+kpi(d);
+grafico(d);
 }
 
-function kpi(){
+function kpi(d){
 let map={};
-DATA.forEach(x=>{map[x.cliente]=(map[x.cliente]||0)+1;});
-let arr=Object.entries(map);
-topClientes.innerHTML=arr.map(x=>`<div class="kpi-item">${x[0]} ${x[1]}</div>`).join("");
+d.forEach(x=>{
+let c=x.cliente||"Cliente";
+map[c]=(map[c]||0)+1;
+});
+let arr=Object.entries(map).sort((a,b)=>b[1]-a[1]);
+
+topClientes.innerHTML=arr.slice(0,5).map(x=>`<div class="kpi-item">${x[0]} <span>${x[1]}</span></div>`).join("");
 frecuenciaClientes.innerHTML=topClientes.innerHTML;
 antiguedadClientes.innerHTML=topClientes.innerHTML;
+}
+
+function grafico(d){
+let c={ENTREGADO:0,"EN RUTA":0,PENDIENTE:0};
+d.forEach(x=>{let s=(x.status||"").toUpperCase();if(c[s]!=undefined)c[s]++;});
+if(chart)chart.destroy();
+chart=new Chart(document.getElementById("chart"),{
+type:"doughnut",
+data:{labels:Object.keys(c),datasets:[{data:Object.values(c)}]}
+});
 }
 
 function ver(r){
@@ -175,35 +238,69 @@ modal.style.display="flex";
 modalContent.innerHTML=`
 <div class="modal-header">
 <h3>Pedido ${r.pedido}</h3>
-<button class="btn-close" onclick="modal.style.display='none'">Cerrar</button>
+<button class="btn-close" onclick="cerrarModal()">Cerrar</button>
 </div>
 
-<div style="margin-top:10px">
+<div class="modal-actions">
 ${r.pdf?`<button class="btn-pdf" onclick="window.open('${r.pdf}')">PDF Pedido</button>`:""}
-${r.pdfTraslado?`<button class="btn-pdf" onclick="window.open('${r.pdfTraslado}')">PDF TR</button>`:""}
+${r.pdfTraslado?`<button class="btn-pdf" onclick="window.open('${r.pdfTraslado}')">PDF Traslado</button>`:""}
 </div>
 
-${r.imagen?`<img src="${r.imagen}" style="width:100%;margin-top:10px;border-radius:10px">`:""}
+${r.imagen?`<img src="${r.imagen}" style="width:100%;border-radius:10px;margin-bottom:10px">`:""}
 
 <div class="timeline">
-<div class="timeline-item"><div class="timeline-icon info">i</div><div>${r.fechaIngreso}</div></div>
-<div class="timeline-item"><div class="timeline-icon ok">✓</div><div>${r.fechaModificacion}</div></div>
-<div class="timeline-item"><div class="timeline-icon warn">!</div><div>${r.fechaEntrega}</div></div>
-<div class="timeline-item"><div class="timeline-icon danger">!</div><div>${r.status}</div></div>
+${item("info","Ingreso",r.fechaIngreso)}
+${item("ok","Modificación",r.fechaModificacion)}
+${item("warn","Entrega",r.fechaEntrega)}
+${item("danger","Estado",r.status)}
+${item("ok","Cliente",r.cliente)}
+${item("info","Documento",r.tipoDocumento+" - "+r.numeroDocumento)}
+${item("ok","TR",r.TR)}
+${item("warn","Observaciones",r.observaciones)}
 </div>
 `;
 }
+
+function item(color,titulo,valor){
+return `<div class="timeline-item">
+<div class="timeline-icon ${color}"></div>
+<div><b>${titulo}:</b> ${valor||"—"}</div>
+</div>`;
+}
+
+function expandImg(src){
+modal.style.display="flex";
+modalContent.innerHTML=`
+<div class="modal-header">
+<h3>Imagen</h3>
+<button class="btn-close" onclick="cerrarModal()">Cerrar</button>
+</div>
+<img src="${src}" style="width:100%;border-radius:10px;">
+`;
+}
+
+function cerrarModal(){modal.style.display="none";}
 
 function cls(s){
 s=(s||"").toLowerCase();
 if(s.includes("entregado"))return"entregado";
 if(s.includes("ruta"))return"enruta";
+if(s.includes("pendiente"))return"pendiente";
+if(s.includes("recibido"))return"recibido";
+if(s.includes("cancelado"))return"cancelado";
 return"pendiente";
 }
 
 function toggleKPI(){
 kpiWrapper.style.display=kpiWrapper.style.display==="none"?"grid":"none";
 }
+
+modal.onclick=e=>{if(e.target.id==="modal") cerrarModal();}
+
+buscador.oninput=render;
+fEstado.onchange=render;
+fechaDesde.onchange=render;
+fechaHasta.onchange=render;
 
 fetchData();
 </script>
