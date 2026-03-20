@@ -3,7 +3,7 @@ API
 ***************************************************/
 //const API="https://script.google.com/macros/s/AKfycbxtLfg0gSUBPCBgDZZeVC-yO7KElDU5RLbTmvj68K9UPOthpdtgLfrk_MRTGTpRaa1M/exec";
 
-const API="https://script.google.com/macros/s/AKfycbzwsl3NcNLfSBEi1S9MMapEdIUWz82WQy1-iq-tTQfIwI5CP9O0w7iJsihdpvGoaiQk/exec";
+const API="https://script.google.com/macros/s/AKfycbzodC_hETw5gmDkEHejyY3N3i1PAiXunxr0_utjw6u98YdXObYahjsScuGMIziQ8uWg/exec";
 
 /***************************************************
 DOM
@@ -689,36 +689,41 @@ NUEVO
 ***************************************************/
 btnNuevo.onclick = () => {
 
+  // 🔴 salir de modo edición
   EDIT = null;
- 
+  isEditing = false;
+
   /* LIMPIAR TODOS LOS CAMPOS */
- 
   modalForm.querySelectorAll("input,select,textarea").forEach(el => {
-   el.value = "";
+    el.value = "";
   });
- 
+
   /* LIMPIAR INPUT FILE */
- 
   if (mFotos) mFotos.value = "";
   if (mPdf) mPdf.value = "";
- 
+
   /* LIMPIAR VISTAS PREVIAS */
- 
   const fotoPreview = document.getElementById("fotoPreview");
   const pdfPreview = document.getElementById("pdfPreview");
- 
+
   if (fotoPreview) fotoPreview.innerHTML = "";
   if (pdfPreview) pdfPreview.innerHTML = "";
- 
+
   /* VALOR POR DEFECTO */
- 
   if (mStatus) mStatus.value = "PENDIENTE";
- 
+
+  /* RESET SELECCIÓN TABLA */
+  selectedIndex = -1;
+
   /* ABRIR MODAL */
- 
   modalForm.style.display = "flex";
- 
- };
+
+  /* 🟢 ENFOQUE AUTOMÁTICO */
+  setTimeout(()=>{
+    if(mPedido) mPedido.focus();
+  },100);
+
+};
 
 /***************************************************
 CANCELAR
@@ -728,62 +733,119 @@ btnCancelar.onclick=()=>modalForm.style.display="none";
 /***************************************************
 GUARDAR
 ***************************************************/
-btnGuardar.onclick=async()=>{
+btnGuardar.onclick = async()=>{
 
   try{
- 
-  setLoading(btnGuardar,true);
- 
-  let foto="";
-  let pdf="";
- 
-  if(mFotos && mFotos.files.length){
-   foto=await fileToBase64(mFotos.files[0]);
-  }
- 
-  if(mPdf && mPdf.files.length){
-   pdf=await fileToBase64(mPdf.files[0]);
-  }
- 
-  const data={
-   action:EDIT?"update":"add",
-   row:EDIT,
-   "TIPO DOCUMENTO":mTipoDoc.value,
-   "NUMERO DOCUMENTO":mNumeroDoc.value,
-   "CLIENTE":mCliente.value,
-   "DIRECCION":mDireccion.value,
-   "COMUNA":mComuna.value,
-   "TRANSPORTE":mTransporte.value,
-   "UNIDADES":mCajas.value,
-   "STATUS":mStatus.value,
-   "FECHA ENTREGA":mHoraEntrega.value,
-   "RESPONSABLE":mResponsable.value,
-   "OBSERVACIONES":mObs.value,
-   FOTO:foto,
-   PDF:pdf
-  };
- 
-  const params=new URLSearchParams();
-  params.append("data",JSON.stringify(data));
- 
-  await fetch(API,{
-   method:"POST",
-   body:params
-  });
- 
-  modalForm.style.display="none";
- 
-  load();
- 
+
+    setLoading(btnGuardar,true);
+
+    let foto = "";
+    let pdf = "";
+
+    /* ===== FOTO ===== */
+    if(mFotos && mFotos.files.length){
+
+      const file = mFotos.files[0];
+
+      if(file.size > 2 * 1024 * 1024){
+        alert("Imagen muy pesada (máx 2MB)");
+        setLoading(btnGuardar,false);
+        return;
+      }
+
+      foto = await fileToBase64(file);
+    }
+
+    /* ===== PDF ===== */
+    if(mPdf && mPdf.files.length){
+
+      const file = mPdf.files[0];
+
+      if(file.size > 3 * 1024 * 1024){
+        alert("PDF muy pesado (máx 3MB)");
+        setLoading(btnGuardar,false);
+        return;
+      }
+
+      pdf = await fileToBase64(file);
+    }
+
+    /* ===== DATA ===== */
+    const data = {
+      action: EDIT ? "update" : "add",
+      row: EDIT || "",
+      "TIPO DOCUMENTO": mTipoDoc.value || "",
+      "NUMERO DOCUMENTO": mNumeroDoc.value || "",
+      "CLIENTE": mCliente.value || "",
+      "DIRECCION": mDireccion.value || "",
+      "COMUNA": mComuna.value || "",
+      "TRANSPORTE": mTransporte.value || "",
+      "UNIDADES": mCajas.value || "",
+      "STATUS": mStatus.value || "PENDIENTE",
+      "FECHA ENTREGA": mHoraEntrega.value || "",
+      "RESPONSABLE": mResponsable.value || "",
+      "OBSERVACIONES": mObs.value || "",
+      FOTO: foto,
+      PDF: pdf
+    };
+
+    const params = new URLSearchParams();
+    params.append("data", JSON.stringify(data));
+
+    /* ===== FETCH SEGURO ===== */
+    const controller = new AbortController();
+    const timeout = setTimeout(()=>controller.abort(),20000);
+
+    const res = await fetch(API,{
+      method:"POST",
+      headers:{
+        "Content-Type":"application/x-www-form-urlencoded"
+      },
+      body:params,
+      signal: controller.signal
+    });
+
+    clearTimeout(timeout);
+
+    if(!res.ok){
+      throw new Error("Error servidor " + res.status);
+    }
+
+    /* ===== LIMPIAR + CERRAR ===== */
+    modalForm.querySelectorAll("input,select,textarea").forEach(el=>{
+      el.value="";
+    });
+
+    if(mFotos) mFotos.value="";
+    if(mPdf) mPdf.value="";
+
+    const fotoPreview = document.getElementById("fotoPreview");
+    const pdfPreview = document.getElementById("pdfPreview");
+
+    if(fotoPreview) fotoPreview.innerHTML="";
+    if(pdfPreview) pdfPreview.innerHTML="";
+
+    if(mStatus) mStatus.value="PENDIENTE";
+
+    EDIT = null;
+    isEditing = false;
+
+    modalForm.style.display="none";
+
+    /* ===== REFRESCAR ===== */
+    PAGE = 1;
+    await load();
+
   }catch(e){
- 
-   alert("Error guardando");
- 
+
+    console.error("ERROR GUARDAR:", e);
+    alert("Error guardando: " + e.message);
+
   }
- 
+
   setLoading(btnGuardar,false);
- 
- };
+
+};
 /***************************************************
 DELETE
 ***************************************************/
@@ -1013,6 +1075,8 @@ function renderPagination(){
   }
  
  }
+
+ 
 
 
  /* ===============================
