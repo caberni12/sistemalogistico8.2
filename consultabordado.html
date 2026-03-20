@@ -74,6 +74,27 @@ th{background:#f8fafc;}
 .table-wrap{display:none;}
 .cards-container{display:flex;}
 }
+
+.wrap{
+width:100%;
+max-width:1600px; /* más amplio para pantallas grandes */
+margin:auto;
+padding:20px;
+}
+
+/* Pantallas muy grandes */
+@media(min-width:1600px){
+.wrap{
+max-width:1800px;
+}
+}
+
+/* Pantallas ultra grandes */
+@media(min-width:2000px){
+.wrap{
+max-width:95%;
+}
+}
 </style>
 </head>
 
