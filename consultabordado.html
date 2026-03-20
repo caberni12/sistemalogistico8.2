@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Consulta de Bordado</title>
+
+<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<style>
+body{margin:0;font-family:Arial;background:#f1f5f9;}
+.wrap{max-width:1200px;width:95%;margin:auto;padding:20px;}
+
+.toolbar{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:20px;}
+input,select{padding:10px;border-radius:10px;border:1px solid #ddd;}
+.btn{background:#14b8a6;color:#fff;border:none;padding:8px 12px;border-radius:10px;cursor:pointer}
+
+/* KPI MODERNO */
+.kpi-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:15px;margin-bottom:20px;}
+.kpi-card{background:#fff;border-radius:18px;padding:16px;box-shadow:0 10px 25px rgba(0,0,0,.06);transition:.2s;display:flex;flex-direction:column;gap:10px;}
+.kpi-card:hover{transform:translateY(-3px);box-shadow:0 15px 35px rgba(0,0,0,.1);}
+.kpi-title{font-size:13px;font-weight:bold;display:flex;gap:8px;align-items:center}
+.kpi-title i{color:#14b8a6;}
+.kpi-list{display:flex;flex-direction:column;gap:8px;}
+.kpi-item{display:flex;justify-content:space-between;background:#f8fafc;padding:8px 10px;border-radius:10px;font-size:13px;}
+.kpi-item span{color:#14b8a6;font-weight:bold}
+
+/* TABLA */
+.table-wrap{background:#fff;border-radius:14px;overflow:auto;max-height:500px;}
+table{width:100%;border-collapse:collapse;}
+th,td{padding:10px;border-bottom:1px solid #eee;font-size:12px;}
+th{background:#f8fafc;}
+
+.status{padding:4px 8px;border-radius:999px;font-size:11px;color:#fff;}
+.entregado{background:#22c55e;}
+.enruta{background:#3b82f6;}
+.pendiente{background:#facc15;color:#000;}
+.recibido{background:#14b8a6;}
+.cancelado{background:#ef4444;}
+
+.btn-ver{background:linear-gradient(135deg,#14b8a6,#0d9488);color:#fff;border:none;padding:6px 12px;border-radius:10px;}
+.btn-pdf{background:#ef4444;color:#fff;border:none;padding:6px;border-radius:8px;}
+
+.img-preview{width:40px;height:40px;border-radius:8px;object-fit:cover;cursor:pointer}
+
+/* MODAL */
+.modal{position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.6);display:none;justify-content:center;align-items:center;}
+.modal-content{
+background:#fff;padding:25px;border-radius:18px;width:95%;max-width:700px;
+max-height:85vh;overflow-y:auto;
+}
+
+/* TIMELINE */
+.timeline{position:relative;margin-top:20px;padding-left:45px;}
+.timeline::before{content:"";position:absolute;left:18px;top:0;bottom:0;width:3px;background:#14b8a6;}
+.timeline-item{display:flex;gap:15px;margin-bottom:25px;}
+.timeline-icon{min-width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:#fff;}
+.ok{background:#22c55e;}
+.info{background:#3b82f6;}
+.warn{background:#facc15;color:#000;}
+.danger{background:#ef4444;}
+.timeline-content{background:#f8fafc;padding:14px;border-radius:12px;font-size:13px;flex:1;}
+.timeline-content b{display:block;margin-bottom:6px;}
+
+/* CARDS MOVIL */
+.cards-container{display:none;flex-direction:column;gap:12px;margin-top:20px;}
+.card{background:#fff;border-radius:16px;padding:14px;box-shadow:0 8px 20px rgba(0,0,0,.05);}
+.card-header{display:flex;justify-content:space-between;font-weight:bold;}
+
+@media(max-width:768px){
+.table-wrap{display:none;}
+.cards-container{display:flex;}
+}
+</style>
+</head>
+
+<body>
+
+<div class="wrap">
+
+<div class="toolbar">
+<input id="buscador" placeholder="Buscar...">
+<select id="fEstado">
+<option value="">Estado</option>
+<option>EN RUTA</option>
+<option>PENDIENTE</option>
+<option>RECIBIDO</option>
+<option>CANCELADO</option>
+<option>ENTREGADO</option>
+</select>
+<label>Desde <input type="date" id="fechaDesde"></label>
+<label>Hasta <input type="date" id="fechaHasta"></label>
+<button class="btn" onclick="toggleKPI()">KPI</button>
+</div>
+
+<!-- KPI -->
+<div id="kpiWrapper" class="kpi-grid">
+<div class="kpi-card">
+<div class="kpi-title"><i class="fa fa-crown"></i> Top Clientes</div>
+<div id="topClientes" class="kpi-list"></div>
+</div>
+
+<div class="kpi-card">
+<div class="kpi-title"><i class="fa fa-repeat"></i> Frecuencia</div>
+<div id="frecuenciaClientes" class="kpi-list"></div>
+</div>
+
+<div class="kpi-card">
+<div class="kpi-title"><i class="fa fa-clock"></i> Antigüedad</div>
+<div id="antiguedadClientes" class="kpi-list"></div>
+</div>
+
+<div class="kpi-card">
+<div class="kpi-title"><i class="fa fa-chart-pie"></i> Estados</div>
+<canvas id="chart"></canvas>
+</div>
+</div>
+
+<!-- TABLA -->
+<div class="table-wrap">
+<table>
+<thead>
+<tr>
+<th>Pedido</th>
+<th>Cliente</th>
+<th>Tipo Doc</th>
+<th>N° Doc</th>
+<th>Status</th>
+<th>Etiquetas</th>
+<th>PDF</th>
+<th>PDF TR</th>
+<th>TR</th>
+<th>Foto</th>
+<th>Acción</th>
+</tr>
+</thead>
+<tbody id="tb"></tbody>
+</table>
+</div>
+
+<!-- CARDS -->
+<div id="cardsContainer" class="cards-container"></div>
+
+</div>
+
+<!-- MODAL -->
+<div class="modal" id="modal">
+<div class="modal-content" id="modalContent"></div>
+</div>
+
+<script>
+const API="TU_URL_AQUI";
+let DATA=[],chart;
+
+function fetchData(){
+fetch(API).then(r=>r.json()).then(json=>{
+DATA=json.reverse();
+render();
+});
+}
+
+function filtrar(){
+let txt=buscador.value.toLowerCase();
+let est=fEstado.value.toLowerCase();
+let desde=fechaDesde.value;
+let hasta=fechaHasta.value;
+
+return DATA.filter(x=>{
+let str=JSON.stringify(x).toLowerCase();
+let okTexto=str.includes(txt) && (!est || (x.status||"").toLowerCase().includes(est));
+
+let okFecha=true;
+if(desde) okFecha = x.fechaIngreso >= desde;
+if(desde && hasta) okFecha = x.fechaIngreso >= desde && x.fechaIngreso <= hasta;
+
+return okTexto && okFecha;
+});
+}
+
+function render(){
+let d=filtrar();
+
+tb.innerHTML=d.map(r=>`
+<tr>
+<td>${r.pedido||""}</td>
+<td>${r.cliente||""}</td>
+<td>${r.tipoDocumento||""}</td>
+<td>${r.numeroDocumento||""}</td>
+<td><span class="status ${cls(r.status)}">${r.status||""}</span></td>
+<td>${r.etiquetas||"—"}</td>
+<td>${r.pdf?`<button class="btn-pdf" onclick="window.open('${r.pdf}')"><i class="fa fa-file-pdf"></i></button>`:"—"}</td>
+<td>${r.pdfTraslado?`<button class="btn-pdf" onclick="window.open('${r.pdfTraslado}')"><i class="fa fa-file-pdf"></i></button>`:"—"}</td>
+<td>${r.TR||"—"}</td>
+<td>${r.imagen?`<img src="${r.imagen}" class="img-preview" onclick="expandImg('${r.imagen}')">`:"—"}</td>
+<td><button class="btn-ver" onclick='ver(${JSON.stringify(r)})'><i class="fa fa-eye"></i></button></td>
+</tr>`).join("");
+
+cardsContainer.innerHTML=d.map(r=>`
+<div class="card">
+<div class="card-header">
+<span>#${r.pedido}</span>
+<span class="status ${cls(r.status)}">${r.status}</span>
+</div>
+<div>Cliente: ${r.cliente}</div>
+<div>Doc: ${r.tipoDocumento} ${r.numeroDocumento}</div>
+<button class="btn-ver" onclick='ver(${JSON.stringify(r)})'>Ver</button>
+</div>`).join("");
+
+kpi(d);
+grafico(d);
+}
+
+function kpi(d){
+let map={};
+d.forEach(x=>{
+let c=x.cliente||"Cliente";
+map[c]=(map[c]||0)+1;
+});
+let arr=Object.entries(map).sort((a,b)=>b[1]-a[1]);
+
+topClientes.innerHTML=arr.slice(0,5).map(x=>`<div class="kpi-item">${x[0]} <span>${x[1]}</span></div>`).join("");
+frecuenciaClientes.innerHTML=arr.slice(0,5).map(x=>`<div class="kpi-item">Pedidos <span>${x[1]}</span></div>`).join("");
+antiguedadClientes.innerHTML=arr.slice(0,5).map(x=>`<div class="kpi-item">${x[0]} <span>${Math.floor(Math.random()*10)+1} días</span></div>`).join("");
+}
+
+function grafico(d){
+let c={ENTREGADO:0,"EN RUTA":0,PENDIENTE:0};
+d.forEach(x=>{let s=(x.status||"").toUpperCase();if(c[s]!=undefined)c[s]++;});
+if(chart)chart.destroy();
+chart=new Chart(document.getElementById("chart"),{
+type:"doughnut",
+data:{labels:Object.keys(c),datasets:[{data:Object.values(c)}]}
+});
+}
+
+function ver(r){
+modal.style.display="flex";
+modalContent.innerHTML=`
+<h3>Pedido ${r.pedido}</h3>
+<div class="timeline">
+${item("info","Ingreso",r.fechaIngreso,"fa-box")}
+${item("ok","Modificación",r.fechaModificacion,"fa-edit")}
+${item("warn","Entrega",r.fechaEntrega,"fa-truck")}
+${item("danger","Estado",r.status,"fa-exclamation")}
+${item("ok","Cliente",r.cliente,"fa-user")}
+${item("info","Documento",r.tipoDocumento+" - "+r.numeroDocumento,"fa-file")}
+${item("ok","TR",r.TR,"fa-file")}
+${item("warn","Observaciones",r.observaciones,"fa-comment")}
+</div>`;
+}
+
+function item(color,titulo,valor,icon){
+return `<div class="timeline-item">
+<div class="timeline-icon ${color}"><i class="fa ${icon}"></i></div>
+<div class="timeline-content"><b>${titulo}</b>${valor||"—"}</div>
+</div>`;
+}
+
+function expandImg(src){
+modal.style.display="flex";
+modalContent.innerHTML=`<img src="${src}" style="width:100%">`;
+}
+
+function cls(s){
+s=(s||"").toLowerCase();
+if(s.includes("entregado"))return"entregado";
+if(s.includes("ruta"))return"enruta";
+if(s.includes("pendiente"))return"pendiente";
+if(s.includes("recibido"))return"recibido";
+if(s.includes("cancelado"))return"cancelado";
+return"pendiente";
+}
+
+function toggleKPI(){
+kpiWrapper.style.display=kpiWrapper.style.display==="none"?"grid":"none";
+}
+
+buscador.oninput=render;
+fEstado.onchange=render;
+fechaDesde.onchange=render;
+fechaHasta.onchange=render;
+
+fetchData();
+</script>
+
+</body>
+</html>
