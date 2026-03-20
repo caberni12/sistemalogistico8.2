@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Importador Excel CLIENTES</title>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+
+<style>
+
+/* RESET */
+*{box-sizing:border-box;}
+
+/* BODY */
+body{
+  margin:0;
+  font-family:Segoe UI, Arial;
+  background:#f4f7fb;
+  color:#1e293b;
+}
+
+/* CONTENEDOR FULL */
+.container{
+  width:100%;
+  padding:15px;
+}
+
+/* TARJETAS */
+.card{
+  width:100%;
+  background:#fff;
+  padding:18px;
+  border-radius:12px;
+  margin-bottom:15px;
+  box-shadow:0 4px 12px rgba(0,0,0,.06);
+}
+
+/* TITULOS */
+h2,h3{
+  margin:0 0 10px;
+}
+
+/* DROP */
+.drop{
+  border:2px dashed #14b8a6;
+  padding:40px 15px;
+  text-align:center;
+  border-radius:10px;
+  cursor:pointer;
+  background:#f0fdfa;
+  transition:.2s;
+}
+
+.drop:hover{
+  background:#ccfbf1;
+}
+
+/* BOTON */
+button{
+  width:100%;
+  padding:14px;
+  border:none;
+  border-radius:10px;
+  background:#14b8a6;
+  color:#fff;
+  font-weight:bold;
+  margin-top:10px;
+  cursor:pointer;
+}
+
+/* TABLA CONTENEDOR */
+.table-container{
+  width:100%;
+  overflow-x:auto;
+}
+
+/* TABLA */
+.table{
+  width:100%;
+  border-collapse:collapse;
+  font-size:13px;
+}
+
+/* AUTO AJUSTE DE COLUMNAS */
+.table th,
+.table td{
+  padding:10px;
+  border:1px solid #e2e8f0;
+  text-align:left;
+  white-space:nowrap;
+}
+
+/* ENCABEZADO */
+.table th{
+  background:#14b8a6;
+  color:#fff;
+  position:sticky;
+  top:0;
+}
+
+/* FILAS */
+.table tr:nth-child(even){
+  background:#f8fafc;
+}
+
+/* STATUS */
+.ok{color:#16a34a;}
+.error{color:#dc2626;}
+
+</style>
+</head>
+
+<body>
+
+<div class="container">
+
+<div class="card">
+  <h2>📂 Importador Excel CLIENTES</h2>
+
+  <div class="drop" id="drop">
+    Arrastra tu archivo Excel o haz click
+    <input type="file" id="file" hidden accept=".xlsx">
+  </div>
+
+  <button onclick="subir()">IMPORTAR</button>
+
+  <div id="status"></div>
+</div>
+
+<div class="card">
+  <h3>Vista previa</h3>
+
+  <div class="table-container">
+    <table class="table" id="tabla"></table>
+  </div>
+</div>
+
+</div>
+
+<script>
+
+const URL = "https://script.google.com/macros/s/AKfycbwmIPn7Ra_9nRAIvfpywZ-lw054lxQjPVKHwxv_7E96DwhsZ5uf2jmjWNjVy45eN2qfVA/exec";
+
+let datos = [];
+let headers = [];
+
+/************************************************
+EVENTOS
+************************************************/
+const drop = document.getElementById("drop");
+const input = document.getElementById("file");
+
+drop.onclick = ()=> input.click();
+
+drop.addEventListener("dragover", e=> e.preventDefault());
+
+drop.addEventListener("drop", e=>{
+  e.preventDefault();
+  leerArchivo(e.dataTransfer.files[0]);
+});
+
+input.addEventListener("change", e=>{
+  leerArchivo(e.target.files[0]);
+});
+
+/************************************************
+LEER EXCEL
+************************************************/
+function leerArchivo(file){
+
+  const reader = new FileReader();
+
+  reader.onload = function(e){
+
+    const wb = XLSX.read(new Uint8Array(e.target.result), {
+      type:'array',
+      cellDates:true
+    });
+
+    const sheet = wb.Sheets[wb.SheetNames[0]];
+
+    const json = XLSX.utils.sheet_to_json(sheet, {
+      defval:"",
+      raw:false
+    });
+
+    if(!json.length){
+      document.getElementById("status").innerHTML =
+        '<span class="error">Archivo vacío</span>';
+      return;
+    }
+
+    datos = json;
+    headers = Object.keys(json[0]);
+
+    document.getElementById("status").innerHTML =
+      `<span class="ok">✔ ${datos.length} filas cargadas</span>`;
+
+    renderTabla();
+  };
+
+  reader.readAsArrayBuffer(file);
+}
+
+/************************************************
+TABLA AUTO AJUSTABLE
+************************************************/
+function renderTabla(){
+
+  const tabla = document.getElementById("tabla");
+
+  let html = "<tr>";
+
+  headers.forEach(h=>{
+    html += `<th>${h}</th>`;
+  });
+
+  html += "</tr>";
+
+  datos.slice(0,50).forEach(r=>{
+    html += "<tr>";
+    headers.forEach(h=>{
+      html += `<td>${r[h]}</td>`;
+    });
+    html += "</tr>";
+  });
+
+  tabla.innerHTML = html;
+}
+
+/************************************************
+SUBIR
+************************************************/
+async function subir(){
+
+  const status = document.getElementById("status");
+
+  if(!datos.length){
+    status.innerHTML = '<span class="error">No hay datos</span>';
+    return;
+  }
+
+  status.innerHTML = "⏳ Subiendo...";
+
+  try{
+
+    const res = await fetch(URL,{
+      method:"POST",
+      body: JSON.stringify({datos}),
+      headers:{
+        "Content-Type":"text/plain;charset=utf-8"
+      }
+    });
+
+    const json = await res.json();
+
+    if(json.ok){
+      status.innerHTML =
+        `<span class="ok">✔ ${json.total} filas importadas</span>`;
+    }else{
+      status.innerHTML =
+        `<span class="error">${json.msg}</span>`;
+    }
+
+  }catch(e){
+    status.innerHTML =
+      '<span class="error">Error conexión</span>';
+  }
+}
+
+</script>
+
+</body>
+</html>
