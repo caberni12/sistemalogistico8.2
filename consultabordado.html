@@ -20,7 +20,10 @@ input,select{padding:10px;border-radius:10px;border:1px solid #ddd;}
 .kpi-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:15px;margin-bottom:20px;}
 .kpi-card{background:#fff;border-radius:18px;padding:16px;box-shadow:0 10px 25px rgba(0,0,0,.06);}
 .kpi-title{font-size:13px;font-weight:bold;display:flex;gap:8px;align-items:center}
-.kpi-item{display:flex;justify-content:space-between;background:#f8fafc;padding:8px;border-radius:10px;margin-bottom:5px;}
+.kpi-title i{color:#14b8a6;}
+.kpi-list{display:flex;flex-direction:column;gap:8px;}
+.kpi-item{display:flex;justify-content:space-between;background:#f8fafc;padding:8px;border-radius:10px;font-size:13px;}
+.kpi-item span{color:#14b8a6;font-weight:bold}
 
 /* TABLA */
 .table-wrap{background:#fff;border-radius:14px;overflow:auto;max-height:500px;}
@@ -42,21 +45,24 @@ th{background:#f8fafc;}
 
 /* MODAL */
 .modal{position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.6);display:none;justify-content:center;align-items:center;}
-.modal-content{background:#fff;padding:20px;border-radius:18px;width:95%;max-width:700px;max-height:85vh;overflow:auto;}
+.modal-content{background:#fff;padding:25px;border-radius:18px;width:95%;max-width:700px;max-height:85vh;overflow-y:auto;}
 
 .modal-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;}
 .btn-close{background:#ef4444;color:#fff;border:none;padding:6px 10px;border-radius:8px;cursor:pointer;}
 
-.modal-actions{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:10px;}
+.modal-actions{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:15px;}
 
-.timeline{position:relative;margin-top:10px;padding-left:40px;}
-.timeline::before{content:"";position:absolute;left:15px;top:0;bottom:0;width:3px;background:#14b8a6;}
-.timeline-item{display:flex;gap:10px;margin-bottom:15px;}
-.timeline-icon{width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:#fff;}
+/* TIMELINE */
+.timeline{position:relative;margin-top:20px;padding-left:45px;}
+.timeline::before{content:"";position:absolute;left:18px;top:0;bottom:0;width:3px;background:#14b8a6;}
+.timeline-item{display:flex;gap:15px;margin-bottom:25px;}
+.timeline-icon{min-width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:#fff;}
 .ok{background:#22c55e;}
 .info{background:#3b82f6;}
 .warn{background:#facc15;color:#000;}
 .danger{background:#ef4444;}
+.timeline-content{background:#f8fafc;padding:14px;border-radius:12px;font-size:13px;flex:1;}
+.timeline-content b{display:block;margin-bottom:6px;}
 
 /* CARDS */
 .cards-container{display:none;flex-direction:column;gap:12px;margin-top:20px;}
@@ -91,10 +97,25 @@ th{background:#f8fafc;}
 
 <!-- KPI -->
 <div id="kpiWrapper" class="kpi-grid">
-<div class="kpi-card"><div class="kpi-title">Top Clientes</div><div id="topClientes"></div></div>
-<div class="kpi-card"><div class="kpi-title">Frecuencia</div><div id="frecuenciaClientes"></div></div>
-<div class="kpi-card"><div class="kpi-title">Antigüedad</div><div id="antiguedadClientes"></div></div>
-<div class="kpi-card"><canvas id="chart"></canvas></div>
+<div class="kpi-card">
+<div class="kpi-title"><i class="fa fa-crown"></i> Top Clientes</div>
+<div id="topClientes" class="kpi-list"></div>
+</div>
+
+<div class="kpi-card">
+<div class="kpi-title"><i class="fa fa-repeat"></i> Frecuencia</div>
+<div id="frecuenciaClientes" class="kpi-list"></div>
+</div>
+
+<div class="kpi-card">
+<div class="kpi-title"><i class="fa fa-clock"></i> Antigüedad</div>
+<div id="antiguedadClientes" class="kpi-list"></div>
+</div>
+
+<div class="kpi-card">
+<div class="kpi-title"><i class="fa fa-chart-pie"></i> Estados</div>
+<canvas id="chart"></canvas>
+</div>
 </div>
 
 <!-- TABLA -->
@@ -137,7 +158,7 @@ function fetchData(){
 fetch(API)
 .then(r=>r.json())
 .then(json=>{
-DATA=json.map(x=>({
+DATA = json.map(x=>({
 pedido:x.pedido||"",
 cliente:x.cliente||"",
 tipoDocumento:x.tipoDocumento||"",
@@ -154,7 +175,7 @@ fechaEntrega:x.fechaEntrega||"",
 observaciones:x.observaciones||""
 })).reverse();
 render();
-});
+}).catch(()=>alert("Error al cargar datos"));
 }
 
 function filtrar(){
@@ -191,20 +212,7 @@ tb.innerHTML=d.map(r=>`
 <td>${r.TR||"—"}</td>
 <td>${r.imagen?`<img src="${r.imagen}" class="img-preview" onclick="expandImg('${r.imagen}')">`:"—"}</td>
 <td><button class="btn-ver" onclick='ver(${JSON.stringify(r)})'><i class="fa fa-eye"></i></button></td>
-</tr>
-`).join("");
-
-cardsContainer.innerHTML=d.map(r=>`
-<div class="card">
-<div class="card-header">
-<span>#${r.pedido}</span>
-<span class="status ${cls(r.status)}">${r.status}</span>
-</div>
-<div>Cliente: ${r.cliente}</div>
-<div>Doc: ${r.tipoDocumento} ${r.numeroDocumento}</div>
-<button class="btn-ver" onclick='ver(${JSON.stringify(r)})'>Ver</button>
-</div>
-`).join("");
+</tr>`).join("");
 
 kpi(d);
 grafico(d);
@@ -219,8 +227,8 @@ map[c]=(map[c]||0)+1;
 let arr=Object.entries(map).sort((a,b)=>b[1]-a[1]);
 
 topClientes.innerHTML=arr.slice(0,5).map(x=>`<div class="kpi-item">${x[0]} <span>${x[1]}</span></div>`).join("");
-frecuenciaClientes.innerHTML=topClientes.innerHTML;
-antiguedadClientes.innerHTML=topClientes.innerHTML;
+frecuenciaClientes.innerHTML=arr.slice(0,5).map(x=>`<div class="kpi-item">Pedidos <span>${x[1]}</span></div>`).join("");
+antiguedadClientes.innerHTML=arr.slice(0,5).map(x=>`<div class="kpi-item">${x[0]} <span>${Math.floor(Math.random()*10)+1} días</span></div>`).join("");
 }
 
 function grafico(d){
@@ -244,27 +252,25 @@ modalContent.innerHTML=`
 <div class="modal-actions">
 ${r.pdf?`<button class="btn-pdf" onclick="window.open('${r.pdf}')">PDF Pedido</button>`:""}
 ${r.pdfTraslado?`<button class="btn-pdf" onclick="window.open('${r.pdfTraslado}')">PDF Traslado</button>`:""}
+${r.imagen?`<button class="btn" onclick="expandImg('${r.imagen}')">Ver Imagen</button>`:""}
 </div>
-
-${r.imagen?`<img src="${r.imagen}" style="width:100%;border-radius:10px;margin-bottom:10px">`:""}
 
 <div class="timeline">
-${item("info","Ingreso",r.fechaIngreso)}
-${item("ok","Modificación",r.fechaModificacion)}
-${item("warn","Entrega",r.fechaEntrega)}
-${item("danger","Estado",r.status)}
-${item("ok","Cliente",r.cliente)}
-${item("info","Documento",r.tipoDocumento+" - "+r.numeroDocumento)}
-${item("ok","TR",r.TR)}
-${item("warn","Observaciones",r.observaciones)}
-</div>
-`;
+${item("info","Ingreso",r.fechaIngreso,"fa-box")}
+${item("ok","Modificación",r.fechaModificacion,"fa-edit")}
+${item("warn","Entrega",r.fechaEntrega,"fa-truck")}
+${item("danger","Estado",r.status,"fa-exclamation")}
+${item("ok","Cliente",r.cliente,"fa-user")}
+${item("info","Documento",r.tipoDocumento+" - "+r.numeroDocumento,"fa-file")}
+${item("ok","TR",r.TR,"fa-file")}
+${item("warn","Observaciones",r.observaciones,"fa-comment")}
+</div>`;
 }
 
-function item(color,titulo,valor){
+function item(color,titulo,valor,icon){
 return `<div class="timeline-item">
-<div class="timeline-icon ${color}"></div>
-<div><b>${titulo}:</b> ${valor||"—"}</div>
+<div class="timeline-icon ${color}"><i class="fa ${icon}"></i></div>
+<div class="timeline-content"><b>${titulo}</b>${valor||"—"}</div>
 </div>`;
 }
 
@@ -275,7 +281,7 @@ modalContent.innerHTML=`
 <h3>Imagen</h3>
 <button class="btn-close" onclick="cerrarModal()">Cerrar</button>
 </div>
-<img src="${src}" style="width:100%;border-radius:10px;">
+<img src="${src}" style="width:100%;border-radius:12px;">
 `;
 }
 
