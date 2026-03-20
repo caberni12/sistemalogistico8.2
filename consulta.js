@@ -1,7 +1,7 @@
 /************************************************
 API
 ************************************************/
-const API_CLIENTES = "https://script.google.com/macros/s/AKfycbzY_pqPBF8PtLhp1cnhVQVR0iw9tAGiGdQpz56Av1rZQQ8IFmyNSiPDzRPUxA25lmOgaQ/exec";
+const API_CLIENTES = "https://script.google.com/macros/s/AKfycbwKFSsdlYwfzCcNHpTnbMrEHkDe5BLsb5jOA0qzr08xOU6Nu7PQ57ltUpFB3fk1DnUckQ/exec";
 
 /************************************************
 DOM
@@ -36,16 +36,16 @@ function setValue(id, value){
 }
 
 /************************************************
-CONSULTAR PEDIDO
+CONSULTAR PEDIDO GLOBAL
 ************************************************/
-btnConsultar.addEventListener("click", consultarPedido);
+btnConsultar.addEventListener("click", consultarPedidoGlobal);
 
-async function consultarPedido(){
+async function consultarPedidoGlobal(){
 
-  const numero = inputConsulta.value.trim();
+  const busqueda = inputConsulta.value.trim();
 
-  if(!numero){
-    msgConsulta.textContent = "Ingrese Nº";
+  if(!busqueda){
+    msgConsulta.textContent = "Ingrese término de búsqueda";
     msgConsulta.style.color = "#dc2626";
     inputConsulta.focus();
     return;
@@ -56,8 +56,7 @@ async function consultarPedido(){
   msgConsulta.style.color = "#64748b";
 
   try{
-
-    const url = API_CLIENTES + "?numero=" + encodeURIComponent(numero);
+    const url = API_CLIENTES + "?q=" + encodeURIComponent(busqueda); // <-- PARAMETRO GLOBAL 'q'
     const res = await fetch(url);
 
     if(!res.ok){
@@ -68,7 +67,7 @@ async function consultarPedido(){
 
     console.log("DATA:", data);
 
-    if(data.error){
+    if(data.error || !data.data || data.data.length === 0){
       limpiarCampos();
       msgConsulta.textContent = "No encontrado";
       msgConsulta.style.color = "#dc2626";
@@ -76,31 +75,31 @@ async function consultarPedido(){
       return;
     }
 
+    // Tomamos solo el primer resultado para autocompletar (puedes adaptarlo si quieres mostrar varios)
+    const fila = data.data[0];
+
     /************************************************
     AUTOCOMPLETAR CAMPOS
     ************************************************/
-
-    setValue("mNumeroDoc", data.numero);
-    setValue("mCliente", data.cliente);
-    setValue("mDireccion", data.direccion);
-    setValue("mComuna", data.comuna);
-    setValue("mTransporte", data.transporte);
-    setValue("mResponsable", data.responsable);
+    setValue("mNumeroDoc", fila.numero);
+    setValue("mCliente", fila.cliente);
+    setValue("mDireccion", fila.direccion);
+    setValue("mComuna", fila.comuna);
+    setValue("mTransporte", fila.transporte);
+    setValue("mResponsable", fila.responsable);
 
     // Fechas
-    setValue("mFecha", data.fecha);
-    setValue("mFecReg", data.fecreg);
+    setValue("mFecha", fila.fecha);
+    setValue("mFecReg", fila.fecreg);
 
-    msgConsulta.textContent = "Datos cargados correctamente";
+    msgConsulta.textContent = `Datos cargados (${data.total} encontrados)`;
     msgConsulta.style.color = "#16a34a";
 
   }catch(err){
-
     console.error("ERROR:", err);
     limpiarCampos();
     msgConsulta.textContent = "Error al consultar";
     msgConsulta.style.color = "#dc2626";
-
   }
 
   btnConsultar.classList.remove("loading");
@@ -112,6 +111,6 @@ ENTER PARA CONSULTAR
 inputConsulta.addEventListener("keypress", function(e){
   if(e.key === "Enter"){
     e.preventDefault();
-    consultarPedido();
+    consultarPedidoGlobal();
   }
 });
