@@ -736,41 +736,34 @@ GUARDAR
 btnGuardar.onclick = async()=>{
 
   try{
-
     setLoading(btnGuardar,true);
 
     let foto = "";
     let pdf = "";
 
-    /* ===== FOTO ===== */
+    // === FOTO ===
     if(mFotos && mFotos.files.length){
-
       const file = mFotos.files[0];
-
       if(file.size > 2 * 1024 * 1024){
         alert("Imagen muy pesada (máx 2MB)");
         setLoading(btnGuardar,false);
         return;
       }
-
       foto = await fileToBase64(file);
     }
 
-    /* ===== PDF ===== */
+    // === PDF ===
     if(mPdf && mPdf.files.length){
-
       const file = mPdf.files[0];
-
       if(file.size > 3 * 1024 * 1024){
         alert("PDF muy pesado (máx 3MB)");
         setLoading(btnGuardar,false);
         return;
       }
-
       pdf = await fileToBase64(file);
     }
 
-    /* ===== DATA ===== */
+    // === DATA ===
     const data = {
       action: EDIT ? "update" : "add",
       row: EDIT || "",
@@ -780,7 +773,7 @@ btnGuardar.onclick = async()=>{
       "DIRECCION": mDireccion.value || "",
       "COMUNA": mComuna.value || "",
       "TRANSPORTE": mTransporte.value || "",
-      "UNIDADES": mCajas.value || "",
+      "ETIQUETAS": mCajas.value || "",    // <-- MODIFICADO
       "STATUS": mStatus.value || "PENDIENTE",
       "FECHA ENTREGA": mHoraEntrega.value || "",
       "RESPONSABLE": mResponsable.value || "",
@@ -792,7 +785,6 @@ btnGuardar.onclick = async()=>{
     const params = new URLSearchParams();
     params.append("data", JSON.stringify(data));
 
-    /* ===== FETCH SEGURO ===== */
     const controller = new AbortController();
     const timeout = setTimeout(()=>controller.abort(),20000);
 
@@ -807,40 +799,29 @@ btnGuardar.onclick = async()=>{
 
     clearTimeout(timeout);
 
-    if(!res.ok){
-      throw new Error("Error servidor " + res.status);
-    }
+    if(!res.ok) throw new Error("Error servidor " + res.status);
 
-    /* ===== LIMPIAR + CERRAR ===== */
-    modalForm.querySelectorAll("input,select,textarea").forEach(el=>{
-      el.value="";
-    });
-
+    // === LIMPIAR Y CERRAR ===
+    modalForm.querySelectorAll("input,select,textarea").forEach(el=>el.value="");
     if(mFotos) mFotos.value="";
     if(mPdf) mPdf.value="";
 
     const fotoPreview = document.getElementById("fotoPreview");
     const pdfPreview = document.getElementById("pdfPreview");
-
     if(fotoPreview) fotoPreview.innerHTML="";
     if(pdfPreview) pdfPreview.innerHTML="";
 
     if(mStatus) mStatus.value="PENDIENTE";
-
     EDIT = null;
     isEditing = false;
-
     modalForm.style.display="none";
 
-    /* ===== REFRESCAR ===== */
     PAGE = 1;
     await load();
 
   }catch(e){
-
     console.error("ERROR GUARDAR:", e);
     alert("Error guardando: " + e.message);
-
   }
 
   setLoading(btnGuardar,false);
