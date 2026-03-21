@@ -207,41 +207,66 @@ async function load(){
 
     /* 🔹 MAPEAMOS TODOS LOS CAMPOS */
     RAW = rawData.map(r => ({
+
       _row: r._row || "",
+
       fechaIngreso: r['Fecha'] || r.fechaIngreso || "",
       pedido: r['Nº Pedido/OC'] || r.pedido || "",
       tipoDocumento: r['Tipo Documento'] || r.tipoDocumento || "",
       numeroDocumento: r['Nº Documento'] || r.numeroDocumento || "",
+
       cliente: r['Cliente'] || r.cliente || "",
       direccion: r['Dirección'] || r.direccion || "",
       comuna: r['Comuna'] || r.comuna || "",
       transporte: r['Transporte'] || r.transporte || "",
+
       etiquetas: r['Etiquetas'] || r.etiquetas || "",
-      TR: r['TR'] || r.TR || "",
+
+      /* ✅ TR (CORREGIDO Y ROBUSTO) */
+      TR: 
+        r['TR'] ||
+        r['Tr'] ||
+        r['tr'] ||
+        r['N° TR'] ||
+        r['Nº TR'] ||
+        r['Traslado'] ||
+        r.TR ||
+        "",
+
       status: r['Status'] || r.status || "PENDIENTE",
+
       fechaEntrega: r['FECHA ENTREGA'] || r.fechaEntrega || "",
+
       responsable: r['Responsable'] || r.responsable || "",
       observaciones: r['Observaciones'] || r.observaciones || "",
+
       foto: r['FOTO'] || r.foto || "",
       pdf: r['PDF'] || r.pdf || "",
       pdfTraslado: r['PDF Traslado'] || r.pdfTraslado || "",
+
       alerta: r['Alerta'] || r.alerta || "",
       diasAtraso: r['Días Atraso'] || r.diasAtraso || "",
+
       horaEntrega: r['FECHA ENTREGA'] || r.horaEntrega || ""
+
     }));
 
-    /* ORDENAR DEL MAS NUEVO AL MAS ANTIGUO */
-    RAW.sort((a,b)=> b._row - a._row);
+    /* 🔹 ORDENAR DEL MAS NUEVO AL MAS ANTIGUO */
+    RAW.sort((a,b)=> Number(b._row) - Number(a._row));
 
     applyFilters();
 
   }catch(e){
+
+    console.error("ERROR LOAD:", e);
     alert("Error cargando datos: " + e.message);
+
   }
 
   setLoading(btnReload,false);
 
 }
+     
 /***************************************************
 FILTROS
 ***************************************************/
