@@ -193,34 +193,55 @@ function crearKPI(id,valor,total,color){
 /***************************************************
 LOAD
 ***************************************************/
+
 async function load(){
 
   try{
- 
-   setLoading(btnReload,true);
- 
-   const r = await fetch(API);
- 
-   RAW = await r.json();
- 
-   if(!Array.isArray(RAW)) RAW=[];
- 
-   /* ORDENAR DEL MAS NUEVO AL MAS ANTIGUO */
- 
-   RAW.sort((a,b)=> b._row - a._row);
- 
-   applyFilters();
- 
-  }catch(e){
- 
-   alert("Error cargando datos");
- 
-  }
- 
-  setLoading(btnReload,false);
- 
- }
 
+    setLoading(btnReload,true);
+
+    const r = await fetch(API);
+    let rawData = await r.json();
+
+    if(!Array.isArray(rawData)) rawData=[];
+
+    /* 🔹 MAPEAMOS TODOS LOS CAMPOS */
+    RAW = rawData.map(r => ({
+      _row: r._row || "",
+      fechaIngreso: r['Fecha'] || r.fechaIngreso || "",
+      pedido: r['Nº Pedido/OC'] || r.pedido || "",
+      tipoDocumento: r['Tipo Documento'] || r.tipoDocumento || "",
+      numeroDocumento: r['Nº Documento'] || r.numeroDocumento || "",
+      cliente: r['Cliente'] || r.cliente || "",
+      direccion: r['Dirección'] || r.direccion || "",
+      comuna: r['Comuna'] || r.comuna || "",
+      transporte: r['Transporte'] || r.transporte || "",
+      etiquetas: r['Etiquetas'] || r.etiquetas || "",
+      TR: r['TR'] || r.TR || "",
+      status: r['Status'] || r.status || "PENDIENTE",
+      fechaEntrega: r['FECHA ENTREGA'] || r.fechaEntrega || "",
+      responsable: r['Responsable'] || r.responsable || "",
+      observaciones: r['Observaciones'] || r.observaciones || "",
+      foto: r['FOTO'] || r.foto || "",
+      pdf: r['PDF'] || r.pdf || "",
+      pdfTraslado: r['PDF Traslado'] || r.pdfTraslado || "",
+      alerta: r['Alerta'] || r.alerta || "",
+      diasAtraso: r['Días Atraso'] || r.diasAtraso || "",
+      horaEntrega: r['FECHA ENTREGA'] || r.horaEntrega || ""
+    }));
+
+    /* ORDENAR DEL MAS NUEVO AL MAS ANTIGUO */
+    RAW.sort((a,b)=> b._row - a._row);
+
+    applyFilters();
+
+  }catch(e){
+    alert("Error cargando datos: " + e.message);
+  }
+
+  setLoading(btnReload,false);
+
+}
 /***************************************************
 FILTROS
 ***************************************************/
