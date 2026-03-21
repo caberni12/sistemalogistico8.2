@@ -286,12 +286,13 @@ function render(){
 /***************************************************
 TABLA
 ***************************************************/
-function renderTable(data){
+
+  function renderTable(data){
 
   tbody.innerHTML = "";
 
   if(!data.length){
-    tbody.innerHTML = "<tr><td colspan='19'>Sin datos</td></tr>";
+    tbody.innerHTML = "<tr><td colspan='20'>Sin datos</td></tr>";
     return;
   }
 
@@ -307,39 +308,25 @@ function renderTable(data){
 >
 
 <td>${formatDate(r.fechaIngreso)}</td>
-
 <td>${r.pedido||""}</td>
-
 <td>${r.tipoDocumento||""}</td>
-
 <td>${r.numeroDocumento||""}</td>
-
 <td>${r.cliente||""}</td>
-
 <td>
   <a href="#" onclick="event.stopPropagation(); verMapa(\`${r.direccion||""}\`)">
     ${r.direccion||""}
   </a>
 </td>
-
 <td>${r.comuna||""}</td>
-
 <td>${r.transporte||""}</td>
-
-<td>${r.etiquetas||""}</td>
-
+<td>${r.TR||""}</td>          <!-- NUEVO: TR -->
+<td>${r.etiquetas||""}</td>   <!-- Etiquetas/Unidades -->
 <td>${renderEstado(r.status)}</td>
-
 <td>${r.fechaEntrega||""}</td>
-
 <td>${renderAlerta(r.alerta)}</td>
-
 <td>${r.diasAtraso||""}</td>
-
 <td>${semaforo}</td>
-
 <td>${r.responsable||""}</td>
-
 <td>
   ${
     r.foto
@@ -351,21 +338,11 @@ function renderTable(data){
     : ""
   }
 </td>
-
 <td>${renderPDF(r.pdf)}</td>
-
 <td>${renderPDF(r.pdfTraslado)}</td>
-
 <td class="actions">
-
-  <button onclick="event.stopPropagation(); openModal(${r._row})">
-    ✏️
-  </button>
-
-  <button onclick="event.stopPropagation(); deleteRow(${r._row})">
-    🗑️
-  </button>
-
+  <button onclick="event.stopPropagation(); openModal(${r._row})">✏️</button>
+  <button onclick="event.stopPropagation(); deleteRow(${r._row})">🗑️</button>
 </td>
 
 </tr>
@@ -376,6 +353,7 @@ function renderTable(data){
   });
 
 }
+
 
 function selectRow(index){
 
@@ -436,7 +414,6 @@ document.addEventListener("keydown", (e)=>{
 
 });
 
-
 function renderCards(data){
 
   mobileList.innerHTML="";
@@ -484,6 +461,11 @@ function renderCards(data){
     <div style="margin-top:6px">
       <span style="color:#f97316">🚚</span>
       <b> Transporte:</b> ${r.transporte||""}
+    </div>
+
+    <div style="margin-top:6px">
+      <span style="color:#10b981">🔢</span>
+      <b> TR:</b> ${r.TR||""}
     </div>
 
     <div style="margin-top:6px">
@@ -568,6 +550,7 @@ function renderCards(data){
   });
 
 }
+
 
 function renderKPIs(){
 
