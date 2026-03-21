@@ -114,7 +114,7 @@ max-width:95%;
 </select>
 <label>Desde <input type="date" id="fechaDesde"></label>
 <label>Hasta <input type="date" id="fechaHasta"></label>
-<button class="btn" onclick="toggleKPI()">KPI</button>
+<button class="btn" onclick="toggleKPI()">Kpi </button>
 </div>
 
 <!-- KPI -->
@@ -175,7 +175,7 @@ status:x.status||"",
 etiquetas:x.etiquetas||"",
 pdf:x.pdf||"",
 pdfTraslado:x.pdfTraslado||"",
-TR:x.solicitudTraslado||"",
+TR: x.TR || x.tr || x["Nro TR"] || x["Nro.TR"] || x["nro_tr"] || x.solicitudTraslado || "",
 imagen:x.foto||"",
 fechaIngreso:x.fechaIngreso||"",
 fechaModificacion:x.fechaModificacion||"",
