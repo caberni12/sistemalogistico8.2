@@ -34,15 +34,9 @@ ESTADO GLOBAL
 ***************************************************/
 let columnasVisibles = {};
 let columnasBloqueadas = {};
-
 let botonesConfig = {
-  nuevo:true,
-  guardar:true,
-  cancelar:true,
-  pdf:true,
-  excel:true,
-  reload:true,
-  acciones:true
+  nuevo:true, guardar:true, cancelar:true,
+  pdf:true, excel:true, reload:true, acciones:true
 };
 
 /***************************************************
@@ -52,18 +46,18 @@ function activarLoader(btn){ btn.classList.add("loading"); }
 function quitarLoader(btn){ btn.classList.remove("loading"); }
 
 /***************************************************
-CARGAR CONFIG
+CARGAR CONFIG DESDE APPSCRIPT
 ***************************************************/
 async function cargarConfig(){
   try{
-    const res = await fetch(API_CONFIG + "?action=getColumnas");
+    const res = await fetch(`${API_CONFIG}?action=getColumnas`);
     const data = await res.json();
 
     columnasVisibles = data.visibles || {};
     columnasBloqueadas = data.bloqueadas || {};
     botonesConfig = data.botones || botonesConfig;
-
   }catch(e){
+    console.error(e);
     COLUMNAS.forEach(c=>{
       columnasVisibles[c.key] = true;
       columnasBloqueadas[c.key] = false;
@@ -72,72 +66,67 @@ async function cargarConfig(){
 }
 
 /***************************************************
-GUARDAR CONFIG
+GUARDAR CONFIG EN APPSCRIPT
 ***************************************************/
 async function guardarConfig(){
-  await fetch(API_CONFIG,{
-    method:"POST",
-    body:JSON.stringify({
-      action:"guardarColumnas",
-      data:{
-        visibles:columnasVisibles,
-        bloqueadas:columnasBloqueadas,
-        botones:botonesConfig
-      }
-    })
-  });
+  try{
+    await fetch(API_CONFIG,{
+      method:"POST",
+      body: JSON.stringify({
+        action:"guardarColumnas",
+        data:{
+          visibles:columnasVisibles,
+          bloqueadas:columnasBloqueadas,
+          botones:botonesConfig
+        }
+      })
+    });
+  }catch(e){ console.error(e); }
 }
 
 /***************************************************
-APLICAR TODO
+APLICAR COLUMNAS Y BOTONES
 ***************************************************/
 function aplicarTodo(){
 
-  /******** TABLA ********/
   const table = document.querySelector("table");
 
   if(table){
     table.querySelectorAll("tr").forEach(row=>{
-
       const cells = row.querySelectorAll("th,td");
 
       COLUMNAS.forEach(col=>{
         const cell = cells[col.index];
         if(!cell) return;
 
+        // Mostrar/Ocultar columna
         cell.style.display = columnasVisibles[col.key] ? "" : "none";
 
+        // Bloqueo de celda
         if(columnasBloqueadas[col.key]){
           cell.style.opacity = "0.5";
           cell.style.cursor = "not-allowed";
-
-          cell.onclick = (e)=>{
-            e.stopPropagation();
-            e.preventDefault();
-          };
-
+          cell.onclick = e=>{ e.stopPropagation(); e.preventDefault(); };
         }else{
           cell.style.opacity = "";
           cell.style.cursor = "";
           cell.onclick = null;
         }
 
+        // Botones dentro de columna "acciones"
         if(col.key === "acciones"){
           const botones = cell.querySelectorAll("button");
-
           botones.forEach(b=>{
             b.disabled = !botonesConfig.acciones;
-            b.style.opacity = botonesConfig.acciones ? "1":"0.4";
-            b.style.pointerEvents = botonesConfig.acciones ? "" : "none";
+            b.style.opacity = botonesConfig.acciones?"1":"0.4";
+            b.style.pointerEvents = botonesConfig.acciones?"":"none";
           });
         }
-
       });
-
     });
   }
 
-  /******** BOTONES SUPERIORES ********/
+  // Botones superiores
   aplicarBoton("btnNuevo", botonesConfig.nuevo);
   aplicarBoton("btnGuardar", botonesConfig.guardar);
   aplicarBoton("btnCancelar", botonesConfig.cancelar);
@@ -147,29 +136,23 @@ function aplicarTodo(){
 }
 
 /***************************************************
-CONTROL BOTÓN
+APLICAR BOTÓN
 ***************************************************/
 function aplicarBoton(id, activo){
-
   const btn = document.getElementById(id);
   if(!btn) return;
 
   btn.disabled = !activo;
-  btn.style.opacity = activo ? "1":"0.5";
-  btn.style.cursor = activo ? "" : "not-allowed";
+  btn.style.opacity = activo?"1":"0.5";
+  btn.style.cursor = activo?"":"not-allowed";
 
-  btn.onclick = (e)=>{
-    if(!activo){
-      e.preventDefault();
-      e.stopPropagation();
-      return false;
-    }
+  btn.onclick = e=>{
+    if(!activo){ e.preventDefault(); e.stopPropagation(); return false; }
   };
-
 }
 
 /***************************************************
-MODAL
+MODAL DE COLUMNAS
 ***************************************************/
 function abrirModalColumnas(){
 
@@ -178,6 +161,7 @@ function abrirModalColumnas(){
 
   lista.innerHTML = "";
 
+  // Botones superiores
   lista.insertAdjacentHTML("beforeend",`
     <h4>Botones</h4>
     ${crearCheck("nuevo","Nuevo")}
@@ -190,15 +174,15 @@ function abrirModalColumnas(){
     <hr>
   `);
 
+  // Select All
   lista.insertAdjacentHTML("beforeend",`
-    <label><input type="checkbox" id="selectAll"> Seleccionar todo</label>
-    <hr>
+    <label><input type="checkbox" id="selectAll"> Seleccionar todo</label><hr>
   `);
 
+  // Columnas
   COLUMNAS.forEach(col=>{
-
-    const checked = columnasVisibles[col.key] ? "checked":"";
-    const locked  = columnasBloqueadas[col.key] ? "🔒":"🔓";
+    const checked = columnasVisibles[col.key]?"checked":"";
+    const locked  = columnasBloqueadas[col.key]?"🔒":"🔓";
 
     lista.insertAdjacentHTML("beforeend",`
       <label style="display:flex;justify-content:space-between">
@@ -206,15 +190,15 @@ function abrirModalColumnas(){
           <input type="checkbox" data-key="${col.key}" ${checked}>
           ${col.label}
         </div>
-        <button class="btnLock" data-key="${col.key}">${locked}</button>
+        <button type="button" class="btnLock" data-key="${col.key}">${locked}</button>
       </label>
     `);
   });
 
   modal.style.display = "flex";
 
-  /******** EVENTOS ********/
-  document.getElementById("selectAll").onchange = (e)=>{
+  // Eventos
+  document.getElementById("selectAll").onchange = e=>{
     document.querySelectorAll("#listaColumnas input[data-key]").forEach(chk=>{
       chk.checked = e.target.checked;
     });
@@ -230,14 +214,13 @@ function abrirModalColumnas(){
     btn.onclick = ()=>{
       const key = btn.dataset.key;
       columnasBloqueadas[key] = !columnasBloqueadas[key];
-      btn.textContent = columnasBloqueadas[key] ? "🔒":"🔓";
+      btn.textContent = columnasBloqueadas[key]?"🔒":"🔓";
     };
   });
-
 }
 
 /***************************************************
-CHECK GENERADOR
+CREAR CHECKBOX
 ***************************************************/
 function crearCheck(key,label){
   return `
@@ -249,20 +232,38 @@ function crearCheck(key,label){
 }
 
 /***************************************************
-INIT
+INICIALIZACIÓN
 ***************************************************/
 window.addEventListener("DOMContentLoaded", async ()=>{
 
   await cargarConfig();
+  aplicarTodo();
 
   const btn = document.getElementById("btnColumnas");
   const modal = document.getElementById("modalColumnas");
   const btnCerrar = document.getElementById("btnCerrarColumnas");
   const btnGuardar = document.getElementById("btnGuardarColumnas");
+  const btnCancelar = document.getElementById("btnCancelarColumnas");
 
-  btn.onclick = abrirModalColumnas;
+  // Variables temporales para Cancelar
+  let columnasTemp = {};
+  let columnasBloqTemp = {};
+  let botonesTemp = {};
 
-  btnCerrar.onclick = ()=> modal.style.display = "none";
+  btn.onclick = ()=>{
+    columnasTemp = {...columnasVisibles};
+    columnasBloqTemp = {...columnasBloqueadas};
+    botonesTemp = {...botonesConfig};
+    abrirModalColumnas();
+  };
+
+  btnCerrar.onclick = btnCancelar.onclick = ()=>{
+    columnasVisibles = {...columnasTemp};
+    columnasBloqueadas = {...columnasBloqTemp};
+    botonesConfig = {...botonesTemp};
+    modal.style.display = "none";
+    aplicarTodo();
+  };
 
   btnGuardar.onclick = async ()=>{
     activarLoader(btnGuardar);
@@ -271,27 +272,32 @@ window.addEventListener("DOMContentLoaded", async ()=>{
       columnasVisibles[chk.dataset.key] = chk.checked;
     });
 
+    document.querySelectorAll(".chkBtn").forEach(chk=>{
+      botonesConfig[chk.dataset.key] = chk.checked;
+    });
+
     await guardarConfig();
 
     modal.style.display = "none";
     aplicarTodo();
-
     quitarLoader(btnGuardar);
   };
 
   modal.addEventListener("click",(e)=>{
     if(e.target === modal){
+      columnasVisibles = {...columnasTemp};
+      columnasBloqueadas = {...columnasBloqTemp};
+      botonesConfig = {...botonesTemp};
       modal.style.display = "none";
+      aplicarTodo();
     }
   });
 
   const tbody = document.getElementById("tbody");
-
   if(tbody){
     new MutationObserver(aplicarTodo)
-    .observe(tbody,{childList:true,subtree:true});
+      .observe(tbody,{childList:true,subtree:true});
   }
 
   setTimeout(aplicarTodo, 800);
-
 });
