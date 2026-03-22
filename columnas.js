@@ -1,5 +1,5 @@
 /***************************************************
-CONFIGURACIÓN COLUMNAS Y BOTONES - JS COMPLETO
+JS COMPLETO DE CONFIGURACIÓN DE COLUMNAS Y BOTONES
 ***************************************************/
 const API_CONFIG = "https://script.google.com/macros/s/AKfycbxbT3crefQXWJplHog8ogP-XzSo3q22ouaDg_uNlXsGjsR9Mj7ByNLNPB59siHVZcAj/exec";
 
@@ -26,15 +26,16 @@ const COLUMNAS = [
   {key:"acciones", label:"Acciones", index:19}
 ];
 
+// ESTADO GLOBAL
 let columnasVisibles = {};
 let columnasBloqueadas = {};
 let botonesConfig = {nuevo:true, guardar:true, cancelar:true, pdf:true, excel:true, reload:true, acciones:true};
 
-// Loader botones
+// LOADER
 function activarLoader(btn){ btn.classList.add("btn-loading"); }
 function quitarLoader(btn){ btn.classList.remove("btn-loading"); }
 
-// ----------------------- Cargar Configuración -----------------------
+// ------------------- CARGAR CONFIG -------------------
 async function cargarConfig(){
   try{
     const res = await fetch(`${API_CONFIG}?action=getColumnas`);
@@ -43,6 +44,7 @@ async function cargarConfig(){
     columnasBloqueadas = data.bloqueadas || {};
     botonesConfig = data.botones || botonesConfig;
   }catch(e){
+    console.warn("No se pudo cargar la configuración, usando default");
     COLUMNAS.forEach(c=>{
       columnasVisibles[c.key] = true;
       columnasBloqueadas[c.key] = false;
@@ -50,20 +52,20 @@ async function cargarConfig(){
   }
 }
 
-// ----------------------- Guardar Configuración -----------------------
+// ------------------- GUARDAR CONFIG -------------------
 async function guardarConfig(){
   try{
     await fetch(API_CONFIG,{
       method:"POST",
       body: JSON.stringify({
         action:"guardarColumnas",
-        data:{visibles:columnasVisibles,bloqueadas:columnasBloqueadas,botones:botonesConfig}
+        data:{visibles:columnasVisibles, bloqueadas:columnasBloqueadas, botones:botonesConfig}
       })
     });
   }catch(e){ console.error(e); }
 }
 
-// ----------------------- Aplicar columnas y botones -----------------------
+// ------------------- APLICAR CONFIGURACIÓN -------------------
 function aplicarTodo(){
   const table = document.querySelector("table");
   if(table){
@@ -105,16 +107,19 @@ function aplicarTodo(){
     btn.disabled = !activo;
     btn.style.opacity = activo?"1":"0.5";
     btn.style.cursor = activo?"":"not-allowed";
+    btn.onclick = e=>{
+      if(!activo){ e.preventDefault(); e.stopPropagation(); return false; }
+    };
   });
 }
 
-// ----------------------- Abrir Modal Columnas -----------------------
+// ------------------- ABRIR MODAL COLUMNAS -------------------
 function abrirModalColumnas(){
   const modal = document.getElementById("modalColumnas");
   const lista = document.getElementById("listaColumnas");
   lista.innerHTML = "";
 
-  // Botones de acción
+  // Botones superiores
   ["nuevo","guardar","cancelar","pdf","excel","reload","acciones"].forEach(key=>{
     lista.insertAdjacentHTML("beforeend",`
       <label>
@@ -157,7 +162,7 @@ function abrirModalColumnas(){
   modal.style.display = "flex";
 }
 
-// ----------------------- Init -----------------------
+// ------------------- INIT -------------------
 window.addEventListener("DOMContentLoaded", async ()=>{
   await cargarConfig();
   aplicarTodo();
@@ -167,6 +172,7 @@ window.addEventListener("DOMContentLoaded", async ()=>{
   const btnGuardar = document.getElementById("btnGuardarColumnas");
   const btnCerrar = document.getElementById("btnCerrarColumnas");
 
+  // Guardar snapshot temporal para cancelar
   let columnasTemp = {...columnasVisibles};
   let bloqueadasTemp = {...columnasBloqueadas};
   let botonesTemp = {...botonesConfig};
