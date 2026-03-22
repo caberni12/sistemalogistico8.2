@@ -1,8 +1,7 @@
 /* =====================================================
    CONFIGURACIÓN GENERAL
 ===================================================== */
-const API =
-"https://script.google.com/macros/s/AKfycbxDUcEzMGw9LWnzn-YUV89So3AFCEnplOHQuGmzq-EV_hnIMhQvgQIPY1AxvlKJPZNx/exec";
+const API = "https://script.google.com/macros/s/AKfycbxDUcEzMGw9LWnzn-YUV89So3AFCEnplOHQuGmzq-EV_hnIMhQvgQIPY1AxvlKJPZNx/exec";
 
 let USER_IP = "—";
 let WATCH_ID = null;
@@ -14,6 +13,8 @@ let LAST_GEOCODE = 0;
 let MAPA = null;
 let MARCADOR = null;
 let CIRCULO = null;
+let MAPA_VISIBLE = false;
+let MAPA_INICIALIZADO = false;
 
 /* =====================================================
    ICONOS
@@ -23,8 +24,7 @@ function crearIconoAuto(rot = 0){
     className: "auto-icon",
     iconSize: [48,48],
     iconAnchor: [24,24],
-    html: `
-      <svg viewBox="0 0 64 64" style="transform:rotate(${rot}deg)">
+    html: `<svg viewBox="0 0 64 64" style="transform:rotate(${rot}deg)">
         <rect x="10" y="24" width="44" height="16" rx="6" fill="#111"/>
         <rect x="18" y="20" width="28" height="10" rx="4" fill="#222"/>
         <circle cx="20" cy="42" r="4" fill="#000"/>
@@ -37,8 +37,7 @@ const ICONO_ESTATICO = L.divIcon({
   className:"auto-icon",
   iconSize:[32,32],
   iconAnchor:[16,16],
-  html:`
-    <svg viewBox="0 0 24 24" fill="#dc2626">
+  html:`<svg viewBox="0 0 24 24" fill="#dc2626">
       <path d="M12 2C8 2 4 6 4 10c0 6 8 14 8 14s8-8 8-14c0-4-4-8-8-8z"/>
     </svg>`
 });
@@ -54,13 +53,17 @@ function toggleMenu(){
    LOADER
 ===================================================== */
 function iniciarProgreso(){
-  document.getElementById("loadingOverlay").style.display = "flex";
-  document.getElementById("progressBar").style.display = "block";
+  const overlay = document.getElementById("loadingOverlay");
+  const bar = document.getElementById("progressBar");
+  if(overlay) overlay.style.display = "flex";
+  if(bar) bar.style.display = "block";
 }
 
 function finalizarProgreso(){
-  document.getElementById("loadingOverlay").style.display = "none";
-  document.getElementById("progressBar").style.display = "none";
+  const overlay = document.getElementById("loadingOverlay");
+  const bar = document.getElementById("progressBar");
+  if(overlay) overlay.style.display = "none";
+  if(bar) bar.style.display = "none";
 }
 
 /* =====================================================
@@ -70,13 +73,16 @@ document.addEventListener("DOMContentLoaded", async ()=>{
 
   iniciarProgreso();
 
-  if(typeof validarSesionGlobal !== "function"){
-    cerrarSesion();
-    return;
-  }
-
-  const user = await validarSesionGlobal();
-  if(!user){
+  // Validar sesión
+  let user = JSON.parse(sessionStorage.getItem("user"));
+  if(!user && typeof validarSesionGlobal === "function"){
+    user = await validarSesionGlobal();
+    if(!user){
+      cerrarSesion();
+      return;
+    }
+    sessionStorage.setItem("user", JSON.stringify(user));
+  } else if(!user){
     cerrarSesion();
     return;
   }
@@ -84,33 +90,62 @@ document.addEventListener("DOMContentLoaded", async ()=>{
   document.getElementById("usuario").textContent =
     `👤 ${user.nombre} · ${user.rol}`;
 
-  // 🔹 EMPRESA ACTIVA (logo + nombre)
+  // Empresa header
   if(typeof cargarEmpresaHeader === "function"){
-    await cargarEmpresaHeader();
+    cargarEmpresaHeader();
   }
 
-  await cargarMenu(user);
+  // Cargar menú
+  const cachedMenu = JSON.parse(sessionStorage.getItem("menuData") || "null");
+  if(cachedMenu){
+    renderMenu(cachedMenu, user);
+  } else {
+    await cargarMenu(user);
+  }
 
-  iniciarMapa();
+  finalizarProgreso();
+
+  // IP y reloj
   obtenerIP();
   iniciarReloj();
 
-  finalizarProgreso();
+  // Botón mostrar mapa
+  const btnMapa = document.getElementById("btnMostrarMapa");
+  if(btnMapa){
+    btnMapa.addEventListener("click", ()=>{
+      const mapaDiv = document.getElementById("mapa");
+      if(!MAPA_INICIALIZADO){
+        iniciarMapa();
+        MAPA_INICIALIZADO = true;
+      }
+      MAPA_VISIBLE = !MAPA_VISIBLE;
+      mapaDiv.style.display = MAPA_VISIBLE ? "block" : "none";
+      btnMapa.textContent = MAPA_VISIBLE ? "🗺️ Mapa Visible" : "🗺️ Mostrar Mapa";
+      if(MAPA) setTimeout(()=>MAPA.invalidateSize(),300);
+    });
+  }
 });
 
 /* =====================================================
    MENÚ DINÁMICO
 ===================================================== */
 async function cargarMenu(user){
-  const r = await fetch(`${API}?action=listarModulos`);
-  const res = await r.json();
+  try{
+    const r = await fetch(`${API}?action=listarModulos`);
+    const res = await r.json();
+    if(!Array.isArray(res.data)) return;
 
+    sessionStorage.setItem("menuData", JSON.stringify(res.data));
+    renderMenu(res.data, user);
+  } catch(e){
+    console.error("Error cargando menú:", e);
+  }
+}
+
+function renderMenu(data, user){
   const cont = document.getElementById("menuModulos");
   cont.innerHTML = "";
-
-  if(!Array.isArray(res.data)) return;
-
-  res.data.forEach(m=>{
+  data.forEach(m=>{
     const [id,nombre,archivo,icono,permiso,activo] = m;
     if(activo !== "SI") return;
     if(user.rol !== "ADMIN" && !user.permisos.includes(permiso)) return;
@@ -118,10 +153,7 @@ async function cargarMenu(user){
     const item = document.createElement("div");
     item.className = "menu-item";
     item.innerHTML = `${icono || "📦"} ${nombre}`;
-    item.onclick = ()=>{
-      abrirModulo(archivo, nombre);
-      toggleMenu();
-    };
+    item.onclick = ()=>{ abrirModulo(archivo, nombre); toggleMenu(); };
     cont.appendChild(item);
   });
 }
@@ -130,19 +162,22 @@ async function cargarMenu(user){
    VISOR
 ===================================================== */
 function abrirModulo(url, titulo){
-  document.getElementById("viewer").style.display = "flex";
-  document.getElementById("frame").src = url;
-  document.getElementById("tituloSistema").textContent = titulo;
+  const viewer = document.getElementById("viewer");
+  if(viewer){
+    viewer.style.display = "flex";
+    document.getElementById("frame").src = url;
+    document.getElementById("tituloSistema").textContent = titulo;
+  }
 }
 
 function volver(){
-  document.getElementById("viewer").style.display = "none";
-  document.getElementById("frame").src = "";
-  document.getElementById("tituloSistema").textContent = "Panel Logístico";
-
-  if(MAPA){
-    setTimeout(()=>MAPA.invalidateSize(),300);
+  const viewer = document.getElementById("viewer");
+  if(viewer){
+    viewer.style.display = "none";
+    document.getElementById("frame").src = "";
+    document.getElementById("tituloSistema").textContent = "Panel Logístico";
   }
+  if(MAPA) setTimeout(()=>MAPA.invalidateSize(),300);
 }
 
 /* =====================================================
@@ -156,8 +191,7 @@ function iniciarMapa(){
 
     if(!MAPA){
       MAPA = L.map("mapa").setView([lat,lng],16);
-      L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png")
-        .addTo(MAPA);
+      L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png").addTo(MAPA);
 
       MARCADOR = L.marker([lat,lng],{icon:ICONO_ESTATICO}).addTo(MAPA);
       CIRCULO = L.circle([lat,lng],{
@@ -170,12 +204,11 @@ function iniciarMapa(){
     MARCADOR.setLatLng([lat,lng]);
     MARCADOR.setIcon(speed > 2 ? crearIconoAuto(heading) : ICONO_ESTATICO);
 
-    const conn = navigator.connection || {};
     let r = 80;
-    if(conn.effectiveType === "4g") r = 150;
-    if(conn.effectiveType === "3g") r = 100;
-    if(conn.effectiveType === "2g") r = 60;
-
+    const conn = navigator.connection || {};
+    if(conn.effectiveType==="4g") r=150;
+    if(conn.effectiveType==="3g") r=100;
+    if(conn.effectiveType==="2g") r=60;
     CIRCULO.setLatLng([lat,lng]);
     CIRCULO.setRadius(r);
 
@@ -185,9 +218,7 @@ function iniciarMapa(){
       LAST_GEOCODE = Date.now();
       actualizarDireccion(lat,lng);
     }
-  },
-  ()=>{},
-  { enableHighAccuracy:true, maximumAge:2000, timeout:10000 });
+  }, ()=>{}, { enableHighAccuracy:true, maximumAge:2000, timeout:10000 });
 }
 
 /* =====================================================
@@ -195,13 +226,10 @@ function iniciarMapa(){
 ===================================================== */
 async function actualizarDireccion(lat,lng){
   try{
-    const r = await fetch(
-      `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`
-    );
+    const r = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`);
     const d = await r.json();
-    document.getElementById("dirTexto").textContent =
-      d.display_name || "—";
-  }catch{
+    document.getElementById("dirTexto").textContent = d.display_name || "—";
+  } catch{
     document.getElementById("dirTexto").textContent = "—";
   }
 }
@@ -210,14 +238,11 @@ async function actualizarDireccion(lat,lng){
    RED + VELOCIDAD
 ===================================================== */
 function actualizarRedVelocidad(speed){
-  const kmh = (speed * 3.6).toFixed(1);
+  const kmh = (speed*3.6).toFixed(1);
   const conn = navigator.connection || {};
-
   document.getElementById("netTexto").textContent =
     `${navigator.onLine ? "Online" : "Offline"} · ${conn.effectiveType || "—"}`;
-
-  document.getElementById("speedTexto").textContent =
-    `🚗 ${kmh} km/h`;
+  document.getElementById("speedTexto").textContent = `🚗 ${kmh} km/h`;
 }
 
 /* =====================================================
@@ -233,18 +258,14 @@ function iniciarReloj(){
   setInterval(()=>{
     const n = new Date();
     document.getElementById("conexionInfo").innerHTML =
-      `📅 ${n.toLocaleDateString("es-CL")}<br>
-       ⏰ ${n.toLocaleTimeString("es-CL")}<br>
-       🌐 IP: ${USER_IP}`;
+      `📅 ${n.toLocaleDateString("es-CL")}<br>⏰ ${n.toLocaleTimeString("es-CL")}<br>🌐 IP: ${USER_IP}`;
   },1000);
 }
 
 /* =====================================================
    BOTONES
 ===================================================== */
-function recargarPanel(){
-  location.reload();
-}
+function recargarPanel(){ location.reload(); }
 
 function cerrarSesion(){
   if(WATCH_ID) navigator.geolocation.clearWatch(WATCH_ID);

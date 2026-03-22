@@ -3,7 +3,7 @@
 <head>
 
 <meta charset="UTF-8">
-<title>Dashboard Logístico</title>
+<title>Sistema Logistico</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -389,6 +389,160 @@ tr.selected{
 }
 
 
+/* ================= MODAL MODERNO ================= */
+
+#modalColumnas{
+  position:fixed;
+  inset:0;
+  background:rgba(15,23,42,0.65);
+  backdrop-filter:blur(6px);
+  display:none;
+  align-items:center;
+  justify-content:center;
+  z-index:9999;
+}
+
+/* CONTENIDO */
+
+#modalColumnas .modal-content{
+  width:100%;
+  max-width:520px;
+  background:#ffffff;
+  border-radius:18px;
+  padding:22px;
+  box-shadow:0 20px 60px rgba(0,0,0,0.25);
+  animation:modalFade .25s ease;
+}
+
+/* ANIMACIÓN */
+
+@keyframes modalFade{
+  from{
+    opacity:0;
+    transform:translateY(20px) scale(.96);
+  }
+  to{
+    opacity:1;
+    transform:translateY(0) scale(1);
+  }
+}
+
+/* TÍTULO */
+
+#modalColumnas h3{
+  margin:0 0 12px 0;
+  font-size:18px;
+  font-weight:700;
+  color:#0f172a;
+}
+
+/* GRID COLUMNAS */
+
+#listaColumnas{
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(160px,1fr));
+  gap:10px;
+  margin-top:10px;
+  max-height:300px;
+  overflow:auto;
+  padding-right:4px;
+}
+
+/* ITEM CHECKBOX */
+
+#listaColumnas label{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  padding:8px 10px;
+  border-radius:10px;
+  background:#f8fafc;
+  border:1px solid #e2e8f0;
+  cursor:pointer;
+  transition:.2s;
+  font-size:13px;
+}
+
+#listaColumnas label:hover{
+  background:#f1f5f9;
+  transform:translateY(-1px);
+}
+
+/* CHECKBOX MODERNO */
+
+#listaColumnas input[type="checkbox"]{
+  accent-color:#14b8a6;
+  width:16px;
+  height:16px;
+  cursor:pointer;
+}
+
+/* BOTONES */
+
+#modalColumnas .modal-actions{
+  display:flex;
+  justify-content:flex-end;
+  gap:10px;
+  margin-top:16px;
+}
+
+/* BOTÓN SECUNDARIO */
+
+.btn-sec{
+  background:#e2e8f0;
+  color:#0f172a;
+}
+
+.btn-sec:hover{
+  background:#cbd5e1;
+}
+
+/* BOTÓN PRINCIPAL */
+
+.btn-pri{
+  background:#14b8a6;
+  color:#fff;
+}
+
+.btn-pri:hover{
+  background:#0d9488;
+}
+
+/* SCROLL BONITO */
+
+#listaColumnas::-webkit-scrollbar{
+  width:6px;
+}
+
+#listaColumnas::-webkit-scrollbar-thumb{
+  background:#cbd5e1;
+  border-radius:10px;
+}
+
+/* LOADER BOTÓN */
+.btn-loading{
+  position:relative;
+  pointer-events:none;
+  opacity:.7;
+}
+
+.btn-loading::after{
+  content:"";
+  width:16px;
+  height:16px;
+  border:3px solid #fff;
+  border-top-color:transparent;
+  border-radius:50%;
+  position:absolute;
+  right:10px;
+  top:50%;
+  transform:translateY(-50%);
+  animation:spin .7s linear infinite;
+}
+
+@keyframes spin{
+  to{transform:translateY(-50%) rotate(360deg)}
+}
 
 /* ================= MOBILE ================= */
 
@@ -529,7 +683,7 @@ grid-template-columns:1fr; /* 1 por fila */
 
 <body>
 
-    <h2>🚚 Tracking de Pedidos</h2>
+    <h2>🚚 Listado de Pedidos en Preparación</h2>
 
     <div class="top-bar">
     
@@ -539,6 +693,7 @@ grid-template-columns:1fr; /* 1 por fila */
     <button id="btnPDF">📄 PDF</button>
     <button id="btnExcel">📊 Excel</button>
     <button id="btnReload">🔄 Recargar</button>
+    <button id="btnColumnas">🧩 Config-Columnas</button>
     
     <input id="search" placeholder="Buscar pedido o cliente">
     
@@ -743,10 +898,21 @@ margin-top:20px;
     </div>
   
   </div>
-    
+
+<!-- MODAL COLUMNAS -->
+<div class="modal" id="modalColumnas">
+  <div class="modal-content">
+    <h3>Columnas</h3>
+    <div id="listaColumnas"></div>
+    <button id="btnGuardarColumnas">Guardar</button>
+    <button id="btnCerrarColumnas">Cerrar</button>
+  </div>
+</div>
+  
 <script src="segurity.js"></script>
 <script src="envio.js"></script>
 <script src="consulta.js"></script>
+<script src="columnas.js"></script>
 
 </body>
 </html>

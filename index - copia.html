@@ -23,6 +23,8 @@ body{
   box-shadow:0 30px 60px rgba(0,0,0,.25);
   text-align:center;
 }
+
+/* LOGO EMPRESA */
 .logo-empresa{
   width:120px;
   max-height:120px;
@@ -30,20 +32,25 @@ body{
   margin:0 auto 10px;
   display:none;
 }
+
+/* TEXTO CARGA EMPRESA */
 .empresa-loading{
   font-size:13px;
   color:#64748b;
   margin-bottom:20px;
 }
+
 h3{
   margin:0 0 30px;
   color:#1e293b;
   font-weight:600;
 }
+
 .form-group{
   display:flex;
   justify-content:center;
 }
+
 input{
   width:100%;
   max-width:300px;
@@ -54,6 +61,7 @@ input{
   font-size:14px;
   text-align:center;
 }
+
 button{
   width:100%;
   max-width:300px;
@@ -70,10 +78,13 @@ button{
   gap:10px;
   margin:0 auto;
 }
+
 button:disabled{
   background:#94a3b8;
   cursor:not-allowed;
 }
+
+/* LOADER BOTÓN */
 .loader{
   width:16px;
   height:16px;
@@ -84,6 +95,7 @@ button:disabled{
   display:none;
 }
 @keyframes spin{ to{ transform:rotate(360deg); } }
+
 .msg{
   margin-top:18px;
   font-size:13px;
@@ -96,6 +108,8 @@ button:disabled{
 <body>
 
 <div class="card">
+
+  <!-- Empresa -->
   <img id="logoEmpresa" class="logo-empresa">
   <div id="empresaLoading" class="empresa-loading">Cargando empresa…</div>
 
@@ -119,7 +133,8 @@ button:disabled{
 
 <script>
 /* ================= LOGIN ================= */
-const API_LOGIN = "https://script.google.com/macros/s/AKfycbxDUcEzMGw9LWnzn-YUV89So3AFCEnplOHQuGmzq-EV_hnIMhQvgQIPY1AxvlKJPZNx/exec";
+const API_LOGIN =
+"https://script.google.com/macros/s/AKfycbxDUcEzMGw9LWnzn-YUV89So3AFCEnplOHQuGmzq-EV_hnIMhQvgQIPY1AxvlKJPZNx/exec";
 
 const user     = document.getElementById("user");
 const pass     = document.getElementById("pass");
@@ -130,7 +145,7 @@ const mensaje  = document.getElementById("mensaje");
 const logo     = document.getElementById("logoEmpresa");
 const loading  = document.getElementById("empresaLoading");
 
-/* ================= Helper ================= */
+/* Detectar si empresa se cargó */
 function empresaCargada(){
   return logo && logo.src && logo.style.display !== "none";
 }
@@ -157,7 +172,7 @@ function desactivarLoader(){
 }
 
 /* LOGIN */
-async function login(){
+btnLogin.addEventListener("click", async ()=>{
   const username = user.value.trim();
   const password = pass.value.trim();
   mensaje.textContent = "";
@@ -183,8 +198,10 @@ async function login(){
       return;
     }
 
+    /* VALIDACIÓN POR ROL */
     if(!empresaCargada() && res.data.rol !== "ADMIN"){
-      mensaje.textContent = "Empresa aún no cargada. Solo Administrador puede ingresar.";
+      mensaje.textContent =
+        "Empresa aún no cargada. Solo Administrador puede ingresar.";
       desactivarLoader();
       return;
     }
@@ -202,18 +219,10 @@ async function login(){
     mensaje.textContent = "Error de conexión";
     desactivarLoader();
   }
-}
-
-/* Botón login */
-btnLogin.addEventListener("click", login);
-
-/* Activar login con tecla Enter */
-[user, pass].forEach(el => {
-  el.addEventListener("keypress", e=>{
-    if(e.key === "Enter") login();
-  });
 });
 </script>
+
+<!-- EMPRESA -->
 
 <script src="app-global.js"></script>
 <script src="empresa-header.js"></script>
@@ -222,7 +231,9 @@ if(typeof cargarEmpresaHeader === "function"){
   cargarEmpresaHeader();
 }
 </script>
+
 <script src="segurity.js"></script>
+
 <script src="sw.js"></script>
 
 </body>

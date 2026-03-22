@@ -3,7 +3,7 @@ API
 ***************************************************/
 //const API="https://script.google.com/macros/s/AKfycbxtLfg0gSUBPCBgDZZeVC-yO7KElDU5RLbTmvj68K9UPOthpdtgLfrk_MRTGTpRaa1M/exec";
 
-const API="https://script.google.com/macros/s/AKfycbwedc44Y_OpDr8XM0cm3IMMsnRtk0XgvSoPxSuya_uSFgc1QuxDa3xSFBmDAD5aL-gK/exec";
+const API="https://script.google.com/macros/s/AKfycbxClG0vVD9Zp9NVQKm-0SpCtGe060am9rlGXuv6bjnZSpEmcF_j0Fc9gQP4j9Dyz7YY/exec";
 
 /***************************************************
 DOM
@@ -861,22 +861,49 @@ DELETE
 ***************************************************/
 async function deleteRow(row){
 
- if(!confirm("Eliminar registro?")) return;
+  console.log("ROW A ELIMINAR:", row);
 
- const params=new URLSearchParams();
- params.append("data",JSON.stringify({
-  action:"delete",
-  row:row
- }));
+  if(!row){
+    alert("Error: fila inválida");
+    return;
+  }
 
- await fetch(API,{
-  method:"POST",
-  body:params
- });
+  if(!confirm("¿Eliminar registro?")) return;
 
- load();
+  try{
+
+    const params = new URLSearchParams();
+    params.append("data", JSON.stringify({
+      action: "delete",
+      row: Number(row) // 🔥 IMPORTANTE
+    }));
+
+    const res = await fetch(API,{
+      method: "POST",
+      headers:{
+        "Content-Type":"application/x-www-form-urlencoded"
+      },
+      body: params
+    });
+
+    const response = await res.json();
+
+    console.log("RESPUESTA DELETE:", response);
+
+    if(!response.ok){
+      throw new Error(response.error || "Error al eliminar");
+    }
+
+    await load();
+
+  }catch(err){
+
+    console.error("ERROR DELETE:", err);
+    alert("No se pudo eliminar: " + err.message);
+
+  }
+
 }
-
 
 /* ======================================================
    EXPORTES

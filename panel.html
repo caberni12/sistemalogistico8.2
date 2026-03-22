@@ -12,15 +12,19 @@
 *{
   box-sizing:border-box;
 }
-
+/* ================= BASE + BODY ANCHO COMPLETO EN ESCRITORIO ================= */
 body{
   margin:0;
   font-family:'Segoe UI',Arial;
   background:#f4f7fb;
+  width:100%;
+  min-width:1200px; /* opcional, asegura un ancho mínimo cómodo */
 }
 
+/* ================= CONTENEDOR PRINCIPAL ================= */
 .container{
-  max-width:1400px;
+  width:95%;      /* ocupa 95% del ancho de pantalla */
+  max-width:1800px; /* aumenta el límite de ancho para escritorio */
   margin:auto;
   padding:20px;
 }
