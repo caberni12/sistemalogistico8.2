@@ -1,11 +1,8 @@
 /***************************************************
-API CONFIG
+CONFIGURACIÓN COLUMNAS Y BOTONES - JS COMPLETO
 ***************************************************/
 const API_CONFIG = "https://script.google.com/macros/s/AKfycbxbT3crefQXWJplHog8ogP-XzSo3q22ouaDg_uNlXsGjsR9Mj7ByNLNPB59siHVZcAj/exec";
 
-/***************************************************
-COLUMNAS
-***************************************************/
 const COLUMNAS = [
   {key:"fechaIngreso", label:"Fecha", index:0},
   {key:"pedido", label:"Pedido", index:1},
@@ -29,35 +26,23 @@ const COLUMNAS = [
   {key:"acciones", label:"Acciones", index:19}
 ];
 
-/***************************************************
-ESTADO GLOBAL
-***************************************************/
 let columnasVisibles = {};
 let columnasBloqueadas = {};
-let botonesConfig = {
-  nuevo:true, guardar:true, cancelar:true,
-  pdf:true, excel:true, reload:true, acciones:true
-};
+let botonesConfig = {nuevo:true, guardar:true, cancelar:true, pdf:true, excel:true, reload:true, acciones:true};
 
-/***************************************************
-LOADER
-***************************************************/
-function activarLoader(btn){ btn.classList.add("loading"); }
-function quitarLoader(btn){ btn.classList.remove("loading"); }
+// Loader botones
+function activarLoader(btn){ btn.classList.add("btn-loading"); }
+function quitarLoader(btn){ btn.classList.remove("btn-loading"); }
 
-/***************************************************
-CARGAR CONFIG DESDE APPSCRIPT
-***************************************************/
+// ----------------------- Cargar Configuración -----------------------
 async function cargarConfig(){
   try{
     const res = await fetch(`${API_CONFIG}?action=getColumnas`);
     const data = await res.json();
-
     columnasVisibles = data.visibles || {};
     columnasBloqueadas = data.bloqueadas || {};
     botonesConfig = data.botones || botonesConfig;
   }catch(e){
-    console.error(e);
     COLUMNAS.forEach(c=>{
       columnasVisibles[c.key] = true;
       columnasBloqueadas[c.key] = false;
@@ -65,56 +50,41 @@ async function cargarConfig(){
   }
 }
 
-/***************************************************
-GUARDAR CONFIG EN APPSCRIPT
-***************************************************/
+// ----------------------- Guardar Configuración -----------------------
 async function guardarConfig(){
   try{
     await fetch(API_CONFIG,{
       method:"POST",
       body: JSON.stringify({
         action:"guardarColumnas",
-        data:{
-          visibles:columnasVisibles,
-          bloqueadas:columnasBloqueadas,
-          botones:botonesConfig
-        }
+        data:{visibles:columnasVisibles,bloqueadas:columnasBloqueadas,botones:botonesConfig}
       })
     });
   }catch(e){ console.error(e); }
 }
 
-/***************************************************
-APLICAR COLUMNAS Y BOTONES
-***************************************************/
+// ----------------------- Aplicar columnas y botones -----------------------
 function aplicarTodo(){
-
   const table = document.querySelector("table");
-
   if(table){
     table.querySelectorAll("tr").forEach(row=>{
       const cells = row.querySelectorAll("th,td");
-
       COLUMNAS.forEach(col=>{
         const cell = cells[col.index];
         if(!cell) return;
-
-        // Mostrar/Ocultar columna
         cell.style.display = columnasVisibles[col.key] ? "" : "none";
 
-        // Bloqueo de celda
         if(columnasBloqueadas[col.key]){
           cell.style.opacity = "0.5";
           cell.style.cursor = "not-allowed";
           cell.onclick = e=>{ e.stopPropagation(); e.preventDefault(); };
-        }else{
+        } else {
           cell.style.opacity = "";
           cell.style.cursor = "";
           cell.onclick = null;
         }
 
-        // Botones dentro de columna "acciones"
-        if(col.key === "acciones"){
+        if(col.key==="acciones"){
           const botones = cell.querySelectorAll("button");
           botones.forEach(b=>{
             b.disabled = !botonesConfig.acciones;
@@ -127,63 +97,38 @@ function aplicarTodo(){
   }
 
   // Botones superiores
-  aplicarBoton("btnNuevo", botonesConfig.nuevo);
-  aplicarBoton("btnGuardar", botonesConfig.guardar);
-  aplicarBoton("btnCancelar", botonesConfig.cancelar);
-  aplicarBoton("btnPDF", botonesConfig.pdf);
-  aplicarBoton("btnExcel", botonesConfig.excel);
-  aplicarBoton("btnReload", botonesConfig.reload);
+  const btnMap = {nuevo:"btnNuevo", guardar:"btnGuardar", cancelar:"btnCancelar", pdf:"btnPDF", excel:"btnExcel", reload:"btnReload"};
+  Object.keys(btnMap).forEach(key=>{
+    const btn = document.getElementById(btnMap[key]);
+    if(!btn) return;
+    const activo = botonesConfig[key];
+    btn.disabled = !activo;
+    btn.style.opacity = activo?"1":"0.5";
+    btn.style.cursor = activo?"":"not-allowed";
+  });
 }
 
-/***************************************************
-APLICAR BOTÓN
-***************************************************/
-function aplicarBoton(id, activo){
-  const btn = document.getElementById(id);
-  if(!btn) return;
-
-  btn.disabled = !activo;
-  btn.style.opacity = activo?"1":"0.5";
-  btn.style.cursor = activo?"":"not-allowed";
-
-  btn.onclick = e=>{
-    if(!activo){ e.preventDefault(); e.stopPropagation(); return false; }
-  };
-}
-
-/***************************************************
-MODAL DE COLUMNAS
-***************************************************/
+// ----------------------- Abrir Modal Columnas -----------------------
 function abrirModalColumnas(){
-
-  const lista = document.getElementById("listaColumnas");
   const modal = document.getElementById("modalColumnas");
-
+  const lista = document.getElementById("listaColumnas");
   lista.innerHTML = "";
 
-  // Botones superiores
-  lista.insertAdjacentHTML("beforeend",`
-    <h4>Botones</h4>
-    ${crearCheck("nuevo","Nuevo")}
-    ${crearCheck("guardar","Guardar")}
-    ${crearCheck("cancelar","Cancelar")}
-    ${crearCheck("pdf","Exportar PDF")}
-    ${crearCheck("excel","Exportar Excel")}
-    ${crearCheck("reload","Recargar")}
-    ${crearCheck("acciones","Acciones Tabla")}
-    <hr>
-  `);
-
-  // Select All
-  lista.insertAdjacentHTML("beforeend",`
-    <label><input type="checkbox" id="selectAll"> Seleccionar todo</label><hr>
-  `);
+  // Botones de acción
+  ["nuevo","guardar","cancelar","pdf","excel","reload","acciones"].forEach(key=>{
+    lista.insertAdjacentHTML("beforeend",`
+      <label>
+        <input type="checkbox" class="chkBtn" data-key="${key}" ${botonesConfig[key]?"checked":""}>
+        ${key.charAt(0).toUpperCase() + key.slice(1)}
+      </label>
+    `);
+  });
+  lista.insertAdjacentHTML("beforeend","<hr>");
 
   // Columnas
   COLUMNAS.forEach(col=>{
     const checked = columnasVisibles[col.key]?"checked":"";
     const locked  = columnasBloqueadas[col.key]?"🔒":"🔓";
-
     lista.insertAdjacentHTML("beforeend",`
       <label style="display:flex;justify-content:space-between">
         <div>
@@ -195,21 +140,7 @@ function abrirModalColumnas(){
     `);
   });
 
-  modal.style.display = "flex";
-
-  // Eventos
-  document.getElementById("selectAll").onchange = e=>{
-    document.querySelectorAll("#listaColumnas input[data-key]").forEach(chk=>{
-      chk.checked = e.target.checked;
-    });
-  };
-
-  document.querySelectorAll(".chkBtn").forEach(chk=>{
-    chk.onchange = ()=>{
-      botonesConfig[chk.dataset.key] = chk.checked;
-    };
-  });
-
+  // Eventos Lock
   document.querySelectorAll(".btnLock").forEach(btn=>{
     btn.onclick = ()=>{
       const key = btn.dataset.key;
@@ -217,87 +148,66 @@ function abrirModalColumnas(){
       btn.textContent = columnasBloqueadas[key]?"🔒":"🔓";
     };
   });
+
+  // Eventos botones superiores
+  document.querySelectorAll(".chkBtn").forEach(chk=>{
+    chk.onchange = ()=>{ botonesConfig[chk.dataset.key] = chk.checked; };
+  });
+
+  modal.style.display = "flex";
 }
 
-/***************************************************
-CREAR CHECKBOX
-***************************************************/
-function crearCheck(key,label){
-  return `
-    <label>
-      <input type="checkbox" class="chkBtn" data-key="${key}" ${botonesConfig[key]?"checked":""}>
-      ${label}
-    </label>
-  `;
-}
-
-/***************************************************
-INICIALIZACIÓN
-***************************************************/
+// ----------------------- Init -----------------------
 window.addEventListener("DOMContentLoaded", async ()=>{
-
   await cargarConfig();
   aplicarTodo();
 
-  const btn = document.getElementById("btnColumnas");
+  const btnColumnas = document.getElementById("btnColumnas");
   const modal = document.getElementById("modalColumnas");
-  const btnCerrar = document.getElementById("btnCerrarColumnas");
   const btnGuardar = document.getElementById("btnGuardarColumnas");
-  const btnCancelar = document.getElementById("btnCancelarColumnas");
+  const btnCerrar = document.getElementById("btnCerrarColumnas");
 
-  // Variables temporales para Cancelar
-  let columnasTemp = {};
-  let columnasBloqTemp = {};
-  let botonesTemp = {};
+  let columnasTemp = {...columnasVisibles};
+  let bloqueadasTemp = {...columnasBloqueadas};
+  let botonesTemp = {...botonesConfig};
 
-  btn.onclick = ()=>{
+  btnColumnas.onclick = ()=>{
     columnasTemp = {...columnasVisibles};
-    columnasBloqTemp = {...columnasBloqueadas};
+    bloqueadasTemp = {...columnasBloqueadas};
     botonesTemp = {...botonesConfig};
     abrirModalColumnas();
   };
 
-  btnCerrar.onclick = btnCancelar.onclick = ()=>{
+  btnCerrar.onclick = ()=>{
     columnasVisibles = {...columnasTemp};
-    columnasBloqueadas = {...columnasBloqTemp};
+    columnasBloqueadas = {...bloqueadasTemp};
     botonesConfig = {...botonesTemp};
     modal.style.display = "none";
     aplicarTodo();
   };
 
   btnGuardar.onclick = async ()=>{
-    activarLoader(btnGuardar);
-
-    document.querySelectorAll("#listaColumnas input[data-key]").forEach(chk=>{
+    document.querySelectorAll("#listaColumnas input[type='checkbox']").forEach(chk=>{
       columnasVisibles[chk.dataset.key] = chk.checked;
     });
-
-    document.querySelectorAll(".chkBtn").forEach(chk=>{
-      botonesConfig[chk.dataset.key] = chk.checked;
-    });
-
     await guardarConfig();
-
     modal.style.display = "none";
     aplicarTodo();
-    quitarLoader(btnGuardar);
   };
 
-  modal.addEventListener("click",(e)=>{
-    if(e.target === modal){
+  modal.addEventListener("click", e=>{
+    if(e.target===modal){
       columnasVisibles = {...columnasTemp};
-      columnasBloqueadas = {...columnasBloqTemp};
+      columnasBloqueadas = {...bloqueadasTemp};
       botonesConfig = {...botonesTemp};
       modal.style.display = "none";
       aplicarTodo();
     }
   });
 
+  // Observador tabla (aplica cambios automáticamente)
   const tbody = document.getElementById("tbody");
   if(tbody){
-    new MutationObserver(aplicarTodo)
-      .observe(tbody,{childList:true,subtree:true});
+    new MutationObserver(aplicarTodo).observe(tbody,{childList:true,subtree:true});
   }
-
-  setTimeout(aplicarTodo, 800);
 });
