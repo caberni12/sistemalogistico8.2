@@ -86,23 +86,26 @@ function actualizarBtnNuevo() {
   const btnNuevo = document.getElementById("btnNuevo");
   if(!btnNuevo) return;
 
+  // Habilitar/deshabilitar visualmente
   btnNuevo.disabled = !nuevoHabilitado;
   btnNuevo.style.opacity = nuevoHabilitado ? "1" : "0.5";
-  btnNuevo.style.cursor = nuevoHabilitado ? "" : "not-allowed";
+  btnNuevo.style.cursor = nuevoHabilitado ? "pointer" : "not-allowed";
 
-  // Listener que cancela click si está bloqueado, pero NO elimina otros listeners
-  btnNuevo.addEventListener("click", (e)=>{
+  // Evitar duplicar listeners: reemplazamos el botón por un clon limpio
+  const nuevoBtn = btnNuevo.cloneNode(true);
+  btnNuevo.parentNode.replaceChild(nuevoBtn, btnNuevo);
+
+  // Listener limpio
+  nuevoBtn.addEventListener("click", (e)=>{
     if(!nuevoHabilitado){
       e.preventDefault();
-      e.stopImmediatePropagation(); // evita que se ejecute cualquier otro onclick
+      e.stopImmediatePropagation();
       return false;
     }
-  }, true); // listener en captura para bloquear primero
+    // Aquí va la acción real del botón NUEVO (abrir modal o formulario)
+    abrirModalNuevoRegistro(); // Reemplaza con tu función concreta
+  });
 }
-
-/***************************************************
-APLICAR COLUMNAS + BLOQUEOS
-***************************************************/
 function aplicarColumnas(){
 
   const table = document.querySelector("table");
