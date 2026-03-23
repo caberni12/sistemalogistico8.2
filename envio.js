@@ -916,7 +916,7 @@ btnExcel.onclick = ()=> exportExcel(btnExcel);
 /* ======================================================
    EXPORT PDF CON ENCABEZADO
 ====================================================== */
-function exportPDF(btn){
+function exportPDF(btn){ 
 
   setLoading(btn,true);
 
@@ -941,7 +941,7 @@ function exportPDF(btn){
 
     doc.setFontSize(11);
     doc.text(`Total Pedidos: ${totalPedidos}`,250,20);
-    doc.text(`Total Cajas: ${totalBultos}`,250,26);
+    doc.text(`Total Unidades: ${totalBultos}`,250,26);
 
     /* -------- TABLA -------- */
 
@@ -949,39 +949,38 @@ function exportPDF(btn){
       startY:35,
 
       head:[[
-
-        'Fecha',
-        'Pedido',
-        'Cliente',
-        'Dirección',
-        'Comuna',
-        'Transporte',
-        'Unidades',
-        'Responsable',
-        'Hora Entrega',
-        'Estado',
-        'Observaciones'
-
+        "Fecha",
+        "Pedido",
+        "Tipo Documento",
+        "Número Documento",
+        "Cliente",
+        "Dirección",
+        "Comuna",
+        "Transporte",
+        "Unidades",
+        "Responsable",
+        "Fecha de Entrega",
+        "Estado",
+        "Nro.Tr",
       ]],
 
       body: FILT.map(r=>[
-
         r.fechaIngreso || '',
         r.pedido || '',
+        r.tipoDocumento || '',
+        r.numeroDocumento || '',
         r.cliente || '',
         r.direccion || '',
         r.comuna || '',
         r.transporte || '',
         r.etiquetas || 0,
         r.responsable || '',
-        r.horaEntrega || '',
+        r.fechaEntrega || '',
         r.status || '',
-        r.observaciones || ''
-
+        r.TR || '',
       ]),
 
       foot:[[
-
         '',
         '',
         '',
@@ -992,16 +991,25 @@ function exportPDF(btn){
         '',
         '',
         `PEDIDOS: ${totalPedidos}`,
+        '',
+        '',
+        '',
         ''
-
       ]],
 
       styles:{
-        fontSize:9
+        fontSize:9,
+        textColor: [0,0,0] // texto negro general
       },
 
       headStyles:{
-        fillColor:[20,184,166]
+        fillColor: [220,220,220], // gris claro
+        textColor: [0,0,0]        // texto negro
+      },
+
+      footStyles:{
+        fillColor: [220,220,220], // gris claro
+        textColor: [0,0,0]        // texto negro
       }
 
     });
@@ -1017,53 +1025,66 @@ function exportPDF(btn){
 /* ======================================================
    EXPORT EXCEL CON ENCABEZADO
 ====================================================== */
-
 function exportExcel(btn){
-
   setLoading(btn,true);
 
   setTimeout(()=>{
 
     const totalPedidos = FILT.length;
-    const totalBultos = FILT.reduce(
-      (sum,r)=> sum + Number(r.etiquetas || 0),0
-    );
+    const totalBultos = FILT.reduce((sum,r)=> sum + Number(r.etiquetas || 0),0);
 
-    const data = FILT.map(r=>({
+    // === ENCABEZADOS EXACTOS ===
+    const encabezados = [
+      "Fecha",
+      "Pedido",
+      "Tipo Documento",
+      "Número Documento",
+      "Cliente",
+      "Dirección",
+      "Comuna",
+      "Transporte",
+      "Unidades",
+      "Responsable",
+      "Fecha de Entrega",
+      "Estado",
+      "Observaciones",
+      "Nro de Traslado",
+      
+    ];
 
-      "Fecha": r.fechaIngreso || '',
-      "Pedido": r.pedido || '',
-      "Cliente": r.cliente || '',
-      "Dirección": r.direccion || '',
-      "Comuna": r.comuna || '',
-      "Transporte": r.transporte || '',
-      "Unidades": r.etiquetas || 0,
-      "Responsable": r.responsable || '',
-      "Hora Entrega": r.horaEntrega || '',
-      "Estado": r.status || '',
-      "Observaciones": r.observaciones || ''
+    // === DATOS ===
+    const data = FILT.map(r => [
+      r.fechaIngreso || '',
+      r.pedido || '',
+      r.tipoDocumento || '',
+      r.numeroDocumento || '',
+      r.cliente || '',
+      r.direccion || '',
+      r.comuna || '',
+      r.transporte || '',
+      r.etiquetas || 0,
+      r.responsable || '',
+      r.fechaEntrega || '',
+      r.status || '',
+      r.observaciones || '',
+      r.TR || '',
+     
+    ]);
 
-    }));
-
-    const ws = XLSX.utils.json_to_sheet(data);
+    // === HOJA PRINCIPAL ===
+    const ws = XLSX.utils.aoa_to_sheet([encabezados, ...data]);
     const wb = XLSX.utils.book_new();
-
     XLSX.utils.book_append_sheet(wb, ws, "Pedidos");
 
-    /* -------- HOJA RESUMEN -------- */
-
+    // === HOJA RESUMEN ===
     const resumen = [
-
       ["REPORTE LOGÍSTICO"],
       [""],
       ["Fecha generación", new Date().toLocaleString()],
       ["Total Pedidos", totalPedidos],
       ["Total Unidades", totalBultos]
-
     ];
-
     const wsResumen = XLSX.utils.aoa_to_sheet(resumen);
-
     XLSX.utils.book_append_sheet(wb, wsResumen, "Resumen");
 
     XLSX.writeFile(wb,"Reporte_Pedidos_Logisticos.xlsx");
@@ -1071,7 +1092,6 @@ function exportExcel(btn){
     setLoading(btn,false);
 
   },300);
-
 }
 
 
