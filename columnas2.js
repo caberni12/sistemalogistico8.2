@@ -80,45 +80,14 @@ async function guardarColumnasServer(){
 }
 
 /***************************************************
-MODAL NUEVO (FIX TOTAL)
+SOLO VISIBILIDAD BOTÓN NUEVO
 ***************************************************/
-function abrirModalNuevoRegistro(){
-  const modal = document.getElementById("modalNuevo");
-  if(!modal) return;
-
-  modal.style.display = "flex";
-  modal.classList.add("open");
-
-  const form = modal.querySelector("form");
-  if(form) form.reset();
-}
-
-function cerrarModalNuevo(){
-  const modal = document.getElementById("modalNuevo");
-  if(!modal) return;
-
-  modal.style.display = "none";
-  modal.classList.remove("open");
-}
-
-/***************************************************
-BOTÓN NUEVO (100% ESTABLE)
-***************************************************/
-function actualizarBtnNuevo() {
+function actualizarVisibilidadBtnNuevo() {
   const btnNuevo = document.getElementById("btnNuevo");
   if(!btnNuevo) return;
 
-  btnNuevo.disabled = !nuevoHabilitado;
-  btnNuevo.style.opacity = nuevoHabilitado ? "1" : "0.5";
-  btnNuevo.style.cursor = nuevoHabilitado ? "pointer" : "not-allowed";
-
-  btnNuevo.onclick = null;
-
-  btnNuevo.onclick = (e)=>{
-    e.preventDefault();
-    if(!nuevoHabilitado) return;
-    abrirModalNuevoRegistro();
-  };
+  // SOLO mostrar / ocultar
+  btnNuevo.style.display = nuevoHabilitado ? "" : "none";
 }
 
 /***************************************************
@@ -162,7 +131,8 @@ function aplicarColumnas(){
     });
   });
 
-  actualizarBtnNuevo();
+  // 🔥 SOLO VISIBILIDAD
+  actualizarVisibilidadBtnNuevo();
 }
 
 /***************************************************
@@ -225,7 +195,7 @@ function abrirModalColumnas(){
 
   document.getElementById("chkNuevo").onchange = (e)=>{
     nuevoHabilitado = e.target.checked;
-    actualizarBtnNuevo();
+    actualizarVisibilidadBtnNuevo(); // 🔥 SOLO VISUAL
   };
 
   document.querySelectorAll(".btnLock").forEach(btn=>{
@@ -268,17 +238,6 @@ window.addEventListener("DOMContentLoaded", async ()=>{
     };
   }
 
-  // 🔥 CIERRE MODAL NUEVO POR FONDO
-  const modalNuevo = document.getElementById("modalNuevo");
-  if(modalNuevo){
-    modalNuevo.addEventListener("click",(e)=>{
-      if(e.target === modalNuevo){
-        cerrarModalNuevo();
-      }
-    });
-  }
-
-  // OBSERVER CONTROLADO
   const tbody = document.getElementById("tbody");
   if(tbody){
     let timeoutTabla = null;
