@@ -1,4 +1,4 @@
-me puedes entrega /* =====================================================
+/* =====================================================
 
 CONFIGURACIÓN GENERAL
 
@@ -490,4 +490,4 @@ localStorage.clear();
 
 location.href = "index.html";
 
-}
+}necesito que se mantenga en la vista actual aun recargue  el navegador
