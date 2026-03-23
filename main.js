@@ -1,6 +1,6 @@
-/* =====================================================
-   CONFIGURACIÓN GENERAL
-===================================================== */
+/***************************************************
+CONFIGURACIÓN GENERAL
+***************************************************/
 const API =
 "https://script.google.com/macros/s/AKfycbxDUcEzMGw9LWnzn-YUV89So3AFCEnplOHQuGmzq-EV_hnIMhQvgQIPY1AxvlKJPZNx/exec";
 
@@ -8,16 +8,16 @@ let USER_IP = "—";
 let WATCH_ID = null;
 let LAST_GEOCODE = 0;
 
-/* =====================================================
-   MAPA
-===================================================== */
+/***************************************************
+MAPA
+***************************************************/
 let MAPA = null;
 let MARCADOR = null;
 let CIRCULO = null;
 
-/* =====================================================
-   ICONOS
-===================================================== */
+/***************************************************
+ICONOS
+***************************************************/
 function crearIconoAuto(rot = 0){
   return L.divIcon({
     className: "auto-icon",
@@ -43,16 +43,16 @@ const ICONO_ESTATICO = L.divIcon({
     </svg>`
 });
 
-/* =====================================================
-   MENÚ
-===================================================== */
+/***************************************************
+MENÚ
+***************************************************/
 function toggleMenu(){
   document.getElementById("menuLateral")?.classList.toggle("open");
 }
 
-/* =====================================================
-   LOADER
-===================================================== */
+/***************************************************
+LOADER
+***************************************************/
 function iniciarProgreso(){
   document.getElementById("loadingOverlay").style.display = "flex";
   document.getElementById("progressBar").style.display = "block";
@@ -63,9 +63,9 @@ function finalizarProgreso(){
   document.getElementById("progressBar").style.display = "none";
 }
 
-/* =====================================================
-   INIT
-===================================================== */
+/***************************************************
+INIT
+***************************************************/
 document.addEventListener("DOMContentLoaded", async ()=>{
 
   iniciarProgreso();
@@ -84,7 +84,6 @@ document.addEventListener("DOMContentLoaded", async ()=>{
   document.getElementById("usuario").textContent =
     `👤 ${user.nombre} · ${user.rol}`;
 
-  // 🔹 EMPRESA ACTIVA (logo + nombre)
   if(typeof cargarEmpresaHeader === "function"){
     await cargarEmpresaHeader();
   }
@@ -95,12 +94,23 @@ document.addEventListener("DOMContentLoaded", async ()=>{
   obtenerIP();
   iniciarReloj();
 
+  // 🔥 RESTAURAR MÓDULO ACTIVO
+  const moduloGuardado = localStorage.getItem("moduloActivo");
+  if(moduloGuardado){
+    try{
+      const {url, titulo} = JSON.parse(moduloGuardado);
+      if(url) abrirModulo(url, titulo);
+    }catch(e){
+      console.warn("Error restaurando módulo");
+    }
+  }
+
   finalizarProgreso();
 });
 
-/* =====================================================
-   MENÚ DINÁMICO
-===================================================== */
+/***************************************************
+MENÚ DINÁMICO
+***************************************************/
 async function cargarMenu(user){
   const r = await fetch(`${API}?action=listarModulos`);
   const res = await r.json();
@@ -126,10 +136,17 @@ async function cargarMenu(user){
   });
 }
 
-/* =====================================================
-   VISOR
-===================================================== */
+/***************************************************
+VISOR
+***************************************************/
 function abrirModulo(url, titulo){
+
+  // 🔹 GUARDAR ESTADO
+  localStorage.setItem("moduloActivo", JSON.stringify({
+    url,
+    titulo
+  }));
+
   document.getElementById("viewer").style.display = "flex";
   document.getElementById("frame").src = url;
   document.getElementById("tituloSistema").textContent = titulo;
@@ -140,14 +157,17 @@ function volver(){
   document.getElementById("frame").src = "";
   document.getElementById("tituloSistema").textContent = "Panel Logístico";
 
+  // 🔹 LIMPIAR ESTADO
+  localStorage.removeItem("moduloActivo");
+
   if(MAPA){
     setTimeout(()=>MAPA.invalidateSize(),300);
   }
 }
 
-/* =====================================================
-   MAPA + GPS
-===================================================== */
+/***************************************************
+MAPA + GPS
+***************************************************/
 function iniciarMapa(){
   if(!navigator.geolocation || !window.L) return;
 
@@ -190,9 +210,9 @@ function iniciarMapa(){
   { enableHighAccuracy:true, maximumAge:2000, timeout:10000 });
 }
 
-/* =====================================================
-   DIRECCIÓN
-===================================================== */
+/***************************************************
+DIRECCIÓN
+***************************************************/
 async function actualizarDireccion(lat,lng){
   try{
     const r = await fetch(
@@ -206,9 +226,9 @@ async function actualizarDireccion(lat,lng){
   }
 }
 
-/* =====================================================
-   RED + VELOCIDAD
-===================================================== */
+/***************************************************
+RED + VELOCIDAD
+***************************************************/
 function actualizarRedVelocidad(speed){
   const kmh = (speed * 3.6).toFixed(1);
   const conn = navigator.connection || {};
@@ -220,9 +240,9 @@ function actualizarRedVelocidad(speed){
     `🚗 ${kmh} km/h`;
 }
 
-/* =====================================================
-   IP + RELOJ
-===================================================== */
+/***************************************************
+IP + RELOJ
+***************************************************/
 async function obtenerIP(){
   try{
     USER_IP = (await (await fetch("https://api.ipify.org?format=json")).json()).ip;
@@ -239,9 +259,9 @@ function iniciarReloj(){
   },1000);
 }
 
-/* =====================================================
-   BOTONES
-===================================================== */
+/***************************************************
+BOTONES
+***************************************************/
 function recargarPanel(){
   location.reload();
 }
