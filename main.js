@@ -105,6 +105,17 @@ document.addEventListener("DOMContentLoaded", async ()=>{
 
   finalizarProgreso();
 
+  // Restaurar módulo abierto si existe
+  const moduloGuardado = JSON.parse(sessionStorage.getItem("moduloAbierto") || "null");
+  if(moduloGuardado){
+    const viewer = document.getElementById("viewer");
+    if(viewer){
+      viewer.style.display = "flex";
+      document.getElementById("frame").src = moduloGuardado.url;
+      document.getElementById("tituloSistema").textContent = moduloGuardado.titulo;
+    }
+  }
+
   // IP y reloj
   obtenerIP();
   iniciarReloj();
@@ -167,6 +178,9 @@ function abrirModulo(url, titulo){
     viewer.style.display = "flex";
     document.getElementById("frame").src = url;
     document.getElementById("tituloSistema").textContent = titulo;
+
+    // Guardar módulo abierto
+    sessionStorage.setItem("moduloAbierto", JSON.stringify({ url, titulo }));
   }
 }
 
@@ -176,6 +190,9 @@ function volver(){
     viewer.style.display = "none";
     document.getElementById("frame").src = "";
     document.getElementById("tituloSistema").textContent = "Panel Logístico";
+
+    // Limpiar módulo abierto
+    sessionStorage.removeItem("moduloAbierto");
   }
   if(MAPA) setTimeout(()=>MAPA.invalidateSize(),300);
 }
