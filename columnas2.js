@@ -102,15 +102,12 @@ function actualizarBtnNuevo() {
       e.stopImmediatePropagation();
       return false;
     }
-    // Acción real del botón NUEVO: abrir modal o formulario
+    // Aquí va la acción real del botón NUEVO (abrir modal o formulario)
     abrirModalNuevoRegistro(); // Reemplaza con tu función concreta
   });
 }
-
-/***************************************************
-APLICAR COLUMNAS + BLOQUEOS
-***************************************************/
 function aplicarColumnas(){
+
   const table = document.querySelector("table");
   if(table){
     table.querySelectorAll("tr").forEach(row=>{
@@ -156,6 +153,7 @@ function aplicarColumnas(){
 MODAL
 ***************************************************/
 function abrirModalColumnas(){
+
   const lista = document.getElementById("listaColumnas");
   const modal = document.getElementById("modalColumnas");
 
