@@ -37,8 +37,8 @@ let nuevoHabilitado = true;
 /***************************************************
 LOADER
 ***************************************************/
-function activarLoader(btn){ btn.classList.add("loading"); }
-function quitarLoader(btn){ btn.classList.remove("loading"); }
+function activarLoader(btn){ if(btn) btn.classList.add("loading"); }
+function quitarLoader(btn){ if(btn) btn.classList.remove("loading"); }
 
 /***************************************************
 CARGAR CONFIG
@@ -80,72 +80,74 @@ async function guardarColumnasServer(){
 }
 
 /***************************************************
-FUNCIONES BOTÓN NUEVO
+BOTÓN NUEVO (FIX REAL)
 ***************************************************/
 function actualizarBtnNuevo() {
   const btnNuevo = document.getElementById("btnNuevo");
   if(!btnNuevo) return;
 
-  // Habilitar/deshabilitar visualmente
   btnNuevo.disabled = !nuevoHabilitado;
   btnNuevo.style.opacity = nuevoHabilitado ? "1" : "0.5";
   btnNuevo.style.cursor = nuevoHabilitado ? "pointer" : "not-allowed";
 
-  // Evitar duplicar listeners: reemplazamos el botón por un clon limpio
-  const nuevoBtn = btnNuevo.cloneNode(true);
-  btnNuevo.parentNode.replaceChild(nuevoBtn, btnNuevo);
+  // eliminar eventos previos
+  btnNuevo.onclick = null;
 
-  // Listener limpio
-  nuevoBtn.addEventListener("click", (e)=>{
+  btnNuevo.onclick = (e)=>{
     if(!nuevoHabilitado){
       e.preventDefault();
-      e.stopImmediatePropagation();
       return false;
     }
-    // Aquí va la acción real del botón NUEVO (abrir modal o formulario)
-    abrirModalNuevoRegistro(); // Reemplaza con tu función concreta
-  });
+
+    if(typeof abrirModalNuevoRegistro === "function"){
+      abrirModalNuevoRegistro();
+    }else{
+      console.warn("⚠️ Falta función abrirModalNuevoRegistro()");
+    }
+  };
 }
+
+/***************************************************
+APLICAR COLUMNAS
+***************************************************/
 function aplicarColumnas(){
 
   const table = document.querySelector("table");
-  if(table){
-    table.querySelectorAll("tr").forEach(row=>{
-      const cells = row.querySelectorAll("th,td");
+  if(!table) return;
 
-      COLUMNAS.forEach(col=>{
-        const cell = cells[col.index];
-        if(!cell) return;
+  table.querySelectorAll("tr").forEach(row=>{
+    const cells = row.querySelectorAll("th,td");
 
-        cell.style.display = columnasVisibles[col.key] ? "" : "none";
+    COLUMNAS.forEach(col=>{
+      const cell = cells[col.index];
+      if(!cell) return;
 
-        if(columnasBloqueadas[col.key]){
-          cell.style.opacity = "0.5";
-          cell.style.cursor = "not-allowed";
-          cell.onclick = (e)=>{
-            e.stopPropagation();
-            e.preventDefault();
-            return false;
-          };
-        }else{
-          cell.style.opacity = "";
-          cell.style.cursor = "";
-          cell.onclick = null;
-        }
+      cell.style.display = columnasVisibles[col.key] ? "" : "none";
 
-        if(col.key === "acciones"){
-          const botones = cell.querySelectorAll("button");
-          botones.forEach(b=>{
-            b.disabled = !accionesHabilitadas;
-            b.style.opacity = accionesHabilitadas ? "1" : "0.4";
-            b.style.pointerEvents = accionesHabilitadas ? "" : "none";
-          });
-        }
-      });
+      if(columnasBloqueadas[col.key]){
+        cell.style.opacity = "0.5";
+        cell.style.cursor = "not-allowed";
+        cell.onclick = (e)=>{
+          e.stopPropagation();
+          e.preventDefault();
+        };
+      }else{
+        cell.style.opacity = "";
+        cell.style.cursor = "";
+        cell.onclick = null;
+      }
+
+      if(col.key === "acciones"){
+        const botones = cell.querySelectorAll("button");
+        botones.forEach(b=>{
+          b.disabled = !accionesHabilitadas;
+          b.style.opacity = accionesHabilitadas ? "1" : "0.4";
+          b.style.pointerEvents = accionesHabilitadas ? "" : "none";
+        });
+      }
     });
-  }
+  });
 
-  // Actualizar botón NUEVO
   actualizarBtnNuevo();
 }
 
@@ -156,6 +158,8 @@ function abrirModalColumnas(){
 
   const lista = document.getElementById("listaColumnas");
   const modal = document.getElementById("modalColumnas");
+
+  if(!lista || !modal) return;
 
   lista.innerHTML = "";
 
@@ -195,25 +199,21 @@ function abrirModalColumnas(){
 
   modal.style.display = "flex";
 
-  // SELECT ALL
   document.getElementById("selectAll").onchange = (e)=>{
     document.querySelectorAll("#listaColumnas input[data-key]").forEach(chk=>{
       chk.checked = e.target.checked;
     });
   };
 
-  // ACCIONES
   document.getElementById("chkAcciones").onchange = (e)=>{
     accionesHabilitadas = e.target.checked;
   };
 
-  // NUEVO
   document.getElementById("chkNuevo").onchange = (e)=>{
     nuevoHabilitado = e.target.checked;
     actualizarBtnNuevo();
   };
 
-  // LOCK
   document.querySelectorAll(".btnLock").forEach(btn=>{
     btn.onclick = ()=>{
       const key = btn.dataset.key;
@@ -235,39 +235,46 @@ window.addEventListener("DOMContentLoaded", async ()=>{
   const btnCerrar = document.getElementById("btnCerrarColumnas");
   const btnGuardar = document.getElementById("btnGuardarColumnas");
 
-  btn.onclick = abrirModalColumnas;
-  btnCerrar.onclick = ()=> modal.style.display = "none";
+  if(btn) btn.onclick = abrirModalColumnas;
+  if(btnCerrar) btnCerrar.onclick = ()=> modal.style.display = "none";
 
-  btnGuardar.onclick = async ()=>{
-    activarLoader(btnGuardar);
+  if(btnGuardar){
+    btnGuardar.onclick = async ()=>{
+      activarLoader(btnGuardar);
 
-    document.querySelectorAll("#listaColumnas input[data-key]").forEach(chk=>{
-      columnasVisibles[chk.dataset.key] = chk.checked;
-    });
+      document.querySelectorAll("#listaColumnas input[data-key]").forEach(chk=>{
+        columnasVisibles[chk.dataset.key] = chk.checked;
+      });
 
-    await guardarColumnasServer();
-    modal.style.display = "none";
-    aplicarColumnas();
-
-    quitarLoader(btnGuardar);
-  };
-
-  modal.addEventListener("click",(e)=>{
-    if(e.target === modal){
+      await guardarColumnasServer();
       modal.style.display = "none";
-    }
-  });
+      aplicarColumnas();
+
+      quitarLoader(btnGuardar);
+    };
+  }
+
+  if(modal){
+    modal.addEventListener("click",(e)=>{
+      if(e.target === modal){
+        modal.style.display = "none";
+      }
+    });
+  }
 
   const tbody = document.getElementById("tbody");
   if(tbody){
-    const observer = new MutationObserver(()=> aplicarColumnas());
+    let timeoutTabla = null;
+
+    const observer = new MutationObserver(()=>{
+      clearTimeout(timeoutTabla);
+      timeoutTabla = setTimeout(()=>{
+        aplicarColumnas();
+      },100);
+    });
+
     observer.observe(tbody,{childList:true,subtree:true});
   }
 
-  // Observador para asegurar que btnNuevo siempre respete nuevoHabilitado
-  const btnContainer = document.getElementById("btnContainer") || document.body;
-  const observerBtn = new MutationObserver(() => actualizarBtnNuevo());
-  observerBtn.observe(btnContainer, {childList:true, subtree:true});
-
-  aplicarColumnas(); // inicial
+  aplicarColumnas();
 });
