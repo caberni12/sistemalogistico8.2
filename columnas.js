@@ -47,10 +47,12 @@ async function cargarColumnas(){
   try{
     const res = await fetch(API_CONFIG + "?action=getColumnas");
     const data = await res.json();
+
     columnasVisibles = data.visibles || {};
     columnasBloqueadas = data.bloqueadas || {};
     accionesHabilitadas = data.acciones ?? true;
     nuevoHabilitado = data.nuevo ?? true;
+
   }catch(e){
     COLUMNAS.forEach(c=>{
       columnasVisibles[c.key] = true;
@@ -78,13 +80,36 @@ async function guardarColumnasServer(){
 }
 
 /***************************************************
+FUNCIONES BOTÓN NUEVO
+***************************************************/
+function actualizarBtnNuevo() {
+  const btnNuevo = document.getElementById("btnNuevo");
+  if(!btnNuevo) return;
+
+  btnNuevo.disabled = !nuevoHabilitado;
+  btnNuevo.style.opacity = nuevoHabilitado ? "1" : "0.5";
+  btnNuevo.style.cursor = nuevoHabilitado ? "" : "not-allowed";
+
+  // Listener que cancela click si está bloqueado, pero NO elimina otros listeners
+  btnNuevo.addEventListener("click", (e)=>{
+    if(!nuevoHabilitado){
+      e.preventDefault();
+      e.stopImmediatePropagation(); // evita que se ejecute cualquier otro onclick
+      return false;
+    }
+  }, true); // listener en captura para bloquear primero
+}
+
+/***************************************************
 APLICAR COLUMNAS + BLOQUEOS
 ***************************************************/
 function aplicarColumnas(){
+
   const table = document.querySelector("table");
   if(table){
     table.querySelectorAll("tr").forEach(row=>{
       const cells = row.querySelectorAll("th,td");
+
       COLUMNAS.forEach(col=>{
         const cell = cells[col.index];
         if(!cell) return;
@@ -94,7 +119,11 @@ function aplicarColumnas(){
         if(columnasBloqueadas[col.key]){
           cell.style.opacity = "0.5";
           cell.style.cursor = "not-allowed";
-          cell.onclick = (e)=>{ e.stopPropagation(); e.preventDefault(); return false; };
+          cell.onclick = (e)=>{
+            e.stopPropagation();
+            e.preventDefault();
+            return false;
+          };
         }else{
           cell.style.opacity = "";
           cell.style.cursor = "";
@@ -113,44 +142,48 @@ function aplicarColumnas(){
     });
   }
 
-  // Bloqueo Botón Nuevo
-  const btnNuevo = document.getElementById("btnNuevo");
-  if(btnNuevo){
-    btnNuevo.disabled = !nuevoHabilitado;
-    btnNuevo.style.opacity = nuevoHabilitado ? "1" : "0.5";
-    btnNuevo.style.cursor = nuevoHabilitado ? "" : "not-allowed";
-    btnNuevo.onclick = (e)=>{
-      if(!nuevoHabilitado){
-        e.preventDefault();
-        e.stopPropagation();
-        return false;
-      }
-    };
-  }
+  // Actualizar botón NUEVO
+  actualizarBtnNuevo();
 }
 
 /***************************************************
-MODAL CONFIGURACIÓN
+MODAL
 ***************************************************/
 function abrirModalColumnas(){
+
   const lista = document.getElementById("listaColumnas");
   const modal = document.getElementById("modalColumnas");
+
   lista.innerHTML = "";
 
-  lista.insertAdjacentHTML("beforeend",`<label><input type="checkbox" id="selectAll"> Seleccionar todo</label><hr>`);
+  lista.insertAdjacentHTML("beforeend",`
+    <label><input type="checkbox" id="selectAll"> Seleccionar todo</label><hr>
+  `);
 
-  lista.insertAdjacentHTML("beforeend",`<label><input type="checkbox" id="chkAcciones" ${accionesHabilitadas?"checked":""}> Activar acciones</label>`);
+  lista.insertAdjacentHTML("beforeend",`
+    <label>
+      <input type="checkbox" id="chkAcciones" ${accionesHabilitadas?"checked":""}>
+      Activar acciones
+    </label>
+  `);
 
-  lista.insertAdjacentHTML("beforeend",`<label style="color:#dc2626"><input type="checkbox" id="chkNuevo" ${nuevoHabilitado?"checked":""}> Activar botón NUEVO</label><hr>`);
+  lista.insertAdjacentHTML("beforeend",`
+    <label style="color:#dc2626">
+      <input type="checkbox" id="chkNuevo" ${nuevoHabilitado?"checked":""}>
+      Activar botón NUEVO
+    </label>
+    <hr>
+  `);
 
   COLUMNAS.forEach(col=>{
-    const checked = columnasVisibles[col.key] ? "checked":"";
+    const checked = columnasVisibles[col.key] ? "checked": "";
     const locked  = columnasBloqueadas[col.key] ? "🔒":"🔓";
 
     lista.insertAdjacentHTML("beforeend",`
       <label style="display:flex;justify-content:space-between">
         <div>
-          <input type="checkbox" data-key="${col.key}" ${checked}> ${col.label}
+          <input type="checkbox" data-key="${col.key}" ${checked}>
+          ${col.label}
         </div>
         <button class="btnLock" data-key="${col.key}">${locked}</button>
       </label>
@@ -167,11 +200,17 @@ function abrirModalColumnas(){
   };
 
   // ACCIONES
-  document.getElementById("chkAcciones").onchange = (e)=> accionesHabilitadas = e.target.checked;
-  // NUEVO
-  document.getElementById("chkNuevo").onchange = (e)=> nuevoHabilitado = e.target.checked;
+  document.getElementById("chkAcciones").onchange = (e)=>{
+    accionesHabilitadas = e.target.checked;
+  };
 
-  // LOCK COLUMNAS
+  // NUEVO
+  document.getElementById("chkNuevo").onchange = (e)=>{
+    nuevoHabilitado = e.target.checked;
+    actualizarBtnNuevo();
+  };
+
+  // LOCK
   document.querySelectorAll(".btnLock").forEach(btn=>{
     btn.onclick = ()=>{
       const key = btn.dataset.key;
@@ -185,6 +224,7 @@ function abrirModalColumnas(){
 INIT
 ***************************************************/
 window.addEventListener("DOMContentLoaded", async ()=>{
+
   await cargarColumnas();
 
   const btn = document.getElementById("btnColumnas");
@@ -205,10 +245,15 @@ window.addEventListener("DOMContentLoaded", async ()=>{
     await guardarColumnasServer();
     modal.style.display = "none";
     aplicarColumnas();
+
     quitarLoader(btnGuardar);
   };
 
-  modal.addEventListener("click",(e)=>{ if(e.target === modal) modal.style.display = "none"; });
+  modal.addEventListener("click",(e)=>{
+    if(e.target === modal){
+      modal.style.display = "none";
+    }
+  });
 
   const tbody = document.getElementById("tbody");
   if(tbody){
@@ -216,5 +261,10 @@ window.addEventListener("DOMContentLoaded", async ()=>{
     observer.observe(tbody,{childList:true,subtree:true});
   }
 
-  setTimeout(aplicarColumnas, 800);
+  // Observador para asegurar que btnNuevo siempre respete nuevoHabilitado
+  const btnContainer = document.getElementById("btnContainer") || document.body;
+  const observerBtn = new MutationObserver(() => actualizarBtnNuevo());
+  observerBtn.observe(btnContainer, {childList:true, subtree:true});
+
+  aplicarColumnas(); // inicial
 });
