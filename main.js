@@ -9,6 +9,31 @@ let WATCH_ID = null;
 let LAST_GEOCODE = 0;
 
 /***************************************************
+🔥 RESTAURACIÓN INMEDIATA (ANTES DE TODO)
+***************************************************/
+(function(){
+  const data = localStorage.getItem("moduloActivo");
+
+  if(data){
+    try{
+      const {url} = JSON.parse(data);
+
+      if(url){
+        window.addEventListener("DOMContentLoaded", ()=>{
+          const viewer = document.getElementById("viewer");
+          const frame = document.getElementById("frame");
+
+          if(viewer && frame){
+            viewer.style.display = "flex";
+            frame.src = url;
+          }
+        });
+      }
+    }catch(e){}
+  }
+})();
+
+/***************************************************
 MAPA
 ***************************************************/
 let MAPA = null;
@@ -94,15 +119,15 @@ document.addEventListener("DOMContentLoaded", async ()=>{
   obtenerIP();
   iniciarReloj();
 
-  // 🔥 RESTAURAR MÓDULO ACTIVO
+  // 🔹 SOLO ACTUALIZA TÍTULO (ya se abrió antes)
   const moduloGuardado = localStorage.getItem("moduloActivo");
   if(moduloGuardado){
     try{
-      const {url, titulo} = JSON.parse(moduloGuardado);
-      if(url) abrirModulo(url, titulo);
-    }catch(e){
-      console.warn("Error restaurando módulo");
-    }
+      const {titulo} = JSON.parse(moduloGuardado);
+      if(titulo){
+        document.getElementById("tituloSistema").textContent = titulo;
+      }
+    }catch(e){}
   }
 
   finalizarProgreso();
@@ -157,7 +182,6 @@ function volver(){
   document.getElementById("frame").src = "";
   document.getElementById("tituloSistema").textContent = "Panel Logístico";
 
-  // 🔹 LIMPIAR ESTADO
   localStorage.removeItem("moduloActivo");
 
   if(MAPA){
