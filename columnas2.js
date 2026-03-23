@@ -33,8 +33,6 @@ let columnasVisibles = {};
 let columnasBloqueadas = {};
 let accionesHabilitadas = true;
 let nuevoHabilitado = true;
-let guardarHabilitado = true;
-let cancelarHabilitado = true;
 
 /***************************************************
 LOADER
@@ -54,8 +52,6 @@ async function cargarColumnas(){
     columnasBloqueadas = data.bloqueadas || {};
     accionesHabilitadas = data.acciones ?? true;
     nuevoHabilitado = data.nuevo ?? true;
-    guardarHabilitado = data.guardar ?? true;
-    cancelarHabilitado = data.cancelar ?? true;
 
   }catch(e){
     COLUMNAS.forEach(c=>{
@@ -77,12 +73,31 @@ async function guardarColumnasServer(){
         visibles:columnasVisibles,
         bloqueadas:columnasBloqueadas,
         acciones:accionesHabilitadas,
-        nuevo:nuevoHabilitado,
-        guardar:guardarHabilitado,
-        cancelar:cancelarHabilitado
+        nuevo:nuevoHabilitado
       }
     })
   });
+}
+
+/***************************************************
+FUNCIONES BOTÓN NUEVO
+***************************************************/
+function actualizarBtnNuevo() {
+  const btnNuevo = document.getElementById("btnNuevo");
+  if(!btnNuevo) return;
+
+  btnNuevo.disabled = !nuevoHabilitado;
+  btnNuevo.style.opacity = nuevoHabilitado ? "1" : "0.5";
+  btnNuevo.style.cursor = nuevoHabilitado ? "" : "not-allowed";
+
+  // Listener que cancela click si está bloqueado, pero NO elimina otros listeners
+  btnNuevo.addEventListener("click", (e)=>{
+    if(!nuevoHabilitado){
+      e.preventDefault();
+      e.stopImmediatePropagation(); // evita que se ejecute cualquier otro onclick
+      return false;
+    }
+  }, true); // listener en captura para bloquear primero
 }
 
 /***************************************************
@@ -94,6 +109,7 @@ function aplicarColumnas(){
   if(table){
     table.querySelectorAll("tr").forEach(row=>{
       const cells = row.querySelectorAll("th,td");
+
       COLUMNAS.forEach(col=>{
         const cell = cells[col.index];
         if(!cell) return;
@@ -103,7 +119,11 @@ function aplicarColumnas(){
         if(columnasBloqueadas[col.key]){
           cell.style.opacity = "0.5";
           cell.style.cursor = "not-allowed";
-          cell.onclick = (e)=>{ e.stopPropagation(); e.preventDefault(); return false; };
+          cell.onclick = (e)=>{
+            e.stopPropagation();
+            e.preventDefault();
+            return false;
+          };
         }else{
           cell.style.opacity = "";
           cell.style.cursor = "";
@@ -122,24 +142,8 @@ function aplicarColumnas(){
     });
   }
 
-  // Botones principales
-  const botonesMap = {
-    btnNuevo: nuevoHabilitado,
-    btnGuardar: guardarHabilitado,
-    btnCancelar: cancelarHabilitado
-  };
-
-  Object.keys(botonesMap).forEach(id=>{
-    const btn = document.getElementById(id);
-    if(!btn) return;
-    const activo = botonesMap[id];
-    btn.disabled = !activo;
-    btn.style.opacity = activo?"1":"0.5";
-    btn.style.cursor = activo?"":"not-allowed";
-    btn.onclick = (e)=>{
-      if(!activo){ e.preventDefault(); e.stopPropagation(); return false; }
-    };
-  });
+  // Actualizar botón NUEVO
+  actualizarBtnNuevo();
 }
 
 /***************************************************
@@ -149,30 +153,32 @@ function abrirModalColumnas(){
 
   const lista = document.getElementById("listaColumnas");
   const modal = document.getElementById("modalColumnas");
+
   lista.innerHTML = "";
 
   lista.insertAdjacentHTML("beforeend",`
     <label><input type="checkbox" id="selectAll"> Seleccionar todo</label><hr>
   `);
 
-  // Botones principales
   lista.insertAdjacentHTML("beforeend",`
-    <label><input type="checkbox" id="chkAcciones" ${accionesHabilitadas?"checked":""}> Activar acciones</label>
-  `);
-  lista.insertAdjacentHTML("beforeend",`
-    <label><input type="checkbox" id="chkNuevo" ${nuevoHabilitado?"checked":""}> Activar NUEVO</label>
-  `);
-  lista.insertAdjacentHTML("beforeend",`
-    <label><input type="checkbox" id="chkGuardar" ${guardarHabilitado?"checked":""}> Activar GUARDAR</label>
-  `);
-  lista.insertAdjacentHTML("beforeend",`
-    <label><input type="checkbox" id="chkCancelar" ${cancelarHabilitado?"checked":""}> Activar CANCELAR</label><hr>
+    <label>
+      <input type="checkbox" id="chkAcciones" ${accionesHabilitadas?"checked":""}>
+      Activar acciones
+    </label>
   `);
 
-  // Columnas
+  lista.insertAdjacentHTML("beforeend",`
+    <label style="color:#dc2626">
+      <input type="checkbox" id="chkNuevo" ${nuevoHabilitado?"checked":""}>
+      Activar botón NUEVO
+    </label>
+    <hr>
+  `);
+
   COLUMNAS.forEach(col=>{
-    const checked = columnasVisibles[col.key] ? "checked":"";
+    const checked = columnasVisibles[col.key] ? "checked": "";
     const locked  = columnasBloqueadas[col.key] ? "🔒":"🔓";
+
     lista.insertAdjacentHTML("beforeend",`
       <label style="display:flex;justify-content:space-between">
         <div>
@@ -186,22 +192,32 @@ function abrirModalColumnas(){
 
   modal.style.display = "flex";
 
+  // SELECT ALL
   document.getElementById("selectAll").onchange = (e)=>{
-    document.querySelectorAll("#listaColumnas input[data-key]").forEach(chk=>{ chk.checked = e.target.checked; });
+    document.querySelectorAll("#listaColumnas input[data-key]").forEach(chk=>{
+      chk.checked = e.target.checked;
+    });
   };
-  document.getElementById("chkAcciones").onchange = (e)=> accionesHabilitadas = e.target.checked;
-  document.getElementById("chkNuevo").onchange = (e)=> nuevoHabilitado = e.target.checked;
-  document.getElementById("chkGuardar").onchange = (e)=> guardarHabilitado = e.target.checked;
-  document.getElementById("chkCancelar").onchange = (e)=> cancelarHabilitado = e.target.checked;
 
+  // ACCIONES
+  document.getElementById("chkAcciones").onchange = (e)=>{
+    accionesHabilitadas = e.target.checked;
+  };
+
+  // NUEVO
+  document.getElementById("chkNuevo").onchange = (e)=>{
+    nuevoHabilitado = e.target.checked;
+    actualizarBtnNuevo();
+  };
+
+  // LOCK
   document.querySelectorAll(".btnLock").forEach(btn=>{
     btn.onclick = ()=>{
       const key = btn.dataset.key;
       columnasBloqueadas[key] = !columnasBloqueadas[key];
-      btn.textContent = columnasBloqueadas[key] ? "🔒":"🔓";
+      btn.textContent = columnasBloqueadas[key] ? "🔒" : "🔓";
     };
   });
-
 }
 
 /***************************************************
@@ -221,17 +237,22 @@ window.addEventListener("DOMContentLoaded", async ()=>{
 
   btnGuardar.onclick = async ()=>{
     activarLoader(btnGuardar);
+
     document.querySelectorAll("#listaColumnas input[data-key]").forEach(chk=>{
       columnasVisibles[chk.dataset.key] = chk.checked;
     });
+
     await guardarColumnasServer();
     modal.style.display = "none";
     aplicarColumnas();
+
     quitarLoader(btnGuardar);
   };
 
   modal.addEventListener("click",(e)=>{
-    if(e.target === modal) modal.style.display = "none";
+    if(e.target === modal){
+      modal.style.display = "none";
+    }
   });
 
   const tbody = document.getElementById("tbody");
@@ -240,6 +261,10 @@ window.addEventListener("DOMContentLoaded", async ()=>{
     observer.observe(tbody,{childList:true,subtree:true});
   }
 
-  setTimeout(aplicarColumnas, 800);
+  // Observador para asegurar que btnNuevo siempre respete nuevoHabilitado
+  const btnContainer = document.getElementById("btnContainer") || document.body;
+  const observerBtn = new MutationObserver(() => actualizarBtnNuevo());
+  observerBtn.observe(btnContainer, {childList:true, subtree:true});
 
+  aplicarColumnas(); // inicial
 });
