@@ -80,7 +80,29 @@ async function guardarColumnasServer(){
 }
 
 /***************************************************
-BOTÓN NUEVO (FIX REAL)
+MODAL NUEVO (FIX TOTAL)
+***************************************************/
+function abrirModalNuevoRegistro(){
+  const modal = document.getElementById("modalNuevo");
+  if(!modal) return;
+
+  modal.style.display = "flex";
+  modal.classList.add("open");
+
+  const form = modal.querySelector("form");
+  if(form) form.reset();
+}
+
+function cerrarModalNuevo(){
+  const modal = document.getElementById("modalNuevo");
+  if(!modal) return;
+
+  modal.style.display = "none";
+  modal.classList.remove("open");
+}
+
+/***************************************************
+BOTÓN NUEVO (100% ESTABLE)
 ***************************************************/
 function actualizarBtnNuevo() {
   const btnNuevo = document.getElementById("btnNuevo");
@@ -90,20 +112,12 @@ function actualizarBtnNuevo() {
   btnNuevo.style.opacity = nuevoHabilitado ? "1" : "0.5";
   btnNuevo.style.cursor = nuevoHabilitado ? "pointer" : "not-allowed";
 
-  // eliminar eventos previos
   btnNuevo.onclick = null;
 
   btnNuevo.onclick = (e)=>{
-    if(!nuevoHabilitado){
-      e.preventDefault();
-      return false;
-    }
-
-    if(typeof abrirModalNuevoRegistro === "function"){
-      abrirModalNuevoRegistro();
-    }else{
-      console.warn("⚠️ Falta función abrirModalNuevoRegistro()");
-    }
+    e.preventDefault();
+    if(!nuevoHabilitado) return;
+    abrirModalNuevoRegistro();
   };
 }
 
@@ -152,7 +166,7 @@ function aplicarColumnas(){
 }
 
 /***************************************************
-MODAL
+MODAL COLUMNAS
 ***************************************************/
 function abrirModalColumnas(){
 
@@ -254,14 +268,17 @@ window.addEventListener("DOMContentLoaded", async ()=>{
     };
   }
 
-  if(modal){
-    modal.addEventListener("click",(e)=>{
-      if(e.target === modal){
-        modal.style.display = "none";
+  // 🔥 CIERRE MODAL NUEVO POR FONDO
+  const modalNuevo = document.getElementById("modalNuevo");
+  if(modalNuevo){
+    modalNuevo.addEventListener("click",(e)=>{
+      if(e.target === modalNuevo){
+        cerrarModalNuevo();
       }
     });
   }
 
+  // OBSERVER CONTROLADO
   const tbody = document.getElementById("tbody");
   if(tbody){
     let timeoutTabla = null;
