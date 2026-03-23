@@ -677,6 +677,39 @@ grid-template-columns:1fr; /* 1 por fila */
 }
 
 }
+ /* ================= MOBILE ================= */
+@media (max-width:768px){
+
+  /* Botones de la top-bar en columna */
+  .top-bar {
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .top-bar button {
+    width: 100%;       /* Ocupa todo el ancho */
+    min-width: 0;      /* Evita desbordes */
+  }
+
+  /* Inputs de búsqueda y select también ocupan 100% */
+  .top-bar input,
+  .top-bar select {
+    width: 100%;
+  }
+
+  /* Botones del modal Form también ocupan todo el ancho */
+  #modalForm button,
+  #modalColumnas button {
+    width: 100%;
+    margin: 4px 0; /* espacio entre botones */
+  }
+
+  /* Si están en un contenedor flex, hacerlos columna */
+  #modalForm div[style*="display:flex"],
+  #modalColumnas .modal-actions {
+    flex-direction: column;
+  }
+}
 </style>
 
 </head>
