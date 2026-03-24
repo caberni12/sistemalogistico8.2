@@ -1,8 +1,7 @@
 /***************************************************
 CONFIGURACIÓN GENERAL
 ***************************************************/
-const API =
-"https://script.google.com/macros/s/AKfycbxDUcEzMGw9LWnzn-YUV89So3AFCEnplOHQuGmzq-EV_hnIMhQvgQIPY1AxvlKJPZNx/exec";
+const API = "https://script.google.com/macros/s/AKfycbxDUcEzMGw9LWnzn-YUV89So3AFCEnplOHQuGmzq-EV_hnIMhQvgQIPY1AxvlKJPZNx/exec";
 
 let USER_IP = "—";
 let WATCH_ID = null;
@@ -12,26 +11,22 @@ let MARCADOR = null;
 let CIRCULO = null;
 
 /***************************************************
-🔥 RESTAURACIÓN INMEDIATA (ANTES DE TODO)
+🔥 RESTAURACIÓN INMEDIATA DEL MÓDULO
 ***************************************************/
-(function(){
+function restaurarModuloActivo(){
   const data = localStorage.getItem("moduloActivo");
-  if(data){
-    try{
-      const {url} = JSON.parse(data);
-      if(url){
-        window.addEventListener("DOMContentLoaded", ()=>{
-          const viewer = document.getElementById("viewer");
-          const frame = document.getElementById("frame");
-          if(viewer && frame){
-            viewer.style.display = "flex";
-            frame.src = url;
-          }
-        });
-      }
-    }catch(e){}
-  }
-})();
+  if(!data) return;
+  try{
+    const {url, titulo} = JSON.parse(data);
+    const viewer = document.getElementById("viewer");
+    const frame = document.getElementById("frame");
+    if(viewer && frame){
+      viewer.style.display = "flex";
+      frame.src = url;
+      if(titulo) document.getElementById("tituloSistema").textContent = titulo;
+    }
+  }catch{}
+}
 
 /***************************************************
 ICONOS
@@ -67,63 +62,52 @@ function toggleMenu(){
 }
 
 /***************************************************
-LOADER
+LOADER MÍNIMO
 ***************************************************/
 function iniciarProgreso(){
-  document.getElementById("loadingOverlay").style.display = "flex";
-  document.getElementById("progressBar").style.display = "block";
+  const overlay = document.getElementById("loadingOverlay");
+  if(overlay) overlay.style.display = "flex";
 }
 
 function finalizarProgreso(){
-  document.getElementById("loadingOverlay").style.display = "none";
-  document.getElementById("progressBar").style.display = "none";
+  const overlay = document.getElementById("loadingOverlay");
+  if(overlay) overlay.style.display = "none";
 }
 
 /***************************************************
-INIT PRINCIPAL
+INICIO PRINCIPAL
 ***************************************************/
 document.addEventListener("DOMContentLoaded", ()=>{
   iniciarProgreso();
-  iniciarApp();
+
+  // Restaurar módulo inmediatamente
+  restaurarModuloActivo();
+
+  // Inicializar IP y reloj sin bloquear UI
+  setTimeout(obtenerIP,0);
+  setTimeout(iniciarReloj,0);
+
+  // Validar sesión y cargar menú/empresa
+  iniciarSesionRapido();
 });
 
-async function iniciarApp(){
+async function iniciarSesionRapido(){
   try {
-    // Validar sesión
-    const user = validarSesionGlobal ? await validarSesionGlobal() : null;
-    if(!user) return cerrarSesion();
+    let user = sessionStorage.getItem("user");
+    if(user) user = JSON.parse(user);
+    else if(typeof validarSesionGlobal === "function"){
+      user = await validarSesionGlobal();
+      if(!user) return cerrarSesion();
+      sessionStorage.setItem("user", JSON.stringify(user));
+    }
 
-    document.getElementById("usuario").textContent =
-      `👤 ${user.nombre} · ${user.rol}`;
-
+    document.getElementById("usuario").textContent = `👤 ${user.nombre} · ${user.rol}`;
+    
     // Cargar empresa y menú en paralelo
     const tareas = [];
     if(typeof cargarEmpresaHeader === "function") tareas.push(cargarEmpresaHeader());
     tareas.push(cargarMenu(user));
-
-    // Inicializar mapa, IP y reloj sin bloquear
-    setTimeout(iniciarMapa,0);
-    setTimeout(obtenerIP,0);
-    setTimeout(iniciarReloj,0);
-
-    await Promise.all(tareas);
-
-    // Restaurar módulo activo si existe
-    const moduloGuardado = localStorage.getItem("moduloActivo");
-    if(moduloGuardado){
-      try{
-        const {titulo, url} = JSON.parse(moduloGuardado);
-        if(url){
-          const viewer = document.getElementById("viewer");
-          const frame = document.getElementById("frame");
-          if(viewer && frame){
-            viewer.style.display = "flex";
-            frame.src = url;
-          }
-        }
-        if(titulo) document.getElementById("tituloSistema").textContent = titulo;
-      }catch(e){}
-    }
+    Promise.all(tareas).catch(console.error);
 
   } catch(e){ console.error(e); }
   finally { finalizarProgreso(); }
@@ -138,7 +122,6 @@ async function cargarMenu(user){
     const res = await r.json();
     const cont = document.getElementById("menuModulos");
     cont.innerHTML = "";
-
     if(!Array.isArray(res.data)) return;
 
     res.data.forEach(m=>{
@@ -156,20 +139,28 @@ async function cargarMenu(user){
 }
 
 /***************************************************
-VISOR
+VISOR DE MÓDULOS
 ***************************************************/
 function abrirModulo(url, titulo){
   localStorage.setItem("moduloActivo", JSON.stringify({url,titulo}));
-  document.getElementById("viewer").style.display = "flex";
-  document.getElementById("frame").src = url;
-  document.getElementById("tituloSistema").textContent = titulo;
+  const viewer = document.getElementById("viewer");
+  const frame = document.getElementById("frame");
+  if(viewer && frame){
+    viewer.style.display = "flex";
+    frame.src = url;
+    if(titulo) document.getElementById("tituloSistema").textContent = titulo;
+  }
 }
 
 function volver(){
-  document.getElementById("viewer").style.display = "none";
-  document.getElementById("frame").src = "";
-  document.getElementById("tituloSistema").textContent = "Panel Logístico";
-  localStorage.removeItem("moduloActivo");
+  const viewer = document.getElementById("viewer");
+  const frame = document.getElementById("frame");
+  if(viewer && frame){
+    viewer.style.display = "none";
+    frame.src = "";
+    document.getElementById("tituloSistema").textContent = "Panel Logístico";
+    localStorage.removeItem("moduloActivo");
+  }
   if(MAPA) setTimeout(()=>MAPA.invalidateSize(),300);
 }
 
@@ -185,7 +176,6 @@ function iniciarMapa(){
     if(!MAPA){
       MAPA = L.map("mapa").setView([lat,lng],16);
       L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png").addTo(MAPA);
-
       MARCADOR = L.marker([lat,lng],{icon:ICONO_ESTATICO}).addTo(MAPA);
       CIRCULO = L.circle([lat,lng],{radius:80,color:"#2563eb",fillOpacity:.15}).addTo(MAPA);
     }
