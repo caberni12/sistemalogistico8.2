@@ -1,741 +1,143 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-
 <meta charset="UTF-8">
-<title>Configuracion de Parametro</title>
+<title>Configuración de Columnas</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-
-<!-- ================== LIBRERÍAS ================== -->
-<script src="https://unpkg.com/xlsx/dist/xlsx.full.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/jspdf-autotable@3.5.29/dist/jspdf.plugin.autotable.min.js"></script>
-
 <style>
-/* ================= VARIABLES ================= */
 
-:root{
- --bg:#f8fafc;
- --card:#ffffff;
- --txt:#0f172a;
- --muted:#64748b;
- --pri:#14b8a6;
- --pri-dark:#0d9488;
- --border:#cbd5e1;
- --danger:#dc2626;
- --warning:#eab308;
- --success:#16a34a;
- --info:#2563eb;
-}
-
-/* ================= BASE ================= */
-
-*{box-sizing:border-box}
-
+/* ===== BASE ===== */
 body{
- margin:0;
- font-family:Inter,Arial,Helvetica,sans-serif;
- background:var(--bg);
- color:var(--txt);
- padding:16px;
+  margin:0;
+  font-family:Arial, Helvetica, sans-serif;
+  background:#f1f5f9;
+  padding:20px;
 }
 
 h2{
- margin:0 0 14px 0;
- font-weight:700;
+  margin-bottom:15px;
 }
 
-/* ================= KPI ================= */
-
-#kpis{
- display:grid;
- grid-template-columns:repeat(auto-fit,minmax(180px,1fr));
- gap:12px;
- margin-bottom:16px;
-}
-
-.kpi{
- background:var(--card);
- padding:14px;
- border-radius:14px;
- box-shadow:0 6px 16px rgba(0,0,0,.08);
-}
-
-.kpi-title{
- font-size:12px;
- color:var(--muted);
-}
-
-.kpi-value{
- font-size:22px;
- font-weight:700;
- margin-top:4px;
-}
-
-/* ================= FILTROS ================= */
-
-.filters{
- display:flex;
- gap:8px;
- flex-wrap:wrap;
- margin-bottom:14px;
-}
-
-input,select{
- padding:8px 10px;
- border-radius:10px;
- border:1px solid var(--border);
- font-size:13px;
- background:#fff;
- width:100%;
-}
-
-/* ================= BOTONES ================= */
-
+/* ===== BOTÓN ===== */
 button{
- padding:8px 12px;
- border-radius:10px;
- border:0;
- background:var(--pri);
- color:#fff;
- font-weight:600;
- cursor:pointer;
- position:relative;
- font-size:13px;
- transition:.2s;
+  padding:10px 14px;
+  border:0;
+  border-radius:8px;
+  background:#14b8a6;
+  color:#fff;
+  cursor:pointer;
+  font-size:14px;
 }
 
 button:hover{
- background:var(--pri-dark);
- transform:translateY(-1px);
+  opacity:.9;
 }
 
-/* ================= LOADER BOTON ================= */
-
-button.loading{
- pointer-events:none;
- opacity:.8;
-}
-
-button.loading::after{
- content:"";
- width:14px;
- height:14px;
- border:3px solid #fff;
- border-top-color:transparent;
- border-radius:50%;
- position:absolute;
- right:8px;
- top:50%;
- transform:translateY(-50%);
- animation:spin .8s linear infinite;
-}
-
-@keyframes spin{
- to{transform:translateY(-50%) rotate(360deg)}
-}
-
-/* ================= TABLA ================= */
-
-.table-scroll{
- max-height:70vh;
- overflow:auto;
- border-radius:16px;
-}
-
-table{
- width:100%;
- border-collapse:collapse;
- background:var(--card);
- box-shadow:0 10px 30px rgba(0,0,0,.08);
- border-radius:16px;
- overflow:hidden;
-}
-
-th,td{
- padding:7px 10px;
- border-bottom:1px solid var(--border);
- font-size:13px;
- line-height:1.2;
- white-space:nowrap;
-}
-
-th{
- color:var(--muted);
- position:sticky;
- top:0;
- background:#fff;
- font-size:12px;
- font-weight:600;
-}
-
-tbody tr:hover{
- background:#f1f5f9;
-}
-
-/* ================= ACCIONES ================= */
-
-.actions{
- display:flex;
- gap:4px;
-}
-
-.actions button{
- width:28px;
- height:28px;
- padding:0;
- display:flex;
- align-items:center;
- justify-content:center;
- font-size:14px;
-}
-
-tr.selected{
-  background:#dbeafe !important;
-}
-
-/* ================= FOTO ================= */
-
-.foto-thumb{
- width:38px;
- height:38px;
- object-fit:cover;
- border-radius:6px;
- border:1px solid var(--border);
- cursor:pointer;
-}
-
-/* ================= ICONO PDF ================= */
-
-.icon-pdf{
- display:inline-flex;
- align-items:center;
- justify-content:center;
- width:28px;
- height:28px;
- border-radius:6px;
- background:#dc2626;
- color:#fff;
- font-size:14px;
- text-decoration:none;
- transition:.2s;
-}
-
-.icon-pdf:hover{
- background:#b91c1c;
- transform:scale(1.05);
-}
-
-/* ================= ALERTAS ================= */
-
-.alerta{
- padding:4px 10px;
- border-radius:8px;
- font-size:12px;
- font-weight:600;
-}
-
-.alerta-verde{background:#dcfce7;color:#166534;}
-.alerta-amarillo{background:#fef9c3;color:#854d0e;}
-.alerta-rojo{background:#fee2e2;color:#991b1b;}
-.alerta-azul{background:#dbeafe;color:#1e40af;}
-
-/* ================= SEMAFORO ================= */
-
-.sem-verde,
-.sem-amarillo,
-.sem-rojo,
-.sem-azul{
- color:#fff;
- padding:3px 8px;
- border-radius:6px;
- font-size:11px;
-}
-
-.sem-verde{background:#16a34a}
-.sem-amarillo{background:#eab308}
-.sem-rojo{background:#dc2626}
-.sem-azul{background:#2563eb}
-
-/* ================= MODAL ================= */
-
+/* ===== MODAL ===== */
 .modal{
- position:fixed;
- inset:0;
- background:rgba(0,0,0,.65);
- display:none;
- align-items:center;
- justify-content:center;
- z-index:9999;
-}
-
-.modal-content{
- background:#fff;
- padding:24px;
- border-radius:16px;
- width:100%;
- max-width:650px;
- max-height:90vh;
- overflow:auto;
- box-shadow:0 20px 60px rgba(0,0,0,.25);
-}
-
-/* ================= FORM ================= */
-
-#modalForm input,
-#modalForm select{
- width:100%;
- margin-bottom:10px;
-}
-
-/* ================= ARCHIVOS ================= */
-
-.file-block{
- display:flex;
- flex-direction:column;
- gap:8px;
- margin-bottom:14px;
-}
-
-.preview-box{
- display:flex;
- align-items:center;
- gap:12px;
- padding:10px;
- border:1px solid #e5e7eb;
- border-radius:10px;
- background:#f8fafc;
- width:100%;
- max-width:420px;
-}
-
-/* FOTO PREVIEW */
-
-.preview-box img{
- width:70px;
- height:70px;
- object-fit:cover;
- border-radius:8px;
- border:1px solid #d1d5db;
- cursor:pointer;
- transition:.2s;
-}
-
-.preview-box img:hover{
- transform:scale(1.05);
- box-shadow:0 2px 6px rgba(0,0,0,.2);
-}
-
-/* PDF PREVIEW */
-
-.preview-box a{
- padding:6px 12px;
- border-radius:8px;
- background:#eef2ff;
- border:1px solid #c7d2fe;
- text-decoration:none;
- font-size:13px;
- color:#3730a3;
- font-weight:600;
-}
-
-.preview-box a:hover{
- background:#e0e7ff;
-}
-
-/* ================= FOTO GRANDE ================= */
-
-.foto-grande{
- width:100%;
- max-height:75vh;
- object-fit:contain;
- border-radius:16px;
-}
-
-/* ================= MAPA ================= */
-
-.map-frame{
- width:90vw;
- max-width:1000px;
- height:70vh;
- border:0;
- border-radius:16px;
-}
-
-/* ================= TARJETAS MOBILE ================= */
-
-.mobile-list{
- display:none;
-}
-
-.card{
- background:#fff;
- padding:14px;
- border-radius:14px;
- box-shadow:0 6px 16px rgba(0,0,0,.08);
- margin-bottom:12px;
- font-size:13px;
-}
-
-.card-title{
- font-size:15px;
- font-weight:700;
- margin-bottom:6px;
- display:flex;
- justify-content:space-between;
-}
-
-
-/* ================= MODAL MODERNO ================= */
-
-#modalColumnas{
   position:fixed;
   inset:0;
-  background:rgba(15,23,42,0.65);
-  backdrop-filter:blur(6px);
+  background:rgba(0,0,0,0.6);
   display:none;
   align-items:center;
   justify-content:center;
   z-index:9999;
 }
 
-/* CONTENIDO */
-
-#modalColumnas .modal-content{
-  width:100%;
-  max-width:520px;
-  background:#ffffff;
-  border-radius:18px;
-  padding:22px;
-  box-shadow:0 20px 60px rgba(0,0,0,0.25);
-  animation:modalFade .25s ease;
+.modal-content{
+  background:#fff;
+  padding:20px;
+  border-radius:14px;
+  width:90%;
+  max-width:500px;
+  max-height:85vh;
+  overflow:auto;
+  box-shadow:0 10px 40px rgba(0,0,0,.2);
 }
 
-/* ANIMACIÓN */
-
-@keyframes modalFade{
-  from{
-    opacity:0;
-    transform:translateY(20px) scale(.96);
-  }
-  to{
-    opacity:1;
-    transform:translateY(0) scale(1);
-  }
-}
-
-/* TÍTULO */
-
-#modalColumnas h3{
-  margin:0 0 12px 0;
-  font-size:18px;
-  font-weight:700;
-  color:#0f172a;
-}
-
-/* GRID COLUMNAS */
-
+/* ===== LISTA ===== */
 #listaColumnas{
-  display:grid;
-  grid-template-columns:repeat(auto-fit,minmax(160px,1fr));
-  gap:10px;
-  margin-top:10px;
+  display:flex;
+  flex-direction:column;
+  gap:6px;
   max-height:300px;
   overflow:auto;
-  padding-right:4px;
+  margin-bottom:12px;
 }
-
-/* ITEM CHECKBOX */
 
 #listaColumnas label{
   display:flex;
+  justify-content:space-between;
   align-items:center;
-  gap:8px;
-  padding:8px 10px;
-  border-radius:10px;
-  background:#f8fafc;
-  border:1px solid #e2e8f0;
-  cursor:pointer;
-  transition:.2s;
+  padding:6px 8px;
+  border-radius:8px;
+  background:#f1f5f9;
   font-size:13px;
 }
 
-#listaColumnas label:hover{
-  background:#f1f5f9;
-  transform:translateY(-1px);
+#listaColumnas input{
+  margin-right:6px;
 }
 
-/* CHECKBOX MODERNO */
-
-#listaColumnas input[type="checkbox"]{
-  accent-color:#14b8a6;
-  width:16px;
-  height:16px;
+/* ===== BOTON LOCK ===== */
+.btnLock{
+  border:0;
+  background:none;
   cursor:pointer;
+  font-size:14px;
 }
 
-/* BOTONES */
-
-#modalColumnas .modal-actions{
+/* ===== FOOTER BOTONES ===== */
+.modal-actions{
   display:flex;
-  justify-content:flex-end;
-  gap:10px;
-  margin-top:16px;
+  gap:8px;
+  flex-wrap:wrap;
 }
 
-/* BOTÓN SECUNDARIO */
-
-.btn-sec{
-  background:#e2e8f0;
-  color:#0f172a;
+.modal-actions button{
+  flex:1;
 }
 
-.btn-sec:hover{
-  background:#cbd5e1;
-}
-
-/* BOTÓN PRINCIPAL */
-
-.btn-pri{
-  background:#14b8a6;
-  color:#fff;
-}
-
-.btn-pri:hover{
-  background:#0d9488;
-}
-
-/* SCROLL BONITO */
-
+/* ===== SCROLL ===== */
 #listaColumnas::-webkit-scrollbar{
   width:6px;
 }
-
 #listaColumnas::-webkit-scrollbar-thumb{
   background:#cbd5e1;
   border-radius:10px;
 }
 
-/* LOADER BOTÓN */
-.btn-loading{
-  position:relative;
-  pointer-events:none;
-  opacity:.7;
-}
-
-.btn-loading::after{
-  content:"";
-  width:16px;
-  height:16px;
-  border:3px solid #fff;
-  border-top-color:transparent;
-  border-radius:50%;
-  position:absolute;
-  right:10px;
-  top:50%;
-  transform:translateY(-50%);
-  animation:spin .7s linear infinite;
-}
-
-@keyframes spin{
-  to{transform:translateY(-50%) rotate(360deg)}
-}
-
-/* ================= MOBILE ================= */
-
-@media(max-width:768px){
-
-.table-scroll{display:none;}
-.mobile-list{display:block;}
-
-#kpis{
- grid-template-columns:repeat(2,1fr);
-}
-
-.modal-content{
- width:95%;
- max-width:95%;
-}
-
-}
-
-
-.top-bar{
- display:flex;
- flex-wrap:wrap;
- gap:8px;
- margin-bottom:10px;
-}
-
-.panel-hidden{
-display:none !important;
-
-}
-
-
-
-@media (max-width:768px){
-
-.modal-content{
-
-padding:20px 16px;
-border-radius:14px;
-
-}
-
-/* separar inputs */
-
-#modalForm label{
-margin-top:10px;
-display:block;
-font-size:13px;
-}
-
-#modalForm input,
-#modalForm select{
-
-margin-top:4px;
-margin-bottom:12px;
-padding:12px;
-font-size:14px;
-border-radius:10px;
-
-}
-
-/* botones con más espacio */
-
-#modalForm button{
-
-padding:12px;
-font-size:14px;
-flex:1;
-
-}
-
-/* contenedor botones */
-
-#modalForm div[style*="display:flex"]{
-
-gap:12px;
-flex-wrap:wrap;
-
-}
-
-/* inputs de consulta rut */
-
-#mRutConsulta{
-
-flex:1;
-
-}
-
-#btnConsultarRut{
-
-min-width:50px;
-
-}
-
-}
-
-
-/* ================= FIX KPI MOVIL ================= */
-
-@media (max-width:768px){
-
-#kpis{
-display:grid;
-grid-template-columns:1fr 1fr; /* 2 por fila */
-gap:10px;
-width:100%;
-}
-
-.kpi{
-width:100%;
-min-width:0; /* evita que se desborde */
-padding:12px;
-}
-
-.kpi-title{
-font-size:11px;
-}
-
-.kpi-value{
-font-size:20px;
-}
-
-}
-
-/* pantallas muy pequeñas */
-
-@media (max-width:420px){
-
-#kpis{
-grid-template-columns:1fr; /* 1 por fila */
-}
-
-}
- /* ================= MOBILE ================= */
-@media (max-width:768px){
-
-  /* Botones de la top-bar en columna */
-  .top-bar {
-    flex-direction: column;
-    gap: 8px;
-  }
-
-  .top-bar button {
-    width: 100%;       /* Ocupa todo el ancho */
-    min-width: 0;      /* Evita desbordes */
-  }
-
-  /* Inputs de búsqueda y select también ocupan 100% */
-  .top-bar input,
-  .top-bar select {
-    width: 100%;
-  }
-
-  /* Botones del modal Form también ocupan todo el ancho */
-  #modalForm button,
-  #modalColumnas button {
-    width: 100%;
-    margin: 4px 0; /* espacio entre botones */
-  }
-
-  /* Si están en un contenedor flex, hacerlos columna */
-  #modalForm div[style*="display:flex"],
-  #modalColumnas .modal-actions {
-    flex-direction: column;
-  }
-}
 </style>
-
 </head>
 
 <body>
 
-    <h2>🚚 Listado de Pedidos en Preparación</h2>
+<h2>⚙️ Configuración</h2>
 
-    <div class="top-bar">
+<!-- BOTÓN ABRIR -->
+<button id="btnColumnas">🧩 Configurar Columnas</button>
 
-
-    <button id="btnColumnas">🧩 Config-Columnas</button>
-
- 
-
-<!-- MODAL COLUMNAS -->
+<!-- MODAL -->
 <div class="modal" id="modalColumnas">
   <div class="modal-content">
-    <h3>Columnas</h3>
+
+    <h3>Columnas y Botones</h3>
+
+    <!-- CONTENIDO DINÁMICO -->
     <div id="listaColumnas"></div>
-    <button id="btnGuardarColumnas">Guardar</button>
-    <button id="btnCerrarColumnas">Cerrar</button>
+
+    <!-- ACCIONES -->
+    <div class="modal-actions">
+      <button id="btnGuardarColumnas">💾 Guardar</button>
+      <button id="btnCerrarColumnas">❌ Cerrar</button>
+    </div>
+
   </div>
 </div>
 
-
+<!-- JS -->
 <script src="columnas2.js"></script>
+
 </body>
 </html>
