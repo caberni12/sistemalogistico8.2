@@ -46,6 +46,17 @@ let botonesVisibles = {
 };
 
 /***************************************************
+🔒 BLOQUEO GLOBAL REAL
+***************************************************/
+function estaBloqueado(key){
+  return columnasBloqueadas[key] === true;
+}
+
+function accionesBloqueadas(){
+  return !accionesHabilitadas || columnasBloqueadas["acciones"];
+}
+
+/***************************************************
 LOADER
 ***************************************************/
 function activarLoader(btn){ if(btn) btn.classList.add("loading"); }
@@ -93,7 +104,7 @@ async function guardarColumnasServer(){
 }
 
 /***************************************************
-VISIBILIDAD BOTONES
+BOTONES
 ***************************************************/
 function aplicarVisibilidadBotones(){
   Object.keys(botonesVisibles).forEach(id=>{
@@ -104,16 +115,13 @@ function aplicarVisibilidadBotones(){
   });
 }
 
-/***************************************************
-BTN NUEVO
-***************************************************/
 function actualizarVisibilidadBtnNuevo(){
   const btn = document.getElementById("btnNuevo");
   if(btn) btn.style.display = nuevoHabilitado ? "" : "none";
 }
 
 /***************************************************
-APLICAR COLUMNAS
+TABLA
 ***************************************************/
 function aplicarColumnas(){
 
@@ -131,29 +139,70 @@ function aplicarColumnas(){
       const bloqueado = columnasBloqueadas[col.key];
 
       cell.style.display = visible ? "" : "none";
-
       cell.style.opacity = bloqueado ? "0.5" : "";
       cell.style.pointerEvents = bloqueado ? "none" : "";
-      cell.style.userSelect = bloqueado ? "none" : "";
 
       const elementos = cell.querySelectorAll("input,select,textarea,button,a");
+
       elementos.forEach(el=>{
-        el.disabled = bloqueado || (col.key==="acciones" && !accionesHabilitadas);
+        if(col.key === "acciones"){
+          el.disabled = accionesBloqueadas();
+        }else{
+          el.disabled = bloqueado;
+        }
       });
 
-      if(col.key==="acciones"){
-        const botones = cell.querySelectorAll("button");
-        botones.forEach(b=>{
-          b.disabled = !accionesHabilitadas || bloqueado;
-          b.style.opacity = (!accionesHabilitadas || bloqueado) ? "0.4":"1";
-        });
-      }
-
     });
+
   });
 
   actualizarVisibilidadBtnNuevo();
   aplicarVisibilidadBotones();
+
+  aplicarBloqueoMobile(); // 🔥 NUEVO
+}
+
+/***************************************************
+📱 BLOQUEO MOBILE (CLAVE)
+***************************************************/
+function aplicarBloqueoMobile(){
+
+  const cards = document.querySelectorAll(".card");
+
+  cards.forEach(card=>{
+
+    // 🔒 BOTONES
+    const botones = card.querySelectorAll("button");
+
+    botones.forEach(btn=>{
+      btn.disabled = accionesBloqueadas();
+      btn.style.opacity = accionesBloqueadas() ? "0.4":"1";
+    });
+
+    // 🔒 LINKS
+    const links = card.querySelectorAll("a");
+    links.forEach(a=>{
+      if(estaBloqueado("direccion")){
+        a.style.pointerEvents="none";
+        a.style.opacity="0.5";
+      }
+    });
+
+  });
+
+}
+
+/***************************************************
+🔒 BLOQUEO FUNCIONAL (ANTI-BYPASS)
+***************************************************/
+function validarAccion(){
+
+  if(accionesBloqueadas()){
+    alert("Acción bloqueada por configuración");
+    return false;
+  }
+
+  return true;
 }
 
 /***************************************************
@@ -167,7 +216,6 @@ function abrirModalColumnas(){
 
   lista.innerHTML = "";
 
-  // BOTONES
   lista.insertAdjacentHTML("beforeend",`
     <h4>Botones</h4>
     <label><input type="checkbox" data-btn="btnNuevo" ${botonesVisibles.btnNuevo?"checked":""}> Nuevo</label>
@@ -178,7 +226,6 @@ function abrirModalColumnas(){
     <hr>
   `);
 
-  // CONTROLES
   lista.insertAdjacentHTML("beforeend",`
     <button id="btnSelectAll">Seleccionar todo</button>
     <button id="btnUnselectAll">Deseleccionar</button>
@@ -203,7 +250,6 @@ function abrirModalColumnas(){
 
   modal.style.display = "flex";
 
-  // CHECKBOX COLUMNAS EN VIVO
   document.querySelectorAll("#listaColumnas input[data-key]").forEach(chk=>{
     chk.onchange = ()=>{
       columnasVisibles[chk.dataset.key] = chk.checked;
@@ -211,7 +257,6 @@ function abrirModalColumnas(){
     };
   });
 
-  // CHECKBOX BOTONES EN VIVO
   document.querySelectorAll("#listaColumnas input[data-btn]").forEach(chk=>{
     chk.onchange = ()=>{
       botonesVisibles[chk.dataset.btn] = chk.checked;
@@ -219,7 +264,6 @@ function abrirModalColumnas(){
     };
   });
 
-  // LOCK
   document.querySelectorAll(".btnLock").forEach(btn=>{
     btn.onclick = e=>{
       e.stopPropagation();
@@ -230,32 +274,24 @@ function abrirModalColumnas(){
     };
   });
 
-  // SELECT ALL
   document.getElementById("btnSelectAll").onclick = ()=>{
-    document.querySelectorAll("#listaColumnas input[data-key]").forEach(c=>{
-      c.checked = true;
-      columnasVisibles[c.dataset.key] = true;
-    });
+    COLUMNAS.forEach(c=>columnasVisibles[c.key]=true);
+    abrirModalColumnas();
     aplicarColumnas();
   };
 
-  // UNSELECT ALL
   document.getElementById("btnUnselectAll").onclick = ()=>{
-    document.querySelectorAll("#listaColumnas input[data-key]").forEach(c=>{
-      c.checked = false;
-      columnasVisibles[c.dataset.key] = false;
-    });
+    COLUMNAS.forEach(c=>columnasVisibles[c.key]=false);
+    abrirModalColumnas();
     aplicarColumnas();
   };
 
-  // BLOQUEAR TODO
   document.getElementById("btnBloquearTodo").onclick = ()=>{
     COLUMNAS.forEach(c=>columnasBloqueadas[c.key]=true);
     abrirModalColumnas();
     aplicarColumnas();
   };
 
-  // DESBLOQUEAR TODO
   document.getElementById("btnDesbloquearTodo").onclick = ()=>{
     COLUMNAS.forEach(c=>columnasBloqueadas[c.key]=false);
     abrirModalColumnas();
@@ -281,12 +317,9 @@ window.addEventListener("DOMContentLoaded", async ()=>{
   if(btnGuardar){
     btnGuardar.onclick = async ()=>{
       activarLoader(btnGuardar);
-
       await guardarColumnasServer();
-
       modal.style.display="none";
       aplicarColumnas();
-
       quitarLoader(btnGuardar);
     };
   }
