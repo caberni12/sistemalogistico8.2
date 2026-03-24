@@ -121,6 +121,19 @@ button:hover{
   gap:10px; /* separación entre botones */
 }
 
+.grupo-botones{
+  display:flex;
+  flex-direction:column;
+  gap:10px;
+  padding:0 5px; /* clave para móvil */
+}
+
+@media (max-width:768px){
+  .grupo-botones{
+    gap:12px; /* un poco más de aire en móvil */
+  }
+}
+
 </style>
 </head>
 
