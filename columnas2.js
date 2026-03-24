@@ -38,6 +38,17 @@ let accionesHabilitadas = true;
 let nuevoHabilitado = true;
 
 /***************************************************
+BOTONES
+***************************************************/
+let botonesVisibles = {
+  btnNuevo:true,
+  btnPDF:true,
+  btnExcel:true,
+  btnReload:true,
+  btnColumnas:true
+};
+
+/***************************************************
 LOADER
 ***************************************************/
 function activarLoader(btn){ if(btn) btn.classList.add("loading"); }
@@ -55,6 +66,7 @@ async function cargarColumnas(){
     columnasBloqueadas = data.bloqueadas || {};
     accionesHabilitadas = data.acciones ?? true;
     nuevoHabilitado = data.nuevo ?? true;
+    botonesVisibles = data.botones || botonesVisibles;
 
   }catch(e){
     COLUMNAS.forEach(c=>{
@@ -76,9 +88,22 @@ async function guardarColumnasServer(){
         visibles:columnasVisibles,
         bloqueadas:columnasBloqueadas,
         acciones:accionesHabilitadas,
-        nuevo:nuevoHabilitado
+        nuevo:nuevoHabilitado,
+        botones:botonesVisibles
       }
     })
+  });
+}
+
+/***************************************************
+VISIBILIDAD BOTONES
+***************************************************/
+function aplicarVisibilidadBotones(){
+  Object.keys(botonesVisibles).forEach(id=>{
+    const btn = document.getElementById(id);
+    if(btn){
+      btn.style.display = botonesVisibles[id] ? "" : "none";
+    }
   });
 }
 
@@ -91,7 +116,7 @@ function actualizarVisibilidadBtnNuevo(){
 }
 
 /***************************************************
-APLICAR COLUMNAS (🔥 COMPLETO)
+APLICAR COLUMNAS
 ***************************************************/
 function aplicarColumnas(){
 
@@ -110,30 +135,26 @@ function aplicarColumnas(){
 
       cell.style.display = visible ? "" : "none";
 
-      // reset
       cell.style.opacity = "";
       cell.style.pointerEvents = "";
       cell.style.userSelect = "";
 
-      // 🔒 bloqueo real
       if(bloqueado){
         cell.style.opacity = "0.5";
         cell.style.pointerEvents = "none";
         cell.style.userSelect = "none";
       }
 
-      // bloquear elementos internos
-      const elements = cell.querySelectorAll("input,select,textarea,button,a");
-      elements.forEach(el=>{
+      const elementos = cell.querySelectorAll("input,select,textarea,button,a");
+      elementos.forEach(el=>{
         el.disabled = bloqueado || (col.key==="acciones" && !accionesHabilitadas);
       });
 
-      // acciones
       if(col.key==="acciones"){
         const botones = cell.querySelectorAll("button");
         botones.forEach(b=>{
           b.disabled = !accionesHabilitadas || bloqueado;
-          b.style.opacity = (!accionesHabilitadas || bloqueado) ? "0.4" : "1";
+          b.style.opacity = (!accionesHabilitadas || bloqueado) ? "0.4":"1";
         });
       }
 
@@ -141,10 +162,11 @@ function aplicarColumnas(){
   });
 
   actualizarVisibilidadBtnNuevo();
+  aplicarVisibilidadBotones();
 }
 
 /***************************************************
-MODAL COLUMNAS (🔥 COMPLETO)
+MODAL COLUMNAS
 ***************************************************/
 function abrirModalColumnas(){
 
@@ -153,6 +175,26 @@ function abrirModalColumnas(){
   if(!lista || !modal) return;
 
   lista.innerHTML = "";
+
+  // 🔥 BOTONES
+  lista.insertAdjacentHTML("beforeend",`
+    <h4>Botones</h4>
+    <label><input type="checkbox" data-btn="btnNuevo" ${botonesVisibles.btnNuevo?"checked":""}> Nuevo</label>
+    <label><input type="checkbox" data-btn="btnPDF" ${botonesVisibles.btnPDF?"checked":""}> PDF</label>
+    <label><input type="checkbox" data-btn="btnExcel" ${botonesVisibles.btnExcel?"checked":""}> Excel</label>
+    <label><input type="checkbox" data-btn="btnReload" ${botonesVisibles.btnReload?"checked":""}> Recargar</label>
+    <label><input type="checkbox" data-btn="btnColumnas" ${botonesVisibles.btnColumnas?"checked":""}> Config</label>
+    <hr>
+  `);
+
+  // 🔥 CONTROLES
+  lista.insertAdjacentHTML("beforeend",`
+    <button id="btnSelectAll">Seleccionar todo</button>
+    <button id="btnUnselectAll">Deseleccionar</button>
+    <button id="btnBloquearTodo">Bloquear todo</button>
+    <button id="btnDesbloquearTodo">Desbloquear todo</button>
+    <hr>
+  `);
 
   COLUMNAS.forEach(col=>{
     const checked = columnasVisibles[col.key] ? "checked":"";
@@ -171,21 +213,9 @@ function abrirModalColumnas(){
 
   modal.style.display = "flex";
 
-  // sync
   document.getElementById("chkAcciones").checked = accionesHabilitadas;
   document.getElementById("chkNuevo").checked = nuevoHabilitado;
 
-  // eventos base
-  document.getElementById("chkAcciones").onchange = e=>{
-    accionesHabilitadas = e.target.checked;
-  };
-
-  document.getElementById("chkNuevo").onchange = e=>{
-    nuevoHabilitado = e.target.checked;
-    actualizarVisibilidadBtnNuevo();
-  };
-
-  // 🔒 lock individual
   document.querySelectorAll(".btnLock").forEach(btn=>{
     btn.onclick = e=>{
       e.stopPropagation();
@@ -196,13 +226,12 @@ function abrirModalColumnas(){
     };
   });
 
-  // globales
   document.getElementById("btnSelectAll").onclick = ()=>{
-    document.querySelectorAll("#listaColumnas input[data-key]").forEach(chk=>chk.checked=true);
+    document.querySelectorAll("#listaColumnas input[data-key]").forEach(c=>c.checked=true);
   };
 
   document.getElementById("btnUnselectAll").onclick = ()=>{
-    document.querySelectorAll("#listaColumnas input[data-key]").forEach(chk=>chk.checked=false);
+    document.querySelectorAll("#listaColumnas input[data-key]").forEach(c=>c.checked=false);
   };
 
   document.getElementById("btnBloquearTodo").onclick = ()=>{
@@ -239,6 +268,10 @@ window.addEventListener("DOMContentLoaded", async ()=>{
         columnasVisibles[chk.dataset.key] = chk.checked;
       });
 
+      document.querySelectorAll("#listaColumnas input[data-btn]").forEach(chk=>{
+        botonesVisibles[chk.dataset.btn] = chk.checked;
+      });
+
       await guardarColumnasServer();
 
       modal.style.display="none";
@@ -248,7 +281,6 @@ window.addEventListener("DOMContentLoaded", async ()=>{
     };
   }
 
-  // observer tabla dinámica
   const tbody = document.getElementById("tbody");
   if(tbody){
     let t;
