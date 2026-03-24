@@ -80,18 +80,16 @@ async function guardarColumnasServer(){
 }
 
 /***************************************************
-SOLO VISIBILIDAD BOTÓN NUEVO
+BTN NUEVO
 ***************************************************/
 function actualizarVisibilidadBtnNuevo() {
   const btnNuevo = document.getElementById("btnNuevo");
   if(!btnNuevo) return;
-
-  // SOLO mostrar / ocultar
   btnNuevo.style.display = nuevoHabilitado ? "" : "none";
 }
 
 /***************************************************
-APLICAR COLUMNAS
+APLICAR COLUMNAS (🔥 BLOQUEO REAL)
 ***************************************************/
 function aplicarColumnas(){
 
@@ -105,33 +103,42 @@ function aplicarColumnas(){
       const cell = cells[col.index];
       if(!cell) return;
 
-      cell.style.display = columnasVisibles[col.key] ? "" : "none";
+      const visible = columnasVisibles[col.key];
+      const bloqueado = columnasBloqueadas[col.key];
 
-      if(columnasBloqueadas[col.key]){
+      // visibilidad
+      cell.style.display = visible ? "" : "none";
+
+      // reset
+      cell.style.opacity = "";
+      cell.style.pointerEvents = "";
+      cell.style.userSelect = "";
+
+      // bloqueo real
+      if(bloqueado){
         cell.style.opacity = "0.5";
-        cell.style.cursor = "not-allowed";
-        cell.onclick = (e)=>{
-          e.stopPropagation();
-          e.preventDefault();
-        };
-      }else{
-        cell.style.opacity = "";
-        cell.style.cursor = "";
-        cell.onclick = null;
+        cell.style.pointerEvents = "none";
+        cell.style.userSelect = "none";
       }
 
+      // bloquear inputs internos
+      const inputs = cell.querySelectorAll("input,select,textarea,button");
+      inputs.forEach(el=>{
+        el.disabled = bloqueado || (col.key === "acciones" && !accionesHabilitadas);
+      });
+
+      // acciones
       if(col.key === "acciones"){
         const botones = cell.querySelectorAll("button");
         botones.forEach(b=>{
-          b.disabled = !accionesHabilitadas;
-          b.style.opacity = accionesHabilitadas ? "1" : "0.4";
-          b.style.pointerEvents = accionesHabilitadas ? "" : "none";
+          b.disabled = !accionesHabilitadas || bloqueado;
+          b.style.opacity = (!accionesHabilitadas || bloqueado) ? "0.4" : "1";
         });
       }
+
     });
   });
 
-  // 🔥 SOLO VISIBILIDAD
   actualizarVisibilidadBtnNuevo();
 }
 
@@ -147,25 +154,6 @@ function abrirModalColumnas(){
 
   lista.innerHTML = "";
 
-  lista.insertAdjacentHTML("beforeend",`
-    <label><input type="checkbox" id="selectAll"> Seleccionar todo</label><hr>
-  `);
-
-  lista.insertAdjacentHTML("beforeend",`
-    <label>
-      <input type="checkbox" id="chkAcciones" ${accionesHabilitadas?"checked":""}>
-      Activar acciones
-    </label>
-  `);
-
-  lista.insertAdjacentHTML("beforeend",`
-    <label style="color:#dc2626">
-      <input type="checkbox" id="chkNuevo" ${nuevoHabilitado?"checked":""}>
-      Activar botón NUEVO
-    </label>
-    <hr>
-  `);
-
   COLUMNAS.forEach(col=>{
     const checked = columnasVisibles[col.key] ? "checked": "";
     const locked  = columnasBloqueadas[col.key] ? "🔒":"🔓";
@@ -176,35 +164,66 @@ function abrirModalColumnas(){
           <input type="checkbox" data-key="${col.key}" ${checked}>
           ${col.label}
         </div>
-        <button class="btnLock" data-key="${col.key}">${locked}</button>
+        <button class="btnLock" data-key="${col.key}" 
+        style="border:0;background:none;font-size:16px;cursor:pointer">
+          ${locked}
+        </button>
       </label>
     `);
   });
 
   modal.style.display = "flex";
 
-  document.getElementById("selectAll").onchange = (e)=>{
-    document.querySelectorAll("#listaColumnas input[data-key]").forEach(chk=>{
-      chk.checked = e.target.checked;
-    });
-  };
+  // sync checks
+  document.getElementById("chkAcciones").checked = accionesHabilitadas;
+  document.getElementById("chkNuevo").checked = nuevoHabilitado;
 
-  document.getElementById("chkAcciones").onchange = (e)=>{
+  // eventos básicos
+  document.getElementById("chkAcciones").onchange = e=>{
     accionesHabilitadas = e.target.checked;
   };
 
-  document.getElementById("chkNuevo").onchange = (e)=>{
+  document.getElementById("chkNuevo").onchange = e=>{
     nuevoHabilitado = e.target.checked;
-    actualizarVisibilidadBtnNuevo(); // 🔥 SOLO VISUAL
+    actualizarVisibilidadBtnNuevo();
   };
 
+  // 🔒 lock individual
   document.querySelectorAll(".btnLock").forEach(btn=>{
-    btn.onclick = ()=>{
+    btn.onclick = (e)=>{
+      e.stopPropagation();
       const key = btn.dataset.key;
       columnasBloqueadas[key] = !columnasBloqueadas[key];
       btn.textContent = columnasBloqueadas[key] ? "🔒" : "🔓";
+      aplicarColumnas();
     };
   });
+
+  // ✅ seleccionar todo
+  document.getElementById("btnSelectAll").onclick = ()=>{
+    document.querySelectorAll("#listaColumnas input[data-key]").forEach(chk=>{
+      chk.checked = true;
+    });
+  };
+
+  // ❌ deseleccionar todo
+  document.getElementById("btnUnselectAll").onclick = ()=>{
+    document.querySelectorAll("#listaColumnas input[data-key]").forEach(chk=>{
+      chk.checked = false;
+    });
+  };
+
+  // 🔒 bloquear todo
+  document.getElementById("btnBloquearTodo").onclick = ()=>{
+    COLUMNAS.forEach(c=> columnasBloqueadas[c.key] = true);
+    abrirModalColumnas();
+  };
+
+  // 🔓 desbloquear todo
+  document.getElementById("btnDesbloquearTodo").onclick = ()=>{
+    COLUMNAS.forEach(c=> columnasBloqueadas[c.key] = false);
+    abrirModalColumnas();
+  };
 }
 
 /***************************************************
@@ -220,7 +239,10 @@ window.addEventListener("DOMContentLoaded", async ()=>{
   const btnGuardar = document.getElementById("btnGuardarColumnas");
 
   if(btn) btn.onclick = abrirModalColumnas;
-  if(btnCerrar) btnCerrar.onclick = ()=> modal.style.display = "none";
+
+  if(btnCerrar){
+    btnCerrar.onclick = ()=> modal.style.display = "none";
+  }
 
   if(btnGuardar){
     btnGuardar.onclick = async ()=>{
@@ -231,6 +253,7 @@ window.addEventListener("DOMContentLoaded", async ()=>{
       });
 
       await guardarColumnasServer();
+
       modal.style.display = "none";
       aplicarColumnas();
 
@@ -238,6 +261,7 @@ window.addEventListener("DOMContentLoaded", async ()=>{
     };
   }
 
+  // observer tabla
   const tbody = document.getElementById("tbody");
   if(tbody){
     let timeoutTabla = null;
