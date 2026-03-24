@@ -1,8 +1,7 @@
 /***************************************************
 CONFIGURACIÓN GENERAL
 ***************************************************/
-const API =
-"https://script.google.com/macros/s/AKfycbxDUcEzMGw9LWnzn-YUV89So3AFCEnplOHQuGmzq-EV_hnIMhQvgQIPY1AxvlKJPZNx/exec";
+const API = "https://script.google.com/macros/s/AKfycbxDUcEzMGw9LWnzn-YUV89So3AFCEnplOHQuGmzq-EV_hnIMhQvgQIPY1AxvlKJPZNx/exec";
 
 let USER_IP = "—";
 let WATCH_ID = null;
@@ -10,10 +9,10 @@ let LAST_GEOCODE = 0;
 let MAPA = null;
 let MARCADOR = null;
 let CIRCULO = null;
-let mapaVisible = false; // Estado del mapa
+let mapaVisible = false;
 
 /***************************************************
-🔥 RESTAURACIÓN INMEDIATA
+RESTORACIÓN MÓDULO
 ***************************************************/
 (function(){
   const data = localStorage.getItem("moduloActivo");
@@ -61,14 +60,6 @@ const ICONO_ESTATICO = L.divIcon({
 });
 
 /***************************************************
-MENÚ
-***************************************************/
-function toggleMenu(){
-  const menu = document.getElementById("menuLateral");
-  if(menu) menu.classList.toggle("open");
-}
-
-/***************************************************
 LOADER
 ***************************************************/
 function iniciarProgreso(){
@@ -86,26 +77,51 @@ function finalizarProgreso(){
 }
 
 /***************************************************
-INIT PRINCIPAL
+INIT APP
 ***************************************************/
 window.addEventListener("DOMContentLoaded", ()=>{
-
   iniciarProgreso();
 
-  // Botón menú
+  // Botón hamburguesa
   const btnMenu = document.getElementById("btnMenu");
-  if(btnMenu) btnMenu.addEventListener("click", toggleMenu);
+  const menu = document.getElementById("menuLateral");
+  if(btnMenu && menu){
+    btnMenu.addEventListener("click", ()=> menu.classList.toggle("open"));
+  }
 
   // Botón mostrar mapa
   const btnMapa = document.getElementById("btnMostrarMapa");
-  if(btnMapa) btnMapa.addEventListener("click", toggleMapa);
+  const mapaBox = document.getElementById("mapaBox");
+  if(btnMapa && mapaBox){
+    mapaBox.style.display = "none";
+    btnMapa.addEventListener("click", async ()=>{
+      mapaVisible = !mapaVisible;
+      mapaBox.style.display = mapaVisible ? "block" : "none";
+      btnMapa.textContent = mapaVisible ? "🗺️ Ocultar Mapa" : "🗺️ Mostrar Mapa";
+      if(mapaVisible && !MAPA) await iniciarMapa();
+    });
+  }
 
-  // Inicializar app
+  // Botones recargar y cerrar sesión
+  const btnRecargar = document.querySelector(".btn-primary[onclick='recargarPanel()']");
+  if(btnRecargar) btnRecargar.addEventListener("click", ()=> location.reload());
+
+  const btnCerrar = document.querySelector(".btn-danger[onclick='cerrarSesion()']");
+  if(btnCerrar){
+    btnCerrar.addEventListener("click", ()=>{
+      if(WATCH_ID) navigator.geolocation.clearWatch(WATCH_ID);
+      sessionStorage.clear();
+      localStorage.clear();
+      location.href="index.html";
+    });
+  }
+
+  // Inicializar sesión y menú
   iniciarApp();
 });
 
 /***************************************************
-INICIAR APP
+INICIAR SESIÓN Y MENÚ
 ***************************************************/
 async function iniciarApp(){
   try{
@@ -118,8 +134,8 @@ async function iniciarApp(){
     if(typeof cargarEmpresaHeader === "function") await cargarEmpresaHeader();
     await cargarMenu(user);
 
-    setTimeout(obtenerIP,0);
-    setTimeout(iniciarReloj,0);
+    obtenerIP();
+    iniciarReloj();
 
     // Restaurar módulo activo
     const moduloGuardado = localStorage.getItem("moduloActivo");
@@ -143,7 +159,7 @@ async function iniciarApp(){
 }
 
 /***************************************************
-CARGAR MENÚ
+CARGAR MENÚ DINÁMICO
 ***************************************************/
 async function cargarMenu(user){
   try{
@@ -165,7 +181,7 @@ async function cargarMenu(user){
       item.innerHTML = `${icono||"📦"} ${nombre}`;
       item.addEventListener("click", ()=>{
         abrirModulo(archivo,nombre);
-        toggleMenu();
+        if(menu) menu.classList.remove("open");
       });
       cont.appendChild(item);
     });
@@ -173,7 +189,7 @@ async function cargarMenu(user){
 }
 
 /***************************************************
-VISOR
+VISOR DE MÓDULOS
 ***************************************************/
 function abrirModulo(url,titulo){
   localStorage.setItem("moduloActivo", JSON.stringify({url,titulo}));
@@ -198,27 +214,7 @@ function volver(){
 }
 
 /***************************************************
-MAPA SHOW/HIDE
-***************************************************/
-async function toggleMapa(){
-  const mapaBox = document.getElementById("mapaBox");
-  const btn = document.getElementById("btnMostrarMapa");
-
-  if(!mapaBox || !btn) return;
-
-  if(!mapaVisible){
-    mapaBox.style.display = "block";
-    btn.textContent = "🗺️ Ocultar Mapa";
-    if(!MAPA) await iniciarMapa();
-  }else{
-    mapaBox.style.display = "none";
-    btn.textContent = "🗺️ Mostrar Mapa";
-  }
-  mapaVisible = !mapaVisible;
-}
-
-/***************************************************
-MAPA + GPS (CARGA SOLO CUANDO SE NECESITE)
+MAPA + GPS
 ***************************************************/
 async function iniciarMapa(){
   if(!navigator.geolocation || !window.L) return;
@@ -255,7 +251,7 @@ async function iniciarMapa(){
 }
 
 /***************************************************
-DIRECCIÓN, RED Y VELOCIDAD
+DIRECCIÓN + RED + VELOCIDAD
 ***************************************************/
 async function actualizarDireccion(lat,lng){
   try{
@@ -289,7 +285,7 @@ function iniciarReloj(){
 }
 
 /***************************************************
-BOTONES
+BOTONES AUXILIARES
 ***************************************************/
 function recargarPanel(){ location.reload(); }
 function cerrarSesion(){
