@@ -37,9 +37,6 @@ let columnasBloqueadas = {};
 let accionesHabilitadas = true;
 let nuevoHabilitado = true;
 
-/***************************************************
-BOTONES
-***************************************************/
 let botonesVisibles = {
   btnNuevo:true,
   btnPDF:true,
@@ -135,15 +132,9 @@ function aplicarColumnas(){
 
       cell.style.display = visible ? "" : "none";
 
-      cell.style.opacity = "";
-      cell.style.pointerEvents = "";
-      cell.style.userSelect = "";
-
-      if(bloqueado){
-        cell.style.opacity = "0.5";
-        cell.style.pointerEvents = "none";
-        cell.style.userSelect = "none";
-      }
+      cell.style.opacity = bloqueado ? "0.5" : "";
+      cell.style.pointerEvents = bloqueado ? "none" : "";
+      cell.style.userSelect = bloqueado ? "none" : "";
 
       const elementos = cell.querySelectorAll("input,select,textarea,button,a");
       elementos.forEach(el=>{
@@ -176,7 +167,7 @@ function abrirModalColumnas(){
 
   lista.innerHTML = "";
 
-  // 🔥 BOTONES
+  // BOTONES
   lista.insertAdjacentHTML("beforeend",`
     <h4>Botones</h4>
     <label><input type="checkbox" data-btn="btnNuevo" ${botonesVisibles.btnNuevo?"checked":""}> Nuevo</label>
@@ -187,7 +178,7 @@ function abrirModalColumnas(){
     <hr>
   `);
 
-  // 🔥 CONTROLES
+  // CONTROLES
   lista.insertAdjacentHTML("beforeend",`
     <button id="btnSelectAll">Seleccionar todo</button>
     <button id="btnUnselectAll">Deseleccionar</button>
@@ -197,25 +188,38 @@ function abrirModalColumnas(){
   `);
 
   COLUMNAS.forEach(col=>{
-    const checked = columnasVisibles[col.key] ? "checked":"";
-    const locked = columnasBloqueadas[col.key] ? "🔒":"🔓";
-
     lista.insertAdjacentHTML("beforeend",`
       <label style="display:flex;justify-content:space-between">
         <div>
-          <input type="checkbox" data-key="${col.key}" ${checked}>
+          <input type="checkbox" data-key="${col.key}" ${columnasVisibles[col.key]?"checked":""}>
           ${col.label}
         </div>
-        <button class="btnLock" data-key="${col.key}">${locked}</button>
+        <button class="btnLock" data-key="${col.key}">
+          ${columnasBloqueadas[col.key] ? "🔒":"🔓"}
+        </button>
       </label>
     `);
   });
 
   modal.style.display = "flex";
 
-  document.getElementById("chkAcciones").checked = accionesHabilitadas;
-  document.getElementById("chkNuevo").checked = nuevoHabilitado;
+  // CHECKBOX COLUMNAS EN VIVO
+  document.querySelectorAll("#listaColumnas input[data-key]").forEach(chk=>{
+    chk.onchange = ()=>{
+      columnasVisibles[chk.dataset.key] = chk.checked;
+      aplicarColumnas();
+    };
+  });
 
+  // CHECKBOX BOTONES EN VIVO
+  document.querySelectorAll("#listaColumnas input[data-btn]").forEach(chk=>{
+    chk.onchange = ()=>{
+      botonesVisibles[chk.dataset.btn] = chk.checked;
+      aplicarVisibilidadBotones();
+    };
+  });
+
+  // LOCK
   document.querySelectorAll(".btnLock").forEach(btn=>{
     btn.onclick = e=>{
       e.stopPropagation();
@@ -226,22 +230,36 @@ function abrirModalColumnas(){
     };
   });
 
+  // SELECT ALL
   document.getElementById("btnSelectAll").onclick = ()=>{
-    document.querySelectorAll("#listaColumnas input[data-key]").forEach(c=>c.checked=true);
+    document.querySelectorAll("#listaColumnas input[data-key]").forEach(c=>{
+      c.checked = true;
+      columnasVisibles[c.dataset.key] = true;
+    });
+    aplicarColumnas();
   };
 
+  // UNSELECT ALL
   document.getElementById("btnUnselectAll").onclick = ()=>{
-    document.querySelectorAll("#listaColumnas input[data-key]").forEach(c=>c.checked=false);
+    document.querySelectorAll("#listaColumnas input[data-key]").forEach(c=>{
+      c.checked = false;
+      columnasVisibles[c.dataset.key] = false;
+    });
+    aplicarColumnas();
   };
 
+  // BLOQUEAR TODO
   document.getElementById("btnBloquearTodo").onclick = ()=>{
     COLUMNAS.forEach(c=>columnasBloqueadas[c.key]=true);
     abrirModalColumnas();
+    aplicarColumnas();
   };
 
+  // DESBLOQUEAR TODO
   document.getElementById("btnDesbloquearTodo").onclick = ()=>{
     COLUMNAS.forEach(c=>columnasBloqueadas[c.key]=false);
     abrirModalColumnas();
+    aplicarColumnas();
   };
 }
 
@@ -263,14 +281,6 @@ window.addEventListener("DOMContentLoaded", async ()=>{
   if(btnGuardar){
     btnGuardar.onclick = async ()=>{
       activarLoader(btnGuardar);
-
-      document.querySelectorAll("#listaColumnas input[data-key]").forEach(chk=>{
-        columnasVisibles[chk.dataset.key] = chk.checked;
-      });
-
-      document.querySelectorAll("#listaColumnas input[data-btn]").forEach(chk=>{
-        botonesVisibles[chk.dataset.btn] = chk.checked;
-      });
 
       await guardarColumnasServer();
 
