@@ -10,6 +10,7 @@ let LAST_GEOCODE = 0;
 let MAPA = null;
 let MARCADOR = null;
 let CIRCULO = null;
+let mapaVisible = false; // Estado del mapa
 
 /***************************************************
 🔥 RESTAURACIÓN INMEDIATA (ANTES DE TODO)
@@ -85,6 +86,12 @@ INIT PRINCIPAL
 document.addEventListener("DOMContentLoaded", ()=>{
   iniciarProgreso();
   iniciarApp();
+
+  // Asignar botón para mostrar/ocultar mapa
+  const btnMapa = document.getElementById("btnMostrarMapa");
+  if(btnMapa){
+    btnMapa.addEventListener("click", toggleMapa);
+  }
 });
 
 async function iniciarApp(){
@@ -101,14 +108,13 @@ async function iniciarApp(){
     if(typeof cargarEmpresaHeader === "function") tareas.push(cargarEmpresaHeader());
     tareas.push(cargarMenu(user));
 
-    // Inicializar mapa, IP y reloj sin bloquear
-    setTimeout(iniciarMapa,0);
+    // IP y reloj sin bloquear
     setTimeout(obtenerIP,0);
     setTimeout(iniciarReloj,0);
 
     await Promise.all(tareas);
 
-    // Restaurar módulo activo si existe
+    // Restaurar módulo activo
     const moduloGuardado = localStorage.getItem("moduloActivo");
     if(moduloGuardado){
       try{
@@ -170,14 +176,15 @@ function volver(){
   document.getElementById("frame").src = "";
   document.getElementById("tituloSistema").textContent = "Panel Logístico";
   localStorage.removeItem("moduloActivo");
-  if(MAPA) setTimeout(()=>MAPA.invalidateSize(),300);
 }
 
 /***************************************************
-MAPA + GPS
+MAPA + GPS (CARGA SOLO CUANDO SE NECESITE)
 ***************************************************/
-function iniciarMapa(){
+async function iniciarMapa(){
   if(!navigator.geolocation || !window.L) return;
+
+  if(MAPA) return; // No reiniciar si ya existe
 
   WATCH_ID = navigator.geolocation.watchPosition(pos=>{
     const {latitude:lat, longitude:lng, speed=0, heading=0} = pos.coords;
@@ -212,7 +219,7 @@ function iniciarMapa(){
 }
 
 /***************************************************
-DIRECCIÓN
+FUNCIONES DE DIRECCIÓN, RED Y VELOCIDAD
 ***************************************************/
 async function actualizarDireccion(lat,lng){
   try{
@@ -222,9 +229,6 @@ async function actualizarDireccion(lat,lng){
   }catch{ document.getElementById("dirTexto").textContent = "—"; }
 }
 
-/***************************************************
-RED + VELOCIDAD
-***************************************************/
 function actualizarRedVelocidad(speed){
   const kmh = (speed*3.6).toFixed(1);
   const conn = navigator.connection || {};
@@ -258,4 +262,24 @@ function cerrarSesion(){
   sessionStorage.clear();
   localStorage.clear();
   location.href = "index.html";
+}
+
+/***************************************************
+MAPA SHOW/HIDE
+***************************************************/
+function toggleMapa(){
+  const mapaBox = document.getElementById("mapaBox");
+  const btn = document.getElementById("btnMostrarMapa");
+
+  if(!mapaVisible){
+    // Mostrar mapa
+    mapaBox.style.display = "block";
+    btn.textContent = "🗺️ Ocultar Mapa";
+    await iniciarMapa(); // Cargar mapa solo al mostrar
+  }else{
+    // Ocultar mapa
+    mapaBox.style.display = "none";
+    btn.textContent = "🗺️ Mostrar Mapa";
+  }
+  mapaVisible = !mapaVisible;
 }
