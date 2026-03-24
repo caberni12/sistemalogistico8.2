@@ -42,7 +42,7 @@ let botonesVisibles = {
   btnPDF:true,
   btnExcel:true,
   btnReload:true,
-  btnColumnas:true
+  btnColumnas:true // 🔒 Siempre visible
 };
 
 /***************************************************
@@ -82,12 +82,18 @@ async function cargarColumnas(){
       columnasBloqueadas[c.key] = false;
     });
   }
+
+  // 🔒 Asegurar que Config siempre visible
+  botonesVisibles.btnColumnas = true;
 }
 
 /***************************************************
 GUARDAR CONFIG
 ***************************************************/
 async function guardarColumnasServer(){
+  // 🔒 Asegurar que Config siempre visible
+  botonesVisibles.btnColumnas = true;
+
   await fetch(API_CONFIG,{
     method:"POST",
     body:JSON.stringify({
@@ -108,6 +114,13 @@ BOTONES
 ***************************************************/
 function aplicarVisibilidadBotones(){
   Object.keys(botonesVisibles).forEach(id=>{
+    // 🔥 Config siempre visible
+    if(id === "btnColumnas"){
+      const btn = document.getElementById(id);
+      if(btn) btn.style.display = "";
+      return;
+    }
+
     const btn = document.getElementById(id);
     if(btn){
       btn.style.display = botonesVisibles[id] ? "" : "none";
@@ -124,7 +137,6 @@ function actualizarVisibilidadBtnNuevo(){
 TABLA
 ***************************************************/
 function aplicarColumnas(){
-
   const table = document.querySelector("table");
   if(!table) return;
 
@@ -153,33 +165,26 @@ function aplicarColumnas(){
       });
 
     });
-
   });
 
   actualizarVisibilidadBtnNuevo();
   aplicarVisibilidadBotones();
-
-  aplicarBloqueoMobile(); // 🔥 NUEVO
+  aplicarBloqueoMobile();
 }
 
 /***************************************************
 📱 BLOQUEO MOBILE (CLAVE)
 ***************************************************/
 function aplicarBloqueoMobile(){
-
   const cards = document.querySelectorAll(".card");
 
   cards.forEach(card=>{
-
-    // 🔒 BOTONES
     const botones = card.querySelectorAll("button");
-
     botones.forEach(btn=>{
       btn.disabled = accionesBloqueadas();
       btn.style.opacity = accionesBloqueadas() ? "0.4":"1";
     });
 
-    // 🔒 LINKS
     const links = card.querySelectorAll("a");
     links.forEach(a=>{
       if(estaBloqueado("direccion")){
@@ -187,21 +192,17 @@ function aplicarBloqueoMobile(){
         a.style.opacity="0.5";
       }
     });
-
   });
-
 }
 
 /***************************************************
 🔒 BLOQUEO FUNCIONAL (ANTI-BYPASS)
 ***************************************************/
 function validarAccion(){
-
   if(accionesBloqueadas()){
     alert("Acción bloqueada por configuración");
     return false;
   }
-
   return true;
 }
 
@@ -209,20 +210,22 @@ function validarAccion(){
 MODAL COLUMNAS
 ***************************************************/
 function abrirModalColumnas(){
-
   const lista = document.getElementById("listaColumnas");
   const modal = document.getElementById("modalColumnas");
   if(!lista || !modal) return;
 
   lista.innerHTML = "";
 
+  // ✅ Botones
   lista.insertAdjacentHTML("beforeend",`
     <h4>Botones</h4>
     <label><input type="checkbox" data-btn="btnNuevo" ${botonesVisibles.btnNuevo?"checked":""}> Nuevo</label>
     <label><input type="checkbox" data-btn="btnPDF" ${botonesVisibles.btnPDF?"checked":""}> PDF</label>
     <label><input type="checkbox" data-btn="btnExcel" ${botonesVisibles.btnExcel?"checked":""}> Excel</label>
     <label><input type="checkbox" data-btn="btnReload" ${botonesVisibles.btnReload?"checked":""}> Recargar</label>
-    <label><input type="checkbox" data-btn="btnColumnas" ${botonesVisibles.btnColumnas?"checked":""}> Config</label>
+    <label style="opacity:0.5">
+      <input type="checkbox" checked disabled> Config (siempre visible)
+    </label>
     <hr>
   `);
 
@@ -303,7 +306,6 @@ function abrirModalColumnas(){
 INIT
 ***************************************************/
 window.addEventListener("DOMContentLoaded", async ()=>{
-
   await cargarColumnas();
 
   const btn = document.getElementById("btnColumnas");
