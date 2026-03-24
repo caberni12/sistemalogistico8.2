@@ -29,6 +29,9 @@ const COLUMNAS = [
   {key:"acciones", label:"Acciones", index:19}
 ];
 
+/***************************************************
+ESTADOS
+***************************************************/
 let columnasVisibles = {};
 let columnasBloqueadas = {};
 let accionesHabilitadas = true;
@@ -82,14 +85,13 @@ async function guardarColumnasServer(){
 /***************************************************
 BTN NUEVO
 ***************************************************/
-function actualizarVisibilidadBtnNuevo() {
-  const btnNuevo = document.getElementById("btnNuevo");
-  if(!btnNuevo) return;
-  btnNuevo.style.display = nuevoHabilitado ? "" : "none";
+function actualizarVisibilidadBtnNuevo(){
+  const btn = document.getElementById("btnNuevo");
+  if(btn) btn.style.display = nuevoHabilitado ? "" : "none";
 }
 
 /***************************************************
-APLICAR COLUMNAS (🔥 BLOQUEO REAL)
+APLICAR COLUMNAS (🔥 COMPLETO)
 ***************************************************/
 function aplicarColumnas(){
 
@@ -106,7 +108,6 @@ function aplicarColumnas(){
       const visible = columnasVisibles[col.key];
       const bloqueado = columnasBloqueadas[col.key];
 
-      // visibilidad
       cell.style.display = visible ? "" : "none";
 
       // reset
@@ -114,21 +115,21 @@ function aplicarColumnas(){
       cell.style.pointerEvents = "";
       cell.style.userSelect = "";
 
-      // bloqueo real
+      // 🔒 bloqueo real
       if(bloqueado){
         cell.style.opacity = "0.5";
         cell.style.pointerEvents = "none";
         cell.style.userSelect = "none";
       }
 
-      // bloquear inputs internos
-      const inputs = cell.querySelectorAll("input,select,textarea,button");
-      inputs.forEach(el=>{
-        el.disabled = bloqueado || (col.key === "acciones" && !accionesHabilitadas);
+      // bloquear elementos internos
+      const elements = cell.querySelectorAll("input,select,textarea,button,a");
+      elements.forEach(el=>{
+        el.disabled = bloqueado || (col.key==="acciones" && !accionesHabilitadas);
       });
 
       // acciones
-      if(col.key === "acciones"){
+      if(col.key==="acciones"){
         const botones = cell.querySelectorAll("button");
         botones.forEach(b=>{
           b.disabled = !accionesHabilitadas || bloqueado;
@@ -143,20 +144,19 @@ function aplicarColumnas(){
 }
 
 /***************************************************
-MODAL COLUMNAS
+MODAL COLUMNAS (🔥 COMPLETO)
 ***************************************************/
 function abrirModalColumnas(){
 
   const lista = document.getElementById("listaColumnas");
   const modal = document.getElementById("modalColumnas");
-
   if(!lista || !modal) return;
 
   lista.innerHTML = "";
 
   COLUMNAS.forEach(col=>{
-    const checked = columnasVisibles[col.key] ? "checked": "";
-    const locked  = columnasBloqueadas[col.key] ? "🔒":"🔓";
+    const checked = columnasVisibles[col.key] ? "checked":"";
+    const locked = columnasBloqueadas[col.key] ? "🔒":"🔓";
 
     lista.insertAdjacentHTML("beforeend",`
       <label style="display:flex;justify-content:space-between">
@@ -164,21 +164,18 @@ function abrirModalColumnas(){
           <input type="checkbox" data-key="${col.key}" ${checked}>
           ${col.label}
         </div>
-        <button class="btnLock" data-key="${col.key}" 
-        style="border:0;background:none;font-size:16px;cursor:pointer">
-          ${locked}
-        </button>
+        <button class="btnLock" data-key="${col.key}">${locked}</button>
       </label>
     `);
   });
 
   modal.style.display = "flex";
 
-  // sync checks
+  // sync
   document.getElementById("chkAcciones").checked = accionesHabilitadas;
   document.getElementById("chkNuevo").checked = nuevoHabilitado;
 
-  // eventos básicos
+  // eventos base
   document.getElementById("chkAcciones").onchange = e=>{
     accionesHabilitadas = e.target.checked;
   };
@@ -190,38 +187,31 @@ function abrirModalColumnas(){
 
   // 🔒 lock individual
   document.querySelectorAll(".btnLock").forEach(btn=>{
-    btn.onclick = (e)=>{
+    btn.onclick = e=>{
       e.stopPropagation();
       const key = btn.dataset.key;
       columnasBloqueadas[key] = !columnasBloqueadas[key];
-      btn.textContent = columnasBloqueadas[key] ? "🔒" : "🔓";
+      btn.textContent = columnasBloqueadas[key] ? "🔒":"🔓";
       aplicarColumnas();
     };
   });
 
-  // ✅ seleccionar todo
+  // globales
   document.getElementById("btnSelectAll").onclick = ()=>{
-    document.querySelectorAll("#listaColumnas input[data-key]").forEach(chk=>{
-      chk.checked = true;
-    });
+    document.querySelectorAll("#listaColumnas input[data-key]").forEach(chk=>chk.checked=true);
   };
 
-  // ❌ deseleccionar todo
   document.getElementById("btnUnselectAll").onclick = ()=>{
-    document.querySelectorAll("#listaColumnas input[data-key]").forEach(chk=>{
-      chk.checked = false;
-    });
+    document.querySelectorAll("#listaColumnas input[data-key]").forEach(chk=>chk.checked=false);
   };
 
-  // 🔒 bloquear todo
   document.getElementById("btnBloquearTodo").onclick = ()=>{
-    COLUMNAS.forEach(c=> columnasBloqueadas[c.key] = true);
+    COLUMNAS.forEach(c=>columnasBloqueadas[c.key]=true);
     abrirModalColumnas();
   };
 
-  // 🔓 desbloquear todo
   document.getElementById("btnDesbloquearTodo").onclick = ()=>{
-    COLUMNAS.forEach(c=> columnasBloqueadas[c.key] = false);
+    COLUMNAS.forEach(c=>columnasBloqueadas[c.key]=false);
     abrirModalColumnas();
   };
 }
@@ -239,10 +229,7 @@ window.addEventListener("DOMContentLoaded", async ()=>{
   const btnGuardar = document.getElementById("btnGuardarColumnas");
 
   if(btn) btn.onclick = abrirModalColumnas;
-
-  if(btnCerrar){
-    btnCerrar.onclick = ()=> modal.style.display = "none";
-  }
+  if(btnCerrar) btnCerrar.onclick = ()=> modal.style.display="none";
 
   if(btnGuardar){
     btnGuardar.onclick = async ()=>{
@@ -254,25 +241,21 @@ window.addEventListener("DOMContentLoaded", async ()=>{
 
       await guardarColumnasServer();
 
-      modal.style.display = "none";
+      modal.style.display="none";
       aplicarColumnas();
 
       quitarLoader(btnGuardar);
     };
   }
 
-  // observer tabla
+  // observer tabla dinámica
   const tbody = document.getElementById("tbody");
   if(tbody){
-    let timeoutTabla = null;
-
+    let t;
     const observer = new MutationObserver(()=>{
-      clearTimeout(timeoutTabla);
-      timeoutTabla = setTimeout(()=>{
-        aplicarColumnas();
-      },100);
+      clearTimeout(t);
+      t = setTimeout(aplicarColumnas,100);
     });
-
     observer.observe(tbody,{childList:true,subtree:true});
   }
 
