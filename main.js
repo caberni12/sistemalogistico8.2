@@ -1,7 +1,8 @@
 /***************************************************
 CONFIGURACIÓN GENERAL
 ***************************************************/
-const API = "https://script.google.com/macros/s/AKfycbxDUcEzMGw9LWnzn-YUV89So3AFCEnplOHQuGmzq-EV_hnIMhQvgQIPY1AxvlKJPZNx/exec";
+const API =
+"https://script.google.com/macros/s/AKfycbxDUcEzMGw9LWnzn-YUV89So3AFCEnplOHQuGmzq-EV_hnIMhQvgQIPY1AxvlKJPZNx/exec";
 
 let USER_IP = "—";
 let WATCH_ID = null;
@@ -9,10 +10,9 @@ let LAST_GEOCODE = 0;
 let MAPA = null;
 let MARCADOR = null;
 let CIRCULO = null;
-let mapaVisible = false;
 
 /***************************************************
-RESTORACIÓN MÓDULO
+🔥 RESTAURACIÓN INMEDIATA (ANTES DE TODO)
 ***************************************************/
 (function(){
   const data = localStorage.getItem("moduloActivo");
@@ -60,84 +60,55 @@ const ICONO_ESTATICO = L.divIcon({
 });
 
 /***************************************************
+MENÚ
+***************************************************/
+function toggleMenu(){
+  document.getElementById("menuLateral")?.classList.toggle("open");
+}
+
+/***************************************************
 LOADER
 ***************************************************/
 function iniciarProgreso(){
-  const overlay = document.getElementById("loadingOverlay");
-  const bar = document.getElementById("progressBar");
-  if(overlay) overlay.style.display = "flex";
-  if(bar) bar.style.display = "block";
+  document.getElementById("loadingOverlay").style.display = "flex";
+  document.getElementById("progressBar").style.display = "block";
 }
 
 function finalizarProgreso(){
-  const overlay = document.getElementById("loadingOverlay");
-  const bar = document.getElementById("progressBar");
-  if(overlay) overlay.style.display = "none";
-  if(bar) bar.style.display = "none";
+  document.getElementById("loadingOverlay").style.display = "none";
+  document.getElementById("progressBar").style.display = "none";
 }
 
 /***************************************************
-INIT APP
+INIT PRINCIPAL
 ***************************************************/
-window.addEventListener("DOMContentLoaded", ()=>{
+document.addEventListener("DOMContentLoaded", ()=>{
   iniciarProgreso();
-
-  // Botón hamburguesa
-  const btnMenu = document.getElementById("btnMenu");
-  const menu = document.getElementById("menuLateral");
-  if(btnMenu && menu){
-    btnMenu.addEventListener("click", ()=> menu.classList.toggle("open"));
-  }
-
-  // Botón mostrar mapa
-  const btnMapa = document.getElementById("btnMostrarMapa");
-  const mapaBox = document.getElementById("mapaBox");
-  if(btnMapa && mapaBox){
-    mapaBox.style.display = "none";
-    btnMapa.addEventListener("click", async ()=>{
-      mapaVisible = !mapaVisible;
-      mapaBox.style.display = mapaVisible ? "block" : "none";
-      btnMapa.textContent = mapaVisible ? "🗺️ Ocultar Mapa" : "🗺️ Mostrar Mapa";
-      if(mapaVisible && !MAPA) await iniciarMapa();
-    });
-  }
-
-  // Botones recargar y cerrar sesión
-  const btnRecargar = document.querySelector(".btn-primary[onclick='recargarPanel()']");
-  if(btnRecargar) btnRecargar.addEventListener("click", ()=> location.reload());
-
-  const btnCerrar = document.querySelector(".btn-danger[onclick='cerrarSesion()']");
-  if(btnCerrar){
-    btnCerrar.addEventListener("click", ()=>{
-      if(WATCH_ID) navigator.geolocation.clearWatch(WATCH_ID);
-      sessionStorage.clear();
-      localStorage.clear();
-      location.href="index.html";
-    });
-  }
-
-  // Inicializar sesión y menú
   iniciarApp();
 });
 
-/***************************************************
-INICIAR SESIÓN Y MENÚ
-***************************************************/
 async function iniciarApp(){
-  try{
+  try {
+    // Validar sesión
     const user = validarSesionGlobal ? await validarSesionGlobal() : null;
     if(!user) return cerrarSesion();
 
     document.getElementById("usuario").textContent =
       `👤 ${user.nombre} · ${user.rol}`;
 
-    if(typeof cargarEmpresaHeader === "function") await cargarEmpresaHeader();
-    await cargarMenu(user);
+    // Cargar empresa y menú en paralelo
+    const tareas = [];
+    if(typeof cargarEmpresaHeader === "function") tareas.push(cargarEmpresaHeader());
+    tareas.push(cargarMenu(user));
 
-    obtenerIP();
-    iniciarReloj();
+    // Inicializar mapa, IP y reloj sin bloquear
+    setTimeout(iniciarMapa,0);
+    setTimeout(obtenerIP,0);
+    setTimeout(iniciarReloj,0);
 
-    // Restaurar módulo activo
+    await Promise.all(tareas);
+
+    // Restaurar módulo activo si existe
     const moduloGuardado = localStorage.getItem("moduloActivo");
     if(moduloGuardado){
       try{
@@ -154,19 +125,18 @@ async function iniciarApp(){
       }catch(e){}
     }
 
-  }catch(e){ console.error(e); }
-  finally{ finalizarProgreso(); }
+  } catch(e){ console.error(e); }
+  finally { finalizarProgreso(); }
 }
 
 /***************************************************
-CARGAR MENÚ DINÁMICO
+MENÚ DINÁMICO
 ***************************************************/
 async function cargarMenu(user){
   try{
     const r = await fetch(`${API}?action=listarModulos`);
     const res = await r.json();
     const cont = document.getElementById("menuModulos");
-    if(!cont) return;
     cont.innerHTML = "";
 
     if(!Array.isArray(res.data)) return;
@@ -178,45 +148,35 @@ async function cargarMenu(user){
 
       const item = document.createElement("div");
       item.className = "menu-item";
-      item.innerHTML = `${icono||"📦"} ${nombre}`;
-      item.addEventListener("click", ()=>{
-        abrirModulo(archivo,nombre);
-        if(menu) menu.classList.remove("open");
-      });
+      item.innerHTML = `${icono || "📦"} ${nombre}`;
+      item.onclick = ()=>{ abrirModulo(archivo,nombre); toggleMenu(); };
       cont.appendChild(item);
     });
   }catch(e){ console.error(e); }
 }
 
 /***************************************************
-VISOR DE MÓDULOS
+VISOR
 ***************************************************/
-function abrirModulo(url,titulo){
+function abrirModulo(url, titulo){
   localStorage.setItem("moduloActivo", JSON.stringify({url,titulo}));
-  const viewer = document.getElementById("viewer");
-  const frame = document.getElementById("frame");
-  if(viewer && frame){
-    viewer.style.display = "flex";
-    frame.src = url;
-    document.getElementById("tituloSistema").textContent = titulo;
-  }
+  document.getElementById("viewer").style.display = "flex";
+  document.getElementById("frame").src = url;
+  document.getElementById("tituloSistema").textContent = titulo;
 }
 
 function volver(){
-  const viewer = document.getElementById("viewer");
-  const frame = document.getElementById("frame");
-  if(viewer && frame){
-    viewer.style.display = "none";
-    frame.src = "";
-    document.getElementById("tituloSistema").textContent = "Panel Logístico";
-  }
+  document.getElementById("viewer").style.display = "none";
+  document.getElementById("frame").src = "";
+  document.getElementById("tituloSistema").textContent = "Panel Logístico";
   localStorage.removeItem("moduloActivo");
+  if(MAPA) setTimeout(()=>MAPA.invalidateSize(),300);
 }
 
 /***************************************************
 MAPA + GPS
 ***************************************************/
-async function iniciarMapa(){
+function iniciarMapa(){
   if(!navigator.geolocation || !window.L) return;
 
   WATCH_ID = navigator.geolocation.watchPosition(pos=>{
@@ -225,33 +185,34 @@ async function iniciarMapa(){
     if(!MAPA){
       MAPA = L.map("mapa").setView([lat,lng],16);
       L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png").addTo(MAPA);
+
       MARCADOR = L.marker([lat,lng],{icon:ICONO_ESTATICO}).addTo(MAPA);
       CIRCULO = L.circle([lat,lng],{radius:80,color:"#2563eb",fillOpacity:.15}).addTo(MAPA);
     }
 
     MARCADOR.setLatLng([lat,lng]);
-    MARCADOR.setIcon(speed>2?crearIconoAuto(heading):ICONO_ESTATICO);
+    MARCADOR.setIcon(speed > 2 ? crearIconoAuto(heading) : ICONO_ESTATICO);
 
     const conn = navigator.connection || {};
-    let r=80;
-    if(conn.effectiveType==="4g") r=150;
-    if(conn.effectiveType==="3g") r=100;
-    if(conn.effectiveType==="2g") r=60;
+    let r = 80;
+    if(conn.effectiveType === "4g") r=150;
+    if(conn.effectiveType === "3g") r=100;
+    if(conn.effectiveType === "2g") r=60;
     CIRCULO.setLatLng([lat,lng]);
     CIRCULO.setRadius(r);
 
     actualizarRedVelocidad(speed);
 
-    if(Date.now()-LAST_GEOCODE>15000){
-      LAST_GEOCODE=Date.now();
+    if(Date.now() - LAST_GEOCODE > 15000){
+      LAST_GEOCODE = Date.now();
       actualizarDireccion(lat,lng);
     }
 
-  },()=>{}, {enableHighAccuracy:true,maximumAge:2000,timeout:10000});
+  }, ()=>{}, { enableHighAccuracy:true, maximumAge:2000, timeout:10000 });
 }
 
 /***************************************************
-DIRECCIÓN + RED + VELOCIDAD
+DIRECCIÓN
 ***************************************************/
 async function actualizarDireccion(lat,lng){
   try{
@@ -261,36 +222,40 @@ async function actualizarDireccion(lat,lng){
   }catch{ document.getElementById("dirTexto").textContent = "—"; }
 }
 
+/***************************************************
+RED + VELOCIDAD
+***************************************************/
 function actualizarRedVelocidad(speed){
-  const kmh=(speed*3.6).toFixed(1);
-  const conn=navigator.connection||{};
-  document.getElementById("netTexto").textContent=
-    `${navigator.onLine?"Online":"Offline"} · ${conn.effectiveType||"—"}`;
-  document.getElementById("speedTexto").textContent=`🚗 ${kmh} km/h`;
+  const kmh = (speed*3.6).toFixed(1);
+  const conn = navigator.connection || {};
+  document.getElementById("netTexto").textContent =
+    `${navigator.onLine ? "Online" : "Offline"} · ${conn.effectiveType || "—"}`;
+  document.getElementById("speedTexto").textContent = `🚗 ${kmh} km/h`;
 }
 
 /***************************************************
 IP + RELOJ
 ***************************************************/
 async function obtenerIP(){
-  try{ USER_IP=(await(await fetch("https://api.ipify.org?format=json")).json()).ip; }catch{}
+  try{ USER_IP = (await (await fetch("https://api.ipify.org?format=json")).json()).ip; }catch{}
 }
 
 function iniciarReloj(){
   setInterval(()=>{
-    const n=new Date();
-    document.getElementById("conexionInfo").innerHTML=
+    const n = new Date();
+    document.getElementById("conexionInfo").innerHTML =
       `📅 ${n.toLocaleDateString("es-CL")}<br>⏰ ${n.toLocaleTimeString("es-CL")}<br>🌐 IP: ${USER_IP}`;
   },1000);
 }
 
 /***************************************************
-BOTONES AUXILIARES
+BOTONES
 ***************************************************/
 function recargarPanel(){ location.reload(); }
+
 function cerrarSesion(){
   if(WATCH_ID) navigator.geolocation.clearWatch(WATCH_ID);
   sessionStorage.clear();
   localStorage.clear();
-  location.href="index.html";
+  location.href = "index.html";
 }
