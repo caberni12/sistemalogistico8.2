@@ -13,7 +13,7 @@ let CIRCULO = null;
 let mapaVisible = false; // Estado del mapa
 
 /***************************************************
-🔥 RESTAURACIÓN INMEDIATA (ANTES DE TODO)
+🔥 RESTAURACIÓN INMEDIATA
 ***************************************************/
 (function(){
   const data = localStorage.getItem("moduloActivo");
@@ -64,55 +64,62 @@ const ICONO_ESTATICO = L.divIcon({
 MENÚ
 ***************************************************/
 function toggleMenu(){
-  document.getElementById("menuLateral")?.classList.toggle("open");
+  const menu = document.getElementById("menuLateral");
+  if(menu) menu.classList.toggle("open");
 }
 
 /***************************************************
 LOADER
 ***************************************************/
 function iniciarProgreso(){
-  document.getElementById("loadingOverlay").style.display = "flex";
-  document.getElementById("progressBar").style.display = "block";
+  const overlay = document.getElementById("loadingOverlay");
+  const bar = document.getElementById("progressBar");
+  if(overlay) overlay.style.display = "flex";
+  if(bar) bar.style.display = "block";
 }
 
 function finalizarProgreso(){
-  document.getElementById("loadingOverlay").style.display = "none";
-  document.getElementById("progressBar").style.display = "none";
+  const overlay = document.getElementById("loadingOverlay");
+  const bar = document.getElementById("progressBar");
+  if(overlay) overlay.style.display = "none";
+  if(bar) bar.style.display = "none";
 }
 
 /***************************************************
 INIT PRINCIPAL
 ***************************************************/
-document.addEventListener("DOMContentLoaded", ()=>{
-  iniciarProgreso();
-  iniciarApp();
+window.addEventListener("DOMContentLoaded", ()=>{
 
-  // Asignar botón para mostrar/ocultar mapa
+  iniciarProgreso();
+
+  // Botón menú
+  const btnMenu = document.getElementById("btnMenu");
+  if(btnMenu) btnMenu.addEventListener("click", toggleMenu);
+
+  // Botón mostrar mapa
   const btnMapa = document.getElementById("btnMostrarMapa");
-  if(btnMapa){
-    btnMapa.addEventListener("click", toggleMapa);
-  }
+  if(btnMapa) btnMapa.addEventListener("click", toggleMapa);
+
+  // Inicializar app
+  iniciarApp();
 });
 
+/***************************************************
+INICIAR APP
+***************************************************/
 async function iniciarApp(){
-  try {
-    // Validar sesión
+  try{
     const user = validarSesionGlobal ? await validarSesionGlobal() : null;
     if(!user) return cerrarSesion();
 
     document.getElementById("usuario").textContent =
       `👤 ${user.nombre} · ${user.rol}`;
 
-    // Cargar empresa y menú en paralelo
-    const tareas = [];
-    if(typeof cargarEmpresaHeader === "function") tareas.push(cargarEmpresaHeader());
-    tareas.push(cargarMenu(user));
+    if(typeof cargarEmpresaHeader === "function") await cargarEmpresaHeader();
+    await cargarMenu(user);
 
-    // IP y reloj sin bloquear
     setTimeout(obtenerIP,0);
     setTimeout(iniciarReloj,0);
-
-    await Promise.all(tareas);
 
     // Restaurar módulo activo
     const moduloGuardado = localStorage.getItem("moduloActivo");
@@ -131,18 +138,19 @@ async function iniciarApp(){
       }catch(e){}
     }
 
-  } catch(e){ console.error(e); }
-  finally { finalizarProgreso(); }
+  }catch(e){ console.error(e); }
+  finally{ finalizarProgreso(); }
 }
 
 /***************************************************
-MENÚ DINÁMICO
+CARGAR MENÚ
 ***************************************************/
 async function cargarMenu(user){
   try{
     const r = await fetch(`${API}?action=listarModulos`);
     const res = await r.json();
     const cont = document.getElementById("menuModulos");
+    if(!cont) return;
     cont.innerHTML = "";
 
     if(!Array.isArray(res.data)) return;
@@ -154,8 +162,11 @@ async function cargarMenu(user){
 
       const item = document.createElement("div");
       item.className = "menu-item";
-      item.innerHTML = `${icono || "📦"} ${nombre}`;
-      item.onclick = ()=>{ abrirModulo(archivo,nombre); toggleMenu(); };
+      item.innerHTML = `${icono||"📦"} ${nombre}`;
+      item.addEventListener("click", ()=>{
+        abrirModulo(archivo,nombre);
+        toggleMenu();
+      });
       cont.appendChild(item);
     });
   }catch(e){ console.error(e); }
@@ -164,18 +175,46 @@ async function cargarMenu(user){
 /***************************************************
 VISOR
 ***************************************************/
-function abrirModulo(url, titulo){
+function abrirModulo(url,titulo){
   localStorage.setItem("moduloActivo", JSON.stringify({url,titulo}));
-  document.getElementById("viewer").style.display = "flex";
-  document.getElementById("frame").src = url;
-  document.getElementById("tituloSistema").textContent = titulo;
+  const viewer = document.getElementById("viewer");
+  const frame = document.getElementById("frame");
+  if(viewer && frame){
+    viewer.style.display = "flex";
+    frame.src = url;
+    document.getElementById("tituloSistema").textContent = titulo;
+  }
 }
 
 function volver(){
-  document.getElementById("viewer").style.display = "none";
-  document.getElementById("frame").src = "";
-  document.getElementById("tituloSistema").textContent = "Panel Logístico";
+  const viewer = document.getElementById("viewer");
+  const frame = document.getElementById("frame");
+  if(viewer && frame){
+    viewer.style.display = "none";
+    frame.src = "";
+    document.getElementById("tituloSistema").textContent = "Panel Logístico";
+  }
   localStorage.removeItem("moduloActivo");
+}
+
+/***************************************************
+MAPA SHOW/HIDE
+***************************************************/
+async function toggleMapa(){
+  const mapaBox = document.getElementById("mapaBox");
+  const btn = document.getElementById("btnMostrarMapa");
+
+  if(!mapaBox || !btn) return;
+
+  if(!mapaVisible){
+    mapaBox.style.display = "block";
+    btn.textContent = "🗺️ Ocultar Mapa";
+    if(!MAPA) await iniciarMapa();
+  }else{
+    mapaBox.style.display = "none";
+    btn.textContent = "🗺️ Mostrar Mapa";
+  }
+  mapaVisible = !mapaVisible;
 }
 
 /***************************************************
@@ -184,42 +223,39 @@ MAPA + GPS (CARGA SOLO CUANDO SE NECESITE)
 async function iniciarMapa(){
   if(!navigator.geolocation || !window.L) return;
 
-  if(MAPA) return; // No reiniciar si ya existe
-
   WATCH_ID = navigator.geolocation.watchPosition(pos=>{
     const {latitude:lat, longitude:lng, speed=0, heading=0} = pos.coords;
 
     if(!MAPA){
       MAPA = L.map("mapa").setView([lat,lng],16);
       L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png").addTo(MAPA);
-
       MARCADOR = L.marker([lat,lng],{icon:ICONO_ESTATICO}).addTo(MAPA);
       CIRCULO = L.circle([lat,lng],{radius:80,color:"#2563eb",fillOpacity:.15}).addTo(MAPA);
     }
 
     MARCADOR.setLatLng([lat,lng]);
-    MARCADOR.setIcon(speed > 2 ? crearIconoAuto(heading) : ICONO_ESTATICO);
+    MARCADOR.setIcon(speed>2?crearIconoAuto(heading):ICONO_ESTATICO);
 
     const conn = navigator.connection || {};
-    let r = 80;
-    if(conn.effectiveType === "4g") r=150;
-    if(conn.effectiveType === "3g") r=100;
-    if(conn.effectiveType === "2g") r=60;
+    let r=80;
+    if(conn.effectiveType==="4g") r=150;
+    if(conn.effectiveType==="3g") r=100;
+    if(conn.effectiveType==="2g") r=60;
     CIRCULO.setLatLng([lat,lng]);
     CIRCULO.setRadius(r);
 
     actualizarRedVelocidad(speed);
 
-    if(Date.now() - LAST_GEOCODE > 15000){
-      LAST_GEOCODE = Date.now();
+    if(Date.now()-LAST_GEOCODE>15000){
+      LAST_GEOCODE=Date.now();
       actualizarDireccion(lat,lng);
     }
 
-  }, ()=>{}, { enableHighAccuracy:true, maximumAge:2000, timeout:10000 });
+  },()=>{}, {enableHighAccuracy:true,maximumAge:2000,timeout:10000});
 }
 
 /***************************************************
-FUNCIONES DE DIRECCIÓN, RED Y VELOCIDAD
+DIRECCIÓN, RED Y VELOCIDAD
 ***************************************************/
 async function actualizarDireccion(lat,lng){
   try{
@@ -230,24 +266,24 @@ async function actualizarDireccion(lat,lng){
 }
 
 function actualizarRedVelocidad(speed){
-  const kmh = (speed*3.6).toFixed(1);
-  const conn = navigator.connection || {};
-  document.getElementById("netTexto").textContent =
-    `${navigator.onLine ? "Online" : "Offline"} · ${conn.effectiveType || "—"}`;
-  document.getElementById("speedTexto").textContent = `🚗 ${kmh} km/h`;
+  const kmh=(speed*3.6).toFixed(1);
+  const conn=navigator.connection||{};
+  document.getElementById("netTexto").textContent=
+    `${navigator.onLine?"Online":"Offline"} · ${conn.effectiveType||"—"}`;
+  document.getElementById("speedTexto").textContent=`🚗 ${kmh} km/h`;
 }
 
 /***************************************************
 IP + RELOJ
 ***************************************************/
 async function obtenerIP(){
-  try{ USER_IP = (await (await fetch("https://api.ipify.org?format=json")).json()).ip; }catch{}
+  try{ USER_IP=(await(await fetch("https://api.ipify.org?format=json")).json()).ip; }catch{}
 }
 
 function iniciarReloj(){
   setInterval(()=>{
-    const n = new Date();
-    document.getElementById("conexionInfo").innerHTML =
+    const n=new Date();
+    document.getElementById("conexionInfo").innerHTML=
       `📅 ${n.toLocaleDateString("es-CL")}<br>⏰ ${n.toLocaleTimeString("es-CL")}<br>🌐 IP: ${USER_IP}`;
   },1000);
 }
@@ -256,30 +292,9 @@ function iniciarReloj(){
 BOTONES
 ***************************************************/
 function recargarPanel(){ location.reload(); }
-
 function cerrarSesion(){
   if(WATCH_ID) navigator.geolocation.clearWatch(WATCH_ID);
   sessionStorage.clear();
   localStorage.clear();
-  location.href = "index.html";
-}
-
-/***************************************************
-MAPA SHOW/HIDE
-***************************************************/
-function toggleMapa(){
-  const mapaBox = document.getElementById("mapaBox");
-  const btn = document.getElementById("btnMostrarMapa");
-
-  if(!mapaVisible){
-    // Mostrar mapa
-    mapaBox.style.display = "block";
-    btn.textContent = "🗺️ Ocultar Mapa";
-    await iniciarMapa(); // Cargar mapa solo al mostrar
-  }else{
-    // Ocultar mapa
-    mapaBox.style.display = "none";
-    btn.textContent = "🗺️ Mostrar Mapa";
-  }
-  mapaVisible = !mapaVisible;
+  location.href="index.html";
 }
