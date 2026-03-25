@@ -11,6 +11,22 @@ const inputConsulta = document.getElementById("mConsulta");
 const msgConsulta = document.getElementById("consultaMsg");
 
 /************************************************
+CREAR SELECT DINÁMICO (SI NO EXISTE)
+************************************************/
+let selectResultados = document.getElementById("selectResultados");
+
+if(!selectResultados){
+  selectResultados = document.createElement("select");
+  selectResultados.id = "selectResultados";
+  selectResultados.style.marginTop = "10px";
+  selectResultados.style.width = "100%";
+  selectResultados.style.padding = "8px";
+  selectResultados.style.display = "none";
+
+  inputConsulta.parentNode.appendChild(selectResultados);
+}
+
+/************************************************
 LIMPIAR CAMPOS
 ************************************************/
 function limpiarCampos(){
@@ -36,10 +52,51 @@ function setValue(id, value){
 }
 
 /************************************************
+RENDER RESULTADOS EN SELECT
+************************************************/
+function renderResultados(lista){
+
+  selectResultados.innerHTML = "";
+
+  if(!lista || lista.length === 0){
+    selectResultados.style.display = "none";
+    return;
+  }
+
+  const optDefault = document.createElement("option");
+  optDefault.value = "";
+  optDefault.textContent = "Seleccione un resultado";
+  selectResultados.appendChild(optDefault);
+
+  lista.forEach((item, index)=>{
+    const opt = document.createElement("option");
+    opt.value = index;
+    opt.textContent = `${item.numero} - ${item.cliente} - ${item.comuna}`;
+    selectResultados.appendChild(opt);
+  });
+
+  selectResultados.style.display = "block";
+
+  selectResultados.onchange = function(){
+    const i = this.value;
+    if(i === "") return;
+
+    const fila = lista[i];
+
+    setValue("mNumeroDoc", fila.numero);
+    setValue("mCliente", fila.cliente);
+    setValue("mDireccion", fila.direccion);
+    setValue("mComuna", fila.comuna);
+    setValue("mTransporte", fila.transporte);
+    setValue("mResponsable", fila.responsable);
+    setValue("mFecha", fila.fecha);
+    setValue("mFecReg", fila.fecreg);
+  };
+}
+
+/************************************************
 CONSULTAR PEDIDO GLOBAL
 ************************************************/
-btnConsultar.addEventListener("click", consultarPedidoGlobal);
-
 async function consultarPedidoGlobal(){
 
   const busqueda = inputConsulta.value.trim();
@@ -56,7 +113,7 @@ async function consultarPedidoGlobal(){
   msgConsulta.style.color = "#64748b";
 
   try{
-    const url = API_CLIENTES + "?q=" + encodeURIComponent(busqueda); // <-- PARAMETRO GLOBAL 'q'
+    const url = API_CLIENTES + "?q=" + encodeURIComponent(busqueda);
     const res = await fetch(url);
 
     if(!res.ok){
@@ -69,35 +126,21 @@ async function consultarPedidoGlobal(){
 
     if(data.error || !data.data || data.data.length === 0){
       limpiarCampos();
+      renderResultados([]);
       msgConsulta.textContent = "No encontrado";
       msgConsulta.style.color = "#dc2626";
-      btnConsultar.classList.remove("loading");
       return;
     }
 
-    // Tomamos solo el primer resultado para autocompletar (puedes adaptarlo si quieres mostrar varios)
-    const fila = data.data[0];
+    renderResultados(data.data);
 
-    /************************************************
-    AUTOCOMPLETAR CAMPOS
-    ************************************************/
-    setValue("mNumeroDoc", fila.numero);
-    setValue("mCliente", fila.cliente);
-    setValue("mDireccion", fila.direccion);
-    setValue("mComuna", fila.comuna);
-    setValue("mTransporte", fila.transporte);
-    setValue("mResponsable", fila.responsable);
-
-    // Fechas
-    setValue("mFecha", fila.fecha);
-    setValue("mFecReg", fila.fecreg);
-
-    msgConsulta.textContent = `Datos cargados (${data.total} encontrados)`;
+    msgConsulta.textContent = `${data.total} resultados encontrados`;
     msgConsulta.style.color = "#16a34a";
 
   }catch(err){
     console.error("ERROR:", err);
     limpiarCampos();
+    renderResultados([]);
     msgConsulta.textContent = "Error al consultar";
     msgConsulta.style.color = "#dc2626";
   }
@@ -106,8 +149,10 @@ async function consultarPedidoGlobal(){
 }
 
 /************************************************
-ENTER PARA CONSULTAR
+EVENTOS
 ************************************************/
+btnConsultar.addEventListener("click", consultarPedidoGlobal);
+
 inputConsulta.addEventListener("keypress", function(e){
   if(e.key === "Enter"){
     e.preventDefault();
