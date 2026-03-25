@@ -9,10 +9,18 @@
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
 <!-- ================== LIBRERÍAS ================== -->
+<!-- Excel -->
 <script src="https://unpkg.com/xlsx/dist/xlsx.full.min.js"></script>
+
+<!-- Gráficos -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+
+<!-- Generar PDF -->
 <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/jspdf-autotable@3.5.29/dist/jspdf.plugin.autotable.min.js"></script>
+
+<!-- IMPORTAR PDF (NUEVO - CLAVE) -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 
 <style>
 /* ================= VARIABLES ================= */
@@ -854,17 +862,21 @@ margin-top:20px;
       <label>Pedido</label>
       <input id="mPedido" placeholder="Número de pedido">
   
-      <label>Tipo Documento</label>
+      <label>Tipo de Orden de Trabajo</label>
       <select id="mTipoDoc">
         <option>BOLETA</option>
         <option>FACTURA</option>
         <option>GUIA</option>
         <option>ORDEN DE COMPRA</option>
         <option>NOTA DE VENTA</option>
+        <option>OT-ALIANZA SEGURIDAD</option>
+        <option>OT-BORDADOS</option>
+        <option>OT-ESTAMPADO</option>
+        <option>OT-CONFECCIÓN</option>
       </select>
   
       <!-- CONSULTA -->
-      <label>Consulta</label>
+      <label>Consulta de Pedido Sistema Control</label>
   
       <div style="display:flex;gap:6px">
         <input id="mConsulta" placeholder="Ingrese Nº de pedido">
@@ -913,15 +925,14 @@ margin-top:20px;
   
       <!-- ARCHIVOS -->
   
-      <label>Subir Fotos</label>
+      <label>Subir Fotos Opcional</label>
       <input type="file" id="mFotos" accept="image/*" multiple>
       <div id="fotoPreview"></div>
   
-      <label>Subir PDF</label>
+      <label>Subir Pdf de Orden de Trabajo</label>
       <input type="file" id="mPdf" accept="application/pdf">
       <div id="pdfPreview"></div>
   
-      <!-- BOTONES -->
   
       <div style="display:flex;gap:10px;margin-top:14px">
         <button id="btnGuardar">Guardar</button>
@@ -937,6 +948,6 @@ margin-top:20px;
 <script src="envio.js"></script>
 <script src="consulta.js"></script>
 
-<script src="columnas2.js"></script>
+<!-- <script src="columnas2.js"></script>-->
 </body>
 </html>

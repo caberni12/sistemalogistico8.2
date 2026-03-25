@@ -762,51 +762,62 @@ btnCancelar.onclick=()=>modalForm.style.display="none";
 /***************************************************
 GUARDAR
 ***************************************************/
-btnGuardar.onclick = async()=>{
+let guardando = false;
 
-  try{
-    setLoading(btnGuardar,true);
+btnGuardar.onclick = async () => {
+
+  if (guardando) {
+    alerta("⏳ Procesando...", "warn");
+    return;
+  }
+
+  guardando = true;
+  setLoading(btnGuardar, true);
+
+  try {
 
     let foto = "";
     let pdf = "";
 
-    // === FOTO ===
-    if(mFotos && mFotos.files.length){
+    // ================= FOTO =================
+    if (mFotos && mFotos.files.length) {
       const file = mFotos.files[0];
-      if(file.size > 2 * 1024 * 1024){
-        alert("Imagen muy pesada (máx 2MB)");
-        setLoading(btnGuardar,false);
+
+      if (file.size > 2 * 1024 * 1024) {
+        alerta("⚠️ Imagen muy pesada (máx 2MB)", "warn");
         return;
       }
+
       foto = await fileToBase64(file);
     }
 
-    // === PDF ===
-    if(mPdf && mPdf.files.length){
+    // ================= PDF =================
+    if (mPdf && mPdf.files.length) {
       const file = mPdf.files[0];
-      if(file.size > 3 * 1024 * 1024){
-        alert("PDF muy pesado (máx 3MB)");
-        setLoading(btnGuardar,false);
+
+      if (file.size > 3 * 1024 * 1024) {
+        alerta("⚠️ PDF muy pesado (máx 3MB)", "warn");
         return;
       }
+
       pdf = await fileToBase64(file);
     }
 
-    // === DATA ===
+    // ================= DATA =================
     const data = {
       action: EDIT ? "update" : "add",
       row: EDIT || "",
-      "TIPO DOCUMENTO": mTipoDoc.value || "",
-      "NUMERO DOCUMENTO": mNumeroDoc.value || "",
-      "CLIENTE": mCliente.value || "",
-      "DIRECCION": mDireccion.value || "",
-      "COMUNA": mComuna.value || "",
-      "TRANSPORTE": mTransporte.value || "",
-      "ETIQUETAS": mCajas.value || "",    // <-- MODIFICADO
-      "STATUS": mStatus.value || "PENDIENTE",
-      "FECHA ENTREGA": mHoraEntrega.value || "",
-      "RESPONSABLE": mResponsable.value || "",
-      "OBSERVACIONES": mObs.value || "",
+      "TIPO DOCUMENTO": mTipoDoc.value,
+      "NUMERO DOCUMENTO": mNumeroDoc.value,
+      "CLIENTE": mCliente.value,
+      "DIRECCION": mDireccion.value,
+      "COMUNA": mComuna.value,
+      "TRANSPORTE": mTransporte.value,
+      "ETIQUETAS": mCajas.value,
+      "STATUS": mStatus.value,
+      "FECHA ENTREGA": mHoraEntrega.value,
+      "RESPONSABLE": mResponsable.value,
+      "OBSERVACIONES": mObs.value,
       FOTO: foto,
       PDF: pdf
     };
@@ -814,48 +825,125 @@ btnGuardar.onclick = async()=>{
     const params = new URLSearchParams();
     params.append("data", JSON.stringify(data));
 
-    const controller = new AbortController();
-    const timeout = setTimeout(()=>controller.abort(),20000);
-
-    const res = await fetch(API,{
-      method:"POST",
-      headers:{
-        "Content-Type":"application/x-www-form-urlencoded"
+    // ================= FETCH =================
+    const res = await fetch(API, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/x-www-form-urlencoded"
       },
-      body:params,
-      signal: controller.signal
+      body: params
     });
 
-    clearTimeout(timeout);
+    // 🔥 VALIDAR SOLO ERROR REAL
+    if (!res.ok) {
+      throw new Error("Error de conexión");
+    }
 
-    if(!res.ok) throw new Error("Error servidor " + res.status);
+    // 🔥 INTENTAR LEER RESPUESTA
+    let response = {};
+    try {
+      response = await res.json();
+    } catch (e) {
+      response = {};
+    }
 
-    // === LIMPIAR Y CERRAR ===
-    modalForm.querySelectorAll("input,select,textarea").forEach(el=>el.value="");
-    if(mFotos) mFotos.value="";
-    if(mPdf) mPdf.value="";
+    // 🔥 SOLO ERROR SI VIENE EXPLÍCITO
+    if (response.ok === false) {
+      throw new Error(response.error || "Error backend");
+    }
 
-    const fotoPreview = document.getElementById("fotoPreview");
-    const pdfPreview = document.getElementById("pdfPreview");
-    if(fotoPreview) fotoPreview.innerHTML="";
-    if(pdfPreview) pdfPreview.innerHTML="";
+    // ✅ ALERTA CORRECTA
+    alerta("✅ Guardado correctamente", "ok");
 
-    if(mStatus) mStatus.value="PENDIENTE";
-    EDIT = null;
-    isEditing = false;
-    modalForm.style.display="none";
+    // 🔥 ESPERAR PARA QUE SE VEA
+    setTimeout(async () => {
 
-    PAGE = 1;
-    await load();
+      modalForm.style.display = "none";
 
-  }catch(e){
-    console.error("ERROR GUARDAR:", e);
-    alert("Error guardando: " + e.message);
+      PAGE = 1;
+      await load();
+
+    }, 500);
+
+  } catch (err) {
+
+    console.error("ERROR GUARDAR:", err);
+    alerta("❌ Error al guardar", "error");
+
+  } finally {
+
+    guardando = false;
+    setLoading(btnGuardar, false);
+
+  }
+};
+
+function alerta(msg, tipo = "ok") {
+
+  if (!msg) return;
+
+  // 🔥 crear contenedor si no existe
+  let container = document.getElementById("toastContainer");
+
+  if (!container) {
+    container = document.createElement("div");
+    container.id = "toastContainer";
+
+    // estilos FORZADOS desde JS
+    Object.assign(container.style, {
+      position: "fixed",
+      top: "20px",
+      right: "20px",
+      zIndex: "999999",
+      display: "flex",
+      flexDirection: "column",
+      gap: "10px"
+    });
+
+    document.body.appendChild(container);
   }
 
-  setLoading(btnGuardar,false);
+  // 🔥 crear alerta
+  const div = document.createElement("div");
+  div.textContent = msg;
 
-};
+  // colores según tipo
+  let bg = "#16a34a"; // ok
+  if (tipo === "error") bg = "#dc2626";
+  if (tipo === "warn") bg = "#eab308";
+  if (tipo === "info") bg = "#2563eb";
+
+  Object.assign(div.style, {
+    minWidth: "220px",
+    maxWidth: "320px",
+    padding: "12px 16px",
+    borderRadius: "12px",
+    color: tipo === "warn" ? "#000" : "#fff",
+    fontSize: "13px",
+    fontWeight: "600",
+    boxShadow: "0 10px 25px rgba(0,0,0,.2)",
+    opacity: "0",
+    transform: "translateY(-10px)",
+    transition: "all .3s ease",
+    background: bg
+  });
+
+  container.appendChild(div);
+
+  // animación entrada
+  requestAnimationFrame(() => {
+    div.style.opacity = "1";
+    div.style.transform = "translateY(0)";
+  });
+
+  // salida
+  setTimeout(() => {
+    div.style.opacity = "0";
+    div.style.transform = "translateY(-10px)";
+
+    setTimeout(() => div.remove(), 300);
+  }, 2500);
+}
 /***************************************************
 DELETE
 ***************************************************/
