@@ -268,6 +268,17 @@ tr.selected{
 .sem-rojo{background:#dc2626}
 .sem-azul{background:#2563eb}
 
+/* ================= SEMAFORO PUNTO ================= */
+/* Este estilo convierte las clases de semáforo en pequeños círculos
+   cuando se utiliza conjuntamente con la clase sem-dot.  El color
+   del fondo se hereda de las clases sem-verde, sem-amarillo, etc. */
+.sem-dot{
+ display:inline-block;
+ width:10px;
+ height:10px;
+ border-radius:50%;
+}
+
 /* ================= MODAL ================= */
 
 .modal{
@@ -548,9 +559,78 @@ tr.selected{
   animation:spin .7s linear infinite;
 }
 
+
+#modalProducto{
+  position:fixed;
+  top:0;
+  left:0;
+  width:100%;
+  height:100%;
+  background:rgba(0,0,0,.5);
+  display:none;
+  align-items:center;
+  justify-content:center;
+  z-index:9999;
+}
+
+#modalProducto .modal-content{
+  background:#fff;
+  padding:20px;
+  border-radius:12px;
+  width:95%;
+  max-width:900px;
+  max-height:90vh;
+  overflow:auto;
+}
+
+#modalProducto .form-group{
+  display:flex;
+  flex-direction:column;
+  margin-bottom:10px;
+}
+
+#modalProducto .grid{
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(200px,1fr));
+  gap:10px;
+}
+
+#modalProducto .modal-actions button{
+  padding:8px 14px;
+  border:none;
+  border-radius:8px;
+  cursor:pointer;
+}
+
+#modalProducto input[readonly]{
+  background:#f8fafc;
+  color:#334155;
+}
+
+#pResumenPedido,
+#pResumenTotales{
+  font-size:13px;
+  color:#475569;
+  background:#f8fafc;
+  border:1px solid #e2e8f0;
+  border-radius:10px;
+  padding:10px 12px;
+}
+
+#pTablaProductos td button{
+  background:#dc2626;
+}
+
+#pTablaProductos td button:hover{
+  background:#b91c1c;
+}
+
+
 @keyframes spin{
   to{transform:translateY(-50%) rotate(360deg)}
 }
+
+
 
 /* ================= MOBILE ================= */
 
@@ -734,6 +814,7 @@ grid-template-columns:1fr; /* 1 por fila */
     <button id="btnPDF">📄 Generar Reporte En PDF</button>
     <button id="btnExcel">📊 Generar Reporte en Excel</button>
     <button id="btnReload">🔄 Recargar</button>
+    <button onclick="abrirModalProducto()">➕ Agregar Productos</button>
 
     
     <input id="search" placeholder="Buscar pedido o cliente">
@@ -914,6 +995,7 @@ margin-top:20px;
         <option>RECIBIDO</option>
         <option>ENTREGADO</option>
         <option>CANCELADO</option>
+        <option>TERMINADO</option>
       </select>
   
       <label>Fecha / Hora Entrega</label>
@@ -944,12 +1026,112 @@ margin-top:20px;
     </div>
   
   </div>
+  <div id="modalProducto" class="modal" style="display:none;">
+
+    <div class="modal-content" style="max-width:900px;">
+  
+      <h2>📦 Productos del Pedido</h2>
+      <div id="pResumenPedido" style="margin-top:10px;">Selecciona un pedido para cargar sus datos.</div>
+  
+      <!-- SELECT PEDIDO -->
+      <div class="form-group">
+        <label>Seleccionar Pedido</label>
+        <select id="pSelectPedido">
+          <option value="">-- Seleccionar Pedido --</option>
+        </select>
+      </div>
+  
+      <!-- DATOS CLIENTE -->
+      <div class="grid" style="margin-top:10px">
+  
+        <div class="form-group">
+          <label>Pedido</label>
+          <input id="pPedido" readonly>
+        </div>
+  
+        <div class="form-group">
+          <label>Cliente</label>
+          <input id="pCliente" readonly>
+        </div>
+  
+        <div class="form-group">
+          <label>Dirección</label>
+          <input id="pDireccion" readonly>
+        </div>
+  
+        <div class="form-group">
+          <label>Comuna</label>
+          <input id="pComuna" readonly>
+        </div>
+  
+      </div>
+  
+      <hr>
+  
+      <!-- INGRESO PRODUCTO -->
+      <h3>➕ Agregar Producto</h3>
+  
+      <div class="grid">
+  
+        <div class="form-group">
+          <label>Producto</label>
+          <input id="pProducto" placeholder="Nombre del producto">
+        </div>
+  
+        <div class="form-group">
+          <label>Descripción</label>
+          <input id="pDescripcion" placeholder="Detalle">
+        </div>
+  
+        <div class="form-group">
+          <label>Cantidad</label>
+          <input id="pCantidad" type="number" min="1">
+        </div>
+  
+      </div>
+  
+      <div style="margin-top:10px">
+        <button id="btnAddProducto">➕ Agregar Producto</button>
+      </div>
+  
+      <!-- TABLA PRODUCTOS -->
+      <div style="margin-top:20px; max-height:250px; overflow:auto;">
+        <table style="width:100%; font-size:13px; border-collapse:collapse;">
+          <thead style="background:#f1f5f9;">
+            <tr>
+              <th style="padding:8px">Producto</th>
+              <th style="padding:8px">Descripción</th>
+              <th style="padding:8px">Cantidad</th>
+              <th style="padding:8px">Acción</th>
+            </tr>
+          </thead>
+          <tbody id="pTablaProductos"></tbody>
+        </table>
+      </div>
+      <div id="pResumenTotales" style="margin-top:12px;">Aún no hay productos agregados.</div>
+      <div style="margin-top:6px;font-size:12px;color:#64748b;">Al generar el PDF, se descargará y también quedará cargado en la columna PDF del pedido.</div>
+  
+      <!-- BOTONES -->
+      <div class="modal-actions" style="
+        margin-top:20px;
+        display:flex;
+        gap:10px;
+        justify-content:flex-end;
+        flex-wrap:wrap;
+      ">
+        <button id="btnGuardarProducto">💾 Guardar</button>
+        <button id="btnGenerarProductoPDF" class="btn-sec">📄 Generar PDF y Cargar</button>
+        <button id="btnCerrarProducto" class="btn-sec">❌ Cerrar</button>
+      </div>
+  
+    </div>
+  
+  </div>
 
   
 <script src="segurity.js"></script>
 <script src="envio.js"></script>
 <script src="consulta.js"></script>
-
 <!-- <script src="columnas2.js"></script>-->
 </body>
 </html>

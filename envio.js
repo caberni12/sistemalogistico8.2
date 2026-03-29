@@ -3,7 +3,7 @@ API
 ***************************************************/
 //const API="https://script.google.com/macros/s/AKfycbxtLfg0gSUBPCBgDZZeVC-yO7KElDU5RLbTmvj68K9UPOthpdtgLfrk_MRTGTpRaa1M/exec";
 
-const API="https://script.google.com/macros/s/AKfycbxClG0vVD9Zp9NVQKm-0SpCtGe060am9rlGXuv6bjnZSpEmcF_j0Fc9gQP4j9Dyz7YY/exec";
+const API="https://script.google.com/macros/s/AKfycbyFkxTGZnfZhiz6O1le881fsC2ukuccna82QNmflnGprUL5OS0KW2R74wncqEkrhcds/exec";
 
 /***************************************************
 DOM
@@ -67,6 +67,26 @@ let EDIT=null;
 let KPI_CHARTS={};
 let isEditing = false;
 let selectedIndex = -1;
+let SELECTED_ROW_KEY = null;
+function getRowDataByRow(row){
+  return RAW.find(r => Number(r._row) === Number(row)) || null;
+}
+
+function getSelectedRowData(){
+  if(SELECTED_ROW_KEY === null || SELECTED_ROW_KEY === undefined) return null;
+  return getRowDataByRow(SELECTED_ROW_KEY);
+}
+
+window.getPedidosData = () => Array.isArray(RAW) ? RAW.map(r => ({...r})) : [];
+window.getPedidoByRow = (row) => {
+  const item = getRowDataByRow(row);
+  return item ? {...item} : null;
+};
+window.getSelectedPedidoData = () => {
+  const item = getSelectedRowData();
+  return item ? {...item} : null;
+};
+
 /***************************************************
 PAGINACION
 ***************************************************/
@@ -100,18 +120,181 @@ function fileToBase64(file){
  });
 }
 
+function blobToBase64(blob){
+ return new Promise((resolve,reject)=>{
+  const reader = new FileReader();
+  reader.onload = () => resolve(reader.result);
+  reader.onerror = (e) => reject(e);
+  reader.readAsDataURL(blob);
+ });
+}
+
+/**
+ * Obtiene la lista de productos almacenados para un pedido desde el
+ * backend de Apps Script.  Se envía un payload con la acción
+ * "obtenerProductos" y el número de pedido.  Devuelve un arreglo de
+ * productos o un arreglo vacío si no hay datos o ocurre un error.
+ * @param {string} pedido Número de pedido
+ * @return {Promise<Array<Object>>}
+ */
+async function obtenerProductosPedidoBD(pedido){
+  if(!pedido) return [];
+  try{
+    const payload = {
+      action: "obtenerProductos",
+      pedido: pedido
+    };
+    const res = await fetch(API, {
+      method: "POST",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify(payload)
+    });
+    const data = await res.json();
+    if(data && data.ok && Array.isArray(data.productos)){
+      return data.productos;
+    }
+    return [];
+  }catch(err){
+    console.error("Error obteniendo productos desde backend:", err);
+    return [];
+  }
+}
+
+function construirPayloadPedido(base = {}, overrides = {}){
+ return {
+  action: base && base._row ? "update" : "add",
+  row: base?._row || "",
+  "TIPO DOCUMENTO": base?.tipoDocumento || "",
+  "NUMERO DOCUMENTO": base?.numeroDocumento || "",
+  "CLIENTE": base?.cliente || "",
+  "DIRECCION": base?.direccion || "",
+  "COMUNA": base?.comuna || "",
+  "TRANSPORTE": base?.transporte || "",
+  "ETIQUETAS": base?.etiquetas || "",
+  "STATUS": base?.status || "PENDIENTE",
+  "FECHA ENTREGA": base?.fechaEntrega || "",
+  "RESPONSABLE": base?.responsable || "",
+  "OBSERVACIONES": base?.observaciones || "",
+  FOTO: base?.foto || "",
+  PDF: base?.pdf || "",
+  ...overrides
+ };
+}
+
+async function postPedidoData(data){
+ const params = new URLSearchParams();
+ params.append("data", JSON.stringify(data));
+
+ const res = await fetch(API,{
+  method:"POST",
+  headers:{ "Content-Type":"application/x-www-form-urlencoded" },
+  body: params
+ });
+
+ if(!res.ok){
+  throw new Error("Error de conexión");
+ }
+
+ let response = {};
+ try{
+  response = await res.json();
+ }catch(e){
+  response = {};
+ }
+
+ if(response.ok === false){
+  throw new Error(response.error || "Error backend");
+ }
+
+ return response;
+}
+
+async function actualizarPdfPedidoDesdeDataUrl(row, pdfDataUrl){
+ const registro = getRowDataByRow(row);
+ if(!registro) throw new Error("No se encontró el pedido para actualizar el PDF");
+
+ const nombreArchivo = `Productos_Pedido_${registro.pedido || row}_${Date.now()}.pdf`;
+
+ const payload = construirPayloadPedido(registro,{
+  action: "update",
+  row: registro._row || row,
+  PDF_BASE64: pdfDataUrl,
+  PDF_NOMBRE: nombreArchivo
+ });
+
+ const response = await postPedidoData(payload);
+ const pdfUrl = response?.pdfUrl || response?.url || response?.pdf || response?.PDF || "";
+
+ if(!pdfUrl){
+  throw new Error("El backend no devolvió la URL del PDF. Debes guardar el archivo en Drive y retornar pdfUrl.");
+ }
+
+ const itemRaw = RAW.find(r => Number(r._row) === Number(row));
+ if(itemRaw) itemRaw.pdf = pdfUrl;
+ const itemFilt = FILT.find(r => Number(r._row) === Number(row));
+ if(itemFilt) itemFilt.pdf = pdfUrl;
+
+ const pdfPreview = document.getElementById("pdfPreview");
+ if(pdfPreview && EDIT && Number(EDIT) === Number(row)) {
+  pdfPreview.innerHTML = `
+    <div class="preview-box">
+      <a href="${pdfUrl}" target="_blank">📄 Ver documento actual</a>
+    </div>
+  `;
+ }
+
+ return pdfUrl;
+}
+
 /***************************************************
 SEMAFORO
 ***************************************************/
+/**
+ * Calcula un indicador visual de semáforo basado en el estado del pedido
+ * o la fecha de entrega.  Devuelve un círculo de color acorde al
+ * estado calculado.  Si el registro ya contiene una propiedad
+ * "semaforo", se utiliza ésta para determinar el color; de lo
+ * contrario se calcula a partir de la fecha de entrega.
+ * @param {Object} registro Registro del pedido
+ * @return {string} HTML con un punto de color
+ */
+function renderSemaforoValue(registro){
+ if(!registro) return "";
+ let color;
+ let sem = (registro.semaforo || "").toString().trim().toUpperCase();
+ if(sem){
+  if(sem.includes("ROJO")) color = "#dc2626";
+  else if(sem.includes("AMARILLO")) color = "#eab308";
+  else if(sem.includes("VERDE")) color = "#16a34a";
+  else if(sem.includes("AZUL")) color = "#2563eb";
+ }
+ // Si no hay propiedad semáforo, calcular por fecha de entrega
+ if(!color){
+   const fechaEntrega = registro.fechaEntrega;
+   if(!fechaEntrega) return "";
+   const hoy = new Date();
+   const entrega = new Date(fechaEntrega);
+   const diff = Math.floor((entrega - hoy)/(1000*60*60*24));
+   if(diff>1) color = "#16a34a"; // verde
+   else if(diff===1) color = "#eab308"; // amarillo
+   else if(diff<0) color = "#dc2626"; // rojo
+   else color = "#2563eb"; // azul
+ }
+ return `<span class="sem-dot" style="background:${color}"></span>`;
+}
+
+/**
+ * Conservamos esta función para uso en las tarjetas móviles y en
+ * otros componentes que muestran un texto en lugar de un punto.  Se
+ * calcula basándose en la fecha de entrega.
+ * @param {string|Date} fechaEntrega
+ * @return {string} HTML con una etiqueta estilizada
+ */
 function calcularSemaforo(fechaEntrega){
-
  if(!fechaEntrega) return "";
-
- const hoy=new Date();
- const entrega=new Date(fechaEntrega);
-
- const diff=Math.floor((entrega-hoy)/(1000*60*60*24));
-
+ const hoy = new Date();
+ const entrega = new Date(fechaEntrega);
+ const diff = Math.floor((entrega - hoy)/(1000*60*60*24));
  if(diff>1) return `<span class="sem-verde">OK</span>`;
  if(diff===1) return `<span class="sem-amarillo">HOY</span>`;
  if(diff<0) return `<span class="sem-rojo">ATRASO</span>`;
@@ -148,11 +331,12 @@ function renderEstado(status){
 
  let color="#fff";
 
- if(status==="PENDIENTE") color="#facc15";
- if(status==="EN RUTA") color="#ef4444";
- if(status==="ENTREGADO") color="#22c55e";
- if(status==="RECIBIDO") color="#fb923c";
- if(status==="CANCELADO") color="#3b82f6";
+  if(status==="PENDIENTE") color="#facc15";
+  if(status==="EN RUTA") color="#ef4444";
+  if(status==="ENTREGADO") color="#22c55e";
+  if(status==="RECIBIDO") color="#fb923c";
+  if(status==="CANCELADO") color="#3b82f6";
+  if(status==="TERMINADO") color="#a855f7";
 
  return `<span style="background:#000;color:${color};padding:3px 8px;border-radius:6px">${status||""}</span>`;
 }
@@ -210,7 +394,10 @@ async function load(){
 
       _row: r._row || "",
 
-      fechaIngreso: r['Fecha'] || r.fechaIngreso || "",
+      // Incluir sinónimos de "Fecha de Ingreso" para mayor
+      // robustez: algunas versiones de Apps Script podrían enviar
+      // "FECHA INGRESO", "Fecha Ingreso" o "FECHA DE INGRESO".
+      fechaIngreso: r['Fecha'] || r['Fecha Ingreso'] || r['FECHA INGRESO'] || r['FECHA DE INGRESO'] || r.fechaIngreso || "",
       pedido: r['Nº Pedido/OC'] || r.pedido || "",
       tipoDocumento: r['Tipo Documento'] || r.tipoDocumento || "",
       numeroDocumento: r['Nº Documento'] || r.numeroDocumento || "",
@@ -224,18 +411,27 @@ async function load(){
 
       /* ✅ TR (CORREGIDO Y ROBUSTO) */
       TR: 
+        // Soporta múltiples variantes de la columna de traslado:
+        // "TR", "Tr", "tr", "N° TR", "Nº TR", "Traslado",
+        // "SOLICITUD TRASLADO" y demás variantes con tilde.
         r['TR'] ||
         r['Tr'] ||
         r['tr'] ||
         r['N° TR'] ||
         r['Nº TR'] ||
         r['Traslado'] ||
+        r['TRASLADO'] ||
+        r['SOLICITUD TRASLADO'] ||
+        r['Solicitud Traslado'] ||
         r.TR ||
         "",
 
       status: r['Status'] || r.status || "PENDIENTE",
 
-      fechaEntrega: r['FECHA ENTREGA'] || r.fechaEntrega || "",
+      // Incluir sinónimos de "Fecha de Entrega" (por ejemplo
+      // "FECHA ESTIMADA ENTREGA", "Fecha Estimada Entrega") para
+      // compatibilidad con hojas que usan nombres distintos.
+      fechaEntrega: r['FECHA ENTREGA'] || r['Fecha Entrega'] || r['FECHA ESTIMADA ENTREGA'] || r['Fecha Estimada Entrega'] || r.fechaEntrega || "",
 
       responsable: r['Responsable'] || r.responsable || "",
       observaciones: r['Observaciones'] || r.observaciones || "",
@@ -326,6 +522,8 @@ function render(){
   renderKPIs();
  
   renderPagination();
+
+  if(typeof syncProductoPedidosOnRender === "function") syncProductoPedidosOnRender();
  
  }
 
@@ -342,9 +540,25 @@ TABLA
     return;
   }
 
-  data.forEach((r,i)=>{
+    data.forEach((r,i)=>{
 
-    const semaforo = calcularSemaforo(r.fechaEntrega);
+    // Para cada fila, calcular valores robustos de fechas usando
+    // diferentes posibles nombres de columnas.  Esto evita que
+    // la tabla quede vacía si el backend envía "FECHA INGRESO" o
+    // "Fecha Ingreso" en lugar de "fechaIngreso".
+    const fi = r.fechaIngreso || r.Fecha || r["Fecha Ingreso"] || r["FECHA INGRESO"] || r["FECHA DE INGRESO"] || "";
+    // Obtener fecha de entrega soportando distintos encabezados.  En
+    // versiones anteriores había un error tipográfico ("Fecha Estimada Entre")
+    // que impedía mostrar algunas fechas.  Esta línea corrige el fallo
+    // incluyendo correctamente "Fecha Estimada Entrega".
+    const fe = r.fechaEntrega
+      || r["FECHA ENTREGA"]
+      || r["Fecha Entrega"]
+      || r["FECHA ESTIMADA ENTREGA"]
+      || r["Fecha Estimada Entrega"]
+      || "";
+
+    const semaforoHtml = renderSemaforoValue(r);
 
     const tr = `
 <tr 
@@ -352,8 +566,7 @@ TABLA
   onclick="selectRow(${i}); openModal(${r._row})" 
   style="cursor:pointer"
 >
-
-<td>${formatDate(r.fechaIngreso)}</td>
+<td>${formatDate(fi)}</td>
 <td>${r.pedido||""}</td>
 <td>${r.tipoDocumento||""}</td>
 <td>${r.numeroDocumento||""}</td>
@@ -368,10 +581,10 @@ TABLA
 <td>${r.TR||""}</td>          <!-- NUEVO: TR -->
 <td>${r.etiquetas||""}</td>   <!-- Etiquetas/Unidades -->
 <td>${renderEstado(r.status)}</td>
-<td>${r.fechaEntrega||""}</td>
+<td>${formatDate(fe)}</td>
 <td>${renderAlerta(r.alerta)}</td>
 <td>${r.diasAtraso||""}</td>
-<td>${semaforo}</td>
+<td>${semaforoHtml}</td>
 <td>${r.responsable||""}</td>
 <td>
   ${
@@ -387,8 +600,9 @@ TABLA
 <td>${renderPDF(r.pdf)}</td>
 <td>${renderPDF(r.pdfTraslado)}</td>
 <td class="actions">
-  <button onclick="event.stopPropagation(); openModal(${r._row})">✏️</button>
-  <button onclick="event.stopPropagation(); deleteRow(${r._row})">🗑️</button>
+  <button title="Editar" onclick="event.stopPropagation(); openModal(${r._row})">✏️</button>
+  <button title="Productos" onclick="event.stopPropagation(); abrirModalProducto(${r._row})">📦</button>
+  <button title="Eliminar" onclick="event.stopPropagation(); deleteRow(${r._row})">🗑️</button>
 </td>
 
 </tr>
@@ -412,6 +626,10 @@ function selectRow(index){
   if(row){
     row.classList.add("selected");
     selectedIndex = index;
+
+    const globalIndex = ((PAGE - 1) * PAGE_SIZE) + index;
+    const rowData = FILT[globalIndex];
+    SELECTED_ROW_KEY = rowData ? Number(rowData._row) : null;
   }
 
 }
@@ -583,6 +801,9 @@ function renderCards(data){
       <button onclick="openModal(${r._row})"
         style="padding:6px 10px">✏️ Editar</button>
 
+      <button onclick="abrirModalProducto(${r._row})"
+        style="padding:6px 10px">📦 Productos</button>
+
       <button onclick="deleteRow(${r._row})"
         style="padding:6px 10px">🗑️ Eliminar</button>
 
@@ -648,10 +869,15 @@ MODAL
 function openModal(row){
 
   EDIT=row;
+  isEditing = true;
+  SELECTED_ROW_KEY = Number(row);
  
   const data=RAW.find(r=>Number(r._row)===Number(row));
   if(!data) return;
  
+  const mtitle=document.getElementById("mtitle");
+  if(mtitle) mtitle.textContent = "Editar Pedido";
+
   mPedido.value=data.pedido||"";
   mTipoDoc.value=data.tipoDocumento||"";
   mNumeroDoc.value=data.numeroDocumento||"";
@@ -741,8 +967,13 @@ btnNuevo.onclick = () => {
   /* VALOR POR DEFECTO */
   if (mStatus) mStatus.value = "PENDIENTE";
 
+  const mtitle = document.getElementById("mtitle");
+  if(mtitle) mtitle.textContent = "Nuevo Pedido";
+
   /* RESET SELECCIÓN TABLA */
   selectedIndex = -1;
+  SELECTED_ROW_KEY = null;
+  isEditing = true;
 
   /* ABRIR MODAL */
   modalForm.style.display = "flex";
@@ -757,7 +988,7 @@ btnNuevo.onclick = () => {
 /***************************************************
 CANCELAR
 ***************************************************/
-btnCancelar.onclick=()=>modalForm.style.display="none";
+btnCancelar.onclick=()=>{ modalForm.style.display="none"; isEditing = false; };
 
 /***************************************************
 GUARDAR
@@ -822,35 +1053,7 @@ btnGuardar.onclick = async () => {
       PDF: pdf
     };
 
-    const params = new URLSearchParams();
-    params.append("data", JSON.stringify(data));
-
-    // ================= FETCH =================
-    const res = await fetch(API, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/x-www-form-urlencoded"
-      },
-      body: params
-    });
-
-    // 🔥 VALIDAR SOLO ERROR REAL
-    if (!res.ok) {
-      throw new Error("Error de conexión");
-    }
-
-    // 🔥 INTENTAR LEER RESPUESTA
-    let response = {};
-    try {
-      response = await res.json();
-    } catch (e) {
-      response = {};
-    }
-
-    // 🔥 SOLO ERROR SI VIENE EXPLÍCITO
-    if (response.ok === false) {
-      throw new Error(response.error || "Error backend");
-    }
+    await postPedidoData(data);
 
     // ✅ ALERTA CORRECTA
     alerta("✅ Guardado correctamente", "ok");
@@ -859,9 +1062,11 @@ btnGuardar.onclick = async () => {
     setTimeout(async () => {
 
       modalForm.style.display = "none";
+      isEditing = false;
 
       PAGE = 1;
-      await load();
+      if(Number(SELECTED_ROW_KEY) === Number(EDIT)) SELECTED_ROW_KEY = null;
+    await load();
 
     }, 500);
 
@@ -1253,6 +1458,7 @@ function autoRefresh(){
 
       /* ❌ NO refrescar si estás editando */
       if(isEditing) return;
+      if(typeof modalProducto !== "undefined" && modalProducto && modalProducto.style.display === "flex") return;
 
       await load();
 
@@ -1265,6 +1471,409 @@ function autoRefresh(){
   },60000);
 
 }
+
+
+/***************************************************
+PRODUCTOS POR PEDIDO
+***************************************************/
+const PRODUCTOS_STORAGE_KEY = "productos_pedidos_v1";
+
+const modalProducto = document.getElementById("modalProducto");
+const pSelectPedido = document.getElementById("pSelectPedido");
+const pPedido = document.getElementById("pPedido");
+const pCliente = document.getElementById("pCliente");
+const pDireccion = document.getElementById("pDireccion");
+const pComuna = document.getElementById("pComuna");
+const pProducto = document.getElementById("pProducto");
+const pDescripcion = document.getElementById("pDescripcion");
+const pCantidad = document.getElementById("pCantidad");
+const pTablaProductos = document.getElementById("pTablaProductos");
+const pResumenPedido = document.getElementById("pResumenPedido");
+const pResumenTotales = document.getElementById("pResumenTotales");
+const btnAddProducto = document.getElementById("btnAddProducto");
+const btnGuardarProducto = document.getElementById("btnGuardarProducto");
+const btnCerrarProducto = document.getElementById("btnCerrarProducto");
+const btnGenerarProductoPDF = document.getElementById("btnGenerarProductoPDF");
+
+let PRODUCTOS_DB = cargarProductosDB();
+let PRODUCTOS_ACTUALES = [];
+let PRODUCTO_ROW_ACTUAL = "";
+let PEDIDO_META_ACTUAL = null;
+
+function cargarProductosDB(){
+  try{
+    const raw = localStorage.getItem(PRODUCTOS_STORAGE_KEY);
+    const parsed = raw ? JSON.parse(raw) : {};
+    return parsed && typeof parsed === "object" ? parsed : {};
+  }catch(e){
+    console.error("Error leyendo productos guardados:", e);
+    return {};
+  }
+}
+
+function persistirProductosDB(){
+  try{
+    localStorage.setItem(PRODUCTOS_STORAGE_KEY, JSON.stringify(PRODUCTOS_DB));
+  }catch(e){
+    console.error("Error guardando productos:", e);
+    alerta("❌ No se pudieron guardar los productos en este navegador", "error");
+  }
+}
+
+function obtenerPedidosDisponibles(){
+  return Array.isArray(RAW)
+    ? RAW.filter(item => item && item.pedido)
+    : [];
+}
+
+function buscarPedido(ref){
+  if(ref === null || ref === undefined || ref === "") return null;
+
+  const valor = String(ref);
+
+  return RAW.find(item =>
+    String(item._row) === valor ||
+    String(item.pedido) === valor
+  ) || null;
+}
+
+function poblarSelectPedidos(preferido = ""){
+  if(!pSelectPedido) return;
+
+  const pedidos = obtenerPedidosDisponibles();
+  const actual = preferido ? String(preferido) : String(PRODUCTO_ROW_ACTUAL || "");
+
+  pSelectPedido.innerHTML = '<option value="">-- Seleccionar Pedido --</option>' + pedidos.map(item => {
+    const etiqueta = `#${item.pedido || ""} · ${item.cliente || "Sin cliente"}`;
+    return `<option value="${item._row}">${etiqueta}</option>`;
+  }).join("");
+
+  if(actual && pedidos.some(item => String(item._row) === actual)){
+    pSelectPedido.value = actual;
+  }
+}
+
+function limpiarInputsProducto(){
+  if(pProducto) pProducto.value = "";
+  if(pDescripcion) pDescripcion.value = "";
+  if(pCantidad) pCantidad.value = "";
+}
+
+function limpiarCabeceraProducto(){
+  if(pPedido) pPedido.value = "";
+  if(pCliente) pCliente.value = "";
+  if(pDireccion) pDireccion.value = "";
+  if(pComuna) pComuna.value = "";
+}
+
+function totalProductosActuales(){
+  return PRODUCTOS_ACTUALES.reduce((sum, item) => sum + Number(item.cantidad || 0), 0);
+}
+
+function actualizarResumenPedido(){
+  if(!pResumenPedido) return;
+
+  if(!PEDIDO_META_ACTUAL){
+    pResumenPedido.textContent = "Selecciona un pedido para cargar sus datos.";
+    return;
+  }
+
+  const totalLineas = PRODUCTOS_ACTUALES.length;
+  const totalUnidades = totalProductosActuales();
+
+  pResumenPedido.innerHTML = `Pedido <b>#${PEDIDO_META_ACTUAL.pedido || ""}</b> · Cliente <b>${PEDIDO_META_ACTUAL.cliente || "Sin cliente"}</b> · ${totalLineas} producto(s) · ${totalUnidades} unidad(es)`;
+}
+
+function renderTablaProductos(){
+  if(!pTablaProductos) return;
+
+  if(!PRODUCTOS_ACTUALES.length){
+    pTablaProductos.innerHTML = '<tr><td colspan="4" style="padding:12px;text-align:center;color:#64748b;">No hay productos agregados.</td></tr>';
+  }else{
+    pTablaProductos.innerHTML = PRODUCTOS_ACTUALES.map((item, index) => `
+      <tr>
+        <td style="padding:8px;border-bottom:1px solid #e2e8f0;">${item.producto || ""}</td>
+        <td style="padding:8px;border-bottom:1px solid #e2e8f0;">${item.descripcion || ""}</td>
+        <td style="padding:8px;border-bottom:1px solid #e2e8f0;text-align:center;">${item.cantidad || 0}</td>
+        <td style="padding:8px;border-bottom:1px solid #e2e8f0;text-align:center;">
+          <button type="button" onclick="eliminarProductoActual(${index})">🗑️</button>
+        </td>
+      </tr>
+    `).join("");
+  }
+
+  if(pResumenTotales){
+    pResumenTotales.innerHTML = PRODUCTOS_ACTUALES.length
+      ? `Total de líneas: <b>${PRODUCTOS_ACTUALES.length}</b> · Total de unidades: <b>${totalProductosActuales()}</b>`
+      : "Aún no hay productos agregados.";
+  }
+
+  actualizarResumenPedido();
+}
+
+async function cargarProductosDePedido(meta){
+  PEDIDO_META_ACTUAL = meta || null;
+  if(!meta){
+    PRODUCTO_ROW_ACTUAL = "";
+    PRODUCTOS_ACTUALES = [];
+    limpiarCabeceraProducto();
+    renderTablaProductos();
+    return;
+  }
+  PRODUCTO_ROW_ACTUAL = String(meta._row || "");
+  if(pPedido) pPedido.value = meta.pedido || "";
+  if(pCliente) pCliente.value = meta.cliente || "";
+  if(pDireccion) pDireccion.value = meta.direccion || "";
+  if(pComuna) pComuna.value = meta.comuna || "";
+  // Vaciar productos actuales antes de cargar
+  PRODUCTOS_ACTUALES = [];
+  renderTablaProductos();
+  // Consultar productos guardados localmente
+  const guardadoLocal = PRODUCTOS_DB[String(meta.pedido)] || {};
+  if(guardadoLocal && Array.isArray(guardadoLocal.items) && guardadoLocal.items.length){
+    PRODUCTOS_ACTUALES = guardadoLocal.items.map(item => ({...item}));
+    renderTablaProductos();
+  }
+  // Consultar productos desde backend para asegurar consistencia
+  try{
+    const productosRemotos = await obtenerProductosPedidoBD(meta.pedido);
+    if(Array.isArray(productosRemotos) && productosRemotos.length){
+      PRODUCTOS_ACTUALES = productosRemotos.map(p => ({
+        producto: p.producto || "",
+        descripcion: p.detalle || p.descripcion || "",
+        cantidad: Number(p.cantidad || 0)
+      }));
+      // Actualizar almacenamiento local con la versión remota
+      PRODUCTOS_DB[String(meta.pedido)] = {
+        row: meta._row || "",
+        pedido: meta.pedido || "",
+        cliente: meta.cliente || "",
+        direccion: meta.direccion || "",
+        comuna: meta.comuna || "",
+        updatedAt: new Date().toISOString(),
+        items: PRODUCTOS_ACTUALES.map(item => ({...item})),
+        totalItems: PRODUCTOS_ACTUALES.length,
+        totalCantidad: totalProductosActuales()
+      };
+      persistirProductosDB();
+      renderTablaProductos();
+    }
+  }catch(err){
+    console.error("Error cargando productos desde backend:", err);
+  }
+}
+
+function agregarProductoActual(){
+  if(!PEDIDO_META_ACTUAL){
+    alerta("⚠️ Primero selecciona un pedido", "warn");
+    return;
+  }
+
+  const producto = (pProducto?.value || "").trim();
+  const descripcion = (pDescripcion?.value || "").trim();
+  const cantidad = Number(pCantidad?.value || 0);
+
+  if(!producto){
+    alerta("⚠️ Debes ingresar el nombre del producto", "warn");
+    pProducto?.focus();
+    return;
+  }
+
+  if(!cantidad || cantidad < 1){
+    alerta("⚠️ Debes ingresar una cantidad válida", "warn");
+    pCantidad?.focus();
+    return;
+  }
+
+  PRODUCTOS_ACTUALES.push({
+    producto,
+    descripcion,
+    cantidad
+  });
+
+  renderTablaProductos();
+  limpiarInputsProducto();
+  if(pProducto) pProducto.focus();
+}
+
+function eliminarProductoActual(index){
+  PRODUCTOS_ACTUALES.splice(index, 1);
+  renderTablaProductos();
+}
+window.eliminarProductoActual = eliminarProductoActual;
+
+// Guardar productos asociados a un pedido.
+// Esta función es asíncrona porque realiza llamadas al backend.
+async function guardarProductosPedido(){
+  if(!PEDIDO_META_ACTUAL){
+    alerta("⚠️ No hay pedido seleccionado", "warn");
+    return;
+  }
+  const pedidoKey = String(PEDIDO_META_ACTUAL.pedido || "");
+  // Guardar localmente para persistencia en el navegador
+  PRODUCTOS_DB[pedidoKey] = {
+    row: PEDIDO_META_ACTUAL._row || "",
+    pedido: PEDIDO_META_ACTUAL.pedido || "",
+    cliente: PEDIDO_META_ACTUAL.cliente || "",
+    direccion: PEDIDO_META_ACTUAL.direccion || "",
+    comuna: PEDIDO_META_ACTUAL.comuna || "",
+    updatedAt: new Date().toISOString(),
+    items: PRODUCTOS_ACTUALES.map(item => ({...item})),
+    totalItems: PRODUCTOS_ACTUALES.length,
+    totalCantidad: totalProductosActuales()
+  };
+  persistirProductosDB();
+  // Enviar a backend para almacenar en la hoja de productos
+  try{
+    const payload = {
+      action: "guardarProductos",
+      pedido: pedidoKey,
+      productos: PRODUCTOS_ACTUALES.map(item => ({
+        producto: item.producto || item.descripcion || item.detalle || "",
+        detalle: item.descripcion || item.detalle || "",
+        cantidad: Number(item.cantidad || 0)
+      }))
+    };
+    const res = await fetch(API, {
+      method: "POST",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify(payload)
+    });
+    const data = await res.json();
+    if(!data.ok) throw new Error(data.error || "Error al guardar productos");
+    alerta("✅ Productos guardados para el pedido #" + pedidoKey, "ok");
+  }catch(e){
+    console.error("Error guardando productos en backend:", e);
+    alerta("⚠️ Los productos se guardaron localmente pero no en el backend", "warn");
+  }
+}
+
+async function generarPDFProductos(){
+  if(!PEDIDO_META_ACTUAL){
+    alerta("⚠️ Selecciona un pedido antes de generar el PDF", "warn");
+    return;
+  }
+
+  if(!PRODUCTOS_ACTUALES.length){
+    alerta("⚠️ Debes agregar al menos un producto", "warn");
+    return;
+  }
+
+  try{
+    setLoading(btnGenerarProductoPDF, true);
+
+    await guardarProductosPedido();
+
+    const payload = construirPayloadPedido(PEDIDO_META_ACTUAL, {
+      action: "generarPdfPedido",
+      row: PEDIDO_META_ACTUAL._row || "",
+      pedido: PEDIDO_META_ACTUAL.pedido || "",
+      productos: PRODUCTOS_ACTUALES.map(item => ({
+        producto: item.producto || "",
+        descripcion: item.descripcion || "",
+        cantidad: Number(item.cantidad || 0)
+      })),
+      total: totalProductosActuales(),
+      totalItems: PRODUCTOS_ACTUALES.length,
+      PDF_NOMBRE: `Pedido_${PEDIDO_META_ACTUAL.pedido || "sin_numero"}_${Date.now()}.pdf`
+    });
+
+    const response = await postPedidoData(payload);
+    const pdfUrl = response?.pdfUrl || response?.pdf || "";
+
+    if(!pdfUrl){
+      throw new Error("El backend no devolvió la URL del PDF");
+    }
+
+    const itemRaw = RAW.find(r => Number(r._row) === Number(PEDIDO_META_ACTUAL._row));
+    if(itemRaw) itemRaw.pdf = pdfUrl;
+
+    const itemFilt = FILT.find(r => Number(r._row) === Number(PEDIDO_META_ACTUAL._row));
+    if(itemFilt) itemFilt.pdf = pdfUrl;
+
+    if(EDIT && Number(EDIT) === Number(PEDIDO_META_ACTUAL._row)){
+      const pdfPreview = document.getElementById("pdfPreview");
+      if(pdfPreview){
+        pdfPreview.innerHTML = `
+          <div class="preview-box">
+            <a href="${pdfUrl}" target="_blank">📄 Ver documento actual</a>
+          </div>
+        `;
+      }
+    }
+
+    render();
+    window.open(pdfUrl, "_blank");
+    alerta(`✅ PDF generado con logo + QR y cargado en la columna PDF del pedido #${PEDIDO_META_ACTUAL.pedido || ""}`, "ok");
+  }catch(err){
+    console.error("ERROR PDF PRODUCTOS:", err);
+    alerta("❌ No se pudo generar el PDF con logo y QR", "error");
+  }finally{
+    setLoading(btnGenerarProductoPDF, false);
+  }
+}
+
+function cerrarModalProducto(){
+  if(modalProducto) modalProducto.style.display = "none";
+}
+
+function abrirModalProducto(ref = ""){
+  if(!modalProducto){
+    alerta("❌ No se encontró el modal de productos", "error");
+    return;
+  }
+
+  const pedidos = obtenerPedidosDisponibles();
+
+  if(!pedidos.length){
+    alerta("⚠️ Aún no hay pedidos cargados", "warn");
+    return;
+  }
+
+  const seleccionado = buscarPedido(ref) || getSelectedRowData() || pedidos[0];
+
+  poblarSelectPedidos(seleccionado ? seleccionado._row : "");
+
+  if(seleccionado && pSelectPedido){
+    pSelectPedido.value = String(seleccionado._row);
+  }
+
+  cargarProductosDePedido(seleccionado);
+  limpiarInputsProducto();
+  modalProducto.style.display = "flex";
+}
+window.abrirModalProducto = abrirModalProducto;
+
+function syncProductoPedidosOnRender(){
+  if(!modalProducto || modalProducto.style.display !== "flex") return;
+
+  const referencia = PRODUCTO_ROW_ACTUAL || (pSelectPedido ? pSelectPedido.value : "");
+  poblarSelectPedidos(referencia);
+
+  const meta = buscarPedido(referencia) || getSelectedRowData();
+  if(meta){
+    if(pSelectPedido) pSelectPedido.value = String(meta._row);
+    cargarProductosDePedido(meta);
+  }
+}
+
+if(pSelectPedido){
+  pSelectPedido.onchange = () => {
+    const meta = buscarPedido(pSelectPedido.value);
+    cargarProductosDePedido(meta);
+  };
+}
+
+if(btnAddProducto) btnAddProducto.onclick = agregarProductoActual;
+if(btnGuardarProducto) btnGuardarProducto.onclick = guardarProductosPedido;
+if(btnCerrarProducto) btnCerrarProducto.onclick = cerrarModalProducto;
+if(btnGenerarProductoPDF) btnGenerarProductoPDF.onclick = generarPDFProductos;
+
+document.addEventListener("keydown", (e) => {
+  if(e.key === "Escape" && modalProducto && modalProducto.style.display === "flex"){
+    cerrarModalProducto();
+  }
+});
 
 /***************************************************
 INIT

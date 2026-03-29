@@ -2,7 +2,7 @@
 //const API="https://script.google.com/macros/s/AKfycbzj3sRVqYDgGVak1PNHrycYQ6FI5Mk5UyADOL0uI4CDAprlT7LDv3ZVWrfMCkwPMCgW/exec";
 
 
-const API="https://script.google.com/macros/s/AKfycbxClG0vVD9Zp9NVQKm-0SpCtGe060am9rlGXuv6bjnZSpEmcF_j0Fc9gQP4j9Dyz7YY/exec";
+const API="https://script.google.com/macros/s/AKfycbw8AtQM-M5Oa_rYjZWLM1dwxjHncG_yPtjRZveED6HZEd2fvV9j4vTySdLkhZNGMNNN/exec";
 //https://script.google.com/macros/s/AKfycbzj3sRVqYDgGVak1PNHrycYQ6FI5Mk5UyADOL0uI4CDAprlT7LDv3ZVWrfMCkwPMCgW/exec
 
 let RAW=[];
@@ -83,37 +83,72 @@ return new Date(p[0],p[1]-1,p[2]);
 
 
 function calcularAlertas(r){
-
-if(!r.fechaEntrega) return r;
-
-const ahora=new Date();
-const entrega=new Date(r.fechaEntrega);
-
-const diffHoras=(entrega-ahora)/(1000*60*60);
-const diffDias=Math.floor((ahora-entrega)/(1000*60*60*24));
-
-if(ahora>entrega && r.status!=="ENTREGADO"){
-r.alerta="PEDIDO ATRASADO";
-r.semaforo="ROJO";
-r.diasAtraso=Math.max(diffDias,1);
-r.statusEntrega="ATRASADO";
+  // Sin fecha de entrega no hay cálculos
+  if (!r.fechaEntrega) return r;
+  const ahora = new Date();
+  const entrega = new Date(r.fechaEntrega);
+  const diffHoras = (entrega - ahora) / (1000 * 60 * 60);
+  const diffDias = Math.floor((ahora - entrega) / (1000 * 60 * 60 * 24));
+  const status = (r.status || '').toString().trim().toUpperCase();
+  // Casos de pedidos finalizados: ENTREGADO o TERMINADO
+  if (status === 'ENTREGADO' || status === 'TERMINADO') {
+    r.alerta = '';
+    r.diasAtraso = '';
+    r.statusEntrega = status === 'ENTREGADO' ? 'ENTREGADO A TIEMPO' : 'FINALIZADO';
+    r.semaforo = status === 'ENTREGADO' ? 'VERDE' : 'AZUL';
+    return r;
+  }
+  // Pedido atrasado
+  if (ahora > entrega) {
+    r.alerta = 'PEDIDO ATRASADO';
+    r.semaforo = 'ROJO';
+    r.diasAtraso = Math.max(diffDias, 1);
+    r.statusEntrega = 'ATRASADO';
+  } else if (diffHoras <= 48) {
+    // Próximo a vencer
+    r.alerta = 'ENTREGA EN MENOS DE 48H';
+    r.semaforo = 'AMARILLO';
+    r.diasAtraso = 0;
+    r.statusEntrega = 'POR VENCER';
+  } else {
+    // Sin alerta
+    r.alerta = '';
+    r.semaforo = 'VERDE';
+    r.diasAtraso = 0;
+    r.statusEntrega = 'EN TIEMPO';
+  }
+  return r;
 }
 
-else if(diffHoras<=48 && r.status!=="ENTREGADO"){
-r.alerta="ENTREGA EN MENOS DE 48H";
-r.semaforo="AMARILLO";
-r.diasAtraso=0;
-r.statusEntrega="POR VENCER";
-}
-
-else{
-r.alerta="";
-r.semaforo="VERDE";
-r.diasAtraso=0;
-r.statusEntrega="EN TIEMPO";
-}
-
-return r;
+// ------------------------------------------------------------------
+//  Función auxiliar para obtener productos del backend por pedido.
+//  Se declara fuera de calcularAlertas para poder utilizarla en
+//  openTraslado sin interferir con la lógica de alertas.
+async function obtenerProductosPedidoBD(pedido) {
+  if (!pedido) return [];
+  try {
+    const payload = { action: "obtenerProductos", pedido: pedido };
+    const resp = await fetch(API, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload)
+    });
+    const text = await resp.text();
+    let data;
+    try {
+      data = JSON.parse(text);
+    } catch (e) {
+      console.error("Respuesta inválida productos:", text);
+      return [];
+    }
+    if (data && data.ok && Array.isArray(data.productos)) {
+      return data.productos;
+    }
+    return [];
+  } catch (err) {
+    console.error("Error al obtener productos desde backend:", err);
+    return [];
+  }
 }
 /* LOAD */
 
@@ -243,6 +278,7 @@ if(s==="EN RUTA") return "estado estado-ruta";
 if(s==="RECIBIDO") return "estado estado-recibido";
 if(s==="ENTREGADO") return "estado estado-entregado";
 if(s==="CANCELADO") return "estado estado-cancelado";
+ if(s==="TERMINADO") return "estado estado-terminado";
 
 return "estado";
 
@@ -323,8 +359,8 @@ function renderMore() {
           tieneTR
           ? ""  // 🔒 BLOQUEADO SI EXISTE TR
           : `
-            ${r.status === "ENTREGADO" 
-              ? `<button onclick="openTraslado(${r._row})">📦 Traslado</button>` 
+            ${(r.status === "ENTREGADO" || r.status === "TERMINADO")
+              ? `<button onclick="openTraslado(${r._row})">📦 Traslado</button>`
               : ""}
             <button onclick="openEdit(${r._row})">✏️ Editar</button>
           `
@@ -418,16 +454,19 @@ function openEdit(row){
     const r=RAW.find(x=>x._row==row);
     if(!r) return;
     
-    if(r.status==="ENTREGADO" || r.status==="CANCELADO"){
-    alert("Este pedido está cerrado y no puede ser editado.");
-    return;
+    if(r.status === "ENTREGADO" || r.status === "CANCELADO" || r.status === "TERMINADO"){
+      alert("Este pedido está cerrado y no puede ser editado.");
+      return;
     }
     
     EDIT_ROW=row;
     
     /* CARGAR DATOS */
     
-    mFechaIngreso.value=r.fechaIngreso||"";
+    // Mostrar la fecha de ingreso incluso si el backend utiliza nombres
+    // diferentes como "Fecha" o "FECHA INGRESO".  Tomamos el
+    // primero que exista.
+    mFechaIngreso.value = r.fechaIngreso || r.Fecha || r["Fecha Ingreso"] || r["FECHA INGRESO"] || r["FECHA DE INGRESO"] || "";
     mPedido.value=r.pedido||"";
     mTipoDocumento.value=r.tipoDocumento||"";
     mNumeroDocumento.value=r.numeroDocumento||"";
@@ -552,7 +591,7 @@ btn.textContent="🗺 Mostrar mapa";
 
 /* ================= TRASLADO ================= */
 
-function openTraslado(row){
+async function openTraslado(row){
 
     /* BUSCAR REGISTRO */
     
@@ -591,64 +630,79 @@ function openTraslado(row){
     if(tTransporte) tTransporte.value = r.transporte || "";
     
     /* LIMPIAR TABLA PRODUCTOS */
-    
     const tabla = document.getElementById("detalleTable");
     if(tabla) tabla.innerHTML="";
-    
-    /* CREAR PRIMERA FILA */
-    
-    addProducto();
-    
+    // Cargar productos desde backend.  Si no hay productos, agregar una línea vacía.
+    try{
+      const productosGuardados = await obtenerProductosPedidoBD(r.pedido);
+      if(Array.isArray(productosGuardados) && productosGuardados.length){
+        productosGuardados.forEach(p => {
+          const prodVal = p.producto || "";
+          const detVal  = p.detalle || p.descripcion || "";
+          const cantVal = Number(p.cantidad || 1);
+          addProducto(prodVal, detVal, cantVal);
+        });
+      } else {
+        // Si no hay productos guardados, agregar una fila vacía para ingresar datos
+        addProducto();
+      }
+    }catch(err){
+      console.error("Error cargando productos para traslado:", err);
+      // En caso de error, dejar una fila vacía
+      addProducto();
+    }
     }
 
-    function addProducto(){
-
+    /**
+     * Agrega una fila de producto al detalle del traslado.  Si se
+     * entregan argumentos, éstos se utilizan directamente para
+     * poblar los campos (producto, detalle, cantidad).  Si no se
+     * entregan argumentos, se utilizan los valores de los inputs
+     * superiores (pProducto, pDetalle, pCantidad) y se valida que
+     * el producto no esté vacío.
+     * @param {string=} prodArg Nombre del producto
+     * @param {string=} detArg  Detalle o descripción del producto
+     * @param {number=} cantArg Cantidad del producto
+     */
+    function addProducto(prodArg, detArg, cantArg){
         const tabla = document.getElementById("detalleTable");
         if(!tabla) return;
-        
+        // Si hay argumentos se usa un flujo corto
+        if (arguments.length > 0) {
+          const prodVal = String(prodArg || "");
+          const detVal  = String(detArg || "");
+          const cantVal = Number(cantArg || 1);
+          const fila = document.createElement("tr");
+          fila.innerHTML = `
+            <td><input class="prod" value="${prodVal}" placeholder="Producto"></td>
+            <td><input class="det" value="${detVal}" placeholder="Detalle"></td>
+            <td><input type="number" class="cant" value="${cantVal}" min="1" oninput="calcTotal()"></td>
+            <td><button type="button" onclick="this.closest('tr').remove();calcTotal()">✖</button></td>
+          `;
+          tabla.appendChild(fila);
+          calcTotal();
+          return;
+        }
+        // Leer valores desde los inputs y validar
         const prod = document.getElementById("pProducto").value.trim();
-        const det = document.getElementById("pDetalle").value.trim();
+        const det  = document.getElementById("pDetalle").value.trim();
         const cant = document.getElementById("pCantidad").value || 1;
-        
-        if(prod === ""){
-        alert("Favor Informe los Productos a Trasladar y Genere Numero de Traslado");
-        return;
-        }
-        
+        if(prod === ""){ alert("Favor Informe los Productos a Trasladar y Genere Numero de Traslado"); return; }
         const fila = document.createElement("tr");
-        
         fila.innerHTML = `
-        <td>
-        <input class="prod" value="${prod}" placeholder="Producto">
-        </td>
-        
-        <td>
-        <input class="det" value="${det}" placeholder="Detalle">
-        </td>
-        
-        <td>
-        <input type="number" class="cant" value="${cant}" min="1" oninput="calcTotal()">
-        </td>
-        
-        <td>
-        <button type="button" onclick="this.closest('tr').remove();calcTotal()">✖</button>
-        </td>
+          <td><input class="prod" value="${prod}" placeholder="Producto"></td>
+          <td><input class="det" value="${det}" placeholder="Detalle"></td>
+          <td><input type="number" class="cant" value="${cant}" min="1" oninput="calcTotal()"></td>
+          <td><button type="button" onclick="this.closest('tr').remove();calcTotal()">✖</button></td>
         `;
-        
         tabla.appendChild(fila);
-        
-        /* limpiar inputs superiores */
-        
-        document.getElementById("pProducto").value="";
-        document.getElementById("pDetalle").value="";
-        document.getElementById("pCantidad").value="1";
-        
-        /* volver al primer campo */
-        
+        // Limpiar inputs superiores
+        document.getElementById("pProducto").value = "";
+        document.getElementById("pDetalle").value = "";
+        document.getElementById("pCantidad").value = "1";
         document.getElementById("pProducto").focus();
-        
         calcTotal();
-        }
+    }
     /* ================= CALCULAR TOTAL ================= */
     
     function calcTotal(){
