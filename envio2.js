@@ -209,12 +209,18 @@ async function obtenerProductosPedidoBD(pedido) {
   if (!pedido) return [];
   try {
     const payload = { action: "obtenerProductos", pedido: pedido };
+
+    const params = new URLSearchParams();
+    params.append("data", JSON.stringify(payload));
+
     const resp = await fetch(API, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload)
+      headers: { "Content-Type":"application/x-www-form-urlencoded;charset=UTF-8" },
+      body: params.toString()
     });
+
     const text = await resp.text();
+
     let data;
     try {
       data = JSON.parse(text);
@@ -222,9 +228,11 @@ async function obtenerProductosPedidoBD(pedido) {
       console.error("Respuesta inválida productos:", text);
       return [];
     }
+
     if (data && data.ok && Array.isArray(data.productos)) {
       return data.productos;
     }
+
     return [];
   } catch (err) {
     console.error("Error al obtener productos desde backend:", err);
@@ -609,33 +617,58 @@ async function guardar(){
     const r = RAW.find(x=>Number(x._row)===Number(EDIT_ROW));
     if(!r) throw new Error("No se encontró el registro a editar");
 
-    await fetch(API,{
+    const payload = {
+      action: "update",
+      row: Number(EDIT_ROW),
+
+      "TIPO DOCUMENTO": r.tipoDocumento || "",
+      "NUMERO DOCUMENTO": r.numeroDocumento || "",
+      "CLIENTE": r.cliente || "",
+      "DIRECCION": r.direccion || "",
+      "COMUNA": r.comuna || "",
+      "TRANSPORTE": r.transporte || "",
+      "ETIQUETAS": r.etiquetas || "",
+      "RESPONSABLE": r.responsable || "",
+
+      "STATUS": mStatus ? mStatus.value : "",
+      "OBSERVACIONES": mObservaciones ? mObservaciones.value : "",
+      "FECHA ENTREGA": mFechaEntrega ? mFechaEntrega.value : ""
+    };
+
+    const params = new URLSearchParams();
+    params.append("data", JSON.stringify(payload));
+
+    const resp = await fetch(API,{
       method:"POST",
-      headers:{ "Content-Type":"application/json" },
-      body:JSON.stringify({
-        action:"update",
-        row:EDIT_ROW,
-        FECHAINGRESO:r.fechaIngreso,
-        PEDIDO:r.pedido,
-        TIPODOCUMENTO:r.tipoDocumento,
-        NUMERODOCUMENTO:r.numeroDocumento,
-        CLIENTE:r.cliente,
-        DIRECCION:r.direccion,
-        COMUNA:r.comuna,
-        TRANSPORTE:r.transporte,
-        ETIQUETAS:r.etiquetas,
-        RESPONSABLE:r.responsable,
-        STATUS:mStatus ? mStatus.value : "",
-        OBSERVACIONES:mObservaciones ? mObservaciones.value : "",
-        "FECHA ENTREGA":mFechaEntrega ? mFechaEntrega.value : ""
-      })
+      headers:{ "Content-Type":"application/x-www-form-urlencoded;charset=UTF-8" },
+      body: params.toString()
     });
+
+    if(!resp.ok){
+      throw new Error("Error de conexión con el servidor");
+    }
+
+    const text = await resp.text();
+
+    let data = {};
+    try{
+      data = JSON.parse(text);
+    }catch(e){
+      console.error("Respuesta inválida del backend:", text);
+      throw new Error("El servidor devolvió una respuesta inválida");
+    }
+
+    if(data.ok === false){
+      throw new Error(data.error || "No se pudo guardar");
+    }
 
     closeEdit();
     await load();
+    alert("Registro actualizado correctamente");
+
   }catch(err){
     console.error("Error al guardar:", err);
-    alert("No se pudo guardar");
+    alert("No se pudo guardar: " + err.message);
   }finally{
     setLoading(btnGuardar,false);
   }
