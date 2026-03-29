@@ -3,7 +3,7 @@ API
 ***************************************************/
 //const API="https://script.google.com/macros/s/AKfycbxtLfg0gSUBPCBgDZZeVC-yO7KElDU5RLbTmvj68K9UPOthpdtgLfrk_MRTGTpRaa1M/exec";
 
-const API="https://script.google.com/macros/s/AKfycbyFkxTGZnfZhiz6O1le881fsC2ukuccna82QNmflnGprUL5OS0KW2R74wncqEkrhcds/exec";
+const API="https://script.google.com/macros/s/AKfycbyMhSW9JBm6zb90K1V_qHTuSZ9GqR7XNPAgV3j9upGq66OMQNK9RtEii2gT5QXlTpFD/exec";
 
 /***************************************************
 DOM
@@ -103,9 +103,94 @@ function setLoading(btn,state){
  btn.classList.toggle("loading",state);
 }
 
+function pad2(n){
+ return String(n).padStart(2,"0");
+}
+
+function parseLocalDate(value,endOfDay=false){
+ if(value===null || value===undefined || value==="") return null;
+
+ if(value instanceof Date && !isNaN(value.getTime())){
+  return new Date(value.getTime());
+ }
+
+ const s=String(value).trim();
+ if(!s) return null;
+
+ // dd/MM/yyyy HH:mm o dd/MM/yyyyTHH:mm
+ let m=s.match(/^(\d{2})\/(\d{2})\/(\d{4})[T ](\d{2}):(\d{2})(?::(\d{2}))?$/);
+ if(m){
+  return new Date(
+   Number(m[3]),
+   Number(m[2])-1,
+   Number(m[1]),
+   Number(m[4]),
+   Number(m[5]),
+   Number(m[6]||0),
+   0
+  );
+ }
+
+ // dd/MM/yyyy
+ m=s.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+ if(m){
+  return new Date(
+   Number(m[3]),
+   Number(m[2])-1,
+   Number(m[1]),
+   endOfDay?23:0,
+   endOfDay?59:0,
+   endOfDay?59:0,
+   0
+  );
+ }
+
+ // yyyy-MM-dd HH:mm o yyyy-MM-ddTHH:mm
+ m=s.match(/^(\d{4})-(\d{2})-(\d{2})[T ](\d{2}):(\d{2})(?::(\d{2}))?$/);
+ if(m){
+  return new Date(
+   Number(m[1]),
+   Number(m[2])-1,
+   Number(m[3]),
+   Number(m[4]),
+   Number(m[5]),
+   Number(m[6]||0),
+   0
+  );
+ }
+
+ // yyyy-MM-dd
+ m=s.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+ if(m){
+  return new Date(
+   Number(m[1]),
+   Number(m[2])-1,
+   Number(m[3]),
+   endOfDay?23:0,
+   endOfDay?59:0,
+   endOfDay?59:0,
+   0
+  );
+ }
+
+ const d=new Date(s);
+ return isNaN(d.getTime()) ? null : d;
+}
+
 function formatDate(d){
- if(!d) return "";
- return new Date(d).toLocaleDateString("es-CL");
+ const date=parseLocalDate(d);
+ if(!date) return "";
+ return `${pad2(date.getDate())}/${pad2(date.getMonth()+1)}/${date.getFullYear()}`;
+}
+
+function toDateFilterValue(value,endOfDay=false){
+ return parseLocalDate(value,endOfDay);
+}
+
+function formatDateTimeLocalValue(value){
+ const date=parseLocalDate(value);
+ if(!date) return "";
+ return `${date.getFullYear()}-${pad2(date.getMonth()+1)}-${pad2(date.getDate())}T${pad2(date.getHours())}:${pad2(date.getMinutes())}`;
 }
 
 /***************************************************
@@ -273,7 +358,8 @@ function renderSemaforoValue(registro){
    const fechaEntrega = registro.fechaEntrega;
    if(!fechaEntrega) return "";
    const hoy = new Date();
-   const entrega = new Date(fechaEntrega);
+   const entrega = parseLocalDate(fechaEntrega,true);
+   if(!entrega) return "";
    const diff = Math.floor((entrega - hoy)/(1000*60*60*24));
    if(diff>1) color = "#16a34a"; // verde
    else if(diff===1) color = "#eab308"; // amarillo
@@ -293,7 +379,8 @@ function renderSemaforoValue(registro){
 function calcularSemaforo(fechaEntrega){
  if(!fechaEntrega) return "";
  const hoy = new Date();
- const entrega = new Date(fechaEntrega);
+ const entrega = parseLocalDate(fechaEntrega,true);
+ if(!entrega) return "";
  const diff = Math.floor((entrega - hoy)/(1000*60*60*24));
  if(diff>1) return `<span class="sem-verde">OK</span>`;
  if(diff===1) return `<span class="sem-amarillo">HOY</span>`;
@@ -394,10 +481,14 @@ async function load(){
 
       _row: r._row || "",
 
-      // Incluir sinónimos de "Fecha de Ingreso" para mayor
-      // robustez: algunas versiones de Apps Script podrían enviar
-      // "FECHA INGRESO", "Fecha Ingreso" o "FECHA DE INGRESO".
-      fechaIngreso: r['Fecha'] || r['Fecha Ingreso'] || r['FECHA INGRESO'] || r['FECHA DE INGRESO'] || r.fechaIngreso || "",
+      fechaIngreso:
+        r.fechaIngreso ||
+        r['Fecha'] ||
+        r['Fecha Ingreso'] ||
+        r['FECHA INGRESO'] ||
+        r['FECHA DE INGRESO'] ||
+        "",
+
       pedido: r['Nº Pedido/OC'] || r.pedido || "",
       tipoDocumento: r['Tipo Documento'] || r.tipoDocumento || "",
       numeroDocumento: r['Nº Documento'] || r.numeroDocumento || "",
@@ -409,11 +500,7 @@ async function load(){
 
       etiquetas: r['Etiquetas'] || r.etiquetas || "",
 
-      /* ✅ TR (CORREGIDO Y ROBUSTO) */
-      TR: 
-        // Soporta múltiples variantes de la columna de traslado:
-        // "TR", "Tr", "tr", "N° TR", "Nº TR", "Traslado",
-        // "SOLICITUD TRASLADO" y demás variantes con tilde.
+      TR:
         r['TR'] ||
         r['Tr'] ||
         r['tr'] ||
@@ -428,23 +515,32 @@ async function load(){
 
       status: r['Status'] || r.status || "PENDIENTE",
 
-      // Incluir sinónimos de "Fecha de Entrega" (por ejemplo
-      // "FECHA ESTIMADA ENTREGA", "Fecha Estimada Entrega") para
-      // compatibilidad con hojas que usan nombres distintos.
-      fechaEntrega: r['FECHA ENTREGA'] || r['Fecha Entrega'] || r['FECHA ESTIMADA ENTREGA'] || r['Fecha Estimada Entrega'] || r.fechaEntrega || "",
+      fechaEntrega:
+        r.fechaEntrega ||
+        r['FECHA ENTREGA'] ||
+        r['Fecha Entrega'] ||
+        r['FECHA ESTIMADA ENTREGA'] ||
+        r['Fecha Estimada Entrega'] ||
+        r['FECHA ESTIMADA DE ENTREGA'] ||
+        r['Fecha Estimada de Entrega'] ||
+        "",
 
       responsable: r['Responsable'] || r.responsable || "",
       observaciones: r['Observaciones'] || r.observaciones || "",
 
       foto: r['FOTO'] || r.foto || "",
       pdf: r['PDF'] || r.pdf || "",
-      pdfTraslado: r['PDF Traslado'] || r.pdfTraslado || "",
+      pdfTraslado: r['PDF TRASLADO'] || r['PDF Traslado'] || r.pdfTraslado || "",
 
       alerta: r['Alerta'] || r.alerta || "",
       diasAtraso: r['Días Atraso'] || r.diasAtraso || "",
 
-      horaEntrega: r['FECHA ENTREGA'] || r.horaEntrega || ""
-
+      horaEntrega:
+        r.horaEntrega ||
+        r.fechaEntrega ||
+        r['FECHA ENTREGA'] ||
+        r['FECHA ESTIMADA ENTREGA'] ||
+        ""
     }));
 
     /* 🔹 ORDENAR DEL MAS NUEVO AL MAS ANTIGUO */
@@ -462,44 +558,65 @@ async function load(){
   setLoading(btnReload,false);
 
 }
-     
+
 /***************************************************
 FILTROS
 ***************************************************/
 function applyFilters(){
 
   const q=(search.value||"").toLowerCase();
- 
+
   FILT=RAW.filter(r=>{
- 
+
    let ok=true;
- 
+
    if(q){
- 
+
     const txt = (
-      (r.cliente || "") +
-      (r.pedido || "") +
-      (r.numeroDocumento || "")
+      (r.fechaIngreso || "") + " " +
+      (r.pedido || "") + " " +
+      (r.tipoDocumento || "") + " " +
+      (r.numeroDocumento || "") + " " +
+      (r.cliente || "") + " " +
+      (r.direccion || "") + " " +
+      (r.comuna || "") + " " +
+      (r.transporte || "") + " " +
+      (r.TR || "") + " " +
+      (r.etiquetas || "") + " " +
+      (r.status || "") + " " +
+      (r.fechaEntrega || "") + " " +
+      (r.alerta || "") + " " +
+      (r.diasAtraso || "") + " " +
+      (r.responsable || "") + " " +
+      (r.observaciones || "")
     ).toLowerCase();
- 
+
     ok = txt.includes(q);
- 
+
    }
- 
+
    if(ok && fStatus.value) ok = r.status === fStatus.value;
- 
-   if(ok && fDesde.value) ok = new Date(r.fechaIngreso) >= new Date(fDesde.value);
- 
-   if(ok && fHasta.value) ok = new Date(r.fechaIngreso) <= new Date(fHasta.value);
- 
+
+   if(ok && fDesde.value){
+    const fechaRegistro = toDateFilterValue(r.fechaIngreso);
+    const fechaDesde = toDateFilterValue(fDesde.value);
+    ok = !!fechaRegistro && !!fechaDesde && fechaRegistro >= fechaDesde;
+   }
+
+   if(ok && fHasta.value){
+    const fechaRegistro = toDateFilterValue(r.fechaIngreso,true);
+    const fechaHasta = toDateFilterValue(fHasta.value,true);
+    ok = !!fechaRegistro && !!fechaHasta && fechaRegistro <= fechaHasta;
+   }
+
    return ok;
- 
+
   });
- 
+
   render();
- 
+
  }
- 
+
  search.oninput=applyFilters;
  fStatus.onchange=applyFilters;
  fDesde.onchange=applyFilters;
@@ -510,28 +627,30 @@ RENDER
 ***************************************************/
 function render(){
 
-  TOTAL_PAGES = Math.ceil(FILT.length / PAGE_SIZE);
- 
+  TOTAL_PAGES = Math.ceil(FILT.length / PAGE_SIZE) || 1;
+  if(PAGE > TOTAL_PAGES) PAGE = TOTAL_PAGES;
+  if(PAGE < 1) PAGE = 1;
+
   const start = (PAGE - 1) * PAGE_SIZE;
   const end = start + PAGE_SIZE;
- 
+
   const data = FILT.slice(start,end);
- 
+
   renderTable(data);
   renderCards(data);
   renderKPIs();
- 
+
   renderPagination();
 
   if(typeof syncProductoPedidosOnRender === "function") syncProductoPedidosOnRender();
- 
+
  }
 
 /***************************************************
 TABLA
 ***************************************************/
 
-  function renderTable(data){
+function renderTable(data){
 
   tbody.innerHTML = "";
 
@@ -540,23 +659,24 @@ TABLA
     return;
   }
 
-    data.forEach((r,i)=>{
+  data.forEach((r,i)=>{
 
-    // Para cada fila, calcular valores robustos de fechas usando
-    // diferentes posibles nombres de columnas.  Esto evita que
-    // la tabla quede vacía si el backend envía "FECHA INGRESO" o
-    // "Fecha Ingreso" en lugar de "fechaIngreso".
-    const fi = r.fechaIngreso || r.Fecha || r["Fecha Ingreso"] || r["FECHA INGRESO"] || r["FECHA DE INGRESO"] || "";
-    // Obtener fecha de entrega soportando distintos encabezados.  En
-    // versiones anteriores había un error tipográfico ("Fecha Estimada Entre")
-    // que impedía mostrar algunas fechas.  Esta línea corrige el fallo
-    // incluyendo correctamente "Fecha Estimada Entrega".
-    const fe = r.fechaEntrega
-      || r["FECHA ENTREGA"]
-      || r["Fecha Entrega"]
-      || r["FECHA ESTIMADA ENTREGA"]
-      || r["Fecha Estimada Entrega"]
-      || "";
+    const fi =
+      r.fechaIngreso ||
+      r.Fecha ||
+      r["Fecha Ingreso"] ||
+      r["FECHA INGRESO"] ||
+      r["FECHA DE INGRESO"] ||
+      "";
+
+    const fe =
+      r.fechaEntrega ||
+      r["FECHA ENTREGA"] ||
+      r["Fecha Entrega"] ||
+      r["FECHA ESTIMADA ENTREGA"] ||
+      r["Fecha Estimada Entrega"] ||
+      r["FECHA ESTIMADA DE ENTREGA"] ||
+      "";
 
     const semaforoHtml = renderSemaforoValue(r);
 
@@ -578,8 +698,8 @@ TABLA
 </td>
 <td>${r.comuna||""}</td>
 <td>${r.transporte||""}</td>
-<td>${r.TR||""}</td>          <!-- NUEVO: TR -->
-<td>${r.etiquetas||""}</td>   <!-- Etiquetas/Unidades -->
+<td>${r.TR||""}</td>
+<td>${r.etiquetas||""}</td>
 <td>${renderEstado(r.status)}</td>
 <td>${formatDate(fe)}</td>
 <td>${renderAlerta(r.alerta)}</td>
@@ -613,7 +733,6 @@ TABLA
   });
 
 }
-
 
 function selectRow(index){
 
@@ -686,11 +805,10 @@ function renderCards(data){
 
    const semaforo = calcularSemaforo(r.fechaEntrega);
 
-   /* FECHA ENTREGA SOLO SI ESTA ENTREGADO */
    let entregaHTML = "";
 
    if(r.status === "ENTREGADO" && r.fechaEntrega){
-     const fecha = new Date(r.fechaEntrega).toLocaleString("es-CL");
+     const fecha = formatDate(r.fechaEntrega);
      entregaHTML = `
      <div style="margin-top:6px">
        <span style="color:#22c55e">✅</span>
@@ -744,7 +862,6 @@ function renderCards(data){
 
     ${entregaHTML}
 
-    <!-- DOCUMENTOS Y FOTO -->
     <div style="
         margin-top:12px;
         display:flex;
@@ -790,7 +907,6 @@ function renderCards(data){
 
     </div>
 
-    <!-- ACCIONES -->
     <div style="
         margin-top:14px;
         display:flex;
@@ -817,7 +933,6 @@ function renderCards(data){
   });
 
 }
-
 
 function renderKPIs(){
 
@@ -871,10 +986,10 @@ function openModal(row){
   EDIT=row;
   isEditing = true;
   SELECTED_ROW_KEY = Number(row);
- 
+
   const data=RAW.find(r=>Number(r._row)===Number(row));
   if(!data) return;
- 
+
   const mtitle=document.getElementById("mtitle");
   if(mtitle) mtitle.textContent = "Editar Pedido";
 
@@ -889,17 +1004,17 @@ function openModal(row){
   mStatus.value=data.status||"PENDIENTE";
   mResponsable.value=data.responsable||"";
   mObs.value=data.observaciones||"";
- 
+
   if(data.fechaEntrega){
-   mHoraEntrega.value=new Date(data.fechaEntrega).toISOString().slice(0,16);
+   mHoraEntrega.value=formatDateTimeLocalValue(data.fechaEntrega);
+  }else{
+   mHoraEntrega.value="";
   }
- 
-  /* ===== FOTO EXISTENTE ===== */
- 
+
   const fotoPreview=document.getElementById("fotoPreview");
- 
+
   if(fotoPreview){
- 
+
    if(data.foto){
     fotoPreview.innerHTML=`
     <div class="preview-box">
@@ -912,15 +1027,13 @@ function openModal(row){
    }else{
     fotoPreview.innerHTML="";
    }
- 
+
   }
- 
-  /* ===== PDF EXISTENTE ===== */
- 
+
   const pdfPreview=document.getElementById("pdfPreview");
- 
+
   if(pdfPreview){
- 
+
    if(data.pdf){
     pdfPreview.innerHTML=`
     <div class="preview-box">
@@ -932,53 +1045,45 @@ function openModal(row){
    }else{
     pdfPreview.innerHTML="";
    }
- 
+
   }
- 
+
   modalForm.style.display="flex";
- 
- }
+
+}
 
 /***************************************************
 NUEVO
 ***************************************************/
 btnNuevo.onclick = () => {
 
-  // 🔴 salir de modo edición
   EDIT = null;
   isEditing = false;
 
-  /* LIMPIAR TODOS LOS CAMPOS */
   modalForm.querySelectorAll("input,select,textarea").forEach(el => {
     el.value = "";
   });
 
-  /* LIMPIAR INPUT FILE */
   if (mFotos) mFotos.value = "";
   if (mPdf) mPdf.value = "";
 
-  /* LIMPIAR VISTAS PREVIAS */
   const fotoPreview = document.getElementById("fotoPreview");
   const pdfPreview = document.getElementById("pdfPreview");
 
   if (fotoPreview) fotoPreview.innerHTML = "";
   if (pdfPreview) pdfPreview.innerHTML = "";
 
-  /* VALOR POR DEFECTO */
   if (mStatus) mStatus.value = "PENDIENTE";
 
   const mtitle = document.getElementById("mtitle");
   if(mtitle) mtitle.textContent = "Nuevo Pedido";
 
-  /* RESET SELECCIÓN TABLA */
   selectedIndex = -1;
   SELECTED_ROW_KEY = null;
   isEditing = true;
 
-  /* ABRIR MODAL */
   modalForm.style.display = "flex";
 
-  /* 🟢 ENFOQUE AUTOMÁTICO */
   setTimeout(()=>{
     if(mPedido) mPedido.focus();
   },100);
@@ -1010,7 +1115,6 @@ btnGuardar.onclick = async () => {
     let foto = "";
     let pdf = "";
 
-    // ================= FOTO =================
     if (mFotos && mFotos.files.length) {
       const file = mFotos.files[0];
 
@@ -1022,7 +1126,6 @@ btnGuardar.onclick = async () => {
       foto = await fileToBase64(file);
     }
 
-    // ================= PDF =================
     if (mPdf && mPdf.files.length) {
       const file = mPdf.files[0];
 
@@ -1034,7 +1137,6 @@ btnGuardar.onclick = async () => {
       pdf = await fileToBase64(file);
     }
 
-    // ================= DATA =================
     const data = {
       action: EDIT ? "update" : "add",
       row: EDIT || "",
@@ -1055,10 +1157,8 @@ btnGuardar.onclick = async () => {
 
     await postPedidoData(data);
 
-    // ✅ ALERTA CORRECTA
     alerta("✅ Guardado correctamente", "ok");
 
-    // 🔥 ESPERAR PARA QUE SE VEA
     setTimeout(async () => {
 
       modalForm.style.display = "none";
@@ -1066,7 +1166,7 @@ btnGuardar.onclick = async () => {
 
       PAGE = 1;
       if(Number(SELECTED_ROW_KEY) === Number(EDIT)) SELECTED_ROW_KEY = null;
-    await load();
+      await load();
 
     }, 500);
 
@@ -1087,14 +1187,12 @@ function alerta(msg, tipo = "ok") {
 
   if (!msg) return;
 
-  // 🔥 crear contenedor si no existe
   let container = document.getElementById("toastContainer");
 
   if (!container) {
     container = document.createElement("div");
     container.id = "toastContainer";
 
-    // estilos FORZADOS desde JS
     Object.assign(container.style, {
       position: "fixed",
       top: "20px",
@@ -1108,12 +1206,10 @@ function alerta(msg, tipo = "ok") {
     document.body.appendChild(container);
   }
 
-  // 🔥 crear alerta
   const div = document.createElement("div");
   div.textContent = msg;
 
-  // colores según tipo
-  let bg = "#16a34a"; // ok
+  let bg = "#16a34a";
   if (tipo === "error") bg = "#dc2626";
   if (tipo === "warn") bg = "#eab308";
   if (tipo === "info") bg = "#2563eb";
@@ -1135,13 +1231,11 @@ function alerta(msg, tipo = "ok") {
 
   container.appendChild(div);
 
-  // animación entrada
   requestAnimationFrame(() => {
     div.style.opacity = "1";
     div.style.transform = "translateY(0)";
   });
 
-  // salida
   setTimeout(() => {
     div.style.opacity = "0";
     div.style.transform = "translateY(-10px)";
@@ -1168,7 +1262,7 @@ async function deleteRow(row){
     const params = new URLSearchParams();
     params.append("data", JSON.stringify({
       action: "delete",
-      row: Number(row) // 🔥 IMPORTANTE
+      row: Number(row)
     }));
 
     const res = await fetch(API,{
@@ -1205,7 +1299,6 @@ async function deleteRow(row){
 btnPDF.onclick = ()=> exportPDF(btnPDF);
 btnExcel.onclick = ()=> exportExcel(btnExcel);
 
-
 /* ======================================================
    EXPORT PDF CON ENCABEZADO
 ====================================================== */
@@ -1223,8 +1316,6 @@ function exportPDF(btn){
       (sum,r)=> sum + Number(r.etiquetas || 0), 0
     );
 
-    /* -------- ENCABEZADO -------- */
-
     doc.setFontSize(18);
     doc.text("REPORTE LOGÍSTICO DE PEDIDOS",14,15);
 
@@ -1235,8 +1326,6 @@ function exportPDF(btn){
     doc.setFontSize(11);
     doc.text(`Total Pedidos: ${totalPedidos}`,250,20);
     doc.text(`Total Unidades: ${totalBultos}`,250,26);
-
-    /* -------- TABLA -------- */
 
     doc.autoTable({
       startY:35,
@@ -1258,7 +1347,7 @@ function exportPDF(btn){
       ]],
 
       body: FILT.map(r=>[
-        r.fechaIngreso || '',
+        formatDate(r.fechaIngreso) || '',
         r.pedido || '',
         r.tipoDocumento || '',
         r.numeroDocumento || '',
@@ -1268,7 +1357,7 @@ function exportPDF(btn){
         r.transporte || '',
         r.etiquetas || 0,
         r.responsable || '',
-        r.fechaEntrega || '',
+        formatDate(r.fechaEntrega) || '',
         r.status || '',
         r.TR || '',
       ]),
@@ -1292,17 +1381,17 @@ function exportPDF(btn){
 
       styles:{
         fontSize:9,
-        textColor: [0,0,0] // texto negro general
+        textColor: [0,0,0]
       },
 
       headStyles:{
-        fillColor: [220,220,220], // gris claro
-        textColor: [0,0,0]        // texto negro
+        fillColor: [220,220,220],
+        textColor: [0,0,0]
       },
 
       footStyles:{
-        fillColor: [220,220,220], // gris claro
-        textColor: [0,0,0]        // texto negro
+        fillColor: [220,220,220],
+        textColor: [0,0,0]
       }
 
     });
@@ -1313,7 +1402,6 @@ function exportPDF(btn){
 
   },300);
 }
-
 
 /* ======================================================
    EXPORT EXCEL CON ENCABEZADO
@@ -1326,7 +1414,6 @@ function exportExcel(btn){
     const totalPedidos = FILT.length;
     const totalBultos = FILT.reduce((sum,r)=> sum + Number(r.etiquetas || 0),0);
 
-    // === ENCABEZADOS EXACTOS ===
     const encabezados = [
       "Fecha",
       "Pedido",
@@ -1342,12 +1429,10 @@ function exportExcel(btn){
       "Estado",
       "Observaciones",
       "Nro de Traslado",
-      
     ];
 
-    // === DATOS ===
     const data = FILT.map(r => [
-      r.fechaIngreso || '',
+      formatDate(r.fechaIngreso) || '',
       r.pedido || '',
       r.tipoDocumento || '',
       r.numeroDocumento || '',
@@ -1357,19 +1442,16 @@ function exportExcel(btn){
       r.transporte || '',
       r.etiquetas || 0,
       r.responsable || '',
-      r.fechaEntrega || '',
+      formatDate(r.fechaEntrega) || '',
       r.status || '',
       r.observaciones || '',
       r.TR || '',
-     
     ]);
 
-    // === HOJA PRINCIPAL ===
     const ws = XLSX.utils.aoa_to_sheet([encabezados, ...data]);
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, "Pedidos");
 
-    // === HOJA RESUMEN ===
     const resumen = [
       ["REPORTE LOGÍSTICO"],
       [""],
@@ -1387,49 +1469,45 @@ function exportExcel(btn){
   },300);
 }
 
-
 function renderPagination(){
 
   const pag = document.getElementById("pagination");
- 
+
   if(!pag) return;
- 
+
   pag.innerHTML=`
- 
+
  <button onclick="prevPage()">◀</button>
- 
+
  <span style="padding:0 10px">
  Página ${PAGE} de ${TOTAL_PAGES}
  </span>
- 
+
  <button onclick="nextPage()">▶</button>
- 
+
  `;
- 
- }
- 
- function nextPage(){
- 
+
+}
+
+function nextPage(){
+
   if(PAGE < TOTAL_PAGES){
    PAGE++;
    render();
   }
- 
- }
- 
- function prevPage(){
- 
+
+}
+
+function prevPage(){
+
   if(PAGE > 1){
    PAGE--;
    render();
   }
- 
- }
 
- 
+}
 
-
- /* ===============================
+/* ===============================
    OCULTAR / MOSTRAR DASHBOARD
 ================================ */
 
@@ -1456,7 +1534,6 @@ function autoRefresh(){
 
     try{
 
-      /* ❌ NO refrescar si estás editando */
       if(isEditing) return;
       if(typeof modalProducto !== "undefined" && modalProducto && modalProducto.style.display === "flex") return;
 
@@ -1471,7 +1548,6 @@ function autoRefresh(){
   },60000);
 
 }
-
 
 /***************************************************
 PRODUCTOS POR PEDIDO
@@ -1593,7 +1669,7 @@ function renderTablaProductos(){
     pTablaProductos.innerHTML = PRODUCTOS_ACTUALES.map((item, index) => `
       <tr>
         <td style="padding:8px;border-bottom:1px solid #e2e8f0;">${item.producto || ""}</td>
-        <td style="padding:8px;border-bottom:1px solid #e2e8f0;">${item.descripcion || ""}</td>
+        <td style="padding:8px;border-bottom:1px solid #e2e8f0;">${item.detalle || item.descripcion || ""}</td>
         <td style="padding:8px;border-bottom:1px solid #e2e8f0;text-align:center;">${item.cantidad || 0}</td>
         <td style="padding:8px;border-bottom:1px solid #e2e8f0;text-align:center;">
           <button type="button" onclick="eliminarProductoActual(${index})">🗑️</button>
@@ -1625,25 +1701,22 @@ async function cargarProductosDePedido(meta){
   if(pCliente) pCliente.value = meta.cliente || "";
   if(pDireccion) pDireccion.value = meta.direccion || "";
   if(pComuna) pComuna.value = meta.comuna || "";
-  // Vaciar productos actuales antes de cargar
   PRODUCTOS_ACTUALES = [];
   renderTablaProductos();
-  // Consultar productos guardados localmente
   const guardadoLocal = PRODUCTOS_DB[String(meta.pedido)] || {};
   if(guardadoLocal && Array.isArray(guardadoLocal.items) && guardadoLocal.items.length){
     PRODUCTOS_ACTUALES = guardadoLocal.items.map(item => ({...item}));
     renderTablaProductos();
   }
-  // Consultar productos desde backend para asegurar consistencia
   try{
     const productosRemotos = await obtenerProductosPedidoBD(meta.pedido);
     if(Array.isArray(productosRemotos) && productosRemotos.length){
       PRODUCTOS_ACTUALES = productosRemotos.map(p => ({
         producto: p.producto || "",
-        descripcion: p.detalle || p.descripcion || "",
+        detalle: p.detalle || p.descripcion || "",
+        descripcion: p.descripcion || p.detalle || "",
         cantidad: Number(p.cantidad || 0)
       }));
-      // Actualizar almacenamiento local con la versión remota
       PRODUCTOS_DB[String(meta.pedido)] = {
         row: meta._row || "",
         pedido: meta.pedido || "",
@@ -1688,6 +1761,7 @@ function agregarProductoActual(){
   PRODUCTOS_ACTUALES.push({
     producto,
     descripcion,
+    detalle: descripcion,
     cantidad
   });
 
@@ -1702,15 +1776,12 @@ function eliminarProductoActual(index){
 }
 window.eliminarProductoActual = eliminarProductoActual;
 
-// Guardar productos asociados a un pedido.
-// Esta función es asíncrona porque realiza llamadas al backend.
 async function guardarProductosPedido(){
   if(!PEDIDO_META_ACTUAL){
     alerta("⚠️ No hay pedido seleccionado", "warn");
     return;
   }
   const pedidoKey = String(PEDIDO_META_ACTUAL.pedido || "");
-  // Guardar localmente para persistencia en el navegador
   PRODUCTOS_DB[pedidoKey] = {
     row: PEDIDO_META_ACTUAL._row || "",
     pedido: PEDIDO_META_ACTUAL.pedido || "",
@@ -1723,7 +1794,6 @@ async function guardarProductosPedido(){
     totalCantidad: totalProductosActuales()
   };
   persistirProductosDB();
-  // Enviar a backend para almacenar en la hoja de productos
   try{
     const payload = {
       action: "guardarProductos",
@@ -1770,7 +1840,8 @@ async function generarPDFProductos(){
       pedido: PEDIDO_META_ACTUAL.pedido || "",
       productos: PRODUCTOS_ACTUALES.map(item => ({
         producto: item.producto || "",
-        descripcion: item.descripcion || "",
+        detalle: item.detalle || item.descripcion || "",
+        descripcion: item.descripcion || item.detalle || "",
         cantidad: Number(item.cantidad || 0)
       })),
       total: totalProductosActuales(),

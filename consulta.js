@@ -16,7 +16,7 @@
   información de pedidos del sistema control.  Este valor puede ser
   reemplazado por el usuario si cambia la URL de su API.
 */
-const API_CLIENTES = "https://script.google.com/macros/s/AKfycbyf979_TUvV-I01GtfU837GWO5OIPJTKRo0t77QcMmZ95m9b4dR9znQIRjw16GW61gMew/exec";
+const API_CLIENTES = "https://script.google.com/macros/s/AKfycbz2bLTTGdOOZ59w21r2zVcobqYnlFF-sVgkCRT_9CHuXu0cdARIUfAve3M7WEN-J72kfA/exec";
 
 /*
   SELECTORES Y ELEMENTOS DOM

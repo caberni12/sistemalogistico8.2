@@ -2,7 +2,7 @@
 //const API="https://script.google.com/macros/s/AKfycbzj3sRVqYDgGVak1PNHrycYQ6FI5Mk5UyADOL0uI4CDAprlT7LDv3ZVWrfMCkwPMCgW/exec";
 
 
-const API="https://script.google.com/macros/s/AKfycbw8AtQM-M5Oa_rYjZWLM1dwxjHncG_yPtjRZveED6HZEd2fvV9j4vTySdLkhZNGMNNN/exec";
+const API="https://script.google.com/macros/s/AKfycbyMhSW9JBm6zb90K1V_qHTuSZ9GqR7XNPAgV3j9upGq66OMQNK9RtEii2gT5QXlTpFD/exec";
 //https://script.google.com/macros/s/AKfycbzj3sRVqYDgGVak1PNHrycYQ6FI5Mk5UyADOL0uI4CDAprlT7LDv3ZVWrfMCkwPMCgW/exec
 
 let RAW=[];
@@ -70,12 +70,83 @@ btn.classList.toggle("loading",state);
 
 /* FECHA */
 
+
 function parseFechaSoloDia(str){
 if(!str) return null;
-const p=str.split("-");
-if(p.length!==3) return null;
-return new Date(p[0],p[1]-1,p[2]);
+const parsed = new Date(str);
+if(isNaN(parsed.getTime())) return null;
+return new Date(parsed.getFullYear(), parsed.getMonth(), parsed.getDate());
 }
+
+function normalizeSearchText(value){
+return String(value || "")
+.toLowerCase()
+.normalize("NFD")
+.replace(/[\u0300-\u036f]/g,"")
+.trim();
+}
+
+function buildPedidoSearchBlob(item){
+return normalizeSearchText([
+item?.fechaIngreso,
+item?.pedido,
+item?.tipoDocumento,
+item?.numeroDocumento,
+item?.cliente,
+item?.direccion,
+item?.comuna,
+item?.transporte,
+item?.etiquetas,
+item?.responsable,
+item?.status,
+item?.fechaEntrega,
+item?.alerta,
+item?.statusEntrega,
+item?.diasAtraso,
+item?.semaforo,
+item?.observaciones,
+item?.TR,
+item?.solicitudTraslado
+].join(" | "));
+}
+
+function debounce(fn, wait = 220){
+let timer = null;
+return (...args)=>{
+clearTimeout(timer);
+timer = setTimeout(()=>fn(...args), wait);
+};
+}
+
+function mapPedidoRow(row){
+return {
+_row: row?._row || "",
+fechaIngreso: row?.fechaIngreso || row?.Fecha || row?.["FECHA INGRESO"] || row?.["Fecha Ingreso"] || "",
+pedido: row?.pedido || row?.["PEDIDO"] || "",
+tipoDocumento: row?.tipoDocumento || row?.["TIPO DOCUMENTO"] || row?.["Tipo Documento"] || "",
+numeroDocumento: row?.numeroDocumento || row?.["NUMERO DOCUMENTO"] || row?.["Nº Documento"] || row?.["N° Documento"] || "",
+cliente: row?.cliente || row?.["CLIENTE"] || row?.["Cliente"] || "",
+direccion: row?.direccion || row?.["DIRECCION"] || row?.["Dirección"] || "",
+comuna: row?.comuna || row?.["COMUNA"] || row?.["Comuna"] || "",
+transporte: row?.transporte || row?.["TRANSPORTE"] || row?.["Transporte"] || "",
+etiquetas: row?.etiquetas || row?.["ETIQUETAS"] || row?.["Etiquetas"] || 0,
+observaciones: row?.observaciones || row?.["OBSERVACIONES"] || row?.["Observaciones"] || "",
+status: String(row?.status || row?.["STATUS"] || row?.["Status"] || "PENDIENTE").trim().toUpperCase(),
+fechaEntrega: row?.fechaEntrega || row?.["FECHA ENTREGA"] || row?.["FECHA ESTIMADA ENTREGA"] || row?.["Fecha Entrega"] || "",
+alerta: row?.alerta || row?.["ALERTA"] || row?.["Alerta"] || "",
+statusEntrega: row?.statusEntrega || row?.["STATUS ENTREGA"] || "",
+diasAtraso: row?.diasAtraso || row?.["DIAS ATRASO"] || "",
+semaforo: row?.semaforo || row?.["SEMAFORO"] || "",
+responsable: row?.responsable || row?.["RESPONSABLE"] || row?.["Responsable"] || "",
+foto: row?.foto || row?.["FOTO"] || "",
+pdf: row?.pdf || row?.["PDF"] || "",
+pdfTraslado: row?.pdfTraslado || row?.["PDF TRASLADO"] || "",
+TR: row?.TR || row?.solicitudTraslado || row?.["TR"] || row?.["SOLICITUD TRASLADO"] || "",
+solicitudTraslado: row?.solicitudTraslado || row?.TR || row?.["TR"] || row?.["SOLICITUD TRASLADO"] || "",
+_fechaObj: parseFechaSoloDia(row?.fechaIngreso || row?.Fecha || row?.["FECHA INGRESO"] || row?.["Fecha Ingreso"] || "")
+};
+}
+
 
 /* ALERTAS */
 
@@ -153,6 +224,7 @@ async function obtenerProductosPedidoBD(pedido) {
 /* LOAD */
 
 
+async 
 async function load(){
 
   try{
@@ -161,47 +233,11 @@ async function load(){
 
     const r = await fetch(API);
     const data = await r.json();
+    const rows = Array.isArray(data) ? data : [];
 
-    RAW = data.map(row=>{
+    RAW = rows.map(row => calcularAlertas(mapPedidoRow(row)));
 
-      let obj={
-
-        _row:row._row,
-        fechaIngreso:row.fechaIngreso,
-        pedido:row.pedido,
-        tipoDocumento:row.tipoDocumento,
-        numeroDocumento:row.numeroDocumento,
-        cliente:row.cliente,
-        direccion:row.direccion,
-        comuna:row.comuna,
-        transporte:row.transporte,
-        etiquetas:row.etiquetas,
-        observaciones:row.observaciones,
-        status:String(row.status||"").trim().toUpperCase(),
-        fechaEntrega:row.fechaEntrega,
-        alerta:row.alerta,
-        statusEntrega:row.statusEntrega,
-        diasAtraso:row.diasAtraso,
-        semaforo:row.semaforo,
-        responsable:row.responsable,
-        foto:row.foto,
-        pdf:row.pdf,
-        pdfTraslado:row.pdfTraslado,
-
-        /* 🔥 CLAVE */
-        TR: row.TR || "",
-        solicitudTraslado: row.solicitudTraslado || "",
-
-        _fechaObj:parseFechaSoloDia(row.fechaIngreso)
-
-      };
-
-      return calcularAlertas(obj);
-
-    });
-
-    /* ORDENAR */
-    RAW.sort((a,b)=> b._row - a._row);
+    RAW.sort((a,b)=> Number(b._row) - Number(a._row));
 
     applyFilter();
 
@@ -214,60 +250,54 @@ async function load(){
   setLoading(btnReload,false);
 
 }
+
 /* FILTROS */
+
 
 function applyFilter(){
 
-    const texto = fBuscar.value.toLowerCase().trim();
+    const texto = normalizeSearchText(fBuscar.value || "");
     const status = fStatus.value;
-    
-    const d1 = fDesde.value ? new Date(fDesde.value) : null;
-    const d2 = fHasta.value ? new Date(fHasta.value) : null;
-    
+    const d1 = fDesde.value ? parseFechaSoloDia(fDesde.value) : null;
+    const d2 = fHasta.value ? parseFechaSoloDia(fHasta.value) : null;
+
     FILT = RAW.filter(r=>{
-    
-    const combo=(r.pedido+" "+r.cliente+" "+r.comuna+" "+r.responsable).toLowerCase();
-    
-    if(texto && !combo.includes(texto)) return false;
-    
-    /* FILTRO ATRASO */
-    
+
+    if(texto && !buildPedidoSearchBlob(r).includes(texto)) return false;
+
     if(status==="ATRASO" && r.semaforo!=="ROJO") return false;
-    
-    /* FILTRO NORMAL STATUS */
-    
+
     if(status && status!=="ATRASO" && r.status!==status) return false;
-    
+
     if(d1 || d2){
-    
+
     const fr=r._fechaObj;
-    
+
     if(!fr) return false;
-    
+
     if(d1 && fr < d1) return false;
-    
+
     if(d2 && fr > d2) return false;
-    
+
     }
-    
+
     return true;
-    
+
     });
-    
-    /* ORDENAR DEL MAS NUEVO AL MAS ANTIGUO */
-    
-    FILT.sort((a,b)=> b._row - a._row);
-    
+
+    FILT.sort((a,b)=> Number(b._row) - Number(a._row));
+
     totalPedidos.textContent = FILT.length;
-    
+
     totalCajas.textContent = FILT.reduce((s,r)=>s+Number(r.etiquetas||0),0);
-    
+
     visibleCount = 0;
     cardsGrid.innerHTML = "";
-    
+
     renderMore();
-    
-    }
+
+}
+
 
 /* STATUS COLOR */
 
@@ -754,6 +784,7 @@ async function guardarTraslado(){
                 productos.push({
                     producto: prod,
                     detalle: det,
+                    descripcion: det,
                     cantidad: cant
                 });
             }
@@ -874,7 +905,8 @@ editModal.style.display="none";
 btnReload.onclick=load;
 btnGuardar.onclick=guardar;
 
-fBuscar.oninput=applyFilter;
+const debouncedApplyFilter = debounce(applyFilter, 220);
+fBuscar.oninput=debouncedApplyFilter;
 fStatus.onchange=applyFilter;
 fDesde.onchange=applyFilter;
 fHasta.onchange=applyFilter;
