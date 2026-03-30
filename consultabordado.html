@@ -31,23 +31,24 @@ table{width:100%;border-collapse:collapse;}
 th,td{padding:10px;border-bottom:1px solid #eee;font-size:12px;}
 th{background:#f8fafc;}
 
-.status{padding:4px 8px;border-radius:999px;font-size:11px;color:#fff;}
+.status{padding:4px 8px;border-radius:999px;font-size:11px;color:#fff;font-weight:bold;display:inline-block;}
 .entregado{background:#22c55e;}
 .enruta{background:#3b82f6;}
 .pendiente{background:#facc15;color:#000;}
 .recibido{background:#14b8a6;}
 .cancelado{background:#ef4444;}
+.terminado{background:#8b5cf6;}
 
-.btn-ver{background:linear-gradient(135deg,#14b8a6,#0d9488);color:#fff;border:none;padding:6px 12px;border-radius:10px;}
-.btn-pdf{background:#ef4444;color:#fff;border:none;padding:6px;border-radius:8px;}
+.btn-ver{background:linear-gradient(135deg,#14b8a6,#0d9488);color:#fff;border:none;padding:6px 12px;border-radius:10px;cursor:pointer;}
+.btn-pdf{background:#ef4444;color:#fff;border:none;padding:6px;border-radius:8px;cursor:pointer;}
 
 .img-preview{width:40px;height:40px;border-radius:8px;object-fit:cover;cursor:pointer}
 
 /* MODAL */
-.modal{position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.6);display:none;justify-content:center;align-items:center;}
+.modal{position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.6);display:none;justify-content:center;align-items:center;z-index:9999;}
 .modal-content{background:#fff;padding:25px;border-radius:18px;width:95%;max-width:700px;max-height:85vh;overflow-y:auto;}
 
-.modal-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;}
+.modal-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;gap:10px;}
 .btn-close{background:#ef4444;color:#fff;border:none;padding:6px 10px;border-radius:8px;cursor:pointer;}
 .modal-actions{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:15px;}
 
@@ -60,40 +61,36 @@ th{background:#f8fafc;}
 .info{background:#3b82f6;}
 .warn{background:#facc15;color:#000;}
 .danger{background:#ef4444;}
-.timeline-content{background:#f8fafc;padding:14px;border-radius:12px;font-size:13px;flex:1;}
+.purple{background:#8b5cf6;}
+.timeline-content{background:#f8fafc;padding:14px;border-radius:12px;font-size:13px;flex:1;word-break:break-word;}
 .timeline-content b{display:block;margin-bottom:6px;}
 
 /* CARDS */
 .cards-container{display:none;flex-direction:column;gap:12px;margin-top:20px;}
 .card{background:#fff;border-radius:16px;padding:14px;box-shadow:0 8px 20px rgba(0,0,0,.05);}
-.card-header{display:flex;justify-content:space-between;font-weight:bold;}
-.card-row{display:flex;justify-content:space-between;font-size:13px;margin:4px 0;border-bottom:1px solid #f1f5f9;padding-bottom:4px;}
+.card-header{display:flex;justify-content:space-between;font-weight:bold;gap:10px;align-items:center;}
+.card-row{display:flex;justify-content:space-between;font-size:13px;margin:4px 0;border-bottom:1px solid #f1f5f9;padding-bottom:4px;gap:10px;}
+.card-row span:last-child{text-align:right;word-break:break-word;}
 .card-actions{margin-top:10px;}
 
 @media(max-width:768px){
-.table-wrap{display:none;}
-.cards-container{display:flex;}
+  .table-wrap{display:none;}
+  .cards-container{display:flex;}
 }
 
 .wrap{
-width:100%;
-max-width:1600px; /* más amplio para pantallas grandes */
-margin:auto;
-padding:20px;
+  width:100%;
+  max-width:1600px;
+  margin:auto;
+  padding:20px;
 }
 
-/* Pantallas muy grandes */
 @media(min-width:1600px){
-.wrap{
-max-width:1800px;
-}
+  .wrap{max-width:1800px;}
 }
 
-/* Pantallas ultra grandes */
 @media(min-width:2000px){
-.wrap{
-max-width:95%;
-}
+  .wrap{max-width:95%;}
 }
 </style>
 </head>
@@ -102,251 +99,437 @@ max-width:95%;
 
 <div class="wrap">
 
-<div class="toolbar">
-<input id="buscador" placeholder="Buscar...">
-<select id="fEstado">
-<option value="">Estado</option>
-<option>EN RUTA</option>
-<option>PENDIENTE</option>
-<option>RECIBIDO</option>
-<option>CANCELADO</option>
-<option>ENTREGADO</option>
-</select>
-<label>Desde <input type="date" id="fechaDesde"></label>
-<label>Hasta <input type="date" id="fechaHasta"></label>
-<button class="btn" onclick="toggleKPI()">Kpi </button>
-</div>
+  <div class="toolbar">
+    <input id="buscador" placeholder="Buscar...">
+    <select id="fEstado">
+      <option value="">Estado</option>
+      <option>EN RUTA</option>
+      <option>PENDIENTE</option>
+      <option>RECIBIDO</option>
+      <option>CANCELADO</option>
+      <option>ENTREGADO</option>
+      <option>TERMINADO</option>
+    </select>
+    <label>Desde <input type="date" id="fechaDesde"></label>
+    <label>Hasta <input type="date" id="fechaHasta"></label>
+    <button class="btn" onclick="toggleKPI()">Kpi</button>
+  </div>
 
-<!-- KPI -->
-<div id="kpiWrapper" class="kpi-grid">
-<div class="kpi-card"><div class="kpi-title"><i class="fa fa-crown"></i> Top Clientes</div><div id="topClientes" class="kpi-list"></div></div>
-<div class="kpi-card"><div class="kpi-title"><i class="fa fa-repeat"></i> Frecuencia</div><div id="frecuenciaClientes" class="kpi-list"></div></div>
-<div class="kpi-card"><div class="kpi-title"><i class="fa fa-clock"></i> Antigüedad</div><div id="antiguedadClientes" class="kpi-list"></div></div>
-<div class="kpi-card"><div class="kpi-title"><i class="fa fa-chart-pie"></i> Estados</div><canvas id="chart"></canvas></div>
-</div>
+  <!-- KPI -->
+  <div id="kpiWrapper" class="kpi-grid">
+    <div class="kpi-card">
+      <div class="kpi-title"><i class="fa fa-crown"></i> Top Clientes</div>
+      <div id="topClientes" class="kpi-list"></div>
+    </div>
 
-<!-- TABLA -->
-<div class="table-wrap">
-<table>
-<thead>
-<tr>
-<th>Pedido</th>
-<th>Cliente</th>
-<th>Tipo Doc</th>
-<th>N° Doc</th>
-<th>Status</th>
-<th>Unidades</th>
-<th>Orden de Trabajo</th>
-<th>Documento de Traslado</th>
-<th>Nro de TR</th>
-<th>Foto Opcional</th>
-<th>Leyenda</th>
-</tr>
-</thead>
-<tbody id="tb"></tbody>
-</table>
-</div>
+    <div class="kpi-card">
+      <div class="kpi-title"><i class="fa fa-repeat"></i> Frecuencia</div>
+      <div id="frecuenciaClientes" class="kpi-list"></div>
+    </div>
 
-<!-- CARDS -->
-<div id="cardsContainer" class="cards-container"></div>
+    <div class="kpi-card">
+      <div class="kpi-title"><i class="fa fa-clock"></i> Antigüedad</div>
+      <div id="antiguedadClientes" class="kpi-list"></div>
+    </div>
+
+    <div class="kpi-card">
+      <div class="kpi-title"><i class="fa fa-chart-pie"></i> Estados</div>
+      <canvas id="chart"></canvas>
+    </div>
+  </div>
+
+  <!-- TABLA -->
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Pedido</th>
+          <th>Cliente</th>
+          <th>Tipo Doc</th>
+          <th>N° Doc</th>
+          <th>Status</th>
+          <th>Unidades</th>
+          <th>Orden de Trabajo</th>
+          <th>Documento de Traslado</th>
+          <th>Nro de TR</th>
+          <th>Foto Opcional</th>
+          <th>Leyenda</th>
+        </tr>
+      </thead>
+      <tbody id="tb"></tbody>
+    </table>
+  </div>
+
+  <!-- CARDS -->
+  <div id="cardsContainer" class="cards-container"></div>
 
 </div>
 
 <!-- MODAL -->
 <div class="modal" id="modal">
-<div class="modal-content" id="modalContent"></div>
+  <div class="modal-content" id="modalContent"></div>
 </div>
 
 <script>
-const API="https://script.google.com/macros/s/AKfycbyMhSW9JBm6zb90K1V_qHTuSZ9GqR7XNPAgV3j9upGq66OMQNK9RtEii2gT5QXlTpFD/exec";
+const API = "https://script.google.com/macros/s/AKfycbyMhSW9JBm6zb90K1V_qHTuSZ9GqR7XNPAgV3j9upGq66OMQNK9RtEii2gT5QXlTpFD/exec";
 
-let DATA=[],chart;
+const ESTADOS_BASE = ["EN RUTA","PENDIENTE","RECIBIDO","CANCELADO","ENTREGADO","TERMINADO"];
 
+let DATA = [];
+let LAST_RENDER = [];
+let chart = null;
+
+/* DOM */
+const tb = document.getElementById("tb");
+const modal = document.getElementById("modal");
+const modalContent = document.getElementById("modalContent");
+const buscador = document.getElementById("buscador");
+const fEstado = document.getElementById("fEstado");
+const fechaDesde = document.getElementById("fechaDesde");
+const fechaHasta = document.getElementById("fechaHasta");
+const cardsContainer = document.getElementById("cardsContainer");
+const kpiWrapper = document.getElementById("kpiWrapper");
+const topClientes = document.getElementById("topClientes");
+const frecuenciaClientes = document.getElementById("frecuenciaClientes");
+const antiguedadClientes = document.getElementById("antiguedadClientes");
+
+/* HELPERS */
+function esc(v){
+  return String(v ?? "")
+    .replace(/&/g,"&amp;")
+    .replace(/</g,"&lt;")
+    .replace(/>/g,"&gt;")
+    .replace(/"/g,"&quot;")
+    .replace(/'/g,"&#39;");
+}
+
+function normalizarTexto(v){
+  return String(v || "").trim().toUpperCase();
+}
+
+function cls(s){
+  s = String(s || "").toLowerCase();
+
+  if(s.includes("terminado")) return "terminado";
+  if(s.includes("entregado")) return "entregado";
+  if(s.includes("ruta")) return "enruta";
+  if(s.includes("pendiente")) return "pendiente";
+  if(s.includes("recibido")) return "recibido";
+  if(s.includes("cancelado")) return "cancelado";
+
+  return "pendiente";
+}
+
+function openUrl(url){
+  if(url) window.open(url, "_blank");
+}
+
+function parseFecha(fechaStr){
+  if(!fechaStr) return null;
+
+  const raw = String(fechaStr).trim();
+
+  if(/^\d{4}-\d{2}-\d{2}/.test(raw)){
+    const d = new Date(raw + "T00:00:00");
+    return isNaN(d) ? null : d;
+  }
+
+  if(/^\d{2}\/\d{2}\/\d{4}$/.test(raw)){
+    const [dd, mm, yyyy] = raw.split("/");
+    const d = new Date(`${yyyy}-${mm}-${dd}T00:00:00`);
+    return isNaN(d) ? null : d;
+  }
+
+  const d = new Date(raw);
+  return isNaN(d) ? null : d;
+}
+
+function formatoFechaInput(date){
+  if(!date) return "";
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, "0");
+  const d = String(date.getDate()).padStart(2, "0");
+  return `${y}-${m}-${d}`;
+}
+
+function diasDesde(fechaStr){
+  const f = parseFecha(fechaStr);
+  if(!f) return null;
+
+  const hoy = new Date();
+  hoy.setHours(0,0,0,0);
+  f.setHours(0,0,0,0);
+
+  const ms = hoy - f;
+  return Math.floor(ms / 86400000);
+}
+
+function item(color, titulo, valor, icon){
+  return `
+    <div class="timeline-item">
+      <div class="timeline-icon ${color}"><i class="fa ${icon}"></i></div>
+      <div class="timeline-content"><b>${esc(titulo)}</b>${esc(valor || "—")}</div>
+    </div>
+  `;
+}
+
+function colorEstadoTimeline(status){
+  const s = normalizarTexto(status);
+  if(s === "TERMINADO") return "purple";
+  if(s === "ENTREGADO") return "ok";
+  if(s === "EN RUTA") return "info";
+  if(s === "PENDIENTE") return "warn";
+  if(s === "RECIBIDO") return "info";
+  if(s === "CANCELADO") return "danger";
+  return "warn";
+}
+
+/* DATA */
 function fetchData(){
-fetch(API)
-.then(r=>r.json())
-.then(json=>{
-DATA=json.map(x=>({
-pedido:x.pedido||"",
-cliente:x.cliente||"",
-tipoDocumento:x.tipoDocumento||"",
-numeroDocumento:x.numeroDocumento||"",
-status:x.status||"",
-etiquetas:x.etiquetas||"",
-pdf:x.pdf||"",
-pdfTraslado:x.pdfTraslado||"",
-TR: x.TR || x.tr || x["Nro TR"] || x["Nro.TR"] || x["nro_tr"] || x.solicitudTraslado || "",
-imagen:x.foto||"",
-fechaIngreso:x.fechaIngreso||"",
-fechaModificacion:x.fechaModificacion||"",
-fechaEntrega:x.fechaEntrega||"",
-observaciones:x.observaciones||""
-})).reverse();
-render();
-})
-.catch(()=>alert("Error al cargar datos"));
+  fetch(API)
+    .then(r => r.json())
+    .then(json => {
+      DATA = (Array.isArray(json) ? json : []).map(x => ({
+        pedido: x.pedido || "",
+        cliente: x.cliente || "",
+        tipoDocumento: x.tipoDocumento || "",
+        numeroDocumento: x.numeroDocumento || "",
+        status: normalizarTexto(x.status || ""),
+        etiquetas: x.etiquetas || "",
+        pdf: x.pdf || "",
+        pdfTraslado: x.pdfTraslado || "",
+        TR: x.TR || x.tr || x["Nro TR"] || x["Nro.TR"] || x["nro_tr"] || x.solicitudTraslado || "",
+        imagen: x.foto || x.imagen || "",
+        fechaIngreso: x.fechaIngreso || "",
+        fechaModificacion: x.fechaModificacion || "",
+        fechaEntrega: x.fechaEntrega || "",
+        observaciones: x.observaciones || ""
+      })).reverse();
+
+      render();
+    })
+    .catch(err => {
+      console.error(err);
+      alert("Error al cargar datos");
+    });
 }
 
 function filtrar(){
-let txt=buscador.value.toLowerCase();
-let est=fEstado.value.toLowerCase();
-let desde=fechaDesde.value;
-let hasta=fechaHasta.value;
+  const txt = buscador.value.toLowerCase().trim();
+  const est = fEstado.value.toLowerCase().trim();
+  const desde = fechaDesde.value;
+  const hasta = fechaHasta.value;
 
-return DATA.filter(x=>{
-let str=JSON.stringify(x).toLowerCase();
-let okTexto=str.includes(txt) && (!est || x.status.toLowerCase().includes(est));
+  return DATA.filter(x => {
+    const str = JSON.stringify(x).toLowerCase();
+    const okTexto = str.includes(txt) && (!est || x.status.toLowerCase() === est);
 
-let okFecha=true;
-if(desde) okFecha = x.fechaIngreso >= desde;
-if(desde && hasta) okFecha = x.fechaIngreso >= desde && x.fechaIngreso <= hasta;
+    const fecha = parseFecha(x.fechaIngreso);
+    let okFecha = true;
 
-return okTexto && okFecha;
-});
+    if(desde){
+      const fDesde = new Date(desde + "T00:00:00");
+      okFecha = fecha ? fecha >= fDesde : false;
+    }
+
+    if(hasta){
+      const fHasta = new Date(hasta + "T23:59:59");
+      okFecha = okFecha && (fecha ? fecha <= fHasta : false);
+    }
+
+    return okTexto && okFecha;
+  });
 }
 
+/* RENDER */
 function render(){
-let d=filtrar();
+  const d = filtrar();
+  LAST_RENDER = d;
 
-tb.innerHTML=d.map(r=>`
-<tr>
-<td>${r.pedido}</td>
-<td>${r.cliente}</td>
-<td>${r.tipoDocumento}</td>
-<td>${r.numeroDocumento}</td>
-<td><span class="status ${cls(r.status)}">${r.status}</span></td>
-<td>${r.etiquetas||"—"}</td>
-<td>${r.pdf?`<button class="btn-pdf" onclick="window.open('${r.pdf}')"><i class="fa fa-file-pdf"></i></button>`:"—"}</td>
-<td>${r.pdfTraslado?`<button class="btn-pdf" onclick="window.open('${r.pdfTraslado}')"><i class="fa fa-file-pdf"></i></button>`:"—"}</td>
-<td>${r.TR||"—"}</td>
-<td>${r.imagen?`<img src="${r.imagen}" class="img-preview" onclick="expandImg('${r.imagen}')">`:"—"}</td>
-<td><button class="btn-ver" onclick='ver(${JSON.stringify(r)})'><i class="fa fa-eye"></i></button></td>
-</tr>
-`).join("");
+  tb.innerHTML = d.map((r, i) => `
+    <tr>
+      <td>${esc(r.pedido)}</td>
+      <td>${esc(r.cliente)}</td>
+      <td>${esc(r.tipoDocumento)}</td>
+      <td>${esc(r.numeroDocumento)}</td>
+      <td><span class="status ${cls(r.status)}">${esc(r.status || "—")}</span></td>
+      <td>${esc(r.etiquetas || "—")}</td>
+      <td>${r.pdf ? `<button class="btn-pdf" onclick='openUrl(${JSON.stringify(r.pdf)})'><i class="fa fa-file-pdf"></i></button>` : "—"}</td>
+      <td>${r.pdfTraslado ? `<button class="btn-pdf" onclick='openUrl(${JSON.stringify(r.pdfTraslado)})'><i class="fa fa-file-pdf"></i></button>` : "—"}</td>
+      <td>${esc(r.TR || "—")}</td>
+      <td>${r.imagen ? `<img src="${esc(r.imagen)}" class="img-preview" onclick='expandImg(${JSON.stringify(r.imagen)})'>` : "—"}</td>
+      <td><button class="btn-ver" onclick="verIndex(${i})"><i class="fa fa-eye"></i></button></td>
+    </tr>
+  `).join("");
 
-cardsContainer.innerHTML=d.map(r=>`
-<div class="card">
-<div class="card-header">
-<span>#${r.pedido}</span>
-<span class="status ${cls(r.status)}">${r.status}</span>
-</div>
+  cardsContainer.innerHTML = d.map((r, i) => `
+    <div class="card">
+      <div class="card-header">
+        <span>#${esc(r.pedido)}</span>
+        <span class="status ${cls(r.status)}">${esc(r.status || "—")}</span>
+      </div>
 
-<div class="card-row"><b>Cliente:</b><span>${r.cliente}</span></div>
-<div class="card-row"><b>Documento:</b><span>${r.tipoDocumento} ${r.numeroDocumento}</span></div>
-<div class="card-row"><b>Etiquetas:</b><span>${r.etiquetas||"—"}</span></div>
-<div class="card-row"><b>TR:</b><span>${r.TR||"—"}</span></div>
+      <div class="card-row"><b>Cliente:</b><span>${esc(r.cliente)}</span></div>
+      <div class="card-row"><b>Documento:</b><span>${esc(r.tipoDocumento)} ${esc(r.numeroDocumento)}</span></div>
+      <div class="card-row"><b>Etiquetas:</b><span>${esc(r.etiquetas || "—")}</span></div>
+      <div class="card-row"><b>TR:</b><span>${esc(r.TR || "—")}</span></div>
 
-<div class="card-row"><b>PDF:</b>
-${r.pdf?`<button class="btn-pdf" onclick="window.open('${r.pdf}')"><i class="fa fa-file-pdf"></i></button>`:"—"}
-</div>
+      <div class="card-row">
+        <b>PDF:</b>
+        <span>${r.pdf ? `<button class="btn-pdf" onclick='openUrl(${JSON.stringify(r.pdf)})'><i class="fa fa-file-pdf"></i></button>` : "—"}</span>
+      </div>
 
-<div class="card-row"><b>PDF TR:</b>
-${r.pdfTraslado?`<button class="btn-pdf" onclick="window.open('${r.pdfTraslado}')"><i class="fa fa-file-pdf"></i></button>`:"—"}
-</div>
+      <div class="card-row">
+        <b>PDF TR:</b>
+        <span>${r.pdfTraslado ? `<button class="btn-pdf" onclick='openUrl(${JSON.stringify(r.pdfTraslado)})'><i class="fa fa-file-pdf"></i></button>` : "—"}</span>
+      </div>
 
-<div class="card-row"><b>Foto:</b>
-${r.imagen?`<img src="${r.imagen}" class="img-preview" onclick="expandImg('${r.imagen}')">`:"—"}
-</div>
+      <div class="card-row">
+        <b>Foto:</b>
+        <span>${r.imagen ? `<img src="${esc(r.imagen)}" class="img-preview" onclick='expandImg(${JSON.stringify(r.imagen)})'>` : "—"}</span>
+      </div>
 
-<div class="card-actions">
-<button class="btn-ver" style="width:100%" onclick='ver(${JSON.stringify(r)})'>Ver Detalle</button>
-</div>
-</div>
-`).join("");
+      <div class="card-actions">
+        <button class="btn-ver" style="width:100%" onclick="verIndex(${i})">Ver Detalle</button>
+      </div>
+    </div>
+  `).join("");
 
-kpi(d);
-grafico(d);
+  kpi(d);
+  grafico(d);
 }
 
+function verIndex(i){
+  const r = LAST_RENDER[i];
+  if(r) ver(r);
+}
+
+/* KPI */
 function kpi(d){
-let map={};
-d.forEach(x=>{
-let c=x.cliente||"Cliente";
-map[c]=(map[c]||0)+1;
-});
-let arr=Object.entries(map).sort((a,b)=>b[1]-a[1]);
+  const mapClientes = {};
+  const mapAntiguedad = {};
 
-topClientes.innerHTML=arr.slice(0,5).map(x=>`<div class="kpi-item">${x[0]} <span>${x[1]}</span></div>`).join("");
-frecuenciaClientes.innerHTML=arr.slice(0,5).map(x=>`<div class="kpi-item">Pedidos <span>${x[1]}</span></div>`).join("");
-antiguedadClientes.innerHTML=arr.slice(0,5).map(x=>`<div class="kpi-item">${x[0]} <span>${Math.floor(Math.random()*10)+1} días</span></div>`).join("");
+  d.forEach(x => {
+    const c = x.cliente || "Cliente";
+    mapClientes[c] = (mapClientes[c] || 0) + 1;
+
+    const dias = diasDesde(x.fechaIngreso);
+    if(dias !== null){
+      if(mapAntiguedad[c] == null || dias > mapAntiguedad[c]){
+        mapAntiguedad[c] = dias;
+      }
+    }
+  });
+
+  const arrClientes = Object.entries(mapClientes).sort((a,b) => b[1] - a[1]);
+  const arrAntiguedad = Object.entries(mapAntiguedad).sort((a,b) => b[1] - a[1]);
+
+  topClientes.innerHTML = arrClientes.length
+    ? arrClientes.slice(0,5).map(x => `<div class="kpi-item">${esc(x[0])} <span>${x[1]}</span></div>`).join("")
+    : `<div class="kpi-item">Sin datos <span>0</span></div>`;
+
+  frecuenciaClientes.innerHTML = arrClientes.length
+    ? arrClientes.slice(0,5).map(x => `<div class="kpi-item">${esc(x[0])} <span>${x[1]} pedidos</span></div>`).join("")
+    : `<div class="kpi-item">Sin datos <span>0</span></div>`;
+
+  antiguedadClientes.innerHTML = arrAntiguedad.length
+    ? arrAntiguedad.slice(0,5).map(x => `<div class="kpi-item">${esc(x[0])} <span>${x[1]} días</span></div>`).join("")
+    : `<div class="kpi-item">Sin datos <span>0</span></div>`;
 }
 
+/* CHART */
 function grafico(d){
-let c={ENTREGADO:0,"EN RUTA":0,PENDIENTE:0};
-d.forEach(x=>{let s=(x.status||"").toUpperCase();if(c[s]!=undefined)c[s]++;});
-if(chart)chart.destroy();
-chart=new Chart(document.getElementById("chart"),{
-type:"doughnut",
-data:{labels:Object.keys(c),datasets:[{data:Object.values(c)}]}
-});
+  const conteo = {
+    "EN RUTA": 0,
+    "PENDIENTE": 0,
+    "RECIBIDO": 0,
+    "CANCELADO": 0,
+    "ENTREGADO": 0,
+    "TERMINADO": 0
+  };
+
+  d.forEach(x => {
+    const s = normalizarTexto(x.status);
+    if(conteo[s] !== undefined) conteo[s]++;
+  });
+
+  if(chart) chart.destroy();
+
+  chart = new Chart(document.getElementById("chart"), {
+    type: "doughnut",
+    data: {
+      labels: Object.keys(conteo),
+      datasets: [{
+        data: Object.values(conteo)
+      }]
+    },
+    options: {
+      responsive: true,
+      plugins: {
+        legend: {
+          position: "bottom"
+        }
+      }
+    }
+  });
 }
 
+/* MODAL */
 function ver(r){
-modal.style.display="flex";
-modalContent.innerHTML=`
-<div class="modal-header">
-<h3>Pedido ${r.pedido}</h3>
-<button class="btn-close" onclick="cerrarModal()">Cerrar</button>
-</div>
+  modal.style.display = "flex";
+  modalContent.innerHTML = `
+    <div class="modal-header">
+      <h3>Pedido ${esc(r.pedido)}</h3>
+      <button class="btn-close" onclick="cerrarModal()">Cerrar</button>
+    </div>
 
-<div class="modal-actions">
-${r.pdf?`<button class="btn-pdf" onclick="window.open('${r.pdf}')">PDF Pedido</button>`:""}
-${r.pdfTraslado?`<button class="btn-pdf" onclick="window.open('${r.pdfTraslado}')">PDF Traslado</button>`:""}
-${r.imagen?`<button class="btn" onclick="expandImg('${r.imagen}')">Ver Imagen</button>`:""}
-</div>
+    <div class="modal-actions">
+      ${r.pdf ? `<button class="btn-pdf" onclick='openUrl(${JSON.stringify(r.pdf)})'>PDF Pedido</button>` : ""}
+      ${r.pdfTraslado ? `<button class="btn-pdf" onclick='openUrl(${JSON.stringify(r.pdfTraslado)})'>PDF Traslado</button>` : ""}
+      ${r.imagen ? `<button class="btn" onclick='expandImg(${JSON.stringify(r.imagen)})'>Ver Imagen</button>` : ""}
+    </div>
 
-<div class="timeline">
-${item("info","Ingreso",r.fechaIngreso,"fa-box")}
-${item("ok","Modificación",r.fechaModificacion,"fa-edit")}
-${item("warn","Entrega",r.fechaEntrega,"fa-truck")}
-${item("danger","Estado",r.status,"fa-exclamation")}
-${item("ok","Cliente",r.cliente,"fa-user")}
-${item("info","Documento",r.tipoDocumento+" - "+r.numeroDocumento,"fa-file")}
-${item("ok","TR",r.TR,"fa-file")}
-${item("warn","Observaciones",r.observaciones,"fa-comment")}
-</div>`;
-}
-
-function item(color,titulo,valor,icon){
-return `<div class="timeline-item">
-<div class="timeline-icon ${color}"><i class="fa ${icon}"></i></div>
-<div class="timeline-content"><b>${titulo}</b>${valor||"—"}</div>
-</div>`;
+    <div class="timeline">
+      ${item("info","Ingreso",r.fechaIngreso,"fa-box")}
+      ${item("ok","Modificación",r.fechaModificacion,"fa-edit")}
+      ${item("warn","Entrega",r.fechaEntrega,"fa-truck")}
+      ${item(colorEstadoTimeline(r.status),"Estado",r.status,"fa-exclamation")}
+      ${item("ok","Cliente",r.cliente,"fa-user")}
+      ${item("info","Documento",`${r.tipoDocumento} - ${r.numeroDocumento}`,"fa-file")}
+      ${item("purple","TR",r.TR,"fa-file-lines")}
+      ${item("warn","Observaciones",r.observaciones,"fa-comment")}
+    </div>
+  `;
 }
 
 function expandImg(src){
-modal.style.display="flex";
-modalContent.innerHTML=`
-<div class="modal-header">
-<h3>Imagen</h3>
-<button class="btn-close" onclick="cerrarModal()">Cerrar</button>
-</div>
-<img src="${src}" style="width:100%;border-radius:12px;">
-`;
+  modal.style.display = "flex";
+  modalContent.innerHTML = `
+    <div class="modal-header">
+      <h3>Imagen</h3>
+      <button class="btn-close" onclick="cerrarModal()">Cerrar</button>
+    </div>
+    <img src="${esc(src)}" style="width:100%;border-radius:12px;">
+  `;
 }
 
-function cerrarModal(){modal.style.display="none";}
-
-function cls(s){
-s=(s||"").toLowerCase();
-if(s.includes("entregado"))return"entregado";
-if(s.includes("ruta"))return"enruta";
-if(s.includes("pendiente"))return"pendiente";
-if(s.includes("recibido"))return"recibido";
-if(s.includes("cancelado"))return"cancelado";
-return"pendiente";
+function cerrarModal(){
+  modal.style.display = "none";
 }
 
+/* UI */
 function toggleKPI(){
-kpiWrapper.style.display=kpiWrapper.style.display==="none"?"grid":"none";
+  kpiWrapper.style.display = kpiWrapper.style.display === "none" ? "grid" : "none";
 }
 
-modal.onclick=e=>{if(e.target.id==="modal") cerrarModal();}
+modal.onclick = e => {
+  if(e.target.id === "modal") cerrarModal();
+};
 
-buscador.oninput=render;
-fEstado.onchange=render;
-fechaDesde.onchange=render;
-fechaHasta.onchange=render;
+buscador.oninput = render;
+fEstado.onchange = render;
+fechaDesde.onchange = render;
+fechaHasta.onchange = render;
 
 fetchData();
 </script>
