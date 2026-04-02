@@ -1,14 +1,15 @@
-
 /* =====================================================
-   APP PRO UNIFICADO – COMPLETO Y FUNCIONAL
-   Combina app.js + app2.js SIN perder funciones
+   APP PRO UNIFICADO – CORREGIDO Y FUNCIONAL
    ===================================================== */
 
-   // SOLO CONSULTA (maestra / búsqueda / importar)
-   const API = "https://script.google.com/macros/s/AKfycbzC_qrSyXeTw9NcO40ap4x2cfs3FZIBKqMZLV9kKhYYh7n2XTPAuj1Vb2ckpFBWi8Ys/exec";
-   
-   // SOLO GUARDAR CAPTURAS (CAMBIA ESTA URL SI ES NECESARIO)
-   const API_GUARDAR = "https://script.google.com/macros/s/AKfycbz-_cZbe36eaQyopjw1HURuE4Zwbvuo4Lewsn0S393ocCLiQRbdouSUwpiAFOSwVzXwyA/exec";
+/* ===================== APIs ===================== */
+// SOLO CONSULTA (maestra / búsqueda / importar)
+const API = "https://script.google.com/macros/s/AKfycbzC_qrSyXeTw9NcO40ap4x2cfs3FZIBKqMZLV9kKhYYh7n2XTPAuj1Vb2ckpFBWi8Ys/exec";
+
+// SOLO GUARDAR CAPTURAS
+const API_GUARDAR = "https://script.google.com/macros/s/AKfycbz-_cZbe36eaQyopjw1HURuE4Zwbvuo4Lewsn0S393ocCLiQRbdouSUwpiAFOSwVzXwyA/exec";
+
+/* ===================== ESTADO ===================== */
 let productos = [];
 let capturas = JSON.parse(localStorage.getItem("capturas") || "[]");
 
@@ -17,209 +18,260 @@ let scannerTarget = null;
 let torch = false;
 let editIndex = -1;
 
-/* ===== IMPORTACIÓN PERSISTENTE ===== */
+let timerConsulta = null;
+let filasConsulta = [];
+let indexConsulta = -1;
+
 let bufferImportacion = JSON.parse(localStorage.getItem("bufferImportacion") || "null");
 let estadoImportacion = JSON.parse(localStorage.getItem("estadoImportacion") || "null");
 
+let ajustePendiente = null;
+let ultimoTapPorInput = {};
+let ultimoInputScanner = null;
+
+/* ===================== HELPERS DOM ===================== */
+const $ = (id) => document.getElementById(id);
+
+function el(id) {
+  return document.getElementById(id);
+}
+
+function esMobile() {
+  return /android|iphone|ipad|ipod/i.test(navigator.userAgent);
+}
+
+function obtenerJSONSeguro(texto) {
+  try {
+    return JSON.parse(texto);
+  } catch {
+    return null;
+  }
+}
+
+function formatearFechaLocal() {
+  return new Date().toLocaleString("es-CL");
+}
+
+function hoyISO() {
+  return new Date().toISOString().slice(0, 10);
+}
+
+function safeTrim(valor) {
+  return String(valor || "").trim();
+}
+
+function safeLower(valor) {
+  return String(valor || "").trim().toLowerCase();
+}
+
 /* ===================== CARGA INICIAL ===================== */
-document.addEventListener("DOMContentLoaded", () => {
+document.addEventListener("DOMContentLoaded", async () => {
+  const operador = el("operador");
+  const ubicacion = el("ubicacion");
+  const inputCodigo = el("codigo");
+  const inputUbicacion = el("ubicacion");
+  const barra = el("barra");
+  const mensaje = el("mensaje");
 
-  operador.value = localStorage.getItem("operador") || "";
-  ubicacion.value = localStorage.getItem("ubicacion") || "";
+  if (operador) operador.value = localStorage.getItem("operador") || "";
+  if (ubicacion) ubicacion.value = localStorage.getItem("ubicacion") || "";
 
-  fetch(API)
-    .then(r => r.json())
-    .then(d => {
-      productos = d;
-      localStorage.setItem("productos", JSON.stringify(d));
-    })
-    .catch(() => {
-      const c = localStorage.getItem("productos");
-      if (c) productos = JSON.parse(c);
-    });
+  await cargarProductosInicial();
 
   render();
+  configurarInputsScanner();
+  aplicarModoDesktop();
 
   if (estadoImportacion && estadoImportacion.enProceso) {
     openTab("importar");
-    barra.style.width = estadoImportacion.progreso + "%";
-    mensaje.innerText = estadoImportacion.mensaje;
+    if (barra) barra.style.width = (estadoImportacion.progreso || 0) + "%";
+    if (mensaje) mensaje.innerText = estadoImportacion.mensaje || "⏳ Importando...";
   }
+
+  if (inputCodigo) {
+    inputCodigo.addEventListener("input", () => {
+      buscarDescripcion();
+      previewIngreso();
+    });
+  }
+
+  if (inputUbicacion) {
+    inputUbicacion.addEventListener("input", previewIngreso);
+  }
+
+  ["descripcion", "cantidad", "operador"].forEach((id) => {
+    const nodo = el(id);
+    if (nodo) nodo.addEventListener("input", previewIngreso);
+  });
 });
+
+/* ===================== PRODUCTOS ===================== */
+async function cargarProductosInicial() {
+  try {
+    const r = await fetch(API);
+    if (!r.ok) throw new Error("No se pudo consultar API");
+    const d = await r.json();
+    productos = Array.isArray(d) ? d : [];
+    localStorage.setItem("productos", JSON.stringify(productos));
+  } catch {
+    const cache = localStorage.getItem("productos");
+    productos = cache ? JSON.parse(cache) : [];
+  }
+}
 
 /* ===================== TABS ===================== */
 function openTab(id) {
-  document.querySelectorAll(".tab").forEach(t => t.classList.remove("active"));
-  document.getElementById(id).classList.add("active");
+  document.querySelectorAll(".tab").forEach((t) => t.classList.remove("active"));
+  const tab = el(id);
+  if (tab) tab.classList.add("active");
   window.scrollTo({ top: 0, behavior: "smooth" });
 }
 
 /* ===================== CAPTURADOR ===================== */
 function limpiarUbicacion() {
+  const ubicacion = el("ubicacion");
+  if (!ubicacion) return;
   ubicacion.value = "";
   localStorage.removeItem("ubicacion");
   previewIngreso();
 }
 
 function buscarDescripcion() {
-  const c = codigo.value.trim().toLowerCase();
+  const codigo = el("codigo");
+  const descripcion = el("descripcion");
+  const cantidad = el("cantidad");
+
+  if (!codigo || !descripcion || !cantidad) return;
+
+  const c = safeLower(codigo.value);
   if (!c) return;
-  const p = productos.find(x => String(x.CODIGO).toLowerCase() === c);
+
+  const p = productos.find((x) => safeLower(x.CODIGO) === c);
   if (p) {
     descripcion.value = p.DESCRIPCION || "";
-    cantidad.value = 1;
+    if (!cantidad.value || Number(cantidad.value) <= 0) cantidad.value = 1;
   }
 }
 
 function previewIngreso() {
+  const codigo = el("codigo");
+  const descripcion = el("descripcion");
+  const ubicacion = el("ubicacion");
+  const operador = el("operador");
+  const cantidad = el("cantidad");
+  const preview = el("preview");
+
+  if (!codigo || !descripcion || !ubicacion || !operador || !cantidad || !preview) return;
+
   if (!codigo.value && !descripcion.value) {
     preview.innerHTML = "";
     return;
   }
+
   preview.innerHTML = `
-  <div class="row preview">
-    <b>🕒 PREVISUALIZANDO</b><br><br>
-    <b>${codigo.value || "-"}</b> – ${descripcion.value || "-"}<br>
-    <span class="small">
-      ${ubicacion.value || "SIN UBICACIÓN"} |
-      ${operador.value || "-"} |
-      Cant: ${cantidad.value}
-    </span>
-  </div>`;
+    <div class="row preview">
+      <b>🕒 PREVISUALIZANDO</b><br><br>
+      <b>${codigo.value || "-"}</b> – ${descripcion.value || "-"}<br>
+      <span class="small">
+        ${ubicacion.value || "SIN UBICACIÓN"} |
+        ${operador.value || "-"} |
+        Cant: ${cantidad.value || 1}
+      </span>
+    </div>
+  `;
 }
 
-/* ===================== SCANNER PRO ===================== */
+/* ===================== SCANNER ===================== */
 function activarScan(tipo) {
- 
+  if (typeof Html5Qrcode === "undefined") {
+    alert("❌ Librería Html5Qrcode no encontrada");
+    return;
+  }
+
   cerrarScanner();
   scannerTarget = tipo;
+  ultimoInputScanner = tipo;
 
-  const cont = document.getElementById("scanner-" + tipo);
+  const cont = el("scanner-" + tipo);
   if (!cont) return;
 
-  // crear contenedor limpio
   cont.innerHTML = `<div id="scannerBox"></div>`;
 
-  // iniciar scanner
   scannerActivo = new Html5Qrcode("scannerBox");
 
   scannerActivo.start(
-    { facingMode: { exact: "environment" } },
-    {
-      fps: 10,
-      qrbox: 260
-    },
-    txt => {
+    { facingMode: "environment" },
+    { fps: 10, qrbox: 260 },
+    (txt) => {
       if (!txt) return;
 
-      // sonido + vibración
-      document.getElementById("beep")?.play();
+      el("beep")?.play?.();
       navigator.vibrate?.(150);
 
       if (scannerTarget === "codigo") {
-        codigo.value = txt;
+        const codigo = el("codigo");
+        if (codigo) codigo.value = txt;
         buscarDescripcion();
       }
 
       if (scannerTarget === "ubicacion") {
-        ubicacion.value = txt;
-        localStorage.setItem("ubicacion", txt);
+        const ubicacion = el("ubicacion");
+        if (ubicacion) {
+          ubicacion.value = txt;
+          localStorage.setItem("ubicacion", txt);
+        }
       }
 
       previewIngreso();
       cerrarScanner();
-    }
-  );
-
-  // overlay UI (después del video)
-  setTimeout(() => {
-    const box = document.getElementById("scannerBox");
-    if (!box) return;
-
-    box.insertAdjacentHTML("afterbegin", `
-  <div class="scanner-overlay">
-    <button class="scanner-btn close" onclick="cerrarScanner()">✖</button>
-
-    
-
-    <button class="scanner-btn torch" onclick="toggleTorch()">🔦</button>
-  </div>
-  <div class="scan-frame"></div>
-  <div class="scan-line"></div>
-`);
-  }, 300);
-}
-
-
-   /* =====================================================
-   SCANNER PRO – AJUSTE ESTABLE 350ms
-   ===================================================== */
-
-let tecladoActivo = false;
-let ajustePendiente = null;
-
-/* ---------- DETECTAR TECLADO ---------- */
-if (window.visualViewport) {
-  window.visualViewport.addEventListener("resize", () => {
-    const hWin = window.innerHeight;
-    const hVV  = window.visualViewport.height;
-
-    tecladoActivo = hVV < hWin - 120;
-
-    if (tecladoActivo) programarAjuste();
+    },
+    () => {}
+  ).then(() => {
+    setTimeout(agregarOverlayScanner, 250);
+    programarAjuste();
+  }).catch(() => {
+    cerrarScanner();
+    alert("❌ No fue posible iniciar la cámara");
   });
 }
 
-/* ---------- AJUSTE SIN ACUMULAR ---------- */
-function programarAjuste(){
-  clearTimeout(ajustePendiente);
-  ajustePendiente = setTimeout(ajustarScanner, 350);
-}
-
-/* ---------- AJUSTE REAL ---------- */
-function ajustarScanner(){
-  const box = document.getElementById("scannerBox");
+function agregarOverlayScanner() {
+  const box = el("scannerBox");
   if (!box) return;
 
-  const rect = box.getBoundingClientRect();
-  const offset = window.visualViewport?.offsetTop || 0;
+  if (box.querySelector(".scanner-overlay")) return;
 
-  const y = rect.top + window.scrollY - offset - 16;
-
-  window.scrollTo({
-    top: Math.max(0, y),
-    behavior: "smooth"
-  });
+  box.insertAdjacentHTML("afterbegin", `
+    <div class="scanner-overlay">
+      <button class="scanner-btn close" type="button" onclick="cerrarScanner()">✖</button>
+      <button class="scanner-btn torch" type="button" onclick="toggleTorch()">🔦</button>
+      <button class="scanner-btn keyboard" type="button" onclick="abrirTecladoDesdeScanner()">⌨️</button>
+    </div>
+    <div class="scan-frame"></div>
+    <div class="scan-line"></div>
+  `);
 }
-
-/* ---------- INPUT FOCUS ---------- */
-document.addEventListener("focusin", e => {
-  if (e.target instanceof HTMLInputElement) {
-    programarAjuste();
-  }
-});
-
-/* ---------- ACTIVAR SCANNER ---------- */
-const _activarScan = window.activarScan;
-
-window.activarScan = function(tipo){
-  _activarScan(tipo);
-  programarAjuste();
-};
 
 function cerrarScanner() {
-  if (!scannerActivo) return;
-  scannerActivo.stop().then(() => {
-    scannerActivo.clear();
-    scannerActivo = null;
+  if (!scannerActivo) {
+    document.querySelectorAll(".scanner-slot").forEach((d) => d.innerHTML = "");
     scannerTarget = null;
     torch = false;
-    document.querySelectorAll(".scanner-slot").forEach(d => d.innerHTML = "");
-  }).catch(()=>{});
+    return;
+  }
+
+  const actual = scannerActivo;
+  scannerActivo = null;
+
+  actual.stop()
+    .then(() => actual.clear())
+    .catch(() => {})
+    .finally(() => {
+      scannerTarget = null;
+      torch = false;
+      document.querySelectorAll(".scanner-slot").forEach((d) => d.innerHTML = "");
+    });
 }
-
-
-
 
 function toggleTorch() {
   if (!scannerActivo) return;
@@ -229,49 +281,157 @@ function toggleTorch() {
   scannerActivo.applyVideoConstraints({
     advanced: [{ torch }]
   }).then(() => {
-    document
-      .querySelector(".scanner-btn.torch")
-      ?.classList.toggle("on", torch);
+    document.querySelector(".scanner-btn.torch")?.classList.toggle("on", torch);
   }).catch(() => {
     torch = false;
+    document.querySelector(".scanner-btn.torch")?.classList.remove("on");
   });
 }
 
+function abrirTecladoDesdeScanner() {
+  if (!ultimoInputScanner) return;
 
-/* =====================================================
-   
+  const input = el(ultimoInputScanner);
+  if (!input) return;
 
+  cerrarScanner();
+  setTimeout(() => {
+    input.removeAttribute("readonly");
+    input.focus();
+  }, 120);
+}
 
+/* ===================== AJUSTE SCANNER / TECLADO ===================== */
+if (window.visualViewport) {
+  window.visualViewport.addEventListener("resize", () => {
+    const hWin = window.innerHeight;
+    const hVV = window.visualViewport.height;
+    const tecladoVisible = hVV < hWin - 120;
+    if (tecladoVisible) programarAjuste();
+  });
+}
 
+function programarAjuste() {
+  clearTimeout(ajustePendiente);
+  ajustePendiente = setTimeout(ajustarScanner, 350);
+}
 
-  
+function ajustarScanner() {
+  const box = el("scannerBox");
+  if (!box) return;
 
+  const rect = box.getBoundingClientRect();
+  const offset = window.visualViewport?.offsetTop || 0;
+  const y = rect.top + window.scrollY - offset - 16;
+
+  window.scrollTo({
+    top: Math.max(0, y),
+    behavior: "smooth"
+  });
+}
+
+document.addEventListener("focusin", (e) => {
+  if (e.target instanceof HTMLInputElement) {
+    programarAjuste();
+  }
+});
+
+/* ===================== INPUTS SCANNER ===================== */
+function configurarInputsScanner() {
+  ["codigo", "ubicacion"].forEach((id) => {
+    const input = el(id);
+    if (!input) return;
+
+    if (!esMobile()) {
+      input.removeAttribute("readonly");
+      return;
+    }
+
+    input.setAttribute("readonly", "true");
+
+    const handler = (e) => {
+      const now = Date.now();
+      const lastTap = ultimoTapPorInput[id] || 0;
+      const diff = now - lastTap;
+      ultimoTapPorInput[id] = now;
+
+      if (diff < 350) {
+        e.preventDefault();
+        input.blur();
+        activarScan(id);
+        return;
+      }
+
+      cerrarScanner();
+      input.removeAttribute("readonly");
+      input.focus();
+
+      setTimeout(() => {
+        if (document.activeElement !== input) {
+          input.setAttribute("readonly", "true");
+        }
+      }, 800);
+    };
+
+    input.addEventListener("touchend", handler, { passive: false });
+    input.addEventListener("click", handler);
+    input.addEventListener("blur", () => {
+      if (esMobile()) input.setAttribute("readonly", "true");
+    });
+  });
+}
+
+function aplicarModoDesktop() {
+  if (esMobile()) return;
+
+  const inputCodigo = el("codigo");
+  const inputUbicacion = el("ubicacion");
+
+  if (inputCodigo) {
+    inputCodigo.removeAttribute("readonly");
+    inputCodigo.style.pointerEvents = "auto";
+  }
+
+  if (inputUbicacion) {
+    inputUbicacion.removeAttribute("readonly");
+    inputUbicacion.style.pointerEvents = "auto";
+  }
+}
 
 /* ===================== GUARDAR / EDITAR ===================== */
 function ingresar() {
-  if (!codigo.value.trim()) {
+  const codigo = el("codigo");
+  const descripcion = el("descripcion");
+  const cantidad = el("cantidad");
+  const operador = el("operador");
+  const ubicacion = el("ubicacion");
+
+  if (!codigo || !descripcion || !cantidad || !operador || !ubicacion) return;
+
+  if (!safeTrim(codigo.value)) {
     alert("❌ Digite un código válido");
     return;
   }
 
-  localStorage.setItem("operador", operador.value);
-  ubicacion.value
-    ? localStorage.setItem("ubicacion", ubicacion.value)
-    : localStorage.removeItem("ubicacion");
+  localStorage.setItem("operador", operador.value || "");
+  if (ubicacion.value) localStorage.setItem("ubicacion", ubicacion.value);
+  else localStorage.removeItem("ubicacion");
 
   const d = {
-    Fecha: new Date().toLocaleString(),
+    Fecha: formatearFechaLocal(),
     Operador: operador.value || "",
     Ubicación: ubicacion.value || "SIN UBICACIÓN",
-    Código: codigo.value,
-    Descripción: descripcion.value,
-    Cantidad: Number(cantidad.value)
+    Código: codigo.value || "",
+    Descripción: descripcion.value || "",
+    Cantidad: Number(cantidad.value || 1)
   };
 
-  editIndex >= 0 ? capturas[editIndex] = d : capturas.push(d);
-  editIndex = -1;
+  if (editIndex >= 0) capturas[editIndex] = d;
+  else capturas.push(d);
 
+  editIndex = -1;
   localStorage.setItem("capturas", JSON.stringify(capturas));
+
   limpiar();
   render();
 }
@@ -279,44 +439,37 @@ function ingresar() {
 function cancelarEdicion() {
   editIndex = -1;
   limpiar();
+  render();
 }
 
 function limpiar() {
-  codigo.value = "";
-  descripcion.value = "";
-  cantidad.value = 1;
-  preview.innerHTML = "";
-}
+  const codigo = el("codigo");
+  const descripcion = el("descripcion");
+  const cantidad = el("cantidad");
+  const preview = el("preview");
 
-/* ===================== RENDER ===================== */
-function render() {
-  tabla.innerHTML = "";
-  let total = 0;
-
-  capturas.forEach((c, i) => {
-    total += Number(c.Cantidad) || 0;
-    tabla.innerHTML += `
-    <div class="row ${editIndex === i ? "editing" : ""}">
-      <button class="delbtn" onclick="event.stopPropagation();eliminarItem(${i})">×</button>
-      <div onclick="cargarParaEditar(${i})">
-        <b>${c.Código}</b> – ${c.Descripción}<br>
-        <span class="small">
-          ${c.Ubicación} | ${c.Operador} | ${c.Fecha} | Cant: ${c.Cantidad}
-        </span>
-      </div>
-    </div>`;
-  });
-
-  totalizador.innerText = "Total unidades: " + total;
+  if (codigo) codigo.value = "";
+  if (descripcion) descripcion.value = "";
+  if (cantidad) cantidad.value = 1;
+  if (preview) preview.innerHTML = "";
 }
 
 function cargarParaEditar(i) {
+  const operador = el("operador");
+  const ubicacion = el("ubicacion");
+  const codigo = el("codigo");
+  const descripcion = el("descripcion");
+  const cantidad = el("cantidad");
+
   const c = capturas[i];
-  operador.value = c.Operador;
-  ubicacion.value = c.Ubicación === "SIN UBICACIÓN" ? "" : c.Ubicación;
-  codigo.value = c.Código;
-  descripcion.value = c.Descripción;
-  cantidad.value = c.Cantidad;
+  if (!c) return;
+
+  if (operador) operador.value = c.Operador || "";
+  if (ubicacion) ubicacion.value = c.Ubicación === "SIN UBICACIÓN" ? "" : (c.Ubicación || "");
+  if (codigo) codigo.value = c.Código || "";
+  if (descripcion) descripcion.value = c.Descripción || "";
+  if (cantidad) cantidad.value = c.Cantidad || 1;
+
   editIndex = i;
   previewIngreso();
   render();
@@ -327,28 +480,92 @@ function eliminarItem(i) {
   if (!confirm("¿Eliminar este registro?")) return;
   capturas.splice(i, 1);
   localStorage.setItem("capturas", JSON.stringify(capturas));
+  if (editIndex === i) editIndex = -1;
   render();
 }
 
-/* ===================== EXPORTAR ===================== */
-function exportarPDF() {
-  if (!capturas.length) return alert("Sin datos");
-  const w = window.open("");
-  let h = "<h3>Reporte de Captura</h3><table border='1'><tr>";
-  Object.keys(capturas[0]).forEach(k => h += "<th>" + k + "</th>");
-  h += "</tr>";
-  capturas.forEach(r => {
-    h += "<tr>";
-    Object.values(r).forEach(v => h += "<td>" + v + "</td>");
-    h += "</tr>";
+/* ===================== RENDER ===================== */
+function render() {
+  const tabla = el("tabla");
+  const totalizador = el("totalizador");
+  if (!tabla || !totalizador) return;
+
+  tabla.innerHTML = "";
+  let total = 0;
+
+  capturas.forEach((c, i) => {
+    total += Number(c.Cantidad) || 0;
+
+    tabla.innerHTML += `
+      <div class="row ${editIndex === i ? "editing" : ""}">
+        <button class="delbtn" type="button" onclick="event.stopPropagation();eliminarItem(${i})">×</button>
+        <div onclick="cargarParaEditar(${i})">
+          <b>${c.Código || ""}</b> – ${c.Descripción || ""}<br>
+          <span class="small">
+            ${c.Ubicación || "SIN UBICACIÓN"} | ${c.Operador || ""} | ${c.Fecha || ""} | Cant: ${c.Cantidad || 0}
+          </span>
+        </div>
+      </div>
+    `;
   });
-  h += "</table>";
+
+  totalizador.innerText = "Total unidades: " + total;
+}
+
+/* ===================== EXPORTAR PDF ===================== */
+function exportarPDF() {
+  if (!capturas.length) {
+    alert("❌ Sin datos");
+    return;
+  }
+
+  const w = window.open("", "_blank");
+  if (!w) {
+    alert("❌ El navegador bloqueó la ventana");
+    return;
+  }
+
+  let h = `
+    <html>
+    <head>
+      <title>Reporte de Captura</title>
+      <style>
+        body{font-family:Arial;padding:20px}
+        table{border-collapse:collapse;width:100%}
+        th,td{border:1px solid #000;padding:8px;font-size:12px}
+        th{background:#f0f0f0}
+      </style>
+    </head>
+    <body>
+      <h3>Reporte de Captura</h3>
+      <table>
+        <tr>
+  `;
+
+  Object.keys(capturas[0]).forEach((k) => h += `<th>${k}</th>`);
+  h += `</tr>`;
+
+  capturas.forEach((r) => {
+    h += `<tr>`;
+    Object.values(r).forEach((v) => h += `<td>${v ?? ""}</td>`);
+    h += `</tr>`;
+  });
+
+  h += `
+      </table>
+    </body>
+    </html>
+  `;
+
+  w.document.open();
   w.document.write(h);
+  w.document.close();
+  w.focus();
   w.print();
 }
-/* ===================== FINALIZAR (GUARDA EN HOJA) ===================== */
-async function finalizar() {
 
+/* ===================== FINALIZAR ===================== */
+async function finalizar() {
   if (!capturas.length) {
     alert("❌ No hay capturas para enviar");
     return;
@@ -356,113 +573,170 @@ async function finalizar() {
 
   if (!confirm(`📤 Enviar ${capturas.length} registros a la hoja?`)) return;
 
-  const hoy = new Date().toISOString().slice(0,10);
-
   try {
     for (const r of capturas) {
       const payload = {
         accion: "agregar",
-        fecha_entrada: hoy,
+        fecha_entrada: hoyISO(),
         fecha_salida: "",
         ubicacion: r.Ubicación || "SIN UBICACIÓN",
-        codigo: "" + r.Código,
+        codigo: String(r.Código || ""),
         descripcion: r.Descripción || "",
         cantidad: Number(r.Cantidad || 0),
         responsable: r.Operador || "",
         status: "VIGENTE",
-        origen: /mobile/i.test(navigator.userAgent)
-          ? "CAPTURADOR_MOBILE"
-          : "CAPTURADOR_WEB"
+        origen: esMobile() ? "CAPTURADOR_MOBILE" : "CAPTURADOR_WEB"
       };
 
-      await fetch(API_GUARDAR, {
+      const resp = await fetch(API_GUARDAR, {
         method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload)
       });
+
+      const texto = await resp.text();
+      const json = obtenerJSONSeguro(texto);
+
+      if (!resp.ok) {
+        throw new Error("Error HTTP al guardar");
+      }
+
+      if (json && json.ok === false) {
+        throw new Error(json.error || "El servidor rechazó el registro");
+      }
     }
 
     alert("✅ Datos enviados correctamente a Base de Datos");
-
     localStorage.removeItem("capturas");
     capturas = [];
     limpiar();
     render();
 
   } catch (e) {
-    alert("❌ Error al enviar los datos");
+    alert("❌ Error al enviar los datos: " + (e.message || e));
   }
 }
 
 /* ===================== IMPORTADOR ===================== */
 function importarMaestra() {
-  const file = fileExcel.files[0];
+  const fileExcel = el("fileExcel");
+  if (!fileExcel) return;
+
+  const file = fileExcel.files?.[0];
+
   if (!file && bufferImportacion) {
     enviarMaestra(bufferImportacion);
     return;
   }
-  if (!file) return alert("Selecciona Excel");
+
+  if (!file) {
+    alert("Selecciona Excel");
+    return;
+  }
 
   const reader = new FileReader();
-  reader.onload = e => {
-    const wb = XLSX.read(e.target.result, { type: "binary" });
-    const data = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]]);
-    bufferImportacion = data;
-    localStorage.setItem("bufferImportacion", JSON.stringify(data));
-    enviarMaestra(data);
+
+  reader.onload = (e) => {
+    try {
+      const wb = XLSX.read(e.target.result, { type: "binary" });
+      const hoja = wb.Sheets[wb.SheetNames[0]];
+      const data = XLSX.utils.sheet_to_json(hoja);
+
+      bufferImportacion = data;
+      localStorage.setItem("bufferImportacion", JSON.stringify(data));
+      enviarMaestra(data);
+    } catch {
+      alert("❌ Error leyendo el archivo Excel");
+    }
   };
+
   reader.readAsBinaryString(file);
 }
 
 async function enviarMaestra(data) {
-  estadoImportacion = { enProceso: true, progreso: 0, mensaje: "⏳ Importando..." };
+  const barra = el("barra");
+  const mensaje = el("mensaje");
+
+  estadoImportacion = {
+    enProceso: true,
+    progreso: 0,
+    mensaje: "⏳ Importando..."
+  };
+
   localStorage.setItem("estadoImportacion", JSON.stringify(estadoImportacion));
 
-  barra.style.width = "0%";
-  mensaje.innerText = estadoImportacion.mensaje;
+  if (barra) barra.style.width = "0%";
+  if (mensaje) mensaje.innerText = estadoImportacion.mensaje;
 
   let p = 0;
   const t = setInterval(() => {
     p += 10;
-    barra.style.width = p + "%";
+    if (p > 90) p = 90;
+
+    if (barra) barra.style.width = p + "%";
     estadoImportacion.progreso = p;
     localStorage.setItem("estadoImportacion", JSON.stringify(estadoImportacion));
+
     if (p >= 90) clearInterval(t);
   }, 200);
 
   try {
-    await fetch(API, { method: "POST", body: JSON.stringify({ accion: "importar", data }) });
+    const resp = await fetch(API, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ accion: "importar", data })
+    });
+
+    const texto = await resp.text();
+    const json = obtenerJSONSeguro(texto);
+
     clearInterval(t);
-    barra.style.width = "100%";
-    mensaje.innerText = "✅ Importación exitosa";
+
+    if (!resp.ok) throw new Error("Error HTTP en importación");
+    if (json && json.ok === false) throw new Error(json.error || "La importación fue rechazada");
+
+    if (barra) barra.style.width = "100%";
+    if (mensaje) mensaje.innerText = "✅ Importación exitosa";
+
     localStorage.removeItem("estadoImportacion");
     localStorage.removeItem("bufferImportacion");
+    estadoImportacion = null;
+    bufferImportacion = null;
+
+    await cargarProductosInicial();
+
   } catch (e) {
-    mensaje.innerText = "❌ Error al importar";
+    clearInterval(t);
+    if (mensaje) mensaje.innerText = "❌ Error al importar";
+    console.error(e);
   }
 }
 
-
-
-
-
-
-
 /* ===================== CONSULTA ===================== */
-let timerConsulta = null, filasConsulta = [], indexConsulta = -1;
-
 function abrirModalConsulta() {
+  const modalConsulta = el("modalConsulta");
+  const buscarConsulta = el("buscarConsulta");
+  const resultadoConsulta = el("resultadoConsulta");
+  const scrollConsulta = el("scrollConsulta");
+  const msgConsulta = el("msgConsulta");
+
+  if (!modalConsulta || !buscarConsulta || !resultadoConsulta || !scrollConsulta || !msgConsulta) return;
+
   modalConsulta.classList.add("show");
   buscarConsulta.value = "";
   resultadoConsulta.innerHTML = "";
   scrollConsulta.style.display = "none";
   msgConsulta.innerText = "Escriba para consultar";
+
   filasConsulta = [];
   indexConsulta = -1;
+
   buscarConsulta.focus();
 }
 
 function cerrarModalConsulta() {
-  modalConsulta.classList.remove("show");
+  const modalConsulta = el("modalConsulta");
+  if (modalConsulta) modalConsulta.classList.remove("show");
 }
 
 function filtrarConsulta() {
@@ -471,96 +745,104 @@ function filtrarConsulta() {
 }
 
 function filtrarConsultaReal() {
-  const q = buscarConsulta.value.trim().toLowerCase();
+  const buscarConsulta = el("buscarConsulta");
+  const resultadoConsulta = el("resultadoConsulta");
+  const scrollConsulta = el("scrollConsulta");
+  const msgConsulta = el("msgConsulta");
+
+  if (!buscarConsulta || !resultadoConsulta || !scrollConsulta || !msgConsulta) return;
+
+  const q = safeLower(buscarConsulta.value);
+
   resultadoConsulta.innerHTML = "";
   filasConsulta = [];
   indexConsulta = -1;
 
   if (q.length < 2) {
+    scrollConsulta.style.display = "none";
     msgConsulta.innerText = "Escriba al menos 2 caracteres";
     return;
   }
 
   for (const p of productos) {
     if (
-      String(p.CODIGO).toLowerCase().includes(q) ||
-      String(p.DESCRIPCION).toLowerCase().includes(q)
+      safeLower(p.CODIGO).includes(q) ||
+      safeLower(p.DESCRIPCION).includes(q)
     ) {
       const tr = document.createElement("tr");
-      tr.innerHTML = `<td>${p.CODIGO}</td><td>${p.DESCRIPCION}</td>`;
-      tr.onclick = () => activarFilaConsulta(filasConsulta.indexOf(tr));
+      tr.innerHTML = `<td>${p.CODIGO || ""}</td><td>${p.DESCRIPCION || ""}</td>`;
+      tr.onclick = () => seleccionarProductoConsulta(p, filasConsulta.indexOf(tr));
       resultadoConsulta.appendChild(tr);
       filasConsulta.push(tr);
+
       if (filasConsulta.length >= 50) break;
     }
   }
 
   if (!filasConsulta.length) {
+    scrollConsulta.style.display = "none";
     msgConsulta.innerText = "❌ Sin coincidencias";
     return;
   }
 
   scrollConsulta.style.display = "block";
+  msgConsulta.innerText = `✅ ${filasConsulta.length} resultado(s)`;
   activarFilaConsulta(0);
 }
 
-function activarFilaConsulta(i){
-  if(i < 0 || i >= filasConsulta.length) return;
+function activarFilaConsulta(i) {
+  const scrollConsulta = el("scrollConsulta");
+  if (!scrollConsulta) return;
+  if (i < 0 || i >= filasConsulta.length) return;
 
-  // quitar selección anterior
-  filasConsulta.forEach(r => r.classList.remove("selected"));
+  filasConsulta.forEach((r) => r.classList.remove("selected"));
 
-  // marcar nueva fila
   const fila = filasConsulta[i];
   fila.classList.add("selected");
   indexConsulta = i;
 
-  // =============================
-  // AUTO SCROLL (LA CLAVE)
-  // =============================
-  const cont = scrollConsulta;
-
   const filaTop = fila.offsetTop;
   const filaBottom = filaTop + fila.offsetHeight;
 
-  const contTop = cont.scrollTop;
-  const contBottom = contTop + cont.clientHeight;
+  const contTop = scrollConsulta.scrollTop;
+  const contBottom = contTop + scrollConsulta.clientHeight;
 
-  // si baja y se sale por abajo
   if (filaBottom > contBottom) {
-    cont.scrollTop = filaBottom - cont.clientHeight + 8;
+    scrollConsulta.scrollTop = filaBottom - scrollConsulta.clientHeight + 8;
   }
 
-  // si sube y se sale por arriba
   if (filaTop < contTop) {
-    cont.scrollTop = filaTop - 8;
+    scrollConsulta.scrollTop = filaTop - 8;
   }
 }
 
+function seleccionarProductoConsulta(p, i) {
+  const codigo = el("codigo");
+  const descripcion = el("descripcion");
+  const cantidad = el("cantidad");
 
-document.addEventListener("keydown", e => {
+  if (codigo) codigo.value = p.CODIGO || "";
+  if (descripcion) descripcion.value = p.DESCRIPCION || "";
+  if (cantidad && (!cantidad.value || Number(cantidad.value) <= 0)) cantidad.value = 1;
 
-  // solo cuando el modal está abierto
-  if (!modalConsulta.classList.contains("show")) return;
+  activarFilaConsulta(i);
+  previewIngreso();
+  cerrarModalConsulta();
+}
 
-  // si no hay filas, no hace nada
+document.addEventListener("keydown", (e) => {
+  const modalConsulta = el("modalConsulta");
+  if (!modalConsulta || !modalConsulta.classList.contains("show")) return;
   if (!filasConsulta.length) return;
 
-  // PREVIENE que el input use las flechas
-  if (["ArrowDown","ArrowUp"].includes(e.key)) {
-    e.preventDefault();
-  }
+  if (["ArrowDown", "ArrowUp"].includes(e.key)) e.preventDefault();
 
   if (e.key === "ArrowDown") {
-    activarFilaConsulta(
-      Math.min(indexConsulta + 1, filasConsulta.length - 1)
-    );
+    activarFilaConsulta(Math.min(indexConsulta + 1, filasConsulta.length - 1));
   }
 
   if (e.key === "ArrowUp") {
-    activarFilaConsulta(
-      Math.max(indexConsulta - 1, 0)
-    );
+    activarFilaConsulta(Math.max(indexConsulta - 1, 0));
   }
 
   if (e.key === "Enter") {
@@ -572,311 +854,44 @@ document.addEventListener("keydown", e => {
   }
 });
 
-/* ===== EXPORTAR MAESTRA DE PRODUCTOS ===== */
-function exportarMaestraProductos(){
-
-  if(!productos || !productos.length){
+/* ===================== EXPORTAR MAESTRA ===================== */
+function exportarMaestraProductos() {
+  if (!productos || !productos.length) {
     alert("❌ No hay productos para exportar");
     return;
   }
-  
-  // Fuerza CODIGO como texto (muy importante)
-  const data = productos.map(p => ({
-    CODIGO: "" + String(p.CODIGO),
-    DESCRIPCION: p.DESCRIPCION
+
+  const data = productos.map((p) => ({
+    CODIGO: String(p.CODIGO || ""),
+    DESCRIPCION: p.DESCRIPCION || ""
   }));
-  
+
   const ws = XLSX.utils.json_to_sheet(data);
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, ws, "Maestra_Productos");
-  
+
   const excel = XLSX.write(wb, {
     bookType: "xlsx",
     type: "array"
   });
-  
+
   const blob = new Blob([excel], {
     type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
   });
-  
+
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url;
   a.download = "maestra_productos.xlsx";
   a.click();
-  
   URL.revokeObjectURL(url);
-  }
-  
-
-  
+}
 
 /* ===================== PROTEGER RECARGA ===================== */
-window.addEventListener("beforeunload", e => {
+window.addEventListener("beforeunload", (e) => {
   const est = JSON.parse(localStorage.getItem("estadoImportacion") || "null");
   if (est && est.enProceso) {
     e.preventDefault();
     e.returnValue = "";
   }
-});
-
-/* ===================== INPUTS MANUALES ===================== */
-["codigo","descripcion","ubicacion","cantidad","operador"].forEach(id=>{
-  const el = document.getElementById(id);
-  if(!el) return;
-
-  el.addEventListener("focus", ()=>{
-    // el teclado aparece SOLO si el usuario toca el input
-  });
-});
-
-
-
-/* =====================================================
-   FLUJO PRO INPUT ↔ SCANNER
-   1 TAP = TECLADO
-   2 TAP = SCANNER
-   ===================================================== */
-
-(function(){
-
-  const DOUBLE_TAP_DELAY = 350; // ms
-  let lastTap = 0;
-
-  function manejarTapInput(e){
-    const input = e.currentTarget;
-    const now = Date.now();
-    const diff = now - lastTap;
-    lastTap = now;
-
-    // === DOBLE TAP → SCANNER ===
-    if (diff < DOUBLE_TAP_DELAY) {
-      e.preventDefault();
-
-      // cerrar teclado
-      input.blur();
-
-      // activar scanner según input
-      if (input.id === "codigo") {
-        activarScan("codigo");
-      }
-
-      if (input.id === "ubicacion") {
-        activarScan("ubicacion");
-      }
-
-      return;
-    }
-
-    // === TAP SIMPLE → TECLADO ===
-    cerrarScanner?.(); // cierra scanner si está activo
-    input.removeAttribute("readonly");
-    input.focus();
-  }
-
-  function prepararInput(id){
-    const input = document.getElementById(id);
-    if (!input) return;
-
-    // editable por defecto
-    input.removeAttribute("readonly");
-
-    input.addEventListener("touchend", manejarTapInput);
-    input.addEventListener("click", manejarTapInput);
-  }
-
-  // aplica SOLO a los inputs que usan scanner
-  ["codigo", "ubicacion"].forEach(prepararInput);
-
-})();
-
-/* =====================================================
-   BOTÓN ⌨️ TOGGLE TECLADO ⇄ SCANNER (FINAL)
-   ===================================================== */
-
-(function(){
-
-  let ultimoInputScanner = null;
-  let tecladoActivo = false;
-
-  /* ===== helpers ===== */
-  function bloquearInput(input){
-    input.setAttribute("readonly", "true");
-    input.blur();
-    tecladoActivo = false;
-  }
-
-  function habilitarInput(input){
-    input.removeAttribute("readonly");
-    input.focus();
-    tecladoActivo = true;
-  }
-
-  /* ===== envolver activarScan ===== */
-  const activarScanBase = window.activarScan;
-
-  window.activarScan = function(tipo){
-    ultimoInputScanner = tipo;
-    activarScanBase(tipo);
-    observarOverlayScanner();
-  };
-
-  /* ===== observar overlay del scanner ===== */
-  function observarOverlayScanner(){
-
-    const box = document.getElementById("scannerBox");
-    if (!box) return;
-
-    const observer = new MutationObserver(() => {
-
-      const overlay = box.querySelector(".scanner-overlay");
-      if (!overlay) return;
-
-      if (overlay.querySelector(".scanner-btn.keyboard")) return;
-
-      const btn = document.createElement("button");
-      btn.className = "scanner-btn keyboard";
-      btn.innerText = "⌨️";
-
-      btn.onclick = () => {
-
-        const input = document.getElementById(ultimoInputScanner);
-        if (!input) return;
-
-        // ===== TOGGLE =====
-        if (!tecladoActivo) {
-          // abrir teclado
-          cerrarScanner?.();
-          setTimeout(() => habilitarInput(input), 120);
-        } else {
-          // cerrar teclado y volver a scanner
-          bloquearInput(input);
-          setTimeout(() => activarScan(ultimoInputScanner), 120);
-        }
-      };
-
-      overlay.appendChild(btn);
-      observer.disconnect();
-    });
-
-    observer.observe(box, { childList:true, subtree:true });
-  }
-
-  /* ===== bloquear inputs por defecto ===== */
-  ["codigo","ubicacion"].forEach(id=>{
-    const input = document.getElementById(id);
-    if (input) bloquearInput(input);
-  });
-
-})();
-
-
-/* =====================================================
-   BOTÓN ⌨️ TECLADO – FIX DEFINITIVO (INFALIBLE)
-   ===================================================== */
-
-(function(){
-
-  let ultimoInput = null;
-
-  // envolvemos activarScan SIN romperlo
-  const activarScanOriginal = window.activarScan;
-
-  window.activarScan = function(tipo){
-    ultimoInput = tipo;
-    activarScanOriginal(tipo);
-    esperarOverlayYAgregarBoton();
-  };
-
-  function esperarOverlayYAgregarBoton(){
-
-    const box = document.getElementById("scannerBox");
-    if (!box) return;
-
-    // Observa SOLO este scannerBox
-    const observer = new MutationObserver(() => {
-
-      const overlay = box.querySelector(".scanner-overlay");
-      if (!overlay) return;
-
-      // si ya existe, no duplica
-      if (overlay.querySelector(".scanner-btn.keyboard")) {
-        observer.disconnect();
-        return;
-      }
-
-      // CREA BOTÓN ⌨️
-      const btn = document.createElement("button");
-      btn.className = "scanner-btn keyboard";
-      btn.textContent = "⌨️";
-
-      btn.onclick = () => {
-        cerrarScanner?.();
-        const input = document.getElementById(ultimoInput);
-        if (input) {
-          setTimeout(() => {
-            input.removeAttribute("readonly");
-            input.focus();
-          }, 150);
-        }
-      };
-
-      overlay.appendChild(btn);
-      observer.disconnect(); // YA ESTÁ
-    });
-
-    observer.observe(box, {
-      childList: true,
-      subtree: true
-    });
-  }
-
-})();
-
-
-
-
-
-
-/* =====================================================
-   FIX DEFINITIVO
-   DESKTOP: INPUT "codigo" SIEMPRE HABILITADO
-   MOBILE: MANTIENE BLOQUEO + SCANNER
-   ===================================================== */
-
-// detectar mobile real
-function esMobile(){
-  return /android|iphone|ipad|ipod/i.test(navigator.userAgent);
-}
-
-// forzar comportamiento correcto
-document.addEventListener("DOMContentLoaded", () => {
-
-  const inputCodigo = document.getElementById("codigo");
-  const inputUbicacion = document.getElementById("ubicacion");
-
-  // ===== ESCRITORIO =====
-  if (!esMobile()) {
-
-    if (inputCodigo) {
-      inputCodigo.removeAttribute("readonly");
-      inputCodigo.style.pointerEvents = "auto";
-    }
-
-    if (inputUbicacion) {
-      inputUbicacion.removeAttribute("readonly");
-      inputUbicacion.style.pointerEvents = "auto";
-    }
-
-    // seguridad extra: nunca volver a bloquear en desktop
-    setInterval(() => {
-      if (inputCodigo?.hasAttribute("readonly")) {
-        inputCodigo.removeAttribute("readonly");
-      }
-    }, 500);
-
-    return; // 🔴 corta aquí en escritorio
-  }
-
-  // ===== MOBILE (no se toca tu lógica existente) =====
 });
