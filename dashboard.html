@@ -300,6 +300,38 @@ tr.selected{
  max-height:90vh;
  overflow:auto;
  box-shadow:0 20px 60px rgba(0,0,0,.25);
+  /* Permite posicionar elementos hijos de manera absoluta (ej. botón X) */
+  position:relative;
+}
+
+/* ================= BOTÓN CIERRE MODAL ================= */
+/*
+  Este botón agrega una “X” en la esquina superior derecha de los modales.
+  Tiene un fondo rojo y al hacer clic oculta el modal contenedor.  Se
+  implementa de manera genérica para que pueda reutilizarse en
+  diferentes modales.
+*/
+.modal-close{
+  position:absolute;
+  top:12px;
+  right:12px;
+  width:28px;
+  height:28px;
+  border-radius:6px;
+  background:#dc2626;
+  color:#fff;
+  border:none;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-size:16px;
+  cursor:pointer;
+  transition:.2s;
+  z-index:1;
+}
+.modal-close:hover{
+  background:#b91c1c;
+  transform:scale(1.05);
 }
 
 /* ================= FORM ================= */
@@ -798,6 +830,36 @@ grid-template-columns:1fr; /* 1 por fila */
     flex-direction: column;
   }
 }
+
+/* 
+  =======================
+  MODAL WIDTHS – DESKTOP
+  =======================
+
+  En pantallas grandes (>768px) se amplían los anchos máximos de los modales para que ocupen más espacio
+  horizontal.  En móviles y tablets se mantienen los anchos originales.
+
+  - `.modal-content`: ocupará 80% del ancho de la pantalla (80%)
+  - `#modalColumnas .modal-content`: ocupará 60% del ancho de la pantalla (60%)
+  - `#modalProducto .modal-content`: ocupará 90% del ancho de la pantalla (90%)
+*/
+@media (min-width:769px) {
+  .modal-content {
+    /* Al ocupar el 80% del contenedor, el modal se ajusta a pantallas grandes */
+    width: 80%;
+    max-width: none;
+  }
+  #modalColumnas .modal-content {
+    /* Este modal es más pequeño; 60% del ancho total */
+    width: 60%;
+    max-width: none;
+  }
+  #modalProducto .modal-content {
+    /* Modal de productos ocupa casi toda la pantalla, 90% */
+    width: 90%;
+    max-width: none;
+  }
+}
 </style>
 
 </head>
@@ -937,7 +999,11 @@ margin-top:20px;
 <div class="modal" id="modalForm">
 
     <div class="modal-content">
-  
+
+      <!-- Botón de cierre en forma de X con fondo rojo -->
+      <button class="modal-close" onclick="this.closest('.modal').style.display='none';">&#x2716;</button>
+
+      <!-- Título del formulario -->
       <h3 id="mtitle">Editar Pedido</h3>
   
       <label>Pedido</label>
@@ -1021,6 +1087,8 @@ margin-top:20px;
       <div style="display:flex;gap:10px;margin-top:14px">
         <button id="btnGuardar">Guardar</button>
         <button id="btnCancelar">Cancelar</button>
+        <!-- Botón para abrir el modal de productos desde el modal de pedido -->
+        <button id="btnProductos" type="button" onclick="abrirModalProducto(mPedido ? mPedido.value : '')">Productos</button>
       </div>
   
     </div>
@@ -1029,6 +1097,9 @@ margin-top:20px;
   <div id="modalProducto" class="modal" style="display:none;">
 
     <div class="modal-content" style="max-width:900px;">
+
+      <!-- Botón de cierre en forma de X con fondo rojo -->
+      <button class="modal-close" onclick="this.closest('.modal').style.display='none';">&#x2716;</button>
   
       <h2>📦 Productos del Pedido</h2>
       <div id="pResumenPedido" style="margin-top:10px;">Selecciona un pedido para cargar sus datos.</div>

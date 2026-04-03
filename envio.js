@@ -2,8 +2,10 @@
 API
 ***************************************************/
 //const API="https://script.google.com/macros/s/AKfycbxtLfg0gSUBPCBgDZZeVC-yO7KElDU5RLbTmvj68K9UPOthpdtgLfrk_MRTGTpRaa1M/exec";
+//const API_OLD="https://script.google.com/macros/s/AKfycbyMhSW9JBm6zb90K1V_qHTuSZ9GqR7XNPAgV3j9upGq66OMQNK9RtEii2gT5QXlTpFD/exec";
 
-const API="https://script.google.com/macros/s/AKfycbyMhSW9JBm6zb90K1V_qHTuSZ9GqR7XNPAgV3j9upGq66OMQNK9RtEii2gT5QXlTpFD/exec";
+// URL base del endpoint de Apps Script. Se actualiza cuando se publica una nueva versión.
+const API="https://script.google.com/macros/s/AKfycbxzSkxz-rVSMLBEGy7k0FPd1EJpfeufZXEzxzf3JXOAQ7ONJ8O3tpxkTXYzdwDbjb7s/exec";
 
 /***************************************************
 DOM
@@ -1571,29 +1573,43 @@ const btnGuardarProducto = document.getElementById("btnGuardarProducto");
 const btnCerrarProducto = document.getElementById("btnCerrarProducto");
 const btnGenerarProductoPDF = document.getElementById("btnGenerarProductoPDF");
 
-let PRODUCTOS_DB = cargarProductosDB();
+// En lugar de cargar una base de datos desde localStorage, inicializamos
+// una estructura vacía en memoria. El usuario ha indicado que los productos
+// no deben persistirse localmente, por lo que no usaremos localStorage
+// para almacenar datos temporales de productos. Si se necesita una cache
+// en memoria, `PRODUCTOS_DB` puede utilizarse para este fin durante la
+// vida útil de la aplicación.
+let PRODUCTOS_DB = {};
 let PRODUCTOS_ACTUALES = [];
 let PRODUCTO_ROW_ACTUAL = "";
 let PEDIDO_META_ACTUAL = null;
 
 function cargarProductosDB(){
-  try{
-    const raw = localStorage.getItem(PRODUCTOS_STORAGE_KEY);
-    const parsed = raw ? JSON.parse(raw) : {};
-    return parsed && typeof parsed === "object" ? parsed : {};
-  }catch(e){
-    console.error("Error leyendo productos guardados:", e);
-    return {};
-  }
+  // El almacenamiento local se ha desactivado para los productos. Devuelve
+  // siempre un objeto vacío para que el resto del código no intente leer
+  // datos desde localStorage. Mantener esta función permite conservar la
+  // compatibilidad con llamadas existentes sin utilizar localStorage.
+  return {};
+}
+
+/*
+ * Limpia la base de datos en memoria de productos.
+ * Al no usar localStorage, esta función simplemente reinicia la estructura
+ * interna `PRODUCTOS_DB` para que el modal no conserve productos de
+ * operaciones anteriores dentro de la misma sesión.
+ */
+function limpiarProductosDB(){
+  // Reiniciamos la estructura en memoria. Ya no eliminamos nada de
+  // localStorage porque los productos no se guardan allí. Esta función
+  // queda para mantener compatibilidad con el flujo existente y evitar
+  // llamadas rotas.
+  PRODUCTOS_DB = {};
 }
 
 function persistirProductosDB(){
-  try{
-    localStorage.setItem(PRODUCTOS_STORAGE_KEY, JSON.stringify(PRODUCTOS_DB));
-  }catch(e){
-    console.error("Error guardando productos:", e);
-    alerta("❌ No se pudieron guardar los productos en este navegador", "error");
-  }
+  // El usuario no desea guardar productos localmente. Esta función se
+  // convierte en una operación nula para evitar escribir en localStorage.
+  return;
 }
 
 function obtenerPedidosDisponibles(){
@@ -1703,11 +1719,9 @@ async function cargarProductosDePedido(meta){
   if(pComuna) pComuna.value = meta.comuna || "";
   PRODUCTOS_ACTUALES = [];
   renderTablaProductos();
-  const guardadoLocal = PRODUCTOS_DB[String(meta.pedido)] || {};
-  if(guardadoLocal && Array.isArray(guardadoLocal.items) && guardadoLocal.items.length){
-    PRODUCTOS_ACTUALES = guardadoLocal.items.map(item => ({...item}));
-    renderTablaProductos();
-  }
+  // Ya no cargamos productos desde una base local. Los productos se
+  // solicitarán directamente al backend y solo se almacenarán en memoria
+  // durante la sesión actual.
   try{
     const productosRemotos = await obtenerProductosPedidoBD(meta.pedido);
     if(Array.isArray(productosRemotos) && productosRemotos.length){
@@ -1717,18 +1731,8 @@ async function cargarProductosDePedido(meta){
         descripcion: p.descripcion || p.detalle || "",
         cantidad: Number(p.cantidad || 0)
       }));
-      PRODUCTOS_DB[String(meta.pedido)] = {
-        row: meta._row || "",
-        pedido: meta.pedido || "",
-        cliente: meta.cliente || "",
-        direccion: meta.direccion || "",
-        comuna: meta.comuna || "",
-        updatedAt: new Date().toISOString(),
-        items: PRODUCTOS_ACTUALES.map(item => ({...item})),
-        totalItems: PRODUCTOS_ACTUALES.length,
-        totalCantidad: totalProductosActuales()
-      };
-      persistirProductosDB();
+      // Ya no persistimos los productos en localStorage. Simplemente
+      // actualizamos la tabla en memoria con los datos obtenidos del backend.
       renderTablaProductos();
     }
   }catch(err){
@@ -1776,24 +1780,21 @@ function eliminarProductoActual(index){
 }
 window.eliminarProductoActual = eliminarProductoActual;
 
-async function guardarProductosPedido(){
+/**
+ * Guarda los productos de un pedido en el backend. Si `limpiarDespues` es
+ * verdadero (por defecto), se limpia el estado del modal y la cache en
+ * memoria después de guardar. Si es falso, se conserva el estado para
+ * operaciones posteriores (como la generación de PDF).
+ */
+async function guardarProductosPedido(limpiarDespues = true){
   if(!PEDIDO_META_ACTUAL){
     alerta("⚠️ No hay pedido seleccionado", "warn");
     return;
   }
   const pedidoKey = String(PEDIDO_META_ACTUAL.pedido || "");
-  PRODUCTOS_DB[pedidoKey] = {
-    row: PEDIDO_META_ACTUAL._row || "",
-    pedido: PEDIDO_META_ACTUAL.pedido || "",
-    cliente: PEDIDO_META_ACTUAL.cliente || "",
-    direccion: PEDIDO_META_ACTUAL.direccion || "",
-    comuna: PEDIDO_META_ACTUAL.comuna || "",
-    updatedAt: new Date().toISOString(),
-    items: PRODUCTOS_ACTUALES.map(item => ({...item})),
-    totalItems: PRODUCTOS_ACTUALES.length,
-    totalCantidad: totalProductosActuales()
-  };
-  persistirProductosDB();
+  // Ya no actualizamos ni persistimos datos en localStorage. Solo usaremos
+  // `PRODUCTOS_DB` como una caché en memoria si es necesario. En este
+  // proyecto, simplemente mantenemos los productos en `PRODUCTOS_ACTUALES`.
   try{
     const payload = {
       action: "guardarProductos",
@@ -1812,9 +1813,25 @@ async function guardarProductosPedido(){
     const data = await res.json();
     if(!data.ok) throw new Error(data.error || "Error al guardar productos");
     alerta("✅ Productos guardados para el pedido #" + pedidoKey, "ok");
+    // Después de guardar los productos de manera remota, podemos limpiar
+    // cualquier estructura en memoria si deseamos iniciar un nuevo registro.
+    // No limpiamos la hoja de productos remota: el usuario quiere que los
+    // productos se guarden en la hoja (backend) y no localmente.
+    if(limpiarDespues){
+      limpiarProductosDB();
+      // Reiniciamos el estado del modal para un nuevo registro
+      PRODUCTOS_ACTUALES = [];
+      PEDIDO_META_ACTUAL = null;
+      limpiarCabeceraProducto();
+      renderTablaProductos();
+      actualizarResumenPedido();
+      if(pSelectPedido) pSelectPedido.value = "";
+    }
   }catch(e){
     console.error("Error guardando productos en backend:", e);
-    alerta("⚠️ Los productos se guardaron localmente pero no en el backend", "warn");
+    // Si ocurre un error al guardar productos en el backend, notificamos al usuario.
+    // Ya no existe un respaldo local, por lo que el usuario deberá intentar de nuevo.
+    alerta("⚠️ Ocurrió un error al guardar los productos en el backend. Inténtalo nuevamente.", "warn");
   }
 }
 
@@ -1832,7 +1849,9 @@ async function generarPDFProductos(){
   try{
     setLoading(btnGenerarProductoPDF, true);
 
-    await guardarProductosPedido();
+    // Guardamos los productos sin limpiar el estado, ya que aún necesitamos
+    // acceder a PRODUCTOS_ACTUALES y PEDIDO_META_ACTUAL para generar el PDF.
+    await guardarProductosPedido(false);
 
     const payload = construirPayloadPedido(PEDIDO_META_ACTUAL, {
       action: "generarPdfPedido",
