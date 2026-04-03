@@ -2,7 +2,7 @@
 //const API_OLD="https://script.google.com/macros/s/AKfycbyMhSW9JBm6zb90K1V_qHTuSZ9GqR7XNPAgV3j9upGq66OMQNK9RtEii2gT5QXlTpFD/exec";
 
 // URL base del endpoint de Apps Script. Se actualiza cuando se publica una nueva versión.
-const API="https://script.google.com/macros/s/AKfycbxzSkxz-rVSMLBEGy7k0FPd1EJpfeufZXEzxzf3JXOAQ7ONJ8O3tpxkTXYzdwDbjb7s/exec";
+const API="https://script.google.com/macros/s/AKfycbz678Q4t9e22Hd4PMw9xGyeGr_zwB2hNbwdd8dvYyZ7e3fvN8IlIcj_Hl8NVKuza_br/exec";
 //https://script.google.com/macros/s/AKfycbzj3sRVqYDgGVak1PNHrycYQ6FI5Mk5UyADOL0uI4CDAprlT7LDv3ZVWrfMCkwPMCgW/exec
 
 let RAW=[];
