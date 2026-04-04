@@ -8,9 +8,6 @@
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
-<link rel="stylesheet" href="https://unpkg.com/leaflet-routing-machine@latest/dist/leaflet-routing-machine.css">
-<script src="https://unpkg.com/leaflet-routing-machine@latest/dist/leaflet-routing-machine.js"></script>
-
 <style>
 :root{
   --bg:#f1f5f9;
@@ -19,8 +16,8 @@
   --text:#0f172a;
   --muted:#64748b;
   --accent:#14b8a6;
-  --primary:#3b82f6;
-  --danger:#ef4444;
+  --primary:#2563eb;
+  --danger:#dc2626;
   --border:#e2e8f0;
   --radius:14px;
   --safe-top: env(safe-area-inset-top, 0px);
@@ -62,16 +59,15 @@ body{
   height:100vh;
   height:100dvh;
   overflow:hidden;
-  background:var(--bg);
   display:flex;
   flex-direction:column;
+  background:var(--bg);
 }
 
 /* HEADER */
 header{
   position:relative;
-  z-index:30;
-  flex:0 0 auto;
+  z-index:1000;
   background:#fff;
   border-bottom:1px solid var(--border);
   box-shadow:0 4px 14px rgba(0,0,0,.06);
@@ -81,14 +77,10 @@ header{
     10px
     calc(14px + var(--safe-left));
   display:flex;
+  flex-wrap:wrap;
   align-items:center;
   justify-content:space-between;
   gap:12px;
-  flex-wrap:wrap;
-}
-
-header.hidden{
-  display:none;
 }
 
 .header-left{
@@ -101,16 +93,22 @@ header.hidden{
 #btnMenu{
   width:42px;
   height:42px;
-  font-size:20px;
-  background:linear-gradient(135deg,#2dd4bf,#0d9488);
-  color:#fff;
   border:none;
   border-radius:12px;
   cursor:pointer;
-  flex:0 0 auto;
+  font-size:20px;
+  color:#fff;
+  background:linear-gradient(135deg,#2dd4bf,#0d9488);
 }
 
-header h1{
+#logoEmpresa{
+  height:36px;
+  max-width:120px;
+  object-fit:contain;
+  display:none;
+}
+
+#tituloSistema{
   font-size:18px;
   font-weight:800;
   white-space:nowrap;
@@ -120,55 +118,43 @@ header h1{
 
 .header-info{
   display:flex;
+  flex-wrap:wrap;
   align-items:center;
   gap:12px;
-  font-size:12px;
   color:var(--muted);
-  flex-wrap:wrap;
+  font-size:12px;
 }
 
-header .right{
+.right{
   display:flex;
-  align-items:center;
   gap:10px;
   flex-wrap:wrap;
 }
 
-/* BOTONES */
 button{
   border:none;
-  border-radius:var(--radius);
-  padding:10px 16px;
+  border-radius:12px;
+  padding:10px 14px;
   font-weight:700;
   cursor:pointer;
-  display:inline-flex;
-  align-items:center;
-  justify-content:center;
-  gap:8px;
-  transition:.2s ease;
-}
-
-button:active{
-  transform:scale(.98);
 }
 
 .btn-primary{
-  background:linear-gradient(135deg,#60a5fa,#2563eb);
   color:#fff;
-  box-shadow:0 6px 18px rgba(37,99,235,.24);
+  background:linear-gradient(135deg,#60a5fa,#2563eb);
+  box-shadow:0 6px 18px rgba(37,99,235,.22);
 }
 
 .btn-danger{
-  background:linear-gradient(135deg,#f87171,#dc2626);
   color:#fff;
-  box-shadow:0 6px 18px rgba(220,38,38,.22);
+  background:linear-gradient(135deg,#f87171,#dc2626);
+  box-shadow:0 6px 18px rgba(220,38,38,.20);
 }
 
 .btn-ghost{
   background:#fff;
-  border:1px solid var(--border);
-  box-shadow:none;
   color:var(--text);
+  border:1px solid var(--border);
 }
 
 /* MAIN */
@@ -176,7 +162,6 @@ button:active{
   position:relative;
   flex:1 1 auto;
   min-height:0;
-  width:100%;
   overflow:hidden;
 }
 
@@ -184,8 +169,6 @@ button:active{
   position:relative;
   width:100%;
   height:100%;
-  overflow:hidden;
-  background:#dbeafe;
 }
 
 #mapa{
@@ -196,22 +179,20 @@ button:active{
   z-index:1;
 }
 
-/* TARJETA */
+/* CARD INFO */
 #dashboardMapa{
   position:absolute;
-  left:16px;
-  right:16px;
-  bottom:calc(16px + var(--safe-bottom));
+  left:14px;
+  right:14px;
+  bottom:calc(14px + var(--safe-bottom));
   z-index:500;
+  max-width:560px;
   background:rgba(255,255,255,.96);
-  backdrop-filter:blur(8px);
-  border:1px solid rgba(226,232,240,.9);
+  border:1px solid var(--border);
   border-radius:18px;
   box-shadow:0 18px 35px rgba(0,0,0,.18);
-  padding:14px 16px;
-  transition:all .3s ease;
+  backdrop-filter:blur(8px);
   overflow:hidden;
-  max-width:560px;
 }
 
 .map-card-header{
@@ -219,33 +200,28 @@ button:active{
   align-items:center;
   justify-content:space-between;
   gap:10px;
-  margin-bottom:8px;
+  padding:14px 14px 8px;
 }
 
 .map-card-title{
   font-size:14px;
   font-weight:800;
-  color:var(--text);
 }
 
-.map-card-header button{
+.map-toggle{
   width:34px;
   height:34px;
   min-width:34px;
   padding:0;
   border-radius:10px;
-  border:none;
-  font-size:18px;
-  font-weight:800;
-  cursor:pointer;
-  background:linear-gradient(135deg,#60a5fa,#2563eb);
   color:#fff;
-  box-shadow:0 4px 10px rgba(0,0,0,.18);
+  background:linear-gradient(135deg,#60a5fa,#2563eb);
 }
 
 #mapCardContent{
+  padding:0 14px 14px;
   transition:opacity .25s ease, max-height .3s ease;
-  max-height:420px;
+  max-height:500px;
   opacity:1;
   overflow:hidden;
 }
@@ -254,14 +230,15 @@ button:active{
   max-height:0;
   opacity:0;
   pointer-events:none;
-  margin-top:0;
+  padding-top:0;
+  padding-bottom:0;
 }
 
-.map-stats{
+.map-grid{
   display:grid;
   grid-template-columns:repeat(2,minmax(0,1fr));
   gap:10px;
-  margin-top:6px;
+  margin-top:8px;
 }
 
 .map-stat{
@@ -273,48 +250,15 @@ button:active{
 
 .map-stat strong{
   display:block;
-  font-size:16px;
-  color:var(--text);
-  margin-bottom:2px;
+  font-size:14px;
+  margin-bottom:4px;
 }
 
 .map-stat span{
-  font-size:12px;
-  color:var(--muted);
-}
-
-.fs-control{
-  margin-top:10px;
-  background:#f8fafc;
-  border:1px solid var(--border);
-  border-radius:12px;
-  padding:10px 12px;
-  display:flex;
-  align-items:center;
-  justify-content:space-between;
-  gap:12px;
-}
-
-.fs-control label{
-  display:flex;
-  align-items:center;
-  gap:10px;
-  font-size:12px;
-  font-weight:700;
-  color:var(--text);
-}
-
-.fs-control input[type="checkbox"]{
-  width:18px;
-  height:18px;
-  accent-color:#2563eb;
-}
-
-.fs-help{
+  display:block;
   font-size:11px;
   color:var(--muted);
   line-height:1.3;
-  margin-top:6px;
 }
 
 /* MENU */
@@ -328,7 +272,7 @@ button:active{
   background:#fff;
   box-shadow:6px 0 28px rgba(0,0,0,.18);
   transition:.35s ease;
-  z-index:9998;
+  z-index:3000;
   display:flex;
   flex-direction:column;
   overflow:hidden;
@@ -347,7 +291,6 @@ button:active{
   justify-content:space-between;
   gap:8px;
   font-weight:800;
-  flex:0 0 auto;
 }
 
 .menu-items{
@@ -356,13 +299,12 @@ button:active{
   flex-direction:column;
   gap:10px;
   overflow-y:auto;
-  flex:1 1 auto;
-  padding-bottom:calc(14px + var(--safe-bottom));
+  flex:1;
 }
 
 .menu-item{
   padding:14px;
-  border-radius:var(--radius);
+  border-radius:12px;
   background:var(--hover);
   font-weight:700;
   cursor:pointer;
@@ -375,31 +317,13 @@ button:active{
   border-color:#cfe0ff;
 }
 
-#menuOverlay{
-  position:fixed;
-  inset:0;
-  background:rgba(15,23,42,.28);
-  z-index:9997;
-  display:none;
-}
-
-#menuOverlay.show{
-  display:block;
-}
-
 /* VIEWER */
-.viewer{
+#viewer{
   position:absolute;
   inset:0;
-  width:100%;
-  height:100%;
   background:#fff;
-  z-index:9996;
+  z-index:2000;
   display:none;
-}
-
-.viewer.active{
-  display:block;
 }
 
 #frame{
@@ -409,15 +333,14 @@ button:active{
   height:100%;
   border:none;
   background:#fff;
-  z-index:1;
 }
 
 /* BOTON VOLVER */
-.btn-volver-flotante{
+#btnVolverFlotante{
   position:absolute;
   top:calc(12px + var(--safe-top));
   left:calc(12px + var(--safe-left));
-  z-index:5;
+  z-index:2001;
   display:none;
   align-items:center;
   justify-content:center;
@@ -428,11 +351,10 @@ button:active{
   background:linear-gradient(135deg,#0f172a,#334155);
   color:#fff;
   font-weight:700;
-  font-size:13px;
   box-shadow:0 10px 25px rgba(0,0,0,.25);
 }
 
-.btn-volver-flotante.visible{
+#viewer.abierto #btnVolverFlotante{
   display:inline-flex;
 }
 
@@ -440,39 +362,17 @@ button:active{
 #loadingOverlay{
   position:fixed;
   inset:0;
-  background:rgba(241,245,249,.92);
-  backdrop-filter:blur(4px);
-  z-index:10000;
+  z-index:5000;
   display:none;
   align-items:center;
   justify-content:center;
-  text-align:center;
-  padding:20px;
+  background:rgba(241,245,249,.92);
+  backdrop-filter:blur(4px);
   font-weight:700;
   color:#0f172a;
 }
 
-#progressBar{
-  position:fixed;
-  top:0;
-  left:0;
-  height:3px;
-  width:0%;
-  background:linear-gradient(90deg,#3b82f6,#14b8a6);
-  z-index:10001;
-  display:none;
-}
-
-/* PUNTO UBICACION */
-.mi-punto-ubicacion{
-  width:18px;
-  height:18px;
-  border-radius:50%;
-  background:#2563eb;
-  border:3px solid #ffffff;
-  box-shadow:0 0 0 6px rgba(37,99,235,.20);
-}
-
+/* MOBILE */
 @media (max-width:768px){
   header{
     padding:
@@ -485,11 +385,9 @@ button:active{
 
   .header-left,
   .header-info,
-  header .right{
+  .right{
     width:100%;
   }
-
-  .header-left{ gap:8px; }
 
   #btnMenu{
     width:34px;
@@ -503,20 +401,22 @@ button:active{
     max-width:90px !important;
   }
 
-  header h1{ font-size:14px; }
+  #tituloSistema{
+    font-size:14px;
+  }
 
   .header-info{
     font-size:10px;
     gap:6px;
   }
 
-  header .right{
+  .right{
     display:grid;
     grid-template-columns:1fr 1fr;
     gap:8px;
   }
 
-  header .right button{
+  .right button{
     width:100%;
     min-height:34px;
     padding:7px 8px;
@@ -529,48 +429,31 @@ button:active{
     right:8px;
     bottom:calc(8px + var(--safe-bottom));
     max-width:none;
-    padding:10px;
-    border-radius:14px;
   }
 
-  .map-card-title{ font-size:12px; }
-
-  .map-card-header button{
-    width:28px;
-    height:28px;
-    min-width:28px;
-    font-size:15px;
-    border-radius:8px;
+  .map-card-header{
+    padding:10px 10px 6px;
   }
 
-  .map-stats{
-    grid-template-columns:1fr 1fr;
+  #mapCardContent{
+    padding:0 10px 10px;
+  }
+
+  .map-grid{
     gap:7px;
-    margin-top:4px;
   }
 
   .map-stat{
     padding:8px;
-    border-radius:10px;
   }
 
   .map-stat strong{
-    font-size:13px;
-    margin-bottom:1px;
+    font-size:12px;
   }
 
   .map-stat span{
     font-size:10px;
-    line-height:1.2;
   }
-
-  .fs-control{
-    padding:8px 10px;
-    border-radius:10px;
-  }
-
-  .fs-control label{ font-size:11px; }
-  .fs-help{ font-size:10px; }
 
   .menu-lateral{
     width:min(270px, calc(100vw - 18px));
@@ -590,10 +473,9 @@ button:active{
   .menu-item{
     padding:11px 12px;
     font-size:13px;
-    border-radius:10px;
   }
 
-  .btn-volver-flotante{
+  #btnVolverFlotante{
     top:calc(10px + var(--safe-top));
     left:calc(10px + var(--safe-left));
     padding:9px 12px;
@@ -602,8 +484,12 @@ button:active{
 }
 
 @media (max-width:480px){
-  header .right{
+  .right{
     grid-template-columns:1fr;
+  }
+
+  .map-grid{
+    grid-template-columns:1fr 1fr;
   }
 }
 </style>
@@ -612,14 +498,11 @@ button:active{
 
 <div class="app">
   <div id="loadingOverlay">Iniciando sistema…</div>
-  <div id="progressBar"></div>
-
-  <div id="menuOverlay" onclick="toggleMenu(false)"></div>
 
   <aside id="menuLateral" class="menu-lateral">
     <div class="menu-header">
       <span>📦 Panel de Gestión</span>
-      <button type="button" class="btn-ghost" onclick="toggleMenu(false)">✕</button>
+      <button type="button" class="btn-ghost" onclick="toggleMenu()">✕</button>
     </div>
     <div id="menuModulos" class="menu-items"></div>
   </aside>
@@ -627,17 +510,13 @@ button:active{
   <header id="mainHeader">
     <div class="header-left">
       <button id="btnMenu" type="button" onclick="toggleMenu()">☰</button>
-
-      <img id="logoEmpresa"
-           alt="Logo Empresa"
-           style="height:36px;max-width:120px;object-fit:contain;display:none;">
-
+      <img id="logoEmpresa" alt="Logo Empresa">
       <h1 id="tituloSistema">Panel Logístico</h1>
     </div>
 
     <div class="header-info">
-      <div id="usuario"></div>
-      <div id="conexionInfo">Obteniendo ubicación actual...</div>
+      <div id="usuario">👤 Usuario</div>
+      <div id="conexionInfo">Cargando...</div>
     </div>
 
     <div class="right">
@@ -653,53 +532,33 @@ button:active{
       <div id="dashboardMapa">
         <div class="map-card-header">
           <div class="map-card-title">Resumen del mapa</div>
-          <button id="toggleCardBtn" type="button" onclick="toggleMapCard()">－</button>
+          <button type="button" class="map-toggle" onclick="toggleMapCard()">－</button>
         </div>
 
         <div id="mapCardContent">
-          <div style="font-size:11px;color:var(--muted);margin-bottom:8px;">
-            Ubicación actual del dispositivo con radio visible de 200 metros.
-          </div>
-
-          <div class="map-stats">
+          <div class="map-grid">
             <div class="map-stat">
-              <strong id="statLat">--</strong>
-              <span>Latitud</span>
+              <strong id="dirTexto">—</strong>
+              <span>Dirección actual</span>
             </div>
-
             <div class="map-stat">
-              <strong id="statLng">--</strong>
-              <span>Longitud</span>
+              <strong id="netTexto">—</strong>
+              <span>Estado de red</span>
             </div>
-
             <div class="map-stat">
-              <strong id="statPrecision">--</strong>
-              <span>Precisión GPS</span>
+              <strong id="speedTexto">🚗 0.0 km/h</strong>
+              <span>Velocidad</span>
             </div>
-
             <div class="map-stat">
-              <strong id="statFullscreen">Activo</strong>
-              <span>Pantalla completa</span>
+              <strong>GPS activo</strong>
+              <span>Mapa en tiempo real</span>
             </div>
-          </div>
-
-          <div class="fs-control">
-            <label>
-              <input type="checkbox" id="chkAutoFullscreen">
-              Deshabilitar pantalla completa automática
-            </label>
-          </div>
-
-          <div class="fs-help">
-            El sistema intenta entrar en pantalla completa por defecto. Si el navegador lo bloquea, se reintentará en el primer toque.
           </div>
         </div>
       </div>
 
-      <div id="viewer" class="viewer">
-        <button id="btnVolverFlotante" type="button" class="btn-volver-flotante" onclick="volver()">
-          ⬅ Volver
-        </button>
+      <div id="viewer">
+        <button id="btnVolverFlotante" type="button" onclick="volver()">⬅ Volver</button>
         <iframe id="frame"></iframe>
       </div>
     </section>
@@ -707,370 +566,278 @@ button:active{
 </div>
 
 <script>
-let mapa;
-let vistaActual = 'main.html';
-let marcadorUbicacion = null;
-let circuloUbicacion = null;
-let fullscreenIntentado = false;
-
-const FULLSCREEN_DISABLED_KEY = 'fullscreenDisabled';
-
 function toggleMapCard(){
-  const card = document.getElementById('dashboardMapa');
-  const btn  = document.getElementById('toggleCardBtn');
+  const card = document.getElementById("dashboardMapa");
+  const btn = card?.querySelector(".map-toggle");
   if(!card || !btn) return;
-  const isCollapsed = card.classList.toggle('collapsed');
-  btn.textContent = isCollapsed ? '＋' : '－';
+  const colapsado = card.classList.toggle("collapsed");
+  btn.textContent = colapsado ? "＋" : "－";
+}
+</script>
+
+<script>
+/***************************************************
+CONFIGURACIÓN GENERAL
+***************************************************/
+const API = "https://script.google.com/macros/s/AKfycbxDUcEzMGw9LWnzn-YUV89So3AFCEnplOHQuGmzq-EV_hnIMhQvgQIPY1AxvlKJPZNx/exec";
+
+let USER_IP = "—";
+let WATCH_ID = null;
+let LAST_GEOCODE = 0;
+let MAPA = null;
+let MARCADOR = null;
+let CIRCULO = null;
+
+/***************************************************
+🔥 RESTAURACIÓN INMEDIATA DEL MÓDULO
+***************************************************/
+function restaurarModuloActivo(){
+  const data = localStorage.getItem("moduloActivo");
+  if(!data) return;
+  try{
+    const {url, titulo} = JSON.parse(data);
+    const viewer = document.getElementById("viewer");
+    const frame = document.getElementById("frame");
+    if(viewer && frame){
+      viewer.style.display = "block";
+      viewer.classList.add("abierto");
+      frame.src = url;
+      if(titulo) document.getElementById("tituloSistema").textContent = titulo;
+    }
+  }catch{}
 }
 
-function toggleMenu(force){
-  const menu = document.getElementById('menuLateral');
-  const overlay = document.getElementById('menuOverlay');
-  if(!menu || !overlay) return;
-
-  const open = typeof force === 'boolean'
-    ? force
-    : !menu.classList.contains('open');
-
-  menu.classList.toggle('open', open);
-  overlay.classList.toggle('show', open);
+/***************************************************
+ICONOS
+***************************************************/
+function crearIconoAuto(rot = 0){
+  return L.divIcon({
+    className: "auto-icon",
+    iconSize: [48,48],
+    iconAnchor: [24,24],
+    html: `<svg viewBox="0 0 64 64" style="transform:rotate(${rot}deg)">
+      <rect x="10" y="24" width="44" height="16" rx="6" fill="#111"/>
+      <rect x="18" y="20" width="28" height="10" rx="4" fill="#222"/>
+      <circle cx="20" cy="42" r="4" fill="#000"/>
+      <circle cx="44" cy="42" r="4" fill="#000"/>
+    </svg>`
+  });
 }
 
-function actualizarBotonVolver(){
-  const btnVolver = document.getElementById('btnVolverFlotante');
-  if(!btnVolver) return;
+const ICONO_ESTATICO = L.divIcon({
+  className:"auto-icon",
+  iconSize:[32,32],
+  iconAnchor:[16,16],
+  html:`<svg viewBox="0 0 24 24" fill="#dc2626">
+    <path d="M12 2C8 2 4 6 4 10c0 6 8 14 8 14s8-8 8-14c0-4-4-8-8-8z"/>
+  </svg>`
+});
 
-  if(vistaActual !== 'main.html'){
-    btnVolver.classList.add('visible');
-  }else{
-    btnVolver.classList.remove('visible');
+/***************************************************
+MENÚ
+***************************************************/
+function toggleMenu(){
+  document.getElementById("menuLateral")?.classList.toggle("open");
+}
+
+/***************************************************
+LOADER MÍNIMO
+***************************************************/
+function iniciarProgreso(){
+  const overlay = document.getElementById("loadingOverlay");
+  if(overlay) overlay.style.display = "flex";
+}
+
+function finalizarProgreso(){
+  const overlay = document.getElementById("loadingOverlay");
+  if(overlay) overlay.style.display = "none";
+}
+
+/***************************************************
+INICIO PRINCIPAL
+***************************************************/
+document.addEventListener("DOMContentLoaded", ()=>{
+  iniciarProgreso();
+  restaurarModuloActivo();
+  setTimeout(obtenerIP,0);
+  setTimeout(iniciarReloj,0);
+  iniciarSesionRapido();
+  iniciarMapa();
+});
+
+async function iniciarSesionRapido(){
+  try {
+    let user = sessionStorage.getItem("user");
+    if(user) user = JSON.parse(user);
+    else if(typeof validarSesionGlobal === "function"){
+      user = await validarSesionGlobal();
+      if(!user) return cerrarSesion();
+      sessionStorage.setItem("user", JSON.stringify(user));
+    }
+
+    if(user){
+      document.getElementById("usuario").textContent = `👤 ${user.nombre} · ${user.rol}`;
+    }
+
+    const tareas = [];
+    if(typeof cargarEmpresaHeader === "function") tareas.push(cargarEmpresaHeader());
+    tareas.push(cargarMenu(user || {rol:"ADMIN", permisos:[]}));
+    Promise.all(tareas).catch(console.error);
+
+  } catch(e){ console.error(e); }
+  finally { finalizarProgreso(); }
+}
+
+/***************************************************
+MENÚ DINÁMICO
+***************************************************/
+async function cargarMenu(user){
+  try{
+    const r = await fetch(`${API}?action=listarModulos`);
+    const res = await r.json();
+    const cont = document.getElementById("menuModulos");
+    cont.innerHTML = "";
+    if(!Array.isArray(res.data)) return;
+
+    res.data.forEach(m=>{
+      const [id,nombre,archivo,icono,permiso,activo] = m;
+      if(activo !== "SI") return;
+      if(user?.rol !== "ADMIN" && user?.permisos && !user.permisos.includes(permiso)) return;
+
+      const item = document.createElement("div");
+      item.className = "menu-item";
+      item.innerHTML = `${icono || "📦"} ${nombre}`;
+      item.onclick = ()=>{ abrirModulo(archivo,nombre); toggleMenu(); };
+      cont.appendChild(item);
+    });
+  }catch(e){ console.error(e); }
+}
+
+/***************************************************
+VISOR DE MÓDULOS
+***************************************************/
+function abrirModulo(url, titulo){
+  localStorage.setItem("moduloActivo", JSON.stringify({url,titulo}));
+  const viewer = document.getElementById("viewer");
+  const frame = document.getElementById("frame");
+  if(viewer && frame){
+    viewer.style.display = "block";
+    viewer.classList.add("abierto");
+    frame.src = url;
+    if(titulo) document.getElementById("tituloSistema").textContent = titulo;
   }
-}
-
-function mostrarVistaPrincipal(){
-  const header = document.getElementById('mainHeader');
-  const viewer = document.getElementById('viewer');
-  const frame = document.getElementById('frame');
-
-  vistaActual = 'main.html';
-
-  if(header) header.classList.remove('hidden');
-  if(viewer) viewer.classList.remove('active');
-  if(frame) frame.src = '';
-
-  actualizarBotonVolver();
-
-  setTimeout(() => {
-    if(mapa) mapa.invalidateSize();
-  }, 220);
-}
-
-function abrirModulo(url){
-  const header = document.getElementById('mainHeader');
-  const viewer = document.getElementById('viewer');
-  const frame = document.getElementById('frame');
-
-  vistaActual = url || '';
-
-  if(frame) frame.src = url || '';
-  if(header) header.classList.add('hidden');
-  if(viewer) viewer.classList.add('active');
-
-  actualizarBotonVolver();
-  toggleMenu(false);
 }
 
 function volver(){
-  mostrarVistaPrincipal();
+  const viewer = document.getElementById("viewer");
+  const frame = document.getElementById("frame");
+  if(viewer && frame){
+    viewer.style.display = "none";
+    viewer.classList.remove("abierto");
+    frame.src = "";
+    document.getElementById("tituloSistema").textContent = "Panel Logístico";
+    localStorage.removeItem("moduloActivo");
+  }
+  if(MAPA) setTimeout(()=>MAPA.invalidateSize(),300);
 }
 
-function recargarPanel(){
-  if(vistaActual && vistaActual !== 'main.html'){
-    const frame = document.getElementById('frame');
-    if(frame) frame.src = vistaActual;
-  }else{
-    location.reload();
+/***************************************************
+MAPA + GPS
+***************************************************/
+function iniciarMapa(){
+  if(!navigator.geolocation || !window.L) return;
+
+  WATCH_ID = navigator.geolocation.watchPosition(pos=>{
+    const {latitude:lat, longitude:lng, speed=0, heading=0} = pos.coords;
+
+    if(!MAPA){
+      MAPA = L.map("mapa").setView([lat,lng],16);
+      L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png").addTo(MAPA);
+      MARCADOR = L.marker([lat,lng],{icon:ICONO_ESTATICO}).addTo(MAPA);
+      CIRCULO = L.circle([lat,lng],{radius:80,color:"#2563eb",fillOpacity:.15}).addTo(MAPA);
+    }
+
+    MARCADOR.setLatLng([lat,lng]);
+    MARCADOR.setIcon(speed > 2 ? crearIconoAuto(heading || 0) : ICONO_ESTATICO);
+
+    const conn = navigator.connection || {};
+    let r = 80;
+    if(conn.effectiveType === "4g") r=150;
+    if(conn.effectiveType === "3g") r=100;
+    if(conn.effectiveType === "2g") r=60;
+    CIRCULO.setLatLng([lat,lng]);
+    CIRCULO.setRadius(r);
+
+    actualizarRedVelocidad(speed);
+
+    if(Date.now() - LAST_GEOCODE > 15000){
+      LAST_GEOCODE = Date.now();
+      actualizarDireccion(lat,lng);
+    }
+
+  }, ()=>{}, { enableHighAccuracy:true, maximumAge:2000, timeout:10000 });
+}
+
+/***************************************************
+DIRECCIÓN
+***************************************************/
+async function actualizarDireccion(lat,lng){
+  try{
+    const r = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`);
+    const d = await r.json();
+    document.getElementById("dirTexto").textContent = d.display_name || "—";
+  }catch{
+    document.getElementById("dirTexto").textContent = "—";
   }
 }
+
+/***************************************************
+RED + VELOCIDAD
+***************************************************/
+function actualizarRedVelocidad(speed){
+  const kmh = ((speed || 0)*3.6).toFixed(1);
+  const conn = navigator.connection || {};
+  document.getElementById("netTexto").textContent =
+    `${navigator.onLine ? "Online" : "Offline"} · ${conn.effectiveType || "—"}`;
+  document.getElementById("speedTexto").textContent = `🚗 ${kmh} km/h`;
+}
+
+/***************************************************
+IP + RELOJ
+***************************************************/
+async function obtenerIP(){
+  try{
+    USER_IP = (await (await fetch("https://api.ipify.org?format=json")).json()).ip;
+  }catch{}
+}
+
+function iniciarReloj(){
+  setInterval(()=>{
+    const n = new Date();
+    const box = document.getElementById("conexionInfo");
+    if(box){
+      box.innerHTML =
+        `📅 ${n.toLocaleDateString("es-CL")}<br>⏰ ${n.toLocaleTimeString("es-CL")}<br>🌐 IP: ${USER_IP}`;
+    }
+  },1000);
+}
+
+/***************************************************
+BOTONES
+***************************************************/
+function recargarPanel(){ location.reload(); }
 
 function cerrarSesion(){
-  localStorage.removeItem('sessionToken');
-  localStorage.removeItem('nombreUsuario');
-  window.location.href = 'index.html';
+  if(WATCH_ID) navigator.geolocation.clearWatch(WATCH_ID);
+  sessionStorage.clear();
+  localStorage.clear();
+  location.href = "index.html";
 }
-
-function crearIconoUbicacion(){
-  return L.divIcon({
-    className: '',
-    html: '<div class="mi-punto-ubicacion"></div>',
-    iconSize: [18, 18],
-    iconAnchor: [9, 9]
-  });
-}
-
-function actualizarUbicacionEnMapa(lat, lng, precision){
-  const conexionInfo = document.getElementById('conexionInfo');
-  const statLat = document.getElementById('statLat');
-  const statLng = document.getElementById('statLng');
-  const statPrecision = document.getElementById('statPrecision');
-
-  if(statLat) statLat.textContent = Number(lat).toFixed(6);
-  if(statLng) statLng.textContent = Number(lng).toFixed(6);
-  if(statPrecision) statPrecision.textContent = `${Math.round(precision || 0)} m`;
-  if(conexionInfo) conexionInfo.textContent = 'Ubicación actual cargada';
-
-  const coords = [lat, lng];
-
-  if(!marcadorUbicacion){
-    marcadorUbicacion = L.marker(coords, {
-      icon: crearIconoUbicacion()
-    }).addTo(mapa).bindPopup('Tu ubicación actual');
-  }else{
-    marcadorUbicacion.setLatLng(coords);
-  }
-
-  if(!circuloUbicacion){
-    circuloUbicacion = L.circle(coords, {
-      radius: 200,
-      color: '#2563eb',
-      weight: 2,
-      fillColor: '#60a5fa',
-      fillOpacity: 0.18
-    }).addTo(mapa);
-  }else{
-    circuloUbicacion.setLatLng(coords);
-    circuloUbicacion.setRadius(200);
-  }
-
-  mapa.setView(coords, 17);
-}
-
-function iniciarGeolocalizacion(){
-  const conexionInfo = document.getElementById('conexionInfo');
-
-  if(!navigator.geolocation){
-    if(conexionInfo) conexionInfo.textContent = 'Geolocalización no disponible';
-    return;
-  }
-
-  if(conexionInfo) conexionInfo.textContent = 'Obteniendo ubicación actual...';
-
-  navigator.geolocation.getCurrentPosition(
-    (pos) => {
-      actualizarUbicacionEnMapa(
-        pos.coords.latitude,
-        pos.coords.longitude,
-        pos.coords.accuracy || 0
-      );
-    },
-    (error) => {
-      if(conexionInfo) conexionInfo.textContent = 'No se pudo obtener ubicación';
-      console.error('Error geolocalización:', error);
-    },
-    {
-      enableHighAccuracy: true,
-      maximumAge: 60000,
-      timeout: 15000
-    }
-  );
-}
-
-function isFullscreenDisabled(){
-  return localStorage.getItem(FULLSCREEN_DISABLED_KEY) === '1';
-}
-
-function setFullscreenDisabled(value){
-  localStorage.setItem(FULLSCREEN_DISABLED_KEY, value ? '1' : '0');
-  actualizarEstadoFullscreen();
-}
-
-function getFullscreenElement(){
-  return document.fullscreenElement ||
-         document.webkitFullscreenElement ||
-         document.msFullscreenElement ||
-         null;
-}
-
-async function requestAppFullscreen(){
-  if(isFullscreenDisabled()) return false;
-
-  const el = document.documentElement;
-
-  try{
-    if(getFullscreenElement()) return true;
-
-    if(el.requestFullscreen){
-      await el.requestFullscreen();
-      return true;
-    }
-    if(el.webkitRequestFullscreen){
-      await el.webkitRequestFullscreen();
-      return true;
-    }
-    if(el.msRequestFullscreen){
-      await el.msRequestFullscreen();
-      return true;
-    }
-  }catch(e){
-    return false;
-  }
-
-  return false;
-}
-
-async function exitAppFullscreen(){
-  try{
-    if(document.exitFullscreen){
-      await document.exitFullscreen();
-      return;
-    }
-    if(document.webkitExitFullscreen){
-      await document.webkitExitFullscreen();
-      return;
-    }
-    if(document.msExitFullscreen){
-      await document.msExitFullscreen();
-      return;
-    }
-  }catch(e){}
-}
-
-function actualizarEstadoFullscreen(){
-  const chk = document.getElementById('chkAutoFullscreen');
-  const stat = document.getElementById('statFullscreen');
-
-  if(chk){
-    chk.checked = isFullscreenDisabled();
-  }
-
-  if(stat){
-    if(isFullscreenDisabled()){
-      stat.textContent = 'Desactivado';
-    }else if(getFullscreenElement()){
-      stat.textContent = 'Activo';
-    }else{
-      stat.textContent = 'En espera';
-    }
-  }
-}
-
-async function intentarFullscreenAutomatico(){
-  if(isFullscreenDisabled()) return;
-  if(fullscreenIntentado) return;
-
-  fullscreenIntentado = true;
-  const ok = await requestAppFullscreen();
-
-  if(!ok){
-    prepararPrimerGestoFullscreen();
-  }else{
-    actualizarEstadoFullscreen();
-  }
-}
-
-function prepararPrimerGestoFullscreen(){
-  if(isFullscreenDisabled()) return;
-
-  const activar = async () => {
-    document.removeEventListener('click', activar, true);
-    document.removeEventListener('touchstart', activar, true);
-    document.removeEventListener('pointerdown', activar, true);
-
-    if(!isFullscreenDisabled() && !getFullscreenElement()){
-      await requestAppFullscreen();
-      actualizarEstadoFullscreen();
-    }
-  };
-
-  document.addEventListener('click', activar, true);
-  document.addEventListener('touchstart', activar, true);
-  document.addEventListener('pointerdown', activar, true);
-}
-
-function configurarCheckboxFullscreen(){
-  const chk = document.getElementById('chkAutoFullscreen');
-  if(!chk) return;
-
-  chk.checked = isFullscreenDisabled();
-
-  chk.addEventListener('change', async function(){
-    const deshabilitado = this.checked;
-    setFullscreenDisabled(deshabilitado);
-
-    if(deshabilitado){
-      await exitAppFullscreen();
-      actualizarEstadoFullscreen();
-    }else{
-      fullscreenIntentado = false;
-      await intentarFullscreenAutomatico();
-    }
-  });
-}
-
-document.addEventListener('fullscreenchange', actualizarEstadoFullscreen);
-document.addEventListener('webkitfullscreenchange', actualizarEstadoFullscreen);
-document.addEventListener('msfullscreenchange', actualizarEstadoFullscreen);
-
-document.addEventListener('DOMContentLoaded', () => {
-  const usuario = localStorage.getItem('nombreUsuario') || 'Usuario';
-  const usuarioBox = document.getElementById('usuario');
-  const menuModulos = document.getElementById('menuModulos');
-
-  if(usuarioBox) usuarioBox.textContent = 'Usuario: ' + usuario;
-
-  configurarCheckboxFullscreen();
-  actualizarEstadoFullscreen();
-
-  if(document.getElementById('mapa')){
-    mapa = L.map('mapa', { zoomControl:true }).setView([-33.4489, -70.6693], 13);
-
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      maxZoom:19,
-      attribution:'&copy; OpenStreetMap'
-    }).addTo(mapa);
-
-    setTimeout(() => {
-      mapa.invalidateSize();
-      iniciarGeolocalizacion();
-      intentarFullscreenAutomatico();
-    }, 300);
-  }
-
-  const modulos = [
-    { nombre:'Pedidos', archivo:'sistema.html' },
-    { nombre:'Repartidores', archivo:'sistema2.html' },
-    { nombre:'Dashboard', archivo:'dashboard.html' },
-    { nombre:'Clientes', archivo:'clientes.html' },
-    { nombre:'Reportes', archivo:'reportes.html' }
-  ];
-
-  if(menuModulos){
-    menuModulos.innerHTML = '';
-    modulos.forEach(mod => {
-      const div = document.createElement('div');
-      div.className = 'menu-item';
-      div.textContent = mod.nombre;
-      div.onclick = () => abrirModulo(mod.archivo);
-      menuModulos.appendChild(div);
-    });
-  }
-
-  mostrarVistaPrincipal();
-});
-
-window.addEventListener('resize', () => {
-  if(vistaActual === 'main.html' && mapa){
-    setTimeout(() => mapa.invalidateSize(), 200);
-  }
-});
 </script>
 
 <script src="app-global.js"></script>
 <script src="empresa-header.js"></script>
 <script src="auth.js"></script>
-<script src="main.js"></script>
 <script src="segurity.js"></script>
-<script src="navegacion-conduccion.js"></script>
-
 </body>
 </html>
