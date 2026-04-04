@@ -661,7 +661,7 @@ button:active{
 
     <div class="header-info">
       <div id="usuario"></div>
-      <div id="conexionInfo">Buscando ubicación…</div>
+      <div id="conexionInfo">Obteniendo ubicación actual...</div>
     </div>
 
     <div class="right">
@@ -714,7 +714,7 @@ button:active{
             </label>
           </div>
           <div class="fs-help">
-            Por defecto el sistema intenta entrar en pantalla completa. Si el navegador lo bloquea, se volverá a intentar en el primer toque o clic.
+            El sistema intenta entrar en pantalla completa por defecto. Si el navegador lo bloquea, se reintentará en el primer toque.
           </div>
         </div>
       </div>
@@ -735,7 +735,6 @@ let mapa;
 let vistaActual = 'main.html';
 let marcadorUbicacion = null;
 let circuloUbicacion = null;
-let watchId = null;
 let fullscreenIntentado = false;
 
 const FULLSCREEN_DISABLED_KEY = 'fullscreenDisabled';
@@ -839,7 +838,7 @@ function actualizarUbicacionEnMapa(lat, lng, precision){
   if(statLat) statLat.textContent = Number(lat).toFixed(6);
   if(statLng) statLng.textContent = Number(lng).toFixed(6);
   if(statPrecision) statPrecision.textContent = `${Math.round(precision || 0)} m`;
-  if(conexionInfo) conexionInfo.textContent = 'Ubicación activa';
+  if(conexionInfo) conexionInfo.textContent = 'Ubicación actual cargada';
 
   const coords = [lat, lng];
 
@@ -864,7 +863,7 @@ function actualizarUbicacionEnMapa(lat, lng, precision){
     circuloUbicacion.setRadius(200);
   }
 
-  mapa.setView(coords, 17, { animate:true });
+  mapa.setView(coords, 17);
 }
 
 function iniciarGeolocalizacion(){
@@ -875,21 +874,26 @@ function iniciarGeolocalizacion(){
     return;
   }
 
-  watchId = navigator.geolocation.watchPosition(
+  if(conexionInfo) conexionInfo.textContent = 'Obteniendo ubicación actual...';
+
+  navigator.geolocation.getCurrentPosition(
     (pos) => {
       actualizarUbicacionEnMapa(
         pos.coords.latitude,
         pos.coords.longitude,
         pos.coords.accuracy || 0
       );
+
+      if(conexionInfo) conexionInfo.textContent = 'Ubicación actual cargada';
     },
-    () => {
+    (error) => {
       if(conexionInfo) conexionInfo.textContent = 'No se pudo obtener ubicación';
+      console.error('Error geolocalización:', error);
     },
     {
-      enableHighAccuracy:true,
-      maximumAge:5000,
-      timeout:15000
+      enableHighAccuracy: true,
+      maximumAge: 60000,
+      timeout: 15000
     }
   );
 }
@@ -1082,12 +1086,6 @@ document.addEventListener('DOMContentLoaded', () => {
 window.addEventListener('resize', () => {
   if(vistaActual === 'main.html' && mapa){
     setTimeout(() => mapa.invalidateSize(), 200);
-  }
-});
-
-window.addEventListener('beforeunload', () => {
-  if(watchId !== null && navigator.geolocation){
-    navigator.geolocation.clearWatch(watchId);
   }
 });
 </script>
