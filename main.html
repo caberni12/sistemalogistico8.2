@@ -396,27 +396,28 @@ button:active{
   background:#fff;
   z-index:9996;
   display:none;
-  flex-direction:column;
 }
 
 .viewer.active{
-  display:flex;
+  display:block;
 }
 
 #frame{
-  flex:1 1 auto;
+  position:absolute;
+  inset:0;
   width:100%;
   height:100%;
   border:none;
   background:#fff;
+  z-index:1;
 }
 
-/* BOTON VOLVER FLOTANTE CORREGIDO */
+/* BOTON VOLVER */
 .btn-volver-flotante{
-  position:fixed;
+  position:absolute;
   top:calc(12px + var(--safe-top));
   left:calc(12px + var(--safe-left));
-  z-index:20000;
+  z-index:5;
   display:none;
   align-items:center;
   justify-content:center;
@@ -696,12 +697,11 @@ button:active{
       </div>
 
       <div id="viewer" class="viewer">
+        <button id="btnVolverFlotante" type="button" class="btn-volver-flotante" onclick="volver()">
+          ⬅ Volver
+        </button>
         <iframe id="frame"></iframe>
       </div>
-
-      <button id="btnVolverFlotante" type="button" class="btn-volver-flotante" onclick="volver()">
-        ⬅ Volver
-      </button>
     </section>
   </main>
 </div>
