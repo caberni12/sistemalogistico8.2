@@ -1,0 +1,1043 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Manual de Procesos</title>
+<style>
+  :root{
+    --bg:#f1f5f9;
+    --card:#ffffff;
+    --text:#0f172a;
+    --muted:#64748b;
+    --accent:#14b8a6;
+    --accent-dark:#0f766e;
+    --line:#dbeafe;
+    --shadow:0 14px 35px rgba(15,23,42,.10);
+    --shadow-soft:0 10px 24px rgba(15,23,42,.08);
+    --radius:20px;
+  }
+
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{
+    margin:0;
+    font-family:Arial, Helvetica, sans-serif;
+    background:linear-gradient(180deg,#ecfeff 0%, #f8fafc 24%, #f1f5f9 100%);
+    color:var(--text);
+  }
+
+  .page{
+    width:min(1400px, 96%);
+    margin:auto;
+    padding:26px 0 40px;
+  }
+
+  .hero{
+    background:linear-gradient(135deg,#0f172a 0%, #134e4a 56%, #14b8a6 100%);
+    color:#fff;
+    border-radius:28px;
+    padding:28px;
+    box-shadow:var(--shadow);
+    position:relative;
+    overflow:hidden;
+  }
+
+  .hero::before,
+  .hero::after{
+    content:"";
+    position:absolute;
+    border-radius:50%;
+    opacity:.18;
+    pointer-events:none;
+  }
+
+  .hero::before{
+    width:260px;
+    height:260px;
+    background:#99f6e4;
+    right:-70px;
+    top:-80px;
+  }
+
+  .hero::after{
+    width:180px;
+    height:180px;
+    background:#67e8f9;
+    left:-45px;
+    bottom:-65px;
+  }
+
+  .hero-grid{
+    display:grid;
+    grid-template-columns:1.35fr .95fr;
+    gap:24px;
+    position:relative;
+    z-index:1;
+  }
+
+  .eyebrow{
+    display:inline-flex;
+    align-items:center;
+    gap:8px;
+    padding:8px 12px;
+    border-radius:999px;
+    background:rgba(255,255,255,.15);
+    font-size:13px;
+    font-weight:700;
+    letter-spacing:.2px;
+  }
+
+  .hero h1{
+    margin:14px 0 10px;
+    font-size:clamp(28px,4vw,46px);
+    line-height:1.05;
+  }
+
+  .hero p{
+    margin:0 0 18px;
+    color:rgba(255,255,255,.92);
+    font-size:15px;
+    line-height:1.65;
+    max-width:780px;
+  }
+
+  .hero-actions{
+    display:flex;
+    flex-wrap:wrap;
+    gap:12px;
+  }
+
+  .btn{
+    border:none;
+    border-radius:14px;
+    padding:14px 18px;
+    font-weight:700;
+    cursor:pointer;
+    transition:.18s ease;
+    text-decoration:none;
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    gap:8px;
+  }
+
+  .btn-primary{
+    background:#fff;
+    color:#0f172a;
+  }
+
+  .btn-primary:hover,
+  .btn-secondary:hover,
+  .btn-top:hover,
+  .chip:hover,
+  .modal-nav a:hover,
+  .close-btn:hover{
+    transform:translateY(-1px);
+  }
+
+  .btn-secondary{
+    background:rgba(255,255,255,.14);
+    color:#fff;
+    border:1px solid rgba(255,255,255,.22);
+  }
+
+  .hero-side{
+    display:grid;
+    gap:14px;
+  }
+
+  .hero-card{
+    background:rgba(255,255,255,.11);
+    border:1px solid rgba(255,255,255,.16);
+    border-radius:18px;
+    padding:16px;
+    backdrop-filter:blur(3px);
+  }
+
+  .hero-card h3{
+    margin:0 0 8px;
+    font-size:15px;
+  }
+
+  .hero-card p{
+    margin:0;
+    font-size:14px;
+    line-height:1.55;
+  }
+
+  .summary{
+    margin-top:22px;
+    display:grid;
+    grid-template-columns:repeat(4,minmax(0,1fr));
+    gap:14px;
+  }
+
+  .summary-card{
+    background:var(--card);
+    border-radius:20px;
+    padding:18px;
+    box-shadow:var(--shadow-soft);
+    border:1px solid rgba(20,184,166,.10);
+  }
+
+  .summary-card .num{
+    font-size:28px;
+    font-weight:800;
+    color:var(--accent-dark);
+    margin-bottom:6px;
+  }
+
+  .summary-card h3{
+    margin:0 0 6px;
+    font-size:15px;
+  }
+
+  .summary-card p{
+    margin:0;
+    color:var(--muted);
+    line-height:1.55;
+    font-size:14px;
+  }
+
+  .content{
+    display:grid;
+    grid-template-columns:300px minmax(0,1fr);
+    gap:18px;
+    margin-top:22px;
+  }
+
+  .side,
+  .main-preview{
+    background:var(--card);
+    border-radius:24px;
+    box-shadow:var(--shadow-soft);
+    border:1px solid rgba(148,163,184,.14);
+  }
+
+  .side{
+    padding:18px;
+    position:sticky;
+    top:18px;
+    height:fit-content;
+  }
+
+  .side h2,
+  .main-preview h2{
+    margin:0 0 10px;
+    font-size:20px;
+  }
+
+  .side p,
+  .main-preview p{
+    margin:0;
+    color:var(--muted);
+    line-height:1.6;
+    font-size:14px;
+  }
+
+  .chip-list{
+    display:flex;
+    flex-wrap:wrap;
+    gap:10px;
+    margin-top:16px;
+  }
+
+  .chip{
+    width:100%;
+    text-align:left;
+    border:none;
+    background:#f8fafc;
+    color:#0f172a;
+    border-radius:14px;
+    padding:12px 13px;
+    font-weight:700;
+    cursor:pointer;
+    border:1px solid #e2e8f0;
+  }
+
+  .main-preview{
+    padding:22px;
+  }
+
+  .preview-grid{
+    display:grid;
+    grid-template-columns:repeat(2,minmax(0,1fr));
+    gap:14px;
+    margin-top:18px;
+  }
+
+  .preview-card{
+    border:1px solid #e2e8f0;
+    background:#f8fafc;
+    border-radius:18px;
+    padding:16px;
+  }
+
+  .preview-card h3{
+    margin:0 0 8px;
+    font-size:16px;
+    color:#0f172a;
+  }
+
+  .preview-card p{
+    margin:0 0 10px;
+  }
+
+  .preview-card ul{
+    margin:0;
+    padding-left:18px;
+    color:#334155;
+    line-height:1.6;
+    font-size:14px;
+  }
+
+  .floating-actions{
+    position:fixed;
+    right:18px;
+    bottom:18px;
+    display:flex;
+    flex-direction:column;
+    gap:10px;
+    z-index:40;
+  }
+
+  .btn-top{
+    border:none;
+    border-radius:999px;
+    background:#0f172a;
+    color:#fff;
+    width:52px;
+    height:52px;
+    box-shadow:0 10px 22px rgba(15,23,42,.18);
+    font-size:20px;
+    cursor:pointer;
+  }
+
+  .modal{
+    position:fixed;
+    inset:0;
+    display:none;
+    align-items:center;
+    justify-content:center;
+    padding:16px;
+    background:rgba(2,6,23,.60);
+    z-index:99;
+  }
+
+  .modal.show{display:flex}
+
+  .modal-box{
+    width:min(1380px, 100%);
+    max-height:92vh;
+    background:#fff;
+    border-radius:28px;
+    overflow:hidden;
+    box-shadow:0 24px 60px rgba(15,23,42,.28);
+    display:grid;
+    grid-template-columns:310px minmax(0,1fr);
+  }
+
+  .modal-left{
+    background:linear-gradient(180deg,#f0fdfa 0%, #ffffff 100%);
+    border-right:1px solid #e2e8f0;
+    padding:22px 18px;
+    overflow:auto;
+  }
+
+  .modal-left h3{
+    margin:0 0 8px;
+    font-size:22px;
+    color:#0f172a;
+  }
+
+  .modal-left p{
+    margin:0 0 14px;
+    color:#64748b;
+    line-height:1.6;
+    font-size:14px;
+  }
+
+  .modal-nav{
+    display:flex;
+    flex-direction:column;
+    gap:10px;
+  }
+
+  .modal-nav a{
+    text-decoration:none;
+    color:#0f172a;
+    background:#fff;
+    border:1px solid #dbeafe;
+    border-radius:14px;
+    padding:12px 13px;
+    font-weight:700;
+    transition:.18s ease;
+  }
+
+  .modal-right{
+    display:flex;
+    flex-direction:column;
+    min-width:0;
+  }
+
+  .modal-header{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:14px;
+    padding:18px 22px;
+    border-bottom:1px solid #e2e8f0;
+    background:#fff;
+    position:sticky;
+    top:0;
+    z-index:4;
+  }
+
+  .modal-header h2{
+    margin:0;
+    font-size:24px;
+  }
+
+  .modal-header p{
+    margin:5px 0 0;
+    color:#64748b;
+    font-size:14px;
+  }
+
+  .close-btn{
+    border:none;
+    border-radius:14px;
+    background:#ef4444;
+    color:#fff;
+    font-size:14px;
+    font-weight:700;
+    padding:12px 16px;
+    cursor:pointer;
+  }
+
+  .manual-body{
+    overflow:auto;
+    padding:22px;
+    background:#f8fafc;
+  }
+
+  .module{
+    background:#fff;
+    border:1px solid #e2e8f0;
+    box-shadow:var(--shadow-soft);
+    border-radius:24px;
+    padding:22px;
+    margin-bottom:16px;
+    scroll-margin-top:22px;
+  }
+
+  .module-head{
+    display:flex;
+    align-items:flex-start;
+    justify-content:space-between;
+    gap:14px;
+    margin-bottom:14px;
+    flex-wrap:wrap;
+  }
+
+  .module-title{
+    min-width:0;
+  }
+
+  .module-title h3{
+    margin:0 0 8px;
+    font-size:22px;
+    color:#0f172a;
+  }
+
+  .module-title p{
+    margin:0;
+    color:#64748b;
+    line-height:1.65;
+    font-size:14px;
+  }
+
+  .tag{
+    background:#ecfeff;
+    color:#0f766e;
+    border:1px solid #99f6e4;
+    border-radius:999px;
+    padding:8px 12px;
+    font-size:12px;
+    font-weight:800;
+    white-space:nowrap;
+  }
+
+  .func-grid{
+    display:grid;
+    grid-template-columns:repeat(2,minmax(0,1fr));
+    gap:12px;
+  }
+
+  .func-card{
+    background:#f8fafc;
+    border:1px solid #e2e8f0;
+    border-radius:18px;
+    padding:16px;
+    min-width:0;
+  }
+
+  .func-card h4{
+    margin:0 0 8px;
+    color:#0f172a;
+    font-size:16px;
+    line-height:1.35;
+  }
+
+  .func-card p{
+    margin:0;
+    color:#475569;
+    font-size:14px;
+    line-height:1.7;
+  }
+
+  .func-card ul{
+    margin:10px 0 0;
+    padding-left:18px;
+    color:#334155;
+    font-size:14px;
+    line-height:1.65;
+  }
+
+  .module-note{
+    margin-top:14px;
+    padding:14px;
+    background:#f0fdfa;
+    border:1px solid #99f6e4;
+    border-radius:16px;
+    color:#134e4a;
+    font-size:14px;
+    line-height:1.65;
+  }
+
+  @media (max-width:1100px){
+    .summary{grid-template-columns:repeat(2,minmax(0,1fr))}
+    .content{grid-template-columns:1fr}
+    .side{position:relative;top:auto}
+    .modal-box{grid-template-columns:1fr}
+    .modal-left{display:none}
+    .func-grid{grid-template-columns:1fr}
+  }
+
+  @media (max-width:780px){
+    .page{width:min(95%,95%);padding-top:14px}
+    .hero{padding:20px;border-radius:22px}
+    .hero-grid{grid-template-columns:1fr}
+    .summary{grid-template-columns:1fr}
+    .preview-grid{grid-template-columns:1fr}
+    .modal{padding:0;align-items:flex-end}
+    .modal-box{
+      width:100%;
+      max-height:96vh;
+      border-radius:24px 24px 0 0;
+    }
+    .modal-header{padding:16px}
+    .manual-body{padding:16px}
+    .module{padding:18px;border-radius:20px}
+    .module-title h3{font-size:20px}
+    .floating-actions{right:12px;bottom:12px}
+  }
+</style>
+</head>
+<body>
+  <div class="page">
+    <section class="hero">
+      <div class="hero-grid">
+        <div>
+          <span class="eyebrow">📘 Manual de Procesos</span>
+          <h1>Manual de Procesos</h1>
+          <p>
+            Documento de presentación y consulta diseñado para explicar de forma clara la utilidad de cada módulo y cada función visible del sistema,
+            incluyendo el módulo de <b>Importador de Listado Carga de Pedido</b>. Todo queda centralizado en una sola pantalla con una presentación clara y ordenada.
+          </p>
+          <div class="hero-actions">
+            <button class="btn btn-primary" id="openManualBtn">👁 Ver Manual de Proceso</button>
+            <a class="btn btn-secondary" href="#resumen-general">⬇ Ir al resumen</a>
+          </div>
+          <div style="margin-top:14px;display:inline-flex;align-items:center;gap:10px;padding:10px 14px;border-radius:14px;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.18);font-size:14px;font-weight:700;">🖋 Desarrollado por Ingeniero Alejandro Silva</div>
+        </div>
+        <div class="hero-side">
+          <div class="hero-card">
+            <h3>Presentación del manual</h3>
+            <p>Manual organizado por módulos, con explicación funcional, flujo avanzado de trabajo y una presentación lista para revisar en una sola página.</p>
+          </div>
+          <div class="hero-card">
+            <h3>Presentación general</h3>
+            <p>El contenido está ordenado para explicar cada módulo de forma directa, clara y fácil de mostrar dentro del sistema.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="summary" id="resumen-general">
+      <article class="summary-card">
+        <div class="num">10</div>
+        <h3>Módulos explicados</h3>
+        <p>Consulta, KPI, pedidos, productos, traslado, documentos, imágenes, mapa, alertas e importador de listado.</p>
+      </article>
+      <article class="summary-card">
+        <div class="num">40+</div>
+        <h3>Funciones descritas</h3>
+        <p>Se detalla para qué sirve cada acción importante que aparece en las pantallas y botones del sistema.</p>
+      </article>
+      <article class="summary-card">
+        <div class="num">100%</div>
+        <h3>Diseño responsive</h3>
+        <p>La página se adapta a computador, tablet y celular para revisar el manual cómodamente.</p>
+      </article>
+      <article class="summary-card">
+        <div class="num">1</div>
+        <h3>Acceso principal</h3>
+        <p>Un botón central de <b>Ver Manual de Proceso</b> abre todo el contenido del manual desde la misma página.</p>
+      </article>
+    </section>
+
+    <section class="content">
+      <aside class="side">
+        <h2>Resumen de contenido</h2>
+        <p>Estos son los bloques principales incluidos en el manual para revisar la operación completa del sistema.</p>
+        <div class="chip-list">
+          <button class="chip" data-target="mod-consulta">Consulta general y filtros</button>
+          <button class="chip" data-target="mod-kpi">KPI y resumen visual</button>
+          <button class="chip" data-target="mod-pedidos">Detalle y gestión de pedidos</button>
+          <button class="chip" data-target="mod-productos">Productos por pedido</button>
+          <button class="chip" data-target="mod-traslado">Traslado</button>
+          <button class="chip" data-target="mod-documentos">PDF, imágenes y mapa</button>
+          <button class="chip" data-target="mod-alertas">Estados y alertas</button>
+          <button class="chip" data-target="mod-importador">Importador de listado</button>
+        </div>
+      </aside>
+
+      <main class="main-preview">
+        <h2>Página lista para presentar con tu autoría</h2>
+        <p>
+          El botón principal abre un visor amplio con cada módulo separado en bloques. Cada bloque explica de forma directa qué hace cada parte del sistema y para qué sirve en la operación diaria.
+        </p>
+        <div class="preview-grid">
+          <article class="preview-card">
+            <h3>Consulta y revisión</h3>
+            <ul>
+              <li>Buscador por texto</li>
+              <li>Filtro por estado</li>
+              <li>Filtro por fechas</li>
+              <li>Tabla y tarjetas móviles</li>
+            </ul>
+          </article>
+          <article class="preview-card">
+            <h3>Gestión operativa</h3>
+            <ul>
+              <li>Apertura del detalle del pedido</li>
+              <li>Edición de datos</li>
+              <li>Productos del pedido</li>
+              <li>Creación de traslado</li>
+            </ul>
+          </article>
+          <article class="preview-card">
+            <h3>Apoyo visual</h3>
+            <ul>
+              <li>Indicadores KPI</li>
+              <li>Estados y semáforo</li>
+              <li>PDF del pedido y traslado</li>
+              <li>Imagen y mapa del destino</li>
+            </ul>
+          </article>
+          <article class="preview-card">
+            <h3>Presentación general</h3>
+            <ul>
+              <li>Arrastrar o seleccionar Excel</li>
+              <li>Leer columnas automáticamente</li>
+              <li>Vista previa de hasta 50 filas</li>
+              <li>Importar al sistema</li>
+            </ul>
+          </article>
+        </div>
+      </main>
+    </section>
+  </div>
+
+  <div class="floating-actions">
+    <button class="btn-top" id="scrollTopBtn" title="Subir">↑</button>
+  </div>
+
+  <div class="modal" id="manualModal" aria-hidden="true">
+    <div class="modal-box">
+      <aside class="modal-left">
+        <h3>Manual de Procesos</h3>
+        <p>Usa este menú para ir directo al módulo que quieras revisar.</p>
+        <nav class="modal-nav">
+          <a href="#mod-consulta">1. Consulta general</a>
+          <a href="#mod-kpi">2. KPI y panel visual</a>
+          <a href="#mod-pedidos">3. Gestión de pedidos</a>
+          <a href="#mod-productos">4. Productos por pedido</a>
+          <a href="#mod-traslado">5. Traslado</a>
+          <a href="#mod-documentos">6. Documentos, fotos y mapa</a>
+          <a href="#mod-alertas">7. Estados y alertas</a>
+          <a href="#mod-importador">8. Importador de listado</a>
+        </nav>
+      </aside>
+
+      <section class="modal-right">
+        <div class="modal-header">
+          <div>
+            <h2>Manual de Procesos</h2>
+            <p>Explicación funcional por módulos y por acciones visibles del sistema.</p>
+          </div>
+          <button class="close-btn" id="closeManualBtn">✕ Cerrar</button>
+        </div>
+
+        <div class="manual-body" id="manualBody">
+          <article class="module" id="mod-consulta">
+            <div class="module-head">
+              <div class="module-title">
+                <h3>1. Consulta general y filtros</h3>
+                <p>Este módulo sirve para revisar los pedidos cargados, encontrar información rápido y abrir el detalle de cada registro.</p>
+              </div>
+              <span class="tag">Consulta</span>
+            </div>
+            <div class="func-grid">
+              <div class="func-card">
+                <h4>Buscador</h4>
+                <p>Permite localizar pedidos por texto libre. Ayuda a encontrar cliente, número de pedido, documento, dirección, observaciones y otros datos sin revisar fila por fila.</p>
+              </div>
+              <div class="func-card">
+                <h4>Filtro por estado</h4>
+                <p>Sirve para mostrar solamente los registros que están en un estado específico, como pendiente, en ruta, recibido, entregado, cancelado o terminado.</p>
+              </div>
+              <div class="func-card">
+                <h4>Filtro por fechas</h4>
+                <p>Permite revisar pedidos dentro de un rango determinado. Se usa para concentrar la consulta en un período de trabajo concreto.</p>
+              </div>
+              <div class="func-card">
+                <h4>Tabla principal</h4>
+                <p>Muestra el listado general de pedidos con columnas de cliente, documento, estado, unidades, traslado, archivo y botón de visualización.</p>
+              </div>
+              <div class="func-card">
+                <h4>Tarjetas para celular</h4>
+                <p>Presentan la misma información de la tabla, pero en formato de bloques. Su función es mejorar la lectura en pantallas móviles.</p>
+              </div>
+              <div class="func-card">
+                <h4>Botón Ver detalle</h4>
+                <p>Abre el registro seleccionado en una vista ampliada para revisar el pedido con más información y acciones disponibles.</p>
+              </div>
+            </div>
+            <div class="module-note">Este bloque es la puerta de entrada al sistema porque desde aquí se busca, se filtra y se abre cualquier pedido.</div>
+          </article>
+
+          <article class="module" id="mod-kpi">
+            <div class="module-head">
+              <div class="module-title">
+                <h3>2. KPI y panel visual</h3>
+                <p>Resume la información visible mediante indicadores rápidos para facilitar el control general de la operación.</p>
+              </div>
+              <span class="tag">Resumen visual</span>
+            </div>
+            <div class="func-grid">
+              <div class="func-card">
+                <h4>Top clientes</h4>
+                <p>Muestra los clientes que más aparecen en la información visible. Sirve para identificar quién tiene mayor movimiento.</p>
+              </div>
+              <div class="func-card">
+                <h4>Frecuencia</h4>
+                <p>Indica cuántos pedidos tiene cada cliente dentro del listado filtrado. Ayuda a medir repetición y volumen.</p>
+              </div>
+              <div class="func-card">
+                <h4>Antigüedad</h4>
+                <p>Sirve para observar qué registros o clientes acumulan más tiempo desde la fecha de ingreso.</p>
+              </div>
+              <div class="func-card">
+                <h4>Gráfico de estados</h4>
+                <p>Entrega una vista rápida de cómo se distribuyen los pedidos por estado dentro del período consultado.</p>
+              </div>
+              <div class="func-card">
+                <h4>Mostrar u ocultar KPI</h4>
+                <p>Permite dar más espacio a la tabla cuando el usuario quiere concentrarse en la operación y no en el resumen gráfico.</p>
+              </div>
+            </div>
+          </article>
+
+          <article class="module" id="mod-pedidos">
+            <div class="module-head">
+              <div class="module-title">
+                <h3>3. Gestión y detalle del pedido</h3>
+                <p>Este módulo concentra la información completa del pedido y permite revisar o actualizar sus datos principales.</p>
+              </div>
+              <span class="tag">Pedido</span>
+            </div>
+            <div class="func-grid">
+              <div class="func-card">
+                <h4>Apertura del pedido</h4>
+                <p>Carga la información completa del registro seleccionado para trabajar sobre el pedido correcto sin escribir todo nuevamente.</p>
+              </div>
+              <div class="func-card">
+                <h4>Datos del pedido</h4>
+                <p>Permite revisar pedido, tipo de documento, número de documento, cliente, dirección, comuna, transporte, responsable, fecha, estado y observaciones.</p>
+              </div>
+              <div class="func-card">
+                <h4>Guardar cambios</h4>
+                <p>Actualiza la información del pedido después de una corrección o avance en el flujo operativo.</p>
+              </div>
+              <div class="func-card">
+                <h4>Selección de fila</h4>
+                <p>Marca el registro activo para facilitar edición, visualización detallada o acciones posteriores.</p>
+              </div>
+              <div class="func-card">
+                <h4>Recarga del listado</h4>
+                <p>Vuelve a traer la información desde el sistema para mantener actualizados los datos visibles.</p>
+              </div>
+              <div class="func-card">
+                <h4>Eliminar registro</h4>
+                <p>Permite quitar un pedido cuando corresponde. Su función es limpiar la operación y evitar registros erróneos.</p>
+              </div>
+            </div>
+          </article>
+
+          <article class="module" id="mod-productos">
+            <div class="module-head">
+              <div class="module-title">
+                <h3>4. Productos por pedido</h3>
+                <p>Este módulo se usa para construir el detalle del pedido, agregando productos, descripción y cantidades asociadas.</p>
+              </div>
+              <span class="tag">Productos</span>
+            </div>
+            <div class="func-grid">
+              <div class="func-card">
+                <h4>Selección del pedido</h4>
+                <p>Sirve para vincular los productos con un pedido determinado y evitar que se carguen en el registro equivocado.</p>
+              </div>
+              <div class="func-card">
+                <h4>Agregar producto</h4>
+                <p>Permite ingresar código o producto, descripción y cantidad para formar el detalle del pedido.</p>
+              </div>
+              <div class="func-card">
+                <h4>Autocompletar descripción</h4>
+                <p>Busca automáticamente la descripción del producto al ingresar el código. Su objetivo es acelerar la carga y reducir errores manuales.</p>
+              </div>
+              <div class="func-card">
+                <h4>Resumen del pedido</h4>
+                <p>Presenta una vista de los productos agregados para revisar el contenido antes de guardar o emitir un documento.</p>
+              </div>
+              <div class="func-card">
+                <h4>Guardar productos</h4>
+                <p>Registra el detalle del pedido para que quede asociado al número de pedido correspondiente.</p>
+              </div>
+              <div class="func-card">
+                <h4>Generar PDF de productos</h4>
+                <p>Convierte el detalle del pedido en un documento formal y utilizable como respaldo operativo.</p>
+              </div>
+            </div>
+          </article>
+
+          <article class="module" id="mod-traslado">
+            <div class="module-head">
+              <div class="module-title">
+                <h3>5. Módulo de traslado</h3>
+                <p>Se usa para preparar y registrar el documento de traslado asociado a un pedido y sus productos.</p>
+              </div>
+              <span class="tag">Traslado</span>
+            </div>
+            <div class="func-grid">
+              <div class="func-card">
+                <h4>Abrir traslado</h4>
+                <p>Carga los datos del pedido en el formulario de traslado para iniciar el proceso con cliente, dirección, comuna y transporte.</p>
+              </div>
+              <div class="func-card">
+                <h4>Cargar productos guardados</h4>
+                <p>Trae los productos previamente asociados al pedido para no volver a digitar el detalle desde cero.</p>
+              </div>
+              <div class="func-card">
+                <h4>Agregar líneas al detalle</h4>
+                <p>Permite incorporar productos, detalle y cantidad dentro del traslado, formando la lista definitiva que se moverá.</p>
+              </div>
+              <div class="func-card">
+                <h4>Total de unidades</h4>
+                <p>Suma automáticamente las cantidades para mostrar el total general del traslado.</p>
+              </div>
+              <div class="func-card">
+                <h4>Guardar traslado</h4>
+                <p>Genera el registro del traslado y deja trazabilidad entre el pedido, los productos y el documento emitido.</p>
+              </div>
+              <div class="func-card">
+                <h4>Cerrar traslado</h4>
+                <p>Limpia el proceso temporal para evitar que un pedido se mezcle con el siguiente.</p>
+              </div>
+            </div>
+          </article>
+
+          <article class="module" id="mod-documentos">
+            <div class="module-head">
+              <div class="module-title">
+                <h3>6. Documentos, fotos y mapa</h3>
+                <p>Este bloque reúne los apoyos visuales y documentos que complementan el seguimiento del pedido.</p>
+              </div>
+              <span class="tag">Apoyo visual</span>
+            </div>
+            <div class="func-grid">
+              <div class="func-card">
+                <h4>PDF del pedido</h4>
+                <p>Permite abrir el documento principal del pedido cuando ya existe un archivo asociado.</p>
+              </div>
+              <div class="func-card">
+                <h4>PDF del traslado</h4>
+                <p>Sirve para revisar el documento de traslado generado desde el sistema.</p>
+              </div>
+              <div class="func-card">
+                <h4>Foto opcional</h4>
+                <p>Permite mostrar una imagen relacionada al pedido para usarla como respaldo o evidencia visual.</p>
+              </div>
+              <div class="func-card">
+                <h4>Imagen ampliada</h4>
+                <p>Abre la foto en tamaño mayor para revisar mejor el contenido asociado al registro.</p>
+              </div>
+              <div class="func-card">
+                <h4>Mapa del destino</h4>
+                <p>Usa la dirección del pedido para ubicar el lugar de entrega y facilitar la referencia del destino.</p>
+              </div>
+              <div class="func-card">
+                <h4>Mostrar u ocultar mapa</h4>
+                <p>Permite alternar la vista del mapa para usarlo solo cuando aporta a la operación.</p>
+              </div>
+            </div>
+          </article>
+
+          <article class="module" id="mod-alertas">
+            <div class="module-head">
+              <div class="module-title">
+                <h3>7. Estados, alertas y semáforo</h3>
+                <p>Su finalidad es indicar en qué situación está cada pedido y si requiere atención inmediata.</p>
+              </div>
+              <span class="tag">Control</span>
+            </div>
+            <div class="func-grid">
+              <div class="func-card">
+                <h4>Estado del pedido</h4>
+                <p>Informa si el pedido está pendiente, en ruta, recibido, entregado, cancelado o terminado.</p>
+              </div>
+              <div class="func-card">
+                <h4>Alerta de tiempo</h4>
+                <p>Evalúa si un pedido está dentro del plazo, por vencer o atrasado según la fecha comprometida.</p>
+              </div>
+              <div class="func-card">
+                <h4>Días de atraso</h4>
+                <p>Muestra cuántos días lleva vencido un pedido para ayudar a priorizar los casos urgentes.</p>
+              </div>
+              <div class="func-card">
+                <h4>Semáforo visual</h4>
+                <p>Utiliza colores para resumir la situación del pedido y facilitar la lectura rápida del listado.</p>
+              </div>
+              <div class="func-card">
+                <h4>Actualización de alertas</h4>
+                <p>Recalcula la situación del pedido cuando cambian fechas o estados, manteniendo la información operativa alineada con la realidad.</p>
+              </div>
+            </div>
+          </article>
+
+          <article class="module" id="mod-importador">
+            <div class="module-head">
+              <div class="module-title">
+                <h3>8. Importador de Listado Carga de Pedido</h3>
+                <p>Este es el módulo que faltaba agregar al manual. Su función es cargar información masiva desde un archivo Excel hacia el sistema.</p>
+              </div>
+              <span class="tag">Importación</span>
+            </div>
+            <div class="func-grid">
+              <div class="func-card">
+                <h4>Área de arrastre o selección</h4>
+                <p>Permite arrastrar el archivo o hacer clic para elegirlo desde el equipo. Su objetivo es facilitar el inicio de la importación.</p>
+              </div>
+              <div class="func-card">
+                <h4>Lectura del archivo</h4>
+                <p>Abre la primera hoja del Excel y extrae la información fila por fila para prepararla antes de subirla al sistema.</p>
+              </div>
+              <div class="func-card">
+                <h4>Detección automática de columnas</h4>
+                <p>Reconoce los encabezados del archivo y los usa para construir la vista previa en pantalla.</p>
+              </div>
+              <div class="func-card">
+                <h4>Vista previa</h4>
+                <p>Muestra una tabla con las primeras filas cargadas para que el usuario revise si el archivo corresponde antes de importarlo.</p>
+              </div>
+              <div class="func-card">
+                <h4>Mensaje de estado</h4>
+                <p>Indica si el archivo está vacío, cuántas filas fueron leídas o si ocurrió un problema de conexión durante el proceso.</p>
+              </div>
+              <div class="func-card">
+                <h4>Botón Importar</h4>
+                <p>Envía los datos cargados al sistema para registrarlos de forma masiva. Su finalidad es ahorrar digitación manual y acelerar la carga operativa.</p>
+              </div>
+            </div>
+            <div class="module-note">Este módulo es ideal cuando necesitas ingresar muchas filas desde una planilla y validar primero su contenido en pantalla.</div>
+          </article>
+        </div>
+      </section>
+    </div>
+  </div>
+
+<script>
+  const manualModal = document.getElementById('manualModal');
+  const openManualBtn = document.getElementById('openManualBtn');
+  const closeManualBtn = document.getElementById('closeManualBtn');
+  const scrollTopBtn = document.getElementById('scrollTopBtn');
+  const chipButtons = document.querySelectorAll('.chip');
+  const navLinks = document.querySelectorAll('.modal-nav a');
+  const manualBody = document.getElementById('manualBody');
+
+  function openManual(){
+    manualModal.classList.add('show');
+    manualModal.setAttribute('aria-hidden','false');
+    document.body.style.overflow = 'hidden';
+  }
+
+  function closeManual(){
+    manualModal.classList.remove('show');
+    manualModal.setAttribute('aria-hidden','true');
+    document.body.style.overflow = '';
+  }
+
+  openManualBtn.addEventListener('click', openManual);
+  closeManualBtn.addEventListener('click', closeManual);
+
+  manualModal.addEventListener('click', (e) => {
+    if(e.target === manualModal) closeManual();
+  });
+
+  document.addEventListener('keydown', (e) => {
+    if(e.key === 'Escape' && manualModal.classList.contains('show')){
+      closeManual();
+    }
+  });
+
+  chipButtons.forEach(btn => {
+    btn.addEventListener('click', () => {
+      const id = btn.getAttribute('data-target');
+      openManual();
+      setTimeout(() => {
+        const target = document.getElementById(id);
+        if(target) target.scrollIntoView({behavior:'smooth', block:'start'});
+      }, 120);
+    });
+  });
+
+  navLinks.forEach(link => {
+    link.addEventListener('click', () => {
+      if(window.innerWidth <= 1100){
+        setTimeout(() => {
+          const hash = link.getAttribute('href');
+          const target = document.querySelector(hash);
+          if(target) target.scrollIntoView({behavior:'smooth', block:'start'});
+        }, 50);
+      }
+    });
+  });
+
+  scrollTopBtn.addEventListener('click', () => {
+    window.scrollTo({top:0, behavior:'smooth'});
+  });
+</script>
+</body>
+</html>
