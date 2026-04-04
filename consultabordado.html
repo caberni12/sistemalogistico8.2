@@ -20,16 +20,14 @@ html,body{
   background:#f1f5f9;
 }
 
+body{
+  color:#0f172a;
+}
+
 img,canvas{
   max-width:100%;
   height:auto;
   display:block;
-}
-
-body{
-  margin:0;
-  font-family:Arial;
-  background:#f1f5f9;
 }
 
 .wrap{
@@ -40,44 +38,109 @@ body{
   overflow-x:hidden;
 }
 
+/* TOOLBAR */
 .toolbar{
   display:flex;
   gap:10px;
   flex-wrap:wrap;
+  align-items:flex-end;
   margin-bottom:20px;
-  align-items:center;
 }
 
-.toolbar label{
-  display:flex;
-  align-items:center;
-  gap:6px;
-  flex-wrap:wrap;
-  font-size:14px;
+.toolbar input,
+.toolbar select,
+.toolbar button{
+  height:44px;
 }
 
 input,select{
-  padding:10px;
-  border-radius:10px;
-  border:1px solid #ddd;
+  padding:10px 12px;
+  border-radius:12px;
+  border:1px solid #d1d5db;
+  background:#fff;
+  outline:none;
+  font-size:14px;
   min-width:0;
   max-width:100%;
+}
+
+input:focus,select:focus{
+  border-color:#14b8a6;
+  box-shadow:0 0 0 3px rgba(20,184,166,.12);
 }
 
 #buscador{
   flex:0 1 260px;
   width:260px;
+  min-width:0;
   max-width:100%;
+}
+
+#fEstado{
+  flex:0 1 180px;
+  width:180px;
+}
+
+.filtro-fecha{
+  display:flex;
+  flex-direction:column;
+  gap:6px;
+  min-width:145px;
+}
+
+.filtro-fecha span{
+  font-size:13px;
+  color:#334155;
+  font-weight:600;
+}
+
+.filtro-fecha input{
+  width:160px;
 }
 
 .btn{
   background:#14b8a6;
   color:#fff;
   border:none;
-  padding:10px 12px;
+  padding:0 14px;
+  border-radius:12px;
+  cursor:pointer;
+  white-space:nowrap;
+  font-weight:700;
+  transition:.2s ease;
+}
+
+.btn:hover{
+  filter:brightness(.97);
+}
+
+.btn-ver{
+  background:linear-gradient(135deg,#14b8a6,#0d9488);
+  color:#fff;
+  border:none;
+  padding:8px 12px;
   border-radius:10px;
   cursor:pointer;
-  max-width:100%;
+  font-weight:700;
+}
+
+.btn-pdf{
+  background:#ef4444;
+  color:#fff;
+  border:none;
+  padding:7px 10px;
+  border-radius:8px;
+  cursor:pointer;
+}
+
+.btn-close{
+  background:#ef4444;
+  color:#fff;
+  border:none;
+  padding:8px 12px;
+  border-radius:10px;
+  cursor:pointer;
+  font-weight:700;
 }
 
 /* KPI */
@@ -98,22 +161,29 @@ input,select{
 
 .kpi-title{
   font-size:13px;
-  font-weight:bold;
+  font-weight:700;
   display:flex;
   gap:8px;
   align-items:center;
   margin-bottom:10px;
 }
 
-.kpi-title i{color:#14b8a6;}
-.kpi-list{display:flex;flex-direction:column;gap:8px;}
+.kpi-title i{
+  color:#14b8a6;
+}
+
+.kpi-list{
+  display:flex;
+  flex-direction:column;
+  gap:8px;
+}
 
 .kpi-item{
   display:flex;
   justify-content:space-between;
   gap:10px;
   background:#f8fafc;
-  padding:8px;
+  padding:8px 10px;
   border-radius:10px;
   font-size:13px;
   min-width:0;
@@ -121,7 +191,7 @@ input,select{
 
 .kpi-item span{
   color:#14b8a6;
-  font-weight:bold;
+  font-weight:700;
   text-align:right;
   word-break:break-word;
 }
@@ -134,6 +204,7 @@ input,select{
   max-height:500px;
   width:100%;
   -webkit-overflow-scrolling:touch;
+  box-shadow:0 8px 20px rgba(0,0,0,.04);
 }
 
 table{
@@ -163,7 +234,7 @@ th{
   border-radius:999px;
   font-size:11px;
   color:#fff;
-  font-weight:bold;
+  font-weight:700;
   display:inline-block;
   max-width:100%;
   white-space:nowrap;
@@ -175,24 +246,6 @@ th{
 .recibido{background:#14b8a6;}
 .cancelado{background:#ef4444;}
 .terminado{background:#8b5cf6;}
-
-.btn-ver{
-  background:linear-gradient(135deg,#14b8a6,#0d9488);
-  color:#fff;
-  border:none;
-  padding:6px 12px;
-  border-radius:10px;
-  cursor:pointer;
-}
-
-.btn-pdf{
-  background:#ef4444;
-  color:#fff;
-  border:none;
-  padding:6px 10px;
-  border-radius:8px;
-  cursor:pointer;
-}
 
 .img-preview{
   width:40px;
@@ -242,15 +295,6 @@ th{
   margin:0;
   font-size:20px;
   word-break:break-word;
-}
-
-.btn-close{
-  background:#ef4444;
-  color:#fff;
-  border:none;
-  padding:8px 12px;
-  border-radius:8px;
-  cursor:pointer;
 }
 
 .modal-actions{
@@ -342,7 +386,7 @@ th{
 .card-header{
   display:flex;
   justify-content:space-between;
-  font-weight:bold;
+  font-weight:700;
   gap:10px;
   align-items:flex-start;
   flex-wrap:wrap;
@@ -404,25 +448,26 @@ th{
   .toolbar{
     flex-direction:column;
     align-items:stretch;
+    gap:12px;
   }
 
-  .toolbar label{
+  #buscador,
+  #fEstado,
+  .filtro-fecha,
+  .filtro-fecha input,
+  .btn{
     width:100%;
-    display:flex;
-    flex-direction:column;
-    align-items:stretch;
-    gap:6px;
+  }
+
+  #buscador,
+  #fEstado{
+    flex:none;
   }
 
   .toolbar input,
   .toolbar select,
-  .toolbar .btn,
-  #buscador{
-    width:100%;
-  }
-
-  #buscador{
-    flex:1 1 auto;
+  .toolbar button{
+    height:46px;
   }
 
   .table-wrap{
@@ -540,7 +585,8 @@ th{
 <div class="wrap">
 
   <div class="toolbar">
-    <input id="buscador" placeholder="Buscar...">
+    <input id="buscador" type="text" placeholder="Buscar...">
+
     <select id="fEstado">
       <option value="">Estado</option>
       <option>EN RUTA</option>
@@ -550,8 +596,17 @@ th{
       <option>ENTREGADO</option>
       <option>TERMINADO</option>
     </select>
-    <label>Desde <input type="date" id="fechaDesde"></label>
-    <label>Hasta <input type="date" id="fechaHasta"></label>
+
+    <div class="filtro-fecha">
+      <span>Desde</span>
+      <input type="date" id="fechaDesde">
+    </div>
+
+    <div class="filtro-fecha">
+      <span>Hasta</span>
+      <input type="date" id="fechaHasta">
+    </div>
+
     <button class="btn" onclick="toggleKPI()">Kpi</button>
   </div>
 
@@ -599,7 +654,6 @@ th{
   </div>
 
   <div id="cardsContainer" class="cards-container"></div>
-
 </div>
 
 <div class="modal" id="modal">
