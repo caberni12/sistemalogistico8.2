@@ -342,7 +342,6 @@ button:active{
   border-color:#cfe0ff;
 }
 
-/* OVERLAY */
 #menuOverlay{
   position:fixed;
   inset:0;
@@ -355,7 +354,6 @@ button:active{
   display:block;
 }
 
-/* VIEWER */
 .viewer{
   position:absolute;
   inset:0;
@@ -407,7 +405,6 @@ button:active{
   background:#fff;
 }
 
-/* LOADER */
 #loadingOverlay{
   position:fixed;
   inset:0;
@@ -434,12 +431,17 @@ button:active{
   display:none;
 }
 
-/* ===== MOBILE MÁS PEQUEÑO / COMPACTO ===== */
-@media (max-width:768px){
-  html{
-    font-size:14px;
-  }
+/* punto personalizado */
+.mi-punto-ubicacion{
+  width:18px;
+  height:18px;
+  border-radius:50%;
+  background:#2563eb;
+  border:3px solid #ffffff;
+  box-shadow:0 0 0 6px rgba(37,99,235,.20);
+}
 
+@media (max-width:768px){
   header{
     padding:
       calc(6px + var(--safe-top))
@@ -586,16 +588,8 @@ button:active{
 }
 
 @media (max-width:480px){
-  html{
-    font-size:13px;
-  }
-
   header .right{
     grid-template-columns:1fr;
-  }
-
-  .map-stats{
-    grid-template-columns:1fr 1fr;
   }
 }
 </style>
@@ -630,7 +624,7 @@ button:active{
 
     <div class="header-info">
       <div id="usuario"></div>
-      <div id="conexionInfo"></div>
+      <div id="conexionInfo">Buscando ubicación…</div>
     </div>
 
     <div class="right">
@@ -651,28 +645,28 @@ button:active{
 
         <div id="mapCardContent">
           <div style="font-size:11px;color:var(--muted);margin-bottom:8px;">
-            Visualización general del estado logístico en tiempo real.
+            Ubicación actual del dispositivo con radio visible de 200 metros.
           </div>
 
           <div class="map-stats">
             <div class="map-stat">
-              <strong id="statPedidos">0</strong>
-              <span>Pedidos activos</span>
+              <strong id="statLat">--</strong>
+              <span>Latitud</span>
             </div>
 
             <div class="map-stat">
-              <strong id="statRuta">0</strong>
-              <span>En ruta</span>
+              <strong id="statLng">--</strong>
+              <span>Longitud</span>
             </div>
 
             <div class="map-stat">
-              <strong id="statEntregados">0</strong>
-              <span>Entregados</span>
+              <strong id="statPrecision">--</strong>
+              <span>Precisión GPS</span>
             </div>
 
             <div class="map-stat">
-              <strong id="statMoviles">0</strong>
-              <span>Móviles conectados</span>
+              <strong>200 m</strong>
+              <span>Radio visible</span>
             </div>
           </div>
         </div>
@@ -692,6 +686,9 @@ button:active{
 <script>
 let mapa;
 let vistaActual = 'main.html';
+let marcadorUbicacion = null;
+let circuloUbicacion = null;
+let watchId = null;
 
 function toggleMapCard(){
   const card = document.getElementById('dashboardMapa');
@@ -774,24 +771,103 @@ function cerrarSesion(){
   window.location.href = 'index.html';
 }
 
+function crearIconoUbicacion(){
+  return L.divIcon({
+    className: '',
+    html: '<div class="mi-punto-ubicacion"></div>',
+    iconSize: [18, 18],
+    iconAnchor: [9, 9]
+  });
+}
+
+function actualizarUbicacionEnMapa(lat, lng, precision){
+  const conexionInfo = document.getElementById('conexionInfo');
+  const statLat = document.getElementById('statLat');
+  const statLng = document.getElementById('statLng');
+  const statPrecision = document.getElementById('statPrecision');
+
+  if(statLat) statLat.textContent = Number(lat).toFixed(6);
+  if(statLng) statLng.textContent = Number(lng).toFixed(6);
+  if(statPrecision) statPrecision.textContent = `${Math.round(precision || 0)} m`;
+  if(conexionInfo) conexionInfo.textContent = 'Ubicación activa';
+
+  const coords = [lat, lng];
+
+  if(!marcadorUbicacion){
+    marcadorUbicacion = L.marker(coords, {
+      icon: crearIconoUbicacion()
+    }).addTo(mapa).bindPopup('Tu ubicación actual');
+  }else{
+    marcadorUbicacion.setLatLng(coords);
+  }
+
+  if(!circuloUbicacion){
+    circuloUbicacion = L.circle(coords, {
+      radius: 200,
+      color: '#2563eb',
+      weight: 2,
+      fillColor: '#60a5fa',
+      fillOpacity: 0.18
+    }).addTo(mapa);
+  }else{
+    circuloUbicacion.setLatLng(coords);
+    circuloUbicacion.setRadius(200);
+  }
+
+  mapa.setView(coords, 17, {
+    animate: true
+  });
+}
+
+function iniciarGeolocalizacion(){
+  const conexionInfo = document.getElementById('conexionInfo');
+
+  if(!navigator.geolocation){
+    if(conexionInfo) conexionInfo.textContent = 'Geolocalización no disponible';
+    return;
+  }
+
+  watchId = navigator.geolocation.watchPosition(
+    (pos) => {
+      const lat = pos.coords.latitude;
+      const lng = pos.coords.longitude;
+      const precision = pos.coords.accuracy || 0;
+
+      actualizarUbicacionEnMapa(lat, lng, precision);
+    },
+    (error) => {
+      if(conexionInfo) conexionInfo.textContent = 'No se pudo obtener ubicación';
+      console.error('Error geolocalización:', error);
+    },
+    {
+      enableHighAccuracy: true,
+      maximumAge: 5000,
+      timeout: 15000
+    }
+  );
+}
+
 document.addEventListener('DOMContentLoaded', () => {
   const usuario = localStorage.getItem('nombreUsuario') || 'Usuario';
   const usuarioBox = document.getElementById('usuario');
-  const conexionInfo = document.getElementById('conexionInfo');
   const menuModulos = document.getElementById('menuModulos');
 
   if(usuarioBox) usuarioBox.textContent = 'Usuario: ' + usuario;
-  if(conexionInfo) conexionInfo.textContent = 'Conectado';
 
   if(document.getElementById('mapa')){
-    mapa = L.map('mapa', { zoomControl:true }).setView([-33.4489, -70.6693], 12);
+    mapa = L.map('mapa', {
+      zoomControl: true
+    }).setView([-33.4489, -70.6693], 13);
 
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      maxZoom:19,
-      attribution:'&copy; OpenStreetMap'
+      maxZoom: 19,
+      attribution: '&copy; OpenStreetMap'
     }).addTo(mapa);
 
-    setTimeout(() => mapa.invalidateSize(), 300);
+    setTimeout(() => {
+      mapa.invalidateSize();
+      iniciarGeolocalizacion();
+    }, 300);
   }
 
   const modulos = [
@@ -819,6 +895,12 @@ document.addEventListener('DOMContentLoaded', () => {
 window.addEventListener('resize', () => {
   if(vistaActual === 'main.html' && mapa){
     setTimeout(() => mapa.invalidateSize(), 200);
+  }
+});
+
+window.addEventListener('beforeunload', () => {
+  if(watchId !== null && navigator.geolocation){
+    navigator.geolocation.clearWatch(watchId);
   }
 });
 </script>
