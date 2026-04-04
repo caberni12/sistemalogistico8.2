@@ -6,22 +6,13 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 
 <!-- ================== LIBRERÍAS ================== -->
-<!-- Excel -->
 <script src="https://unpkg.com/xlsx/dist/xlsx.full.min.js"></script>
-
-<!-- Gráficos -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
-
-<!-- Generar PDF -->
 <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/jspdf-autotable@3.5.29/dist/jspdf.plugin.autotable.min.js"></script>
-
-<!-- IMPORTAR PDF -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 
 <style>
-/* ================= VARIABLES ================= */
-
 :root{
  --bg:#f8fafc;
  --card:#ffffff;
@@ -35,8 +26,6 @@
  --success:#16a34a;
  --info:#2563eb;
 }
-
-/* ================= BASE ================= */
 
 *{box-sizing:border-box}
 
@@ -52,8 +41,6 @@ h2{
  margin:0 0 14px 0;
  font-weight:700;
 }
-
-/* ================= KPI ================= */
 
 #kpis{
  display:grid;
@@ -80,8 +67,6 @@ h2{
  margin-top:4px;
 }
 
-/* ================= FILTROS ================= */
-
 .filters{
  display:flex;
  gap:8px;
@@ -97,8 +82,6 @@ input,select{
  background:#fff;
  width:100%;
 }
-
-/* ================= BOTONES ================= */
 
 button{
  padding:8px 12px;
@@ -117,8 +100,6 @@ button:hover{
  background:var(--pri-dark);
  transform:translateY(-1px);
 }
-
-/* ================= LOADER BOTON ================= */
 
 button.loading{
  pointer-events:none;
@@ -142,8 +123,6 @@ button.loading::after{
 @keyframes spin{
  to{transform:translateY(-50%) rotate(360deg)}
 }
-
-/* ================= TABLA ================= */
 
 .table-scroll{
  max-height:70vh;
@@ -181,8 +160,6 @@ tbody tr:hover{
  background:#f1f5f9;
 }
 
-/* ================= ACCIONES ================= */
-
 .actions{
  display:flex;
  gap:4px;
@@ -202,8 +179,6 @@ tr.selected{
  background:#dbeafe !important;
 }
 
-/* ================= FOTO ================= */
-
 .foto-thumb{
  width:38px;
  height:38px;
@@ -212,8 +187,6 @@ tr.selected{
  border:1px solid var(--border);
  cursor:pointer;
 }
-
-/* ================= ICONO PDF ================= */
 
 .icon-pdf{
  display:inline-flex;
@@ -234,8 +207,6 @@ tr.selected{
  transform:scale(1.05);
 }
 
-/* ================= ALERTAS ================= */
-
 .alerta{
  padding:4px 10px;
  border-radius:8px;
@@ -247,8 +218,6 @@ tr.selected{
 .alerta-amarillo{background:#fef9c3;color:#854d0e;}
 .alerta-rojo{background:#fee2e2;color:#991b1b;}
 .alerta-azul{background:#dbeafe;color:#1e40af;}
-
-/* ================= SEMAFORO ================= */
 
 .sem-verde,
 .sem-amarillo,
@@ -265,16 +234,12 @@ tr.selected{
 .sem-rojo{background:#dc2626}
 .sem-azul{background:#2563eb}
 
-/* ================= SEMAFORO PUNTO ================= */
-
 .sem-dot{
  display:inline-block;
  width:10px;
  height:10px;
  border-radius:50%;
 }
-
-/* ================= MODAL ================= */
 
 .modal{
  position:fixed;
@@ -297,8 +262,6 @@ tr.selected{
  box-shadow:0 20px 60px rgba(0,0,0,.25);
  position:relative;
 }
-
-/* ================= BOTÓN CIERRE MODAL ================= */
 
 .modal-close{
  position:absolute;
@@ -332,59 +295,10 @@ tr.selected{
  transform:scale(1.05);
 }
 
-/* ================= FIX BOTÓN X MODAL PEDIDO ================= */
-
-#modalForm .modal-content{
- position:relative;
-}
-
-#btnCerrarFormX{
- position:absolute;
- top:12px;
- right:12px;
- width:36px !important;
- height:36px !important;
- min-width:36px !important;
- max-width:36px !important;
- min-height:36px !important;
- max-height:36px !important;
- padding:0 !important;
- margin:0 !important;
- border-radius:8px !important;
- background:#dc2626 !important;
- color:#fff !important;
- border:none !important;
- display:flex !important;
- align-items:center !important;
- justify-content:center !important;
- font-size:18px !important;
- font-weight:700 !important;
- line-height:1 !important;
- cursor:pointer !important;
- z-index:30 !important;
- flex:0 0 36px !important;
-}
-
-#btnCerrarFormX:hover{
- background:#b91c1c !important;
- transform:scale(1.05);
-}
-
-/* ================= FORM ================= */
-
 #modalForm input,
 #modalForm select{
  width:100%;
  margin-bottom:10px;
-}
-
-/* ================= ARCHIVOS ================= */
-
-.file-block{
- display:flex;
- flex-direction:column;
- gap:8px;
- margin-bottom:14px;
 }
 
 .preview-box{
@@ -429,16 +343,12 @@ tr.selected{
  background:#e0e7ff;
 }
 
-/* ================= FOTO GRANDE ================= */
-
 .foto-grande{
  width:100%;
  max-height:75vh;
  object-fit:contain;
  border-radius:16px;
 }
-
-/* ================= MAPA ================= */
 
 .map-frame{
  width:90vw;
@@ -447,8 +357,6 @@ tr.selected{
  border:0;
  border-radius:16px;
 }
-
-/* ================= TARJETAS MOBILE ================= */
 
 .mobile-list{
  display:none;
@@ -470,8 +378,6 @@ tr.selected{
  display:flex;
  justify-content:space-between;
 }
-
-/* ================= MODAL COLUMNAS ================= */
 
 #modalColumnas{
  position:fixed;
@@ -503,13 +409,6 @@ tr.selected{
   opacity:1;
   transform:translateY(0) scale(1);
  }
-}
-
-#modalColumnas h3{
- margin:0 0 12px 0;
- font-size:18px;
- font-weight:700;
- color:#0f172a;
 }
 
 #listaColumnas{
@@ -601,8 +500,6 @@ tr.selected{
  animation:spin .7s linear infinite;
 }
 
-/* ================= MODAL PRODUCTO ================= */
-
 #modalProducto{
  position:fixed;
  top:0;
@@ -618,16 +515,12 @@ tr.selected{
 
 #modalProducto .modal-content{
  background:#fff;
- padding:20px;
  border-radius:12px;
- width:95%;
- max-width:900px;
- max-height:90vh;
+ width:min(1280px, calc(100vw - 24px));
+ max-width:calc(100vw - 24px);
+ max-height:calc(100vh - 24px);
  overflow:auto;
  position:relative;
- width:min(1120px, calc(100vw - 32px));
- max-width:calc(100vw - 32px);
- max-height:calc(100vh - 32px);
  padding:24px;
 }
 
@@ -730,23 +623,6 @@ tr.selected{
  background:#b91c1c;
 }
 
-/* ================= MOBILE ================= */
-
-@media(max-width:768px){
-
- .table-scroll{display:none;}
- .mobile-list{display:block;}
-
- #kpis{
-  grid-template-columns:repeat(2,1fr);
- }
-
- .modal-content{
-  width:95%;
-  max-width:95%;
- }
-}
-
 .top-bar{
  display:flex;
  flex-wrap:wrap;
@@ -756,170 +632,6 @@ tr.selected{
 
 .panel-hidden{
  display:none !important;
-}
-
-@media (max-width:768px){
-
- .modal-content{
-  padding:20px 16px;
-  border-radius:14px;
- }
-
- #modalForm label{
-  margin-top:10px;
-  display:block;
-  font-size:13px;
- }
-
- #modalForm input,
- #modalForm select{
-  margin-top:4px;
-  margin-bottom:12px;
-  padding:12px;
-  font-size:14px;
-  border-radius:10px;
- }
-
- #modalForm button:not(#btnCerrarFormX),
- #modalColumnas button{
-  padding:12px;
-  font-size:14px;
-  flex:1;
- }
-
- #modalForm div[style*="display:flex"]{
-  gap:12px;
-  flex-wrap:wrap;
- }
-
- #mRutConsulta{
-  flex:1;
- }
-
- #btnConsultarRut{
-  min-width:50px;
- }
-}
-
-/* ================= FIX KPI MOVIL ================= */
-
-@media (max-width:768px){
-
- #kpis{
-  display:grid;
-  grid-template-columns:1fr 1fr;
-  gap:10px;
-  width:100%;
- }
-
- .kpi{
-  width:100%;
-  min-width:0;
-  padding:12px;
- }
-
- .kpi-title{
-  font-size:11px;
- }
-
- .kpi-value{
-  font-size:20px;
- }
-}
-
-@media (max-width:420px){
- #kpis{
-  grid-template-columns:1fr;
- }
-}
-
-/* ================= MOBILE BOTONES ================= */
-
-@media (max-width:768px){
-
- .top-bar {
-  flex-direction: column;
-  gap: 8px;
- }
-
- .top-bar button {
-  width: 100%;
-  min-width: 0;
- }
-
- .top-bar input,
- .top-bar select {
-  width: 100%;
- }
-
- #modalForm button:not(#btnCerrarFormX),
- #modalColumnas button {
-  width: 100%;
-  margin: 4px 0;
- }
-
- #modalForm div[style*="display:flex"],
- #modalColumnas .modal-actions {
-  flex-direction: column;
- }
-
- #btnCerrarFormX,
- #btnCerrarProductoX{
-  width:34px !important;
-  height:34px !important;
-  min-width:34px !important;
-  max-width:34px !important;
-  min-height:34px !important;
-  max-height:34px !important;
-  margin:0 !important;
-  top:10px !important;
-  right:10px !important;
-  font-size:16px !important;
- }
-}
-
-/* =======================
-   MODALES DESKTOP / RESPONSIVE
-   ======================= */
-@media (min-width:769px) {
- .modal-content{
-  width:min(980px, calc(100vw - 48px));
-  max-width:calc(100vw - 48px);
- }
-
- #modalColumnas .modal-content{
-  width:min(760px, calc(100vw - 48px));
-  max-width:calc(100vw - 48px);
- }
-
- #modalProducto .modal-content{
-  width:min(1120px, calc(100vw - 40px));
-  max-width:calc(100vw - 40px);
- }
-}
-
-/* =======================
-   AJUSTE FINAL MODALES
-   ======================= */
-#modalForm .modal-content,
-#modalProducto .modal-content{
- width:min(1100px, calc(100vw - 28px));
- max-width:calc(100vw - 28px);
- max-height:calc(100vh - 28px);
- padding:24px 22px 20px;
- overflow:auto;
-}
-
-#modalForm .modal-close,
-#modalProducto .modal-close{
- top:12px;
- right:12px;
-}
-
-#modalForm h3,
-#modalProducto h2{
- margin:0 0 14px 0;
- padding-right:52px;
 }
 
 .modal-section{
@@ -1016,74 +728,6 @@ tr.selected{
  width:100%;
 }
 
-#modalProducto .grid{
- gap:14px;
- grid-template-columns:repeat(4, minmax(0, 1fr));
-}
-
-#modalProducto .product-entry-box{
- display:grid;
- grid-template-columns:220px 170px minmax(240px, 1.15fr) minmax(340px, 1.7fr) 150px;
- grid-template-areas:
-  "codigo acciones producto descripcion cantidad"
-  "agregar agregar agregar agregar agregar";
- gap:16px;
- align-items:end;
-}
-
-#modalProducto .form-group label{
- font-size:13px;
- font-weight:600;
- color:#334155;
- margin:0;
-}
-
-#modalProducto .form-group input,
-#modalProducto .form-group select{
- width:100%;
- margin:0;
- padding:12px 14px;
- border-radius:12px;
- min-height:46px;
-}
-
-#modalProducto .product-entry-box .codigo{ grid-area:codigo; }
-#modalProducto .product-entry-box .acciones{ grid-area:acciones; }
-#modalProducto .product-entry-box .producto{ grid-area:producto; }
-#modalProducto .product-entry-box .descripcion{ grid-area:descripcion; }
-#modalProducto .product-entry-box .cantidad{ grid-area:cantidad; }
-#modalProducto .product-entry-box .agregar{ grid-area:agregar; }
-
-#modalProducto #pCodigo,
-#modalProducto #pProducto,
-#modalProducto #pDescripcion,
-#modalProducto #pCantidad{
- max-width:none;
-}
-
-#modalProducto .product-actions{
- display:flex;
- flex-direction:column;
- gap:10px;
-}
-
-#modalProducto .product-actions button{
- width:100%;
- min-height:46px;
- min-width:0;
-}
-
-#modalProducto .product-entry-box .agregar{
- display:flex;
- justify-content:flex-start;
- margin-top:2px;
-}
-
-#modalProducto .product-entry-box .agregar button{
- min-width:240px;
- min-height:46px;
-}
-
 #modalProducto .table-wrap{
  margin-top:16px;
  max-height:280px;
@@ -1098,80 +742,6 @@ tr.selected{
  margin-top:8px;
  font-size:12px;
  color:#64748b;
-}
-
-@media (max-width:1100px){
- .modal-grid-3{
-  grid-template-columns:repeat(2, minmax(0, 1fr));
- }
-
- #modalProducto .grid{
-  grid-template-columns:repeat(2, minmax(0, 1fr));
- }
-
- #modalProducto .product-entry-box{
-  grid-template-columns:repeat(2, minmax(0, 1fr));
-  grid-template-areas:
-   "codigo acciones"
-   "producto producto"
-   "descripcion descripcion"
-   "cantidad cantidad"
-   "agregar agregar";
- }
-}
-
-@media (max-width:768px){
- #modalForm .modal-content,
- #modalProducto .modal-content{
-  width:calc(100vw - 14px);
-  max-width:calc(100vw - 14px);
-  max-height:calc(100vh - 14px);
-  padding:18px 14px 16px;
-  border-radius:14px;
- }
-
- .modal-grid-2,
- .modal-grid-3,
- .modal-inline,
- #modalProducto .grid{
-  grid-template-columns:1fr;
- }
-
- #modalProducto .product-entry-box{
-  grid-template-columns:1fr;
-  grid-template-areas:
-   "codigo"
-   "acciones"
-   "producto"
-   "descripcion"
-   "cantidad"
-   "agregar";
-  gap:14px;
- }
-
- .modal-actions-row,
- #modalProducto .modal-actions{
-  flex-direction:column;
- }
-
- .modal-actions-row button,
- #modalProducto .modal-actions button{
-  width:100%;
-  min-width:0;
- }
-
- #modalForm h3,
- #modalProducto h2{
-  font-size:20px;
-  padding-right:42px;
- }
-}
-
-/* ================= AJUSTE FINAL TABLA MODAL PRODUCTOS ================= */
-
-#modalProducto .modal-content{
- width:min(1280px, calc(100vw - 24px));
- max-width:calc(100vw - 24px);
 }
 
 #modalProducto .productos-table{
@@ -1211,11 +781,6 @@ tr.selected{
  min-width:120px;
 }
 
-#modalProducto .productos-table td:nth-child(4),
-#modalProducto .productos-table td:nth-child(5){
- white-space:normal;
-}
-
 #modalProducto .productos-table td button{
  width:100%;
  min-width:0;
@@ -1248,7 +813,154 @@ tr.selected{
  background:#b91c1c;
 }
 
+/* ================= FIX REAL BOTÓN X MODAL PEDIDO ================= */
+#modalForm .modal-content{
+ position:relative;
+}
+
+#btnCerrarFormX{
+ all:unset;
+ box-sizing:border-box;
+ position:absolute !important;
+ top:12px !important;
+ right:12px !important;
+ width:42px !important;
+ height:42px !important;
+ min-width:42px !important;
+ max-width:42px !important;
+ min-height:42px !important;
+ max-height:42px !important;
+ display:flex !important;
+ align-items:center !important;
+ justify-content:center !important;
+ background:#dc2626 !important;
+ color:#fff !important;
+ border-radius:10px !important;
+ cursor:pointer !important;
+ font-size:22px !important;
+ font-weight:700 !important;
+ line-height:1 !important;
+ z-index:9999 !important;
+}
+
+#btnCerrarFormX:hover{
+ background:#b91c1c !important;
+}
+
+/* ================= RESPONSIVE ================= */
+@media (max-width:1100px){
+ .modal-grid-3{
+  grid-template-columns:repeat(2, minmax(0, 1fr));
+ }
+}
+
 @media (max-width:768px){
+
+ .table-scroll{display:none;}
+ .mobile-list{display:block;}
+
+ #kpis{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:10px;
+  width:100%;
+ }
+
+ .kpi{
+  width:100%;
+  min-width:0;
+  padding:12px;
+ }
+
+ .kpi-title{
+  font-size:11px;
+ }
+
+ .kpi-value{
+  font-size:20px;
+ }
+
+ .top-bar{
+  flex-direction:column;
+  gap:8px;
+ }
+
+ .top-bar button,
+ .top-bar input,
+ .top-bar select{
+  width:100%;
+  min-width:0;
+ }
+
+ .modal-content{
+  width:95%;
+  max-width:95%;
+  padding:20px 16px;
+  border-radius:14px;
+ }
+
+ #modalForm .modal-content,
+ #modalProducto .modal-content{
+  width:calc(100vw - 14px);
+  max-width:calc(100vw - 14px);
+  max-height:calc(100vh - 14px);
+  padding:18px 14px 16px;
+  border-radius:14px;
+ }
+
+ #modalForm label{
+  margin-top:10px;
+  display:block;
+  font-size:13px;
+ }
+
+ #modalForm input,
+ #modalForm select{
+  margin-top:4px;
+  margin-bottom:12px;
+  padding:12px;
+  font-size:14px;
+  border-radius:10px;
+ }
+
+ #modalForm button:not(#btnCerrarFormX),
+ #modalColumnas button{
+  width:100%;
+  margin:4px 0;
+  padding:12px;
+  font-size:14px;
+  flex:1;
+ }
+
+ #modalForm div[style*="display:flex"],
+ #modalColumnas .modal-actions{
+  flex-direction:column;
+ }
+
+ .modal-grid-2,
+ .modal-grid-3,
+ .modal-inline,
+ #modalProducto .grid{
+  grid-template-columns:1fr;
+ }
+
+ .modal-actions-row,
+ #modalProducto .modal-actions{
+  flex-direction:column;
+ }
+
+ .modal-actions-row button,
+ #modalProducto .modal-actions button{
+  width:100%;
+  min-width:0;
+ }
+
+ #modalForm h3,
+ #modalProducto h2{
+  font-size:20px;
+  padding-right:42px;
+ }
+
  #modalProducto .modal-close{
   top:10px;
   right:10px;
@@ -1258,17 +970,30 @@ tr.selected{
   min-height:34px;
  }
 
- #modalProducto .modal-content{
-  width:calc(100vw - 10px);
-  max-width:calc(100vw - 10px);
- }
-
  #modalProducto .productos-table{
   min-width:760px;
  }
 
  #modalProducto .productos-table td button{
   white-space:normal;
+ }
+
+ #btnCerrarFormX{
+  top:10px !important;
+  right:10px !important;
+  width:38px !important;
+  height:38px !important;
+  min-width:38px !important;
+  max-width:38px !important;
+  min-height:38px !important;
+  max-height:38px !important;
+  font-size:20px !important;
+ }
+}
+
+@media (max-width:420px){
+ #kpis{
+  grid-template-columns:1fr;
  }
 }
 </style>
@@ -1364,7 +1089,8 @@ tr.selected{
 <!-- FORMULARIO -->
 <div class="modal" id="modalForm">
   <div class="modal-content">
-    <button id="btnCerrarFormX" type="button" class="modal-close" aria-label="Cerrar formulario">&#x2716;</button>
+
+    <button id="btnCerrarFormX" type="button" aria-label="Cerrar formulario">×</button>
 
     <h3 id="mtitle">Editar Pedido</h3>
 
@@ -1502,6 +1228,7 @@ tr.selected{
 <!-- MODAL PRODUCTOS -->
 <div id="modalProducto" class="modal" style="display:none;">
   <div class="modal-content">
+
     <button id="btnCerrarProductoX" type="button" class="modal-close" aria-label="Cerrar modal de productos" onclick="if(window.cerrarModalProducto){cerrarModalProducto();} return false;">&#x2716;</button>
 
     <h2>📦 Productos del Pedido</h2>
