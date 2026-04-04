@@ -6,7 +6,8 @@ API
 //const API_OLD="https://script.google.com/macros/s/AKfycbyMhSW9JBm6zb90K1V_qHTuSZ9GqR7XNPAgV3j9upGq66OMQNK9RtEii2gT5QXlTpFD/exec";
 
 // URL base del endpoint de Apps Script. Se actualiza cuando se publica una nueva versión.
-const API="https://script.google.com/macros/s/AKfycbxzSkxz-rVSMLBEGy7k0FPd1EJpfeufZXEzxzf3JXOAQ7ONJ8O3tpxkTXYzdwDbjb7s/exec";
+const API="https://script.google.com/macros/s/AKfycbyd0yEaSOZUsTHva3ltzBVY-zWqemZYLubnxVGcWP7TccJzHf0-NLJ2KzPj2gP3dYzT/exec";
+window.API_PEDIDOS = API;
 
 /***************************************************
 DOM
@@ -244,26 +245,93 @@ function blobToBase64(blob){
  * @return {Promise<Array<Object>>}
  */
 async function obtenerProductosPedidoBD(pedido){
-  if(!pedido) return [];
-  try{
-    const payload = {
-      action: "obtenerProductos",
-      pedido: pedido
-    };
-    const res = await fetch(API, {
-      method: "POST",
-      headers: {"Content-Type": "application/json"},
-      body: JSON.stringify(payload)
-    });
-    const data = await res.json();
-    if(data && data.ok && Array.isArray(data.productos)){
-      return data.productos;
+  const pedidoLimpio = String(pedido || "").trim();
+  if(!pedidoLimpio) return [];
+
+  const normalizarListaProductos = (payload) => {
+    let lista = [];
+
+    if(Array.isArray(payload)) lista = payload;
+    else if(payload && Array.isArray(payload.productos)) lista = payload.productos;
+    else if(payload && Array.isArray(payload.data)) lista = payload.data;
+    else if(payload && Array.isArray(payload.resultados)) lista = payload.resultados;
+
+    return lista.map(item => ({
+      producto:
+        item?.producto ||
+        item?.PRODUCTO ||
+        item?.codigo ||
+        item?.CODIGO ||
+        item?.nombre ||
+        item?.NOMBRE ||
+        "",
+      detalle:
+        item?.detalle ||
+        item?.DETALLE ||
+        item?.descripcion ||
+        item?.DESCRIPCION ||
+        item?.["DESCRIPCIÓN"] ||
+        "",
+      descripcion:
+        item?.descripcion ||
+        item?.DESCRIPCION ||
+        item?.["DESCRIPCIÓN"] ||
+        item?.detalle ||
+        item?.DETALLE ||
+        "",
+      cantidad: Number(
+        item?.cantidad ||
+        item?.CANTIDAD ||
+        item?.qty ||
+        item?.QTY ||
+        0
+      )
+    })).filter(item => String(item.producto || item.detalle || item.descripcion || "").trim() !== "");
+  };
+
+  const intentar = async (url, options = {}) => {
+    try{
+      const res = await fetch(url, options);
+      if(!res.ok) return [];
+      const txt = await res.text();
+      if(!txt) return [];
+      let data = null;
+      try{
+        data = JSON.parse(txt);
+      }catch(_err){
+        return [];
+      }
+      return normalizarListaProductos(data);
+    }catch(_err){
+      return [];
     }
-    return [];
-  }catch(err){
-    console.error("Error obteniendo productos desde backend:", err);
-    return [];
-  }
+  };
+
+  const payload = { action: "obtenerProductos", pedido: pedidoLimpio };
+
+  let lista = await intentar(API, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+    cache: "no-store"
+  });
+  if(lista.length) return lista;
+
+  const form = new URLSearchParams();
+  form.append("data", JSON.stringify(payload));
+  lista = await intentar(API, {
+    method: "POST",
+    headers: { "Content-Type": "application/x-www-form-urlencoded;charset=UTF-8" },
+    body: form.toString(),
+    cache: "no-store"
+  });
+  if(lista.length) return lista;
+
+  lista = await intentar(`${API}?action=obtenerProductos&pedido=${encodeURIComponent(pedidoLimpio)}&_=${Date.now()}`, {
+    method: "GET",
+    cache: "no-store"
+  });
+  return lista;
 }
 
 function construirPayloadPedido(base = {}, overrides = {}){
@@ -1125,6 +1193,8 @@ btnNuevo.onclick = () => {
 CANCELAR
 ***************************************************/
 btnCancelar.onclick=()=>{ modalForm.style.display="none"; isEditing = false; };
+const btnCerrarFormX = document.getElementById("btnCerrarFormX");
+if(btnCerrarFormX){ btnCerrarFormX.onclick = () => { modalForm.style.display="none"; isEditing = false; }; }
 
 /***************************************************
 GUARDAR
@@ -1612,6 +1682,15 @@ let PRODUCTOS_DB = {};
 let PRODUCTOS_ACTUALES = [];
 let PRODUCTO_ROW_ACTUAL = "";
 let PEDIDO_META_ACTUAL = null;
+let PRODUCTO_EDIT_INDEX = -1;
+
+function notifyModalProducto(msg, tipo = "warn"){
+  if(typeof window.alerta === "function"){
+    window.alerta(msg, tipo);
+  }else{
+    console.warn(msg);
+  }
+}
 
 function cargarProductosDB(){
   // El almacenamiento local se ha desactivado para los productos. Devuelve
@@ -1678,6 +1757,16 @@ function limpiarInputsProducto(){
   if(pProducto) pProducto.value = "";
   if(pDescripcion) pDescripcion.value = "";
   if(pCantidad) pCantidad.value = "";
+  const pCodigo = document.getElementById("pCodigo");
+  const selectCodigoProducto = document.getElementById("selectCodigoProducto");
+  if(pCodigo) pCodigo.value = "";
+  if(selectCodigoProducto) selectCodigoProducto.value = "";
+  PRODUCTO_EDIT_INDEX = -1;
+  if(btnAddProducto){
+    btnAddProducto.textContent = "➕ Agregar Producto";
+    btnAddProducto.classList.remove("loading");
+    btnAddProducto.disabled = false;
+  }
 }
 
 function limpiarCabeceraProducto(){
@@ -1690,6 +1779,39 @@ function limpiarCabeceraProducto(){
 function totalProductosActuales(){
   return PRODUCTOS_ACTUALES.reduce((sum, item) => sum + Number(item.cantidad || 0), 0);
 }
+function normalizarTextoProducto(txt){
+  return String(txt || "")
+    .trim()
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[̀-ͯ]/g, "");
+}
+
+function buscarIndiceProductoExistente(producto){
+  const codigoBuscado = normalizarTextoProducto(producto);
+  if(!codigoBuscado) return -1;
+  return PRODUCTOS_ACTUALES.findIndex(item => normalizarTextoProducto(item.producto) === codigoBuscado);
+}
+
+function editarProductoActual(index){
+  const item = PRODUCTOS_ACTUALES[index];
+  if(!item) return;
+  PRODUCTO_EDIT_INDEX = index;
+  if(pProducto) pProducto.value = item.producto || "";
+  if(pDescripcion) pDescripcion.value = item.detalle || item.descripcion || "";
+  if(pCantidad) pCantidad.value = item.cantidad || 0;
+  const pCodigo = document.getElementById("pCodigo");
+  const selectCodigoProducto = document.getElementById("selectCodigoProducto");
+  if(pCodigo) pCodigo.value = item.producto || "";
+  if(selectCodigoProducto) selectCodigoProducto.value = item.producto || "";
+  if(btnAddProducto){
+    btnAddProducto.textContent = "💾 Actualizar Producto";
+  }
+  if(pProducto) pProducto.focus();
+  renderTablaProductos();
+}
+window.editarProductoActual = editarProductoActual;
+
 
 function actualizarResumenPedido(){
   if(!pResumenPedido) return;
@@ -1709,13 +1831,19 @@ function renderTablaProductos(){
   if(!pTablaProductos) return;
 
   if(!PRODUCTOS_ACTUALES.length){
-    pTablaProductos.innerHTML = '<tr><td colspan="4" style="padding:12px;text-align:center;color:#64748b;">No hay productos agregados.</td></tr>';
+    const mensaje = PEDIDO_META_ACTUAL
+      ? "Este pedido no tiene productos asociados."
+      : "No hay productos agregados.";
+    pTablaProductos.innerHTML = `<tr><td colspan="5" style="padding:12px;text-align:center;color:#64748b;">${mensaje}</td></tr>`;
   }else{
     pTablaProductos.innerHTML = PRODUCTOS_ACTUALES.map((item, index) => `
-      <tr>
+      <tr ${PRODUCTO_EDIT_INDEX === index ? 'style="background:#ecfeff;"' : ''}>
         <td style="padding:8px;border-bottom:1px solid #e2e8f0;">${item.producto || ""}</td>
         <td style="padding:8px;border-bottom:1px solid #e2e8f0;">${item.detalle || item.descripcion || ""}</td>
         <td style="padding:8px;border-bottom:1px solid #e2e8f0;text-align:center;">${item.cantidad || 0}</td>
+        <td style="padding:8px;border-bottom:1px solid #e2e8f0;text-align:center;">
+          <button type="button" onclick="editarProductoActual(${index})">✏️</button>
+        </td>
         <td style="padding:8px;border-bottom:1px solid #e2e8f0;text-align:center;">
           <button type="button" onclick="eliminarProductoActual(${index})">🗑️</button>
         </td>
@@ -1734,6 +1862,7 @@ function renderTablaProductos(){
 
 async function cargarProductosDePedido(meta){
   PEDIDO_META_ACTUAL = meta || null;
+
   if(!meta){
     PRODUCTO_ROW_ACTUAL = "";
     PRODUCTOS_ACTUALES = [];
@@ -1741,70 +1870,128 @@ async function cargarProductosDePedido(meta){
     renderTablaProductos();
     return;
   }
+
   PRODUCTO_ROW_ACTUAL = String(meta._row || "");
+
   if(pPedido) pPedido.value = meta.pedido || "";
   if(pCliente) pCliente.value = meta.cliente || "";
   if(pDireccion) pDireccion.value = meta.direccion || "";
   if(pComuna) pComuna.value = meta.comuna || "";
+
   PRODUCTOS_ACTUALES = [];
   renderTablaProductos();
-  // Ya no cargamos productos desde una base local. Los productos se
-  // solicitarán directamente al backend y solo se almacenarán en memoria
-  // durante la sesión actual.
+
+  if(pResumenPedido){
+    pResumenPedido.innerHTML = `Pedido <b>#${meta.pedido || ""}</b> · cargando productos...`;
+  }
+
   try{
     const productosRemotos = await obtenerProductosPedidoBD(meta.pedido);
-    if(Array.isArray(productosRemotos) && productosRemotos.length){
-      PRODUCTOS_ACTUALES = productosRemotos.map(p => ({
-        producto: p.producto || "",
-        detalle: p.detalle || p.descripcion || "",
-        descripcion: p.descripcion || p.detalle || "",
-        cantidad: Number(p.cantidad || 0)
-      }));
-      // Ya no persistimos los productos en localStorage. Simplemente
-      // actualizamos la tabla en memoria con los datos obtenidos del backend.
-      renderTablaProductos();
-    }
+
+    PRODUCTOS_ACTUALES = (productosRemotos || []).map(item => ({
+      producto: item.producto || "",
+      detalle: item.detalle || item.descripcion || "",
+      descripcion: item.descripcion || item.detalle || "",
+      cantidad: Number(item.cantidad || 0)
+    }));
+
+    renderTablaProductos();
   }catch(err){
     console.error("Error cargando productos desde backend:", err);
+    PRODUCTOS_ACTUALES = [];
+    renderTablaProductos();
+    if(typeof alerta === "function"){
+      notifyModalProducto("⚠️ No se pudieron cargar los productos del pedido", "warn");
+    }
   }
 }
 
 function agregarProductoActual(){
   if(!PEDIDO_META_ACTUAL){
-    alerta("⚠️ Primero selecciona un pedido", "warn");
+    notifyModalProducto("⚠️ Primero selecciona un pedido", "warn");
     return;
   }
 
-  const producto = (pProducto?.value || "").trim();
-  const descripcion = (pDescripcion?.value || "").trim();
-  const cantidad = Number(pCantidad?.value || 0);
+  setLoading(btnAddProducto, true);
+  try{
+    const producto = (pProducto?.value || "").trim();
+    const descripcion = (pDescripcion?.value || "").trim();
+    const cantidad = Number(pCantidad?.value || 0);
 
-  if(!producto){
-    alerta("⚠️ Debes ingresar el nombre del producto", "warn");
-    pProducto?.focus();
-    return;
+    if(!producto){
+      notifyModalProducto("⚠️ Debes ingresar el nombre o código del producto", "warn");
+      pProducto?.focus();
+      return;
+    }
+
+    if(!cantidad || isNaN(cantidad)){
+      notifyModalProducto("⚠️ Debes ingresar una cantidad válida", "warn");
+      pCantidad?.focus();
+      return;
+    }
+
+    if(PRODUCTO_EDIT_INDEX >= 0){
+      PRODUCTOS_ACTUALES[PRODUCTO_EDIT_INDEX] = {
+        producto,
+        descripcion,
+        detalle: descripcion,
+        cantidad
+      };
+      notifyModalProducto("✅ Producto actualizado", "ok");
+      limpiarInputsProducto();
+      renderTablaProductos();
+      return;
+    }
+
+    const existenteIndex = buscarIndiceProductoExistente(producto);
+    if(existenteIndex >= 0){
+      const actual = Number(PRODUCTOS_ACTUALES[existenteIndex].cantidad || 0);
+      const nuevoTotal = actual + cantidad;
+
+      if(nuevoTotal <= 0){
+        PRODUCTOS_ACTUALES.splice(existenteIndex, 1);
+        notifyModalProducto("✅ Producto eliminado por quedar en 0", "ok");
+      }else{
+        PRODUCTOS_ACTUALES[existenteIndex].cantidad = nuevoTotal;
+        if(descripcion){
+          PRODUCTOS_ACTUALES[existenteIndex].detalle = descripcion;
+          PRODUCTOS_ACTUALES[existenteIndex].descripcion = descripcion;
+        }
+        notifyModalProducto("✅ Cantidad actualizada", "ok");
+      }
+
+      limpiarInputsProducto();
+      renderTablaProductos();
+      return;
+    }
+
+    if(cantidad < 0){
+      notifyModalProducto("⚠️ No puedes restar un producto que aún no existe en la lista", "warn");
+      return;
+    }
+
+    PRODUCTOS_ACTUALES.push({
+      producto,
+      descripcion,
+      detalle: descripcion,
+      cantidad
+    });
+
+    renderTablaProductos();
+    limpiarInputsProducto();
+    if(pProducto) pProducto.focus();
+  }finally{
+    setLoading(btnAddProducto, false);
   }
-
-  if(!cantidad || cantidad < 1){
-    alerta("⚠️ Debes ingresar una cantidad válida", "warn");
-    pCantidad?.focus();
-    return;
-  }
-
-  PRODUCTOS_ACTUALES.push({
-    producto,
-    descripcion,
-    detalle: descripcion,
-    cantidad
-  });
-
-  renderTablaProductos();
-  limpiarInputsProducto();
-  if(pProducto) pProducto.focus();
 }
 
 function eliminarProductoActual(index){
   PRODUCTOS_ACTUALES.splice(index, 1);
+  if(PRODUCTO_EDIT_INDEX === index){
+    limpiarInputsProducto();
+  }else if(PRODUCTO_EDIT_INDEX > index){
+    PRODUCTO_EDIT_INDEX--;
+  }
   renderTablaProductos();
 }
 window.eliminarProductoActual = eliminarProductoActual;
@@ -1817,18 +2004,12 @@ window.eliminarProductoActual = eliminarProductoActual;
  */
 async function guardarProductosPedido(limpiarDespues = true){
   if(!PEDIDO_META_ACTUAL){
-    alerta("⚠️ No hay pedido seleccionado", "warn");
+    notifyModalProducto("⚠️ No hay pedido seleccionado", "warn");
     return;
   }
   const pedidoKey = String(PEDIDO_META_ACTUAL.pedido || "");
-  // Ya no actualizamos ni persistimos datos en localStorage. Solo usaremos
-  // `PRODUCTOS_DB` como una caché en memoria si es necesario. En este
-  // proyecto, simplemente mantenemos los productos en `PRODUCTOS_ACTUALES`.
   try {
-    // Preparamos el payload con el listado de productos a guardar. Este
-    // objeto se enviará al backend a través de postPedidoData(), que
-    // utiliza un body en formato x-www-form-urlencoded para mayor
-    // compatibilidad con Apps Script.
+    setLoading(btnGuardarProducto, true);
     const payload = {
       action: "guardarProductos",
       pedido: pedidoKey,
@@ -1838,11 +2019,8 @@ async function guardarProductosPedido(limpiarDespues = true){
         cantidad: Number(item.cantidad || 0)
       }))
     };
-    // Enviamos los datos usando la función postPedidoData, que maneja
-    // codificación y verificación de errores del lado del servidor.
-    const resp = await postPedidoData(payload);
-    alerta("✅ Productos guardados para el pedido #" + pedidoKey, "ok");
-    // Después de guardar, limpiamos el estado local si así se solicita.
+    await postPedidoData(payload);
+    notifyModalProducto("✅ Productos guardados para el pedido #" + pedidoKey, "ok");
     if (limpiarDespues) {
       limpiarProductosDB();
       PRODUCTOS_ACTUALES = [];
@@ -1854,18 +2032,20 @@ async function guardarProductosPedido(limpiarDespues = true){
     }
   } catch (e) {
     console.error("Error guardando productos en backend:", e);
-    alerta("⚠️ Ocurrió un error al guardar los productos en el backend. Inténtalo nuevamente.", "warn");
+    notifyModalProducto("⚠️ Ocurrió un error al guardar los productos en el backend. Inténtalo nuevamente.", "warn");
+  } finally {
+    setLoading(btnGuardarProducto, false);
   }
 }
 
 async function generarPDFProductos(){
   if(!PEDIDO_META_ACTUAL){
-    alerta("⚠️ Selecciona un pedido antes de generar el PDF", "warn");
+    notifyModalProducto("⚠️ Selecciona un pedido antes de generar el PDF", "warn");
     return;
   }
 
   if(!PRODUCTOS_ACTUALES.length){
-    alerta("⚠️ Debes agregar al menos un producto", "warn");
+    notifyModalProducto("⚠️ Debes agregar al menos un producto", "warn");
     return;
   }
 
@@ -1917,43 +2097,51 @@ async function generarPDFProductos(){
 
     render();
     window.open(pdfUrl, "_blank");
-    alerta(`✅ PDF generado con logo + QR y cargado en la columna PDF del pedido #${PEDIDO_META_ACTUAL.pedido || ""}`, "ok");
+    notifyModalProducto(`✅ PDF generado con logo + QR y cargado en la columna PDF del pedido #${PEDIDO_META_ACTUAL.pedido || ""}`, "ok");
   }catch(err){
     console.error("ERROR PDF PRODUCTOS:", err);
-    alerta("❌ No se pudo generar el PDF con logo y QR", "error");
+    notifyModalProducto("❌ No se pudo generar el PDF con logo y QR", "error");
   }finally{
     setLoading(btnGenerarProductoPDF, false);
   }
 }
 
 function cerrarModalProducto(){
-  if(modalProducto) modalProducto.style.display = "none";
+  if(!modalProducto) return;
+  modalProducto.style.display = "none";
+  PRODUCTO_EDIT_INDEX = -1;
+  limpiarInputsProducto();
 }
+window.cerrarModalProducto = cerrarModalProducto;
 
 function abrirModalProducto(ref = ""){
   if(!modalProducto){
-    alerta("❌ No se encontró el modal de productos", "error");
+    notifyModalProducto("❌ No se encontró el modal de productos", "error");
     return;
   }
 
   const pedidos = obtenerPedidosDisponibles();
-
   if(!pedidos.length){
-    alerta("⚠️ Aún no hay pedidos cargados", "warn");
+    notifyModalProducto("⚠️ Aún no hay pedidos cargados", "warn");
     return;
   }
 
   const seleccionado = buscarPedido(ref) || getSelectedRowData() || pedidos[0];
-
+  modalProducto.style.display = "flex";
+  limpiarInputsProducto();
+  if(pResumenPedido) pResumenPedido.textContent = "Cargando productos del pedido...";
   poblarSelectPedidos(seleccionado ? seleccionado._row : "");
-
   if(seleccionado && pSelectPedido){
     pSelectPedido.value = String(seleccionado._row);
   }
 
-  cargarProductosDePedido(seleccionado);
-  limpiarInputsProducto();
-  modalProducto.style.display = "flex";
+  if(typeof refrescarConsultaProductoRapida === "function"){
+    try{ refrescarConsultaProductoRapida(); }catch(err){}
+  }
+
+  setTimeout(() => {
+    cargarProductosDePedido(seleccionado);
+  }, 0);
 }
 window.abrirModalProducto = abrirModalProducto;
 
@@ -1981,6 +2169,37 @@ if(btnAddProducto) btnAddProducto.onclick = agregarProductoActual;
 if(btnGuardarProducto) btnGuardarProducto.onclick = guardarProductosPedido;
 if(btnCerrarProducto) btnCerrarProducto.onclick = cerrarModalProducto;
 if(btnGenerarProductoPDF) btnGenerarProductoPDF.onclick = generarPDFProductos;
+const btnCerrarProductoX = document.getElementById("btnCerrarProductoX");
+if(btnCerrarProductoX){
+  btnCerrarProductoX.onclick = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    cerrarModalProducto();
+    return false;
+  };
+}
+if(modalProducto){
+  const contenidoModalProducto = modalProducto.querySelector(".modal-content");
+  if(contenidoModalProducto){
+    contenidoModalProducto.addEventListener("click", (e) => e.stopPropagation());
+  }
+  modalProducto.addEventListener("click", (e) => {
+    if(e.target === modalProducto){
+      cerrarModalProducto();
+    }
+  });
+}
+
+if(pCantidad){
+  pCantidad.min = "";
+  pCantidad.step = "1";
+  pCantidad.addEventListener("keydown", (e) => {
+    if(e.key === "Enter"){
+      e.preventDefault();
+      agregarProductoActual();
+    }
+  });
+}
 
 document.addEventListener("keydown", (e) => {
   if(e.key === "Escape" && modalProducto && modalProducto.style.display === "flex"){

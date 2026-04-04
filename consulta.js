@@ -1,312 +1,220 @@
 /**
- * Módulo de consulta de pedidos a nivel global.
+ * Consulta rápida de pedidos/documentos.
  *
- * Proporciona una interfaz para buscar pedidos en un API externo (API_CLIENTES) y
- * completar automáticamente los campos del formulario de edición de pedidos en
- * dashboard.html.  Incluye mejoras de rendimiento como caché en memoria,
- * temporizador de cancelación (timeout) y respaldo de búsqueda local en caso
- * de que la API demore o falle.
+ * Esta consulta usa SOLO la API externa del sistema de control.
+ * No debe tomar datos locales de la tabla cargada en pantalla para evitar
+ * mezclar procesos o traer información desde una base incorrecta.
  */
-
-/*
-  CONSTANTES
-  ==========
-
-  API_CLIENTES: URL del endpoint de Apps Script que permite consultar
-  información de pedidos del sistema control.  Este valor puede ser
-  reemplazado por el usuario si cambia la URL de su API.
-*/
 const API_CLIENTES = "https://script.google.com/macros/s/AKfycbz2bLTTGdOOZ59w21r2zVcobqYnlFF-sVgkCRT_9CHuXu0cdARIUfAve3M7WEN-J72kfA/exec";
 
-/*
-  SELECTORES Y ELEMENTOS DOM
-  =========================
-
-  Referencias a los elementos de la UI utilizados en el módulo.  Se
-  asume que estos IDs están definidos en dashboard.html.
-*/
 const btnConsultar  = document.getElementById("btnConsultar");
 const inputConsulta = document.getElementById("mConsulta");
 const msgConsulta   = document.getElementById("consultaMsg");
 
-// Select dinámico para mostrar resultados.  Si no existe en el DOM,
-// lo creamos y lo anexamos al contenedor del input de consulta.
 let selectResultados = document.getElementById("selectResultados");
-if(!selectResultados){
+if(!selectResultados && inputConsulta && inputConsulta.parentNode){
   selectResultados = document.createElement("select");
   selectResultados.id = "selectResultados";
-  selectResultados.style.marginTop = "10px";
-  selectResultados.style.width = "100%";
-  selectResultados.style.padding = "8px";
   selectResultados.style.display = "none";
-  // Insertar a continuación del input de búsqueda
-  inputConsulta && inputConsulta.parentNode && inputConsulta.parentNode.appendChild(selectResultados);
+  selectResultados.style.minWidth = "180px";
+  selectResultados.style.flex = "1 1 220px";
+  inputConsulta.parentNode.insertBefore(selectResultados, inputConsulta.nextSibling);
 }
 
-/*
-  CAMPOS QUE SE RELLENAN
-  =====================
+const CACHE_CONSULTA = Object.create(null);
+let ULTIMA_CONSULTA = "";
 
-  IDs de los campos de formulario que se actualizan cuando el usuario
-  selecciona un pedido de la lista de resultados.  Se utilizan en
-  limpiarCampos() y setValue().
-*/
-const CAMPOS_FORM = [
-  "mNumeroDoc",
-  "mCliente",
-  "mDireccion",
-  "mComuna",
-  "mTransporte",
-  "mResponsable",
-  "mFecha",
-  "mFecReg"
-];
-
-/**
- * Limpia los valores de los campos del formulario de consulta.
- */
-function limpiarCampos(){
-  CAMPOS_FORM.forEach(id => {
-    const el = document.getElementById(id);
-    if(el) el.value = "";
-  });
+function normalizarConsulta(v){
+  return String(v || "")
+    .trim()
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "");
 }
 
-/**
- * Asigna un valor a un campo del formulario si existe.
- * @param {string} id ID del elemento
- * @param {string} value Valor a asignar
- */
+function setMsgConsulta(msg, color){
+  if(!msgConsulta) return;
+  msgConsulta.textContent = msg || "";
+  if(color) msgConsulta.style.color = color;
+}
+
+function setLoadingConsulta(state){
+  if(!btnConsultar) return;
+  btnConsultar.disabled = state;
+  btnConsultar.classList.toggle("loading", state);
+}
+
 function setValue(id, value){
   const el = document.getElementById(id);
-  if(el){
-    el.value = value ? String(value) : "";
-  }
+  if(el) el.value = value == null ? "" : String(value);
 }
 
-/**
- * Renderiza la lista de resultados en el select.  Oculta el select si
- * no hay resultados.  Cada opción muestra número, cliente y comuna.
- * @param {Array<Object>} lista Lista de resultados a mostrar
- */
-function renderResultados(lista){
-  // Vaciar select
-  selectResultados.innerHTML = "";
-  if(!Array.isArray(lista) || lista.length === 0){
-    selectResultados.style.display = "none";
-    return;
-  }
-  // Opción por defecto
-  const optDefault = document.createElement("option");
-  optDefault.value = "";
-  optDefault.textContent = "Seleccione un resultado";
-  selectResultados.appendChild(optDefault);
-  // Recorrer resultados
-  lista.forEach((item,index) => {
-    const opt = document.createElement("option");
-    opt.value = index;
-    opt.textContent = `${item.numero} - ${item.cliente} - ${item.comuna}`;
-    selectResultados.appendChild(opt);
-  });
-  // Mostrar select
-  selectResultados.style.display = "block";
-  // Evento de selección
-  selectResultados.onchange = function(){
-    const i = this.value;
-    if(i === "") return;
-    const fila = lista[i];
-    setValue("mNumeroDoc", fila.numero);
-    setValue("mCliente",    fila.cliente);
-    setValue("mDireccion",  fila.direccion);
-    setValue("mComuna",     fila.comuna);
-    setValue("mTransporte", fila.transporte);
-    setValue("mResponsable",fila.responsable);
-    setValue("mFecha",      fila.fecha);
-    setValue("mFecReg",     fila.fecreg);
+function limpiarCamposConsulta(){
+  [
+    "mNumeroDoc",
+    "mCliente",
+    "mDireccion",
+    "mComuna",
+    "mTransporte",
+    "mResponsable",
+    "mTipoDoc"
+  ].forEach(id => setValue(id, ""));
+}
+
+function adaptarItemConsulta(item){
+  if(!item || typeof item !== "object") return null;
+  return {
+    pedido: item.pedido || item.PEDIDO || item.numeroPedido || item["Nº Pedido/OC"] || "",
+    numero: item.numero || item.numeroDocumento || item.numDocumento || item["NUMERO DOCUMENTO"] || item["Nº Documento"] || "",
+    tipoDocumento: item.tipoDocumento || item["TIPO DOCUMENTO"] || item["Tipo Documento"] || "",
+    cliente: item.cliente || item.Cliente || item.CLIENTE || "",
+    direccion: item.direccion || item.Direccion || item["Dirección"] || item.DIRECCION || "",
+    comuna: item.comuna || item.Comuna || item.COMUNA || "",
+    transporte: item.transporte || item.Transporte || item.TRANSPORTE || "",
+    responsable: item.responsable || item.Responsable || item.RESPONSABLE || "",
+    fecha: item.fecha || item.fechaEntrega || item["FECHA ENTREGA"] || item.fechaIngreso || "",
+    fecreg: item.fecreg || item.fechaRegistro || item.FechaRegistro || item.fechaIngreso || item["FECHA INGRESO"] || ""
   };
 }
 
-/*
-  CACHÉ DE CONSULTAS
-  ===================
-
-  Guardamos resultados de consultas previas para no volver a hacer
-  peticiones idénticas al API.  La clave es la cadena de búsqueda en
-  minúsculas.
-*/
-const cacheClientes = {};
-
-/**
- * Convierte una respuesta del backend en un arreglo de objetos con
- * la forma esperada por renderResultados().  Se filtran claves
- * redundantes y se renombran propiedades.
- * @param {Array<Object>} data Datos crudos del API
- * @return {Array<Object>} Datos procesados
- */
-function procesarData(data){
-  if(!Array.isArray(data)) return [];
-  return data.map(item => ({
-    numero:      item.numero || item.numeroDocumento || item.numDocumento || "",
-    cliente:     item.cliente || item.Cliente || "",
-    direccion:   item.direccion || item.Direccion || item.Dirección || "",
-    comuna:      item.comuna || item.Comuna || "",
-    transporte:  item.transporte || item.Transporte || "",
-    responsable: item.responsable || item.Responsable || "",
-    // La API podría enviar fechas con nombre distinto o formato
-    // diferente.  Las dejamos tal cual y permitimos que el
-    // desarrollador las formatee en el front si lo necesita.
-    fecha:       item.fecha || item.fechaEntrega || item.fechaIngreso || item.fechaPedido || "",
-    fecreg:      item.fecreg || item.fechaRegistro || item.FechaRegistro || item.FechaIngreso || ""
-  }));
+function aplicarResultadoConsulta(item){
+  if(!item) return;
+  setValue("mNumeroDoc", item.numero || "");
+  setValue("mCliente", item.cliente || "");
+  setValue("mDireccion", item.direccion || "");
+  setValue("mComuna", item.comuna || "");
+  setValue("mTransporte", item.transporte || "");
+  setValue("mResponsable", item.responsable || "");
+  if(item.tipoDocumento) setValue("mTipoDoc", item.tipoDocumento);
 }
 
-/**
- * Busca pedidos en la API externa.  Aplica un timeout para abortar
- * solicitudes lentas y utiliza una caché para evitar repetir
- * solicitudes previas.  Si la API falla o no devuelve resultados,
- * intenta buscar coincidencias en la lista local de pedidos
- * cargados en la página (window.getPedidosData()) para ofrecer
- * una respuesta rápida.
- */
-async function consultarPedidoGlobal(){
-  const busquedaRaw = inputConsulta.value || "";
-  const busqueda = busquedaRaw.trim();
-  // Validar input
-  if(!busqueda){
-    msgConsulta.textContent = "Ingrese término de búsqueda";
-    msgConsulta.style.color = "#dc2626";
-    inputConsulta.focus();
+function renderResultadosConsulta(lista){
+  if(!selectResultados) return;
+  selectResultados.innerHTML = "";
+  if(!Array.isArray(lista) || !lista.length){
+    selectResultados.style.display = "none";
     return;
   }
-  // Indicar carga
-  btnConsultar && (btnConsultar.disabled = true);
-  btnConsultar && btnConsultar.classList.add("loading");
-  msgConsulta.textContent = "Consultando...";
-  msgConsulta.style.color = "#64748b";
-  // Convertir clave a minúsculas para caché
-  const clave = busqueda.toLowerCase();
-  try{
-    // 1) Intentar usar la caché si existe
-    if(cacheClientes[clave]){
-      renderResultados(cacheClientes[clave]);
-      const totalCached = cacheClientes[clave].length;
-      msgConsulta.textContent = `${totalCached} resultado${totalCached!==1?"s":""} encontrado${totalCached!==1?"s":""} (caché)`;
-      msgConsulta.style.color = totalCached ? "#16a34a" : "#dc2626";
-      return;
-    }
-    // 2) Ejecutar búsqueda en el backend con timeout
-    const url = API_CLIENTES + "?q=" + encodeURIComponent(busqueda);
-    const controller = new AbortController();
-    const idTimeout = setTimeout(() => controller.abort(), 10000); // 10 segundos
-    let res;
-    try{
-      res = await fetch(url, { signal: controller.signal });
-      clearTimeout(idTimeout);
-    }catch(fetchErr){
-      clearTimeout(idTimeout);
-      throw fetchErr;
-    }
-    // Validar respuesta
-    if(!res.ok){
-      throw new Error("Error conexión API");
-    }
-    let data;
-    try{
-      data = await res.json();
-    }catch(parseErr){
-      throw new Error("Respuesta inválida del servidor");
-    }
-    // Validar estructura
-    const total = data && data.total != null ? Number(data.total) : (data.data ? data.data.length : 0);
-    const items = data && data.data ? procesarData(data.data) : [];
-    // Almacenar en caché
-    cacheClientes[clave] = items;
-    // Mostrar resultados
-    if(!items.length){
-      // Si no hay resultados en el API, intentamos buscar localmente
-      const local = buscarLocalmente(busqueda);
-      if(local.length){
-        renderResultados(local);
-        msgConsulta.textContent = `${local.length} resultado${local.length!==1?"s":""} encontrado${local.length!==1?"s":""} (local)`;
-        msgConsulta.style.color = "#16a34a";
-      }else{
-        limpiarCampos();
-        renderResultados([]);
-        msgConsulta.textContent = "No encontrado";
-        msgConsulta.style.color = "#dc2626";
-      }
-    }else{
-      renderResultados(items);
-      msgConsulta.textContent = `${total} resultado${total!==1?"s":""} encontrado${total!==1?"s":""}`;
-      msgConsulta.style.color = "#16a34a";
-    }
-  }catch(err){
-    console.error("ERROR en consulta global:", err);
-    // Búsqueda local de emergencia
-    const local = buscarLocalmente(busqueda);
-    if(local.length){
-      renderResultados(local);
-      msgConsulta.textContent = `${local.length} resultado${local.length!==1?"s":""} encontrado${local.length!==1?"s":""} (local)`;
-      msgConsulta.style.color = "#16a34a";
-    }else{
-      limpiarCampos();
-      renderResultados([]);
-      msgConsulta.textContent = err.name === 'AbortError' ? "Tiempo de espera agotado" : "Error al consultar";
-      msgConsulta.style.color = "#dc2626";
-    }
-  }finally{
-    // Restablecer estado del botón
-    if(btnConsultar){
-      btnConsultar.disabled = false;
-      btnConsultar.classList.remove("loading");
-    }
+
+  const def = document.createElement("option");
+  def.value = "";
+  def.textContent = "Seleccione un resultado";
+  selectResultados.appendChild(def);
+
+  lista.forEach((item, index) => {
+    const opt = document.createElement("option");
+    opt.value = String(index);
+    const etiquetaPedido = item.pedido ? `Pedido ${item.pedido} · ` : "";
+    const etiquetaNumero = item.numero ? `${item.numero} · ` : "";
+    opt.textContent = `${etiquetaPedido}${etiquetaNumero}${item.cliente || item.comuna || "Resultado"}`;
+    selectResultados.appendChild(opt);
+  });
+
+  selectResultados.style.display = "block";
+  selectResultados.onchange = function(){
+    const idx = Number(this.value);
+    if(Number.isNaN(idx) || !lista[idx]) return;
+    aplicarResultadoConsulta(lista[idx]);
+    setMsgConsulta("Resultado aplicado.", "#16a34a");
+  };
+
+  if(lista.length === 1){
+    selectResultados.value = "0";
+    aplicarResultadoConsulta(lista[0]);
   }
 }
 
-/**
- * Busca coincidencias en la lista local de pedidos cargados en la página.
- * Se utilizan las funciones window.getPedidosData() y window.getPedidoByRow()
- * expuestas por envio.js para obtener los datos cargados.  La búsqueda
- * se realiza sobre los campos número de pedido y nombre de cliente.
- * @param {string} termino Término de búsqueda
- * @return {Array<Object>} Lista de coincidencias locales
- */
-function buscarLocalmente(termino){
-  const q = termino.toString().toLowerCase().trim();
-  const getPedidosData = window.getPedidosData;
-  if(typeof getPedidosData !== 'function'){ return []; }
-  const pedidos = getPedidosData();
-  if(!Array.isArray(pedidos) || !pedidos.length) return [];
-  // Filtro
-  const results = [];
-  pedidos.forEach(item => {
-    const numero  = (item.numeroDocumento || item.numero || item.numDocumento || item.pedido || "").toString();
-    const cliente = (item.cliente || "").toString().toLowerCase();
-    if(numero.includes(q) || cliente.includes(q)){
-      results.push({
-        numero:      numero,
-        cliente:     item.cliente || "",
-        direccion:   item.direccion || "",
-        comuna:      item.comuna || "",
-        transporte:  item.transporte || "",
-        responsable: item.responsable || "",
-        fecha:       item.fechaEntrega || item.fecha || "",
-        fecreg:      item.fechaIngreso || item.fechaRegistro || ""
-      });
-    }
-  });
-  return results;
+function buscarLocalmenteConsulta(termino){
+  // Se desactiva la búsqueda local para que la consulta use únicamente
+  // la base externa correspondiente a este proceso.
+  return [];
 }
 
-// Asociar eventos
+async function fetchConsultaRemota(termino){
+  const variantes = [
+    `${API_CLIENTES}?q=${encodeURIComponent(termino)}`,
+    `${API_CLIENTES}?pedido=${encodeURIComponent(termino)}`,
+    `${API_CLIENTES}?numero=${encodeURIComponent(termino)}`,
+    `${API_CLIENTES}?documento=${encodeURIComponent(termino)}`
+  ];
+
+  for(const url of variantes){
+    try{
+      const controller = new AbortController();
+      const to = setTimeout(() => controller.abort(), 5000);
+      const res = await fetch(url, { signal: controller.signal, cache: "no-store" });
+      clearTimeout(to);
+      if(!res.ok) continue;
+      const data = await res.json();
+      let lista = [];
+      if(Array.isArray(data)) lista = data;
+      else if(Array.isArray(data.data)) lista = data.data;
+      else if(Array.isArray(data.resultados)) lista = data.resultados;
+      else if(data && typeof data === 'object' && (data.numero || data.numeroDocumento || data.cliente)) lista = [data];
+      lista = lista.map(adaptarItemConsulta).filter(Boolean);
+      if(lista.length) return lista;
+    }catch(err){}
+  }
+  return [];
+}
+
+async function consultarPedidoGlobal(){
+  const busqueda = String(inputConsulta?.value || "").trim();
+  if(!busqueda){
+    setMsgConsulta("Ingrese término de búsqueda", "#dc2626");
+    inputConsulta && inputConsulta.focus();
+    return;
+  }
+
+  const clave = normalizarConsulta(busqueda);
+  ULTIMA_CONSULTA = clave;
+  setLoadingConsulta(true);
+  setMsgConsulta("Consultando...", "#64748b");
+
+  try{
+    if(CACHE_CONSULTA[clave]){
+      const listaCache = CACHE_CONSULTA[clave];
+      renderResultadosConsulta(listaCache);
+      setMsgConsulta(`${listaCache.length} resultado(s) encontrado(s)`, listaCache.length ? "#16a34a" : "#dc2626");
+      return;
+    }
+
+    const remotos = await fetchConsultaRemota(busqueda);
+    if(ULTIMA_CONSULTA !== clave) return;
+
+    if(remotos.length){
+      CACHE_CONSULTA[clave] = remotos;
+      renderResultadosConsulta(remotos);
+      setMsgConsulta(`${remotos.length} resultado(s) encontrado(s)`, "#16a34a");
+    }else{
+      limpiarCamposConsulta();
+      renderResultadosConsulta([]);
+      setMsgConsulta("No encontrado", "#dc2626");
+    }
+  }catch(err){
+    console.error("Error consulta pedido:", err);
+    setMsgConsulta("Error al consultar", "#dc2626");
+  }finally{
+    setLoadingConsulta(false);
+  }
+}
+
 if(btnConsultar){
   btnConsultar.addEventListener("click", consultarPedidoGlobal);
 }
 if(inputConsulta){
-  inputConsulta.addEventListener("keypress", function(e){
+  inputConsulta.addEventListener("keydown", function(e){
     if(e.key === "Enter"){
       e.preventDefault();
       consultarPedidoGlobal();
     }
   });
+  inputConsulta.addEventListener("input", function(){
+    if(!this.value.trim()){
+      renderResultadosConsulta([]);
+      setMsgConsulta("");
+    }
+  });
 }
+
+window.consultarPedidoGlobal = consultarPedidoGlobal;

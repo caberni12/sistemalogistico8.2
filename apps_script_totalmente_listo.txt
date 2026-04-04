@@ -1,0 +1,1508 @@
+/**
+ * Sistema Logístico - Apps Script completo
+ *
+ * Compatible con:
+ *  - Pedidos / tabla principal
+ *  - Productos asociados por pedido en hoja "Productos"
+ *  - Consulta rápida de catálogo separada del modal de pedido
+ *  - Frontend que usa POST JSON, POST form-urlencoded y GET fallback
+ */
+
+/*===============================================================
+  CONFIGURACIÓN
+===============================================================*/
+
+const SHEET_ID       = "1CUYu9Rebpdh2oNf3eqsWD_xg8Gk-ICUxmmUupIOmSyU";
+const SHEET_NAME     = "Pedidos";
+const TRASLADO_SHEET = "Traslados";
+const AUDIT_SHEET    = "Auditoria";
+const PRODUCT_SHEET  = "Productos";
+const FOLDER_IMG     = "1rLCUmUzK_wqbmeA_a6pQZLkp--1BYMO8";
+const FOLDER_PDF     = "1DDNd_kFcIJ1o2KfkbIvoNFtuqmXFrE8E";
+
+const HEADERS = [
+  "FECHA INGRESO",
+  "PEDIDO",
+  "TIPO DOCUMENTO",
+  "NUMERO DOCUMENTO",
+  "CLIENTE",
+  "DIRECCION",
+  "COMUNA",
+  "TRANSPORTE",
+  "ETIQUETAS",
+  "OBSERVACIONES",
+  "STATUS",
+  "FECHA ESTIMADA ENTREGA",
+  "ALERTA",
+  "STATUS ENTREGA",
+  "DIAS ATRASO",
+  "SEMAFORO",
+  "RESPONSABLE",
+  "FOTO",
+  "PDF",
+  "PDF TRASLADO",
+  "TR"
+];
+
+const LOGO_FILE_ID = "1fpXa7Fsor6O3CAJvTUhY6A4OTKTD2uLt";
+
+const PRODUCT_CATALOG_CACHE_KEY = "catalogo_productos_rapido_v1";
+const PRODUCT_CATALOG_CACHE_TTL = 21600;
+const PRODUCT_CATALOG_SHEETS = ["MAESTRA", "Maestra_Productos", PRODUCT_SHEET];
+
+/*===============================================================
+  HOJA DE PRODUCTOS
+===============================================================*/
+
+function getProductSheet() {
+  const ss = SpreadsheetApp.openById(SHEET_ID);
+  let sh = ss.getSheetByName(PRODUCT_SHEET);
+
+  if (!sh) {
+    sh = ss.insertSheet(PRODUCT_SHEET);
+  }
+
+  if (sh.getLastRow() === 0) {
+    sh.getRange(1, 1, 1, 5).setValues([["FECHA", "PEDIDO", "PRODUCTO", "DETALLE", "CANTIDAD"]]);
+  } else {
+    const headers = sh.getRange(1, 1, 1, Math.max(sh.getLastColumn(), 5)).getValues()[0];
+    const expected = ["FECHA", "PEDIDO", "PRODUCTO", "DETALLE", "CANTIDAD"];
+    let rewrite = false;
+
+    for (var i = 0; i < expected.length; i++) {
+      const current = String(headers[i] || "").trim().toUpperCase();
+      if (current !== expected[i]) {
+        rewrite = true;
+        break;
+      }
+    }
+
+    if (rewrite || sh.getLastColumn() < 5) {
+      sh.getRange(1, 1, 1, 5).setValues([expected]);
+    }
+  }
+
+  return sh;
+}
+
+function guardarProductosPedido(pedido, productos) {
+  pedido = String(pedido || "").trim();
+  if (!pedido) {
+    throw new Error("Pedido no recibido");
+  }
+
+  const sh = getProductSheet();
+  const lastRow = sh.getLastRow();
+
+  if (lastRow > 1) {
+    const data = sh.getRange(2, 2, lastRow - 1, 1).getValues();
+    const rowsToDelete = [];
+
+    for (var i = 0; i < data.length; i++) {
+      const pedidoEnFila = String(data[i][0] || "").trim();
+      if (pedidoEnFila === pedido) {
+        rowsToDelete.push(i + 2);
+      }
+    }
+
+    rowsToDelete.sort(function(a, b) { return b - a; });
+    rowsToDelete.forEach(function(rowIndex) {
+      sh.deleteRow(rowIndex);
+    });
+  }
+
+  if (!Array.isArray(productos) || productos.length === 0) {
+    SpreadsheetApp.flush();
+    CacheService.getScriptCache().remove(PRODUCT_CATALOG_CACHE_KEY);
+    return true;
+  }
+
+  const now = formatDateForClient(new Date());
+
+  const rows = productos
+    .map(function(p) {
+      var prod = String(
+        p.producto || p.PRODUCTO || p.Producto || ""
+      ).trim();
+
+      var det = String(
+        p.detalle || p.detalleProducto || p.descripcion ||
+        p.descripcionProducto || p.DETALLE || p.DETALLE_PRODUCTO || ""
+      ).trim();
+
+      var cant = Number(p.cantidad || p.CANTIDAD || p.qty || 0);
+
+      return [now, pedido, prod, det, cant];
+    })
+    .filter(function(r) {
+      return r[2] !== "" && r[4] > 0;
+    });
+
+  if (rows.length === 0) {
+    SpreadsheetApp.flush();
+    CacheService.getScriptCache().remove(PRODUCT_CATALOG_CACHE_KEY);
+    return true;
+  }
+
+  sh.getRange(sh.getLastRow() + 1, 1, rows.length, 5).setValues(rows);
+  SpreadsheetApp.flush();
+  CacheService.getScriptCache().remove(PRODUCT_CATALOG_CACHE_KEY);
+  return true;
+}
+
+function obtenerProductosPedido(pedido) {
+  const result = [];
+  pedido = String(pedido || "").trim();
+  if (!pedido) return result;
+
+  const sh = getProductSheet();
+  const numRows = sh.getLastRow();
+  if (numRows < 2) return result;
+
+  const data = sh.getRange(2, 1, numRows - 1, 5).getValues();
+
+  data.forEach(function(row) {
+    var ped = String(row[1] || "").trim();
+    if (ped === pedido) {
+      result.push({
+        fecha: row[0] || "",
+        pedido: row[1] || "",
+        producto: row[2] || "",
+        detalle: row[3] || "",
+        descripcion: row[3] || "",
+        cantidad: Number(row[4] || 0)
+      });
+    }
+  });
+
+  return result;
+}
+
+/*===============================================================
+  CATÁLOGO RÁPIDO DE PRODUCTOS
+===============================================================*/
+
+function normalizarTextoBusqueda(value) {
+  return String(value || "")
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[̀-ͯ]/g, "")
+    .trim();
+}
+
+function getProductCatalogSheet() {
+  const ss = SpreadsheetApp.openById(SHEET_ID);
+
+  for (var i = 0; i < PRODUCT_CATALOG_SHEETS.length; i++) {
+    var sh = ss.getSheetByName(PRODUCT_CATALOG_SHEETS[i]);
+    if (sh) return sh;
+  }
+
+  return getProductSheet();
+}
+
+function getProductCatalogList(forceRefresh) {
+  const cache = CacheService.getScriptCache();
+
+  if (!forceRefresh) {
+    const cached = cache.get(PRODUCT_CATALOG_CACHE_KEY);
+    if (cached) {
+      try {
+        return JSON.parse(cached);
+      } catch (e) {}
+    }
+  }
+
+  const sh = getProductCatalogSheet();
+  const lastRow = sh.getLastRow();
+  const lastCol = sh.getLastColumn();
+  if (lastRow < 2 || lastCol < 1) return [];
+
+  const headers = sh.getRange(1, 1, 1, lastCol).getDisplayValues()[0].map(function(h) {
+    return String(h || "").trim().toUpperCase();
+  });
+  const data = sh.getRange(2, 1, lastRow - 1, lastCol).getDisplayValues();
+
+  function findHeaderIndex(names) {
+    for (var i = 0; i < names.length; i++) {
+      var idx = headers.indexOf(names[i]);
+      if (idx !== -1) return idx;
+    }
+    return -1;
+  }
+
+  var codeIdx = findHeaderIndex(["CODIGO", "CÓDIGO", "PRODUCTO", "NOMBRE", "ITEM"]);
+  var descIdx = findHeaderIndex(["DESCRIPCION", "DESCRIPCIÓN", "DETALLE"]);
+
+  if (codeIdx === -1 && headers.length >= 3) codeIdx = 2;
+  if (descIdx === -1 && headers.length >= 4) descIdx = 3;
+
+  const seen = {};
+  const items = [];
+
+  data.forEach(function(row) {
+    var producto = codeIdx >= 0 ? String(row[codeIdx] || "").trim() : "";
+    var descripcion = descIdx >= 0 ? String(row[descIdx] || "").trim() : "";
+
+    if (!producto && !descripcion) return;
+
+    var key = normalizarTextoBusqueda(producto) + "|" + normalizarTextoBusqueda(descripcion);
+    if (seen[key]) return;
+    seen[key] = true;
+
+    items.push({
+      codigo: producto,
+      producto: producto,
+      descripcion: descripcion
+    });
+  });
+
+  cache.put(PRODUCT_CATALOG_CACHE_KEY, JSON.stringify(items), PRODUCT_CATALOG_CACHE_TTL);
+  return items;
+}
+
+function buscarProductosCatalogo(query, limit) {
+  const q = normalizarTextoBusqueda(query);
+  const max = Number(limit || 30);
+  const items = getProductCatalogList(false);
+
+  if (!q) {
+    return items.slice(0, max);
+  }
+
+  const exactos = [];
+  const prefijos = [];
+  const contiene = [];
+
+  for (var i = 0; i < items.length; i++) {
+    var item = items[i];
+    var producto = normalizarTextoBusqueda(item.producto);
+    var descripcion = normalizarTextoBusqueda(item.descripcion);
+    var codigo = normalizarTextoBusqueda(item.codigo);
+
+    if (producto === q || codigo === q || descripcion === q) {
+      exactos.push(item);
+    } else if (producto.indexOf(q) === 0 || codigo.indexOf(q) === 0 || descripcion.indexOf(q) === 0) {
+      prefijos.push(item);
+    } else if (producto.indexOf(q) !== -1 || descripcion.indexOf(q) !== -1 || codigo.indexOf(q) !== -1) {
+      contiene.push(item);
+    }
+
+    if ((exactos.length + prefijos.length + contiene.length) >= max) break;
+  }
+
+  return exactos.concat(prefijos, contiene).slice(0, max);
+}
+
+function buscarProductoExactoCatalogo(value) {
+  const q = normalizarTextoBusqueda(value);
+  if (!q) return null;
+
+  const items = getProductCatalogList(false);
+  for (var i = 0; i < items.length; i++) {
+    var item = items[i];
+    if (normalizarTextoBusqueda(item.producto) === q || normalizarTextoBusqueda(item.codigo) === q) {
+      return item;
+    }
+  }
+
+  return null;
+}
+
+/*===============================================================
+  UTILIDADES GENERALES
+===============================================================*/
+
+function json(o) {
+  return ContentService.createTextOutput(JSON.stringify(o))
+    .setMimeType(ContentService.MimeType.JSON);
+}
+
+function getSheet() {
+  const ss = SpreadsheetApp.openById(SHEET_ID);
+  let sh = ss.getSheetByName(SHEET_NAME);
+  if (!sh) {
+    sh = ss.insertSheet(SHEET_NAME);
+    sh.appendRow(HEADERS);
+  }
+  return sh;
+}
+
+function getTraslados() {
+  const ss = SpreadsheetApp.openById(SHEET_ID);
+  let sh = ss.getSheetByName(TRASLADO_SHEET);
+  if (!sh) {
+    sh = ss.insertSheet(TRASLADO_SHEET);
+    sh.appendRow([
+      "FECHA",
+      "N° TRASLADO",
+      "PEDIDO",
+      "CLIENTE",
+      "DIRECCION",
+      "COMUNA",
+      "TRANSPORTE",
+      "PDF"
+    ]);
+  }
+  return sh;
+}
+
+function getAudit() {
+  const ss = SpreadsheetApp.openById(SHEET_ID);
+  let sh = ss.getSheetByName(AUDIT_SHEET);
+  if (!sh) {
+    sh = ss.insertSheet(AUDIT_SHEET);
+    sh.appendRow([
+      "FECHA",
+      "ACCION",
+      "PEDIDO",
+      "DETALLE"
+    ]);
+  }
+  return sh;
+}
+
+function logAuditoria(accion, pedido, detalle) {
+  const sh = getAudit();
+  sh.appendRow([
+    formatDateForClient(new Date()),
+    accion,
+    pedido || "",
+    detalle || ""
+  ]);
+}
+
+function getHeaderMap(sh) {
+  const headers = sh.getRange(1, 1, 1, sh.getLastColumn()).getValues()[0];
+  const map = {};
+  for (var i = 0; i < headers.length; i++) {
+    var rawName = headers[i] || "";
+    var name = rawName.toString().trim().toUpperCase();
+    if (!name) continue;
+
+    map[name] = i + 1;
+
+    if (name === "FECHA INGRESO") {
+      map["FECHA"] = i + 1;
+      map["FECHA DE INGRESO"] = i + 1;
+    }
+
+    if (name === "FECHA ESTIMADA ENTREGA" || name === "FECHA ESTIMADA DE ENTREGA") {
+      map["FECHA ENTREGA"] = i + 1;
+      map["FECHA ESTIMADA ENTREGA"] = i + 1;
+    }
+
+    if (name === "TR" || name === "Nº TR" || name === "N° TR" || name === "TRASLADO" ||
+        name === "Nº TRASLADO" || name === "N° TRASLADO") {
+      map["TR"] = i + 1;
+      map["SOLICITUD TRASLADO"] = i + 1;
+    }
+
+    if (name === "SOLICITUD TRASLADO") {
+      map["TR"] = i + 1;
+    }
+  }
+  return map;
+}
+
+function nextPedido() {
+  const lock = LockService.getScriptLock();
+  lock.waitLock(15000);
+  try {
+    const sh = getSheet();
+    const headerMap = getHeaderMap(sh);
+    const colPedido = headerMap["PEDIDO"];
+    const numRows = sh.getLastRow();
+
+    if (!colPedido || numRows < 2) {
+      return "P-1";
+    }
+
+    const values = sh.getRange(2, colPedido, numRows - 1, 1).getValues();
+    var max = 0;
+    values.forEach(function(row) {
+      var val = row[0];
+      if (!val) return;
+      var n = Number(String(val).replace(/^P-/, ""));
+      if (!isNaN(n) && n > max) max = n;
+    });
+
+    return "P-" + (max + 1);
+  } finally {
+    lock.releaseLock();
+  }
+}
+
+function nextTraslado() {
+  const lock = LockService.getScriptLock();
+  lock.waitLock(15000);
+  try {
+    const sh = getTraslados();
+    const numRows = sh.getLastRow();
+    if (numRows < 2) return "TR-1";
+
+    const colNum = 2;
+    const values = sh.getRange(2, colNum, numRows - 1, 1).getValues();
+    var max = 0;
+    values.forEach(function(row) {
+      var val = row[0];
+      if (!val) return;
+      var n = Number(String(val).replace(/^TR-/, ""));
+      if (!isNaN(n) && n > max) max = n;
+    });
+
+    return "TR-" + (max + 1);
+  } finally {
+    lock.releaseLock();
+  }
+}
+
+function saveImage(base64) {
+  try {
+    if (!base64) return "";
+    var parts = String(base64).split(",");
+    if (parts.length < 2) return "";
+    var bytes = Utilities.base64Decode(parts[1]);
+    var blob = Utilities.newBlob(bytes, "image/jpeg", "img_" + Date.now() + ".jpg");
+    var folder = DriveApp.getFolderById(FOLDER_IMG);
+    var file = folder.createFile(blob);
+    file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
+    return "https://lh3.googleusercontent.com/d/" + file.getId();
+  } catch (err) {
+    return "";
+  }
+}
+
+function savePdf(base64) {
+  try {
+    if (!base64) return "";
+    var parts = String(base64).split(",");
+    if (parts.length < 2) return "";
+    var bytes = Utilities.base64Decode(parts[1]);
+    var blob = Utilities.newBlob(bytes, "application/pdf", "pdf_" + Date.now() + ".pdf");
+    var folder = DriveApp.getFolderById(FOLDER_PDF);
+    var file = folder.createFile(blob);
+    file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
+    return file.getUrl();
+  } catch (e) {
+    return "";
+  }
+}
+
+function getAppTimeZone() {
+  return Session.getScriptTimeZone() || "America/Santiago";
+}
+
+function formatLocalDateString(value, keepTime) {
+  if (value === null || value === undefined || value === "") return "";
+
+  var tz = getAppTimeZone();
+
+  if (Object.prototype.toString.call(value) === "[object Date]" && !isNaN(value.getTime())) {
+    return Utilities.formatDate(value, tz, keepTime ? "dd/MM/yyyy HH:mm" : "dd/MM/yyyy");
+  }
+
+  var s = String(value).trim();
+  if (!s) return "";
+
+  var mIsoDateTime = s.match(/^(\d{4})-(\d{2})-(\d{2})[T ](\d{2}):(\d{2})(?::(\d{2}))?$/);
+  if (mIsoDateTime) {
+    return mIsoDateTime[3] + "/" + mIsoDateTime[2] + "/" + mIsoDateTime[1] +
+      (keepTime ? (" " + mIsoDateTime[4] + ":" + mIsoDateTime[5]) : "");
+  }
+
+  var mIsoDate = s.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (mIsoDate) {
+    return mIsoDate[3] + "/" + mIsoDate[2] + "/" + mIsoDate[1];
+  }
+
+  var mLatDateTime = s.match(/^(\d{2})\/(\d{2})\/(\d{4})[T ](\d{2}):(\d{2})(?::(\d{2}))?$/);
+  if (mLatDateTime) {
+    return mLatDateTime[1] + "/" + mLatDateTime[2] + "/" + mLatDateTime[3] +
+      (keepTime ? (" " + mLatDateTime[4] + ":" + mLatDateTime[5]) : "");
+  }
+
+  var mLatDate = s.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+  if (mLatDate) {
+    return mLatDate[1] + "/" + mLatDate[2] + "/" + mLatDate[3];
+  }
+
+  var d = new Date(s);
+  if (!isNaN(d.getTime())) {
+    return Utilities.formatDate(d, tz, keepTime ? "dd/MM/yyyy HH:mm" : "dd/MM/yyyy");
+  }
+
+  return s;
+}
+
+function parseLocalDateValue(value, endOfDay) {
+  if (value === null || value === undefined || value === "") return null;
+  if (Object.prototype.toString.call(value) === "[object Date]" && !isNaN(value.getTime())) {
+    return new Date(value.getTime());
+  }
+
+  var s = String(value).trim();
+  if (!s) return null;
+
+  var mIsoDateTime = s.match(/^(\d{4})-(\d{2})-(\d{2})[T ](\d{2}):(\d{2})(?::(\d{2}))?$/);
+  if (mIsoDateTime) {
+    return new Date(
+      Number(mIsoDateTime[1]),
+      Number(mIsoDateTime[2]) - 1,
+      Number(mIsoDateTime[3]),
+      Number(mIsoDateTime[4]),
+      Number(mIsoDateTime[5]),
+      Number(mIsoDateTime[6] || 0),
+      0
+    );
+  }
+
+  var mIsoDate = s.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (mIsoDate) {
+    return new Date(
+      Number(mIsoDate[1]),
+      Number(mIsoDate[2]) - 1,
+      Number(mIsoDate[3]),
+      endOfDay ? 23 : 0,
+      endOfDay ? 59 : 0,
+      endOfDay ? 59 : 0,
+      0
+    );
+  }
+
+  var mLatDateTime = s.match(/^(\d{2})\/(\d{2})\/(\d{4})[T ](\d{2}):(\d{2})(?::(\d{2}))?$/);
+  if (mLatDateTime) {
+    return new Date(
+      Number(mLatDateTime[3]),
+      Number(mLatDateTime[2]) - 1,
+      Number(mLatDateTime[1]),
+      Number(mLatDateTime[4]),
+      Number(mLatDateTime[5]),
+      Number(mLatDateTime[6] || 0),
+      0
+    );
+  }
+
+  var mLatDate = s.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+  if (mLatDate) {
+    return new Date(
+      Number(mLatDate[3]),
+      Number(mLatDate[2]) - 1,
+      Number(mLatDate[1]),
+      endOfDay ? 23 : 0,
+      endOfDay ? 59 : 0,
+      endOfDay ? 59 : 0,
+      0
+    );
+  }
+
+  var d = new Date(s);
+  return isNaN(d.getTime()) ? null : d;
+}
+
+function formatDateForClient(value) {
+  if (value === null || value === undefined || value === "") return "";
+
+  var tz = getAppTimeZone();
+
+  if (Object.prototype.toString.call(value) === "[object Date]" && !isNaN(value.getTime())) {
+    return Utilities.formatDate(value, tz, "dd/MM/yyyy");
+  }
+
+  var s = String(value).trim();
+  if (!s) return "";
+
+  var mIsoDateTime = s.match(/^(\d{4})-(\d{2})-(\d{2})[T ](\d{2}):(\d{2})(?::(\d{2}))?$/);
+  if (mIsoDateTime) {
+    return mIsoDateTime[3] + "/" + mIsoDateTime[2] + "/" + mIsoDateTime[1];
+  }
+
+  var mIsoDate = s.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (mIsoDate) {
+    return mIsoDate[3] + "/" + mIsoDate[2] + "/" + mIsoDate[1];
+  }
+
+  var mLatDateTime = s.match(/^(\d{2})\/(\d{2})\/(\d{4})[T ](\d{2}):(\d{2})(?::(\d{2}))?$/);
+  if (mLatDateTime) {
+    return mLatDateTime[1] + "/" + mLatDateTime[2] + "/" + mLatDateTime[3];
+  }
+
+  var mLatDate = s.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+  if (mLatDate) {
+    return mLatDate[1] + "/" + mLatDate[2] + "/" + mLatDate[3];
+  }
+
+  var d = new Date(s);
+  if (!isNaN(d.getTime())) {
+    return Utilities.formatDate(d, tz, "dd/MM/yyyy");
+  }
+
+  return s;
+}
+
+function calcularAlertas(fechaEntrega, status) {
+  var alerta = "";
+  var statusEntrega = "";
+  var diasAtraso = "";
+  var semaforo = "VERDE";
+
+  if (!fechaEntrega) {
+    return { alerta: alerta, statusEntrega: statusEntrega, diasAtraso: diasAtraso, semaforo: semaforo };
+  }
+
+  var hoy = new Date();
+  var entrega = parseLocalDateValue(fechaEntrega, true);
+  var estado = (status || "").toString().trim().toUpperCase();
+
+  if (estado === "ENTREGADO" || estado === "TERMINADO") {
+    if (estado === "ENTREGADO") {
+      statusEntrega = "ENTREGADO A TIEMPO";
+      semaforo = "VERDE";
+    } else {
+      statusEntrega = "FINALIZADO";
+      semaforo = "AZUL";
+    }
+    return { alerta: alerta, statusEntrega: statusEntrega, diasAtraso: diasAtraso, semaforo: semaforo };
+  }
+
+  var diffHoras = (entrega.getTime() - hoy.getTime()) / (1000 * 60 * 60);
+  if (diffHoras <= 0) {
+    var dias = Math.floor((hoy.getTime() - entrega.getTime()) / (1000 * 60 * 60 * 24));
+    alerta = "PEDIDO ATRASADO";
+    statusEntrega = "RETRASO";
+    diasAtraso = dias;
+    semaforo = "ROJO";
+  } else if (diffHoras <= 48) {
+    alerta = "ENTREGA <48H";
+    statusEntrega = "POR VENCER";
+    diasAtraso = "";
+    semaforo = "AMARILLO";
+  } else {
+    alerta = "";
+    statusEntrega = "EN TIEMPO";
+    diasAtraso = "";
+    semaforo = "VERDE";
+  }
+
+  return { alerta: alerta, statusEntrega: statusEntrega, diasAtraso: diasAtraso, semaforo: semaforo };
+}
+
+/*===============================================================
+  LECTURA DE DATOS (GET)
+===============================================================*/
+
+function doGet(e) {
+  try {
+    var action = e && e.parameter ? String(e.parameter.action || "").trim() : "";
+
+    if (action === "catalogoProductos") {
+      return json({ ok: true, data: getProductCatalogList(false) });
+    }
+
+    if (action === "buscarProductoRapido") {
+      var qBuscar = e && e.parameter ? (e.parameter.q || e.parameter.codigo || e.parameter.producto || "") : "";
+      var limitBuscar = e && e.parameter ? Number(e.parameter.limit || 50) : 50;
+      return json({ ok: true, data: buscarProductosCatalogo(qBuscar, limitBuscar) });
+    }
+
+    if (action === "buscarProductoExacto") {
+      var qExacto = e && e.parameter ? (e.parameter.q || e.parameter.codigo || e.parameter.producto || "") : "";
+      return json({ ok: true, data: buscarProductoExactoCatalogo(qExacto) });
+    }
+
+    // COMPATIBILIDAD NUEVA:
+    // Permite que el frontend cargue la TD del modal de productos
+    // por GET cuando usa fallback action=obtenerProductos&pedido=P-123
+    if (action === "obtenerProductos") {
+      var pedidoGet = e && e.parameter ? (e.parameter.pedido || e.parameter.PEDIDO || "") : "";
+      return json({ ok: true, productos: obtenerProductosPedido(pedidoGet) });
+    }
+
+    if (action === "documento") {
+      var tr = e.parameter.tr;
+      if (!tr) {
+        return ContentService.createTextOutput("Traslado no recibido").setMimeType(ContentService.MimeType.TEXT);
+      }
+
+      var pdfUrl = generarDocumentoTraslado(tr);
+      if (!pdfUrl) {
+        return ContentService.createTextOutput("Documento no encontrado").setMimeType(ContentService.MimeType.TEXT);
+      }
+
+      return HtmlService.createHtmlOutput('<script>window.location.href="' + pdfUrl + '"</script>');
+    }
+
+    var cache = CacheService.getScriptCache();
+    var cached = cache.get("pedidos");
+    if (cached) {
+      return json(JSON.parse(cached));
+    }
+
+    var sh = getSheet();
+    var headerMap = getHeaderMap(sh);
+    var data = sh.getRange(2, 1, Math.max(sh.getLastRow() - 1, 0), sh.getLastColumn()).getValues();
+    var rows = [];
+
+    for (var i = 0; i < data.length; i++) {
+      var r = data[i];
+      var obj = {};
+      var rowNumber = i + 2;
+      obj._row = rowNumber;
+
+      Object.keys(headerMap).forEach(function(key) {
+        var col = headerMap[key] - 1;
+        var val = r[col];
+
+        switch (key) {
+          case "FECHA":
+          case "FECHA INGRESO":
+          case "FECHA DE INGRESO":
+            var fechaFormateada = formatDateForClient(val);
+            obj.fechaIngreso = fechaFormateada;
+            obj.Fecha = fechaFormateada;
+            break;
+
+          case "PEDIDO":
+            obj.pedido = val || "";
+            break;
+
+          case "TIPO DOCUMENTO":
+            obj.tipoDocumento = val || "";
+            break;
+
+          case "NUMERO DOCUMENTO":
+            obj.numeroDocumento = val || "";
+            break;
+
+          case "CLIENTE":
+            obj.cliente = val || "";
+            break;
+
+          case "DIRECCION":
+            obj.direccion = val || "";
+            break;
+
+          case "COMUNA":
+            obj.comuna = val || "";
+            break;
+
+          case "TRANSPORTE":
+            obj.transporte = val || "";
+            break;
+
+          case "ETIQUETAS":
+            obj.etiquetas = val || "";
+            break;
+
+          case "OBSERVACIONES":
+            obj.observaciones = val || "";
+            break;
+
+          case "STATUS":
+            obj.status = val || "PENDIENTE";
+            break;
+
+          case "FECHA ENTREGA":
+          case "FECHA ESTIMADA ENTREGA":
+          case "FECHA ESTIMADA DE ENTREGA":
+            var entregaFormateada = formatDateForClient(val);
+            obj.fechaEntrega = entregaFormateada;
+            obj["FECHA ENTREGA"] = entregaFormateada;
+            break;
+
+          case "ALERTA":
+            obj.alerta = val || "";
+            break;
+
+          case "STATUS ENTREGA":
+            obj.statusEntrega = val || "";
+            break;
+
+          case "DIAS ATRASO":
+            obj.diasAtraso = val || "";
+            break;
+
+          case "SEMAFORO":
+            obj.semaforo = val || "VERDE";
+            break;
+
+          case "RESPONSABLE":
+            obj.responsable = val || "";
+            break;
+
+          case "FOTO":
+            obj.foto = val || "";
+            break;
+
+          case "PDF":
+            obj.pdf = val || "";
+            break;
+
+          case "PDF TRASLADO":
+            obj.pdfTraslado = val || "";
+            break;
+
+          case "SOLICITUD TRASLADO":
+            obj.solicitudTraslado = val || "";
+            obj.TR = val || "";
+            break;
+
+          case "TR":
+          case "Nº TR":
+          case "N° TR":
+          case "TRASLADO":
+          case "Nº TRASLADO":
+          case "N° TRASLADO":
+            obj.TR = val || "";
+            break;
+        }
+      });
+
+      var calc = calcularAlertas(obj.fechaEntrega, obj.status);
+      if (!obj.alerta) obj.alerta = calc.alerta;
+      if (!obj.statusEntrega) obj.statusEntrega = calc.statusEntrega;
+      if (!obj.diasAtraso) obj.diasAtraso = calc.diasAtraso;
+      if (!obj.semaforo) obj.semaforo = calc.semaforo;
+
+      rows.push(obj);
+    }
+
+    rows.sort(function(a, b) {
+      return Number(b._row) - Number(a._row);
+    });
+
+    cache.put("pedidos", JSON.stringify(rows), 300);
+    return json(rows);
+
+  } catch (err) {
+    return json({ ok: false, error: err.toString() });
+  }
+}
+
+/*===============================================================
+  ACCIONES DE ESCRITURA (POST)
+===============================================================*/
+
+function doPost(e) {
+  try {
+    var body = {};
+    var raw = "";
+
+    if (e && e.postData && e.postData.contents) {
+      raw = e.postData.contents;
+    }
+
+    if (raw) {
+      try {
+        body = JSON.parse(raw);
+      } catch (err) {
+        body = {};
+      }
+    }
+
+    if ((!body || !body.action) && e && e.parameter && e.parameter.data) {
+      try {
+        body = JSON.parse(e.parameter.data);
+      } catch (paramErr) {
+        return json({ ok: false, error: "JSON inválido en parameter.data: " + paramErr });
+      }
+    }
+
+    if (!body || !body.action) {
+      return json({ ok: false, error: "No action" });
+    }
+
+    switch (body.action) {
+      case "add":
+        return add(body);
+      case "update":
+        return update(body);
+      case "delete":
+        return deleteRow(body.row);
+      case "crearTraslado":
+        return crearTraslado(body);
+      case "generarPdfPedido":
+        return generarPdfPedido(body);
+      case "refrescarAlertas":
+        return refrescarAlertasPedidos();
+      case "guardarProductos":
+        try {
+          var pedido = body.pedido || body.PEDIDO || "";
+          var productos = body.productos || body.PRODUCTOS || [];
+          guardarProductosPedido(pedido, productos);
+          logAuditoria("PRODUCTOS", pedido, "Productos guardados");
+          return json({ ok: true });
+        } catch (prodErr) {
+          return json({ ok: false, error: "Error guardando productos: " + prodErr });
+        }
+      case "obtenerProductos":
+        try {
+          var pedidoReq = body.pedido || body.PEDIDO || "";
+          var productosList = obtenerProductosPedido(pedidoReq);
+          return json({ ok: true, productos: productosList });
+        } catch (listErr) {
+          return json({ ok: false, error: "Error obteniendo productos: " + listErr });
+        }
+      case "catalogoProductos":
+        try {
+          return json({ ok: true, data: getProductCatalogList(false) });
+        } catch (catalogErr) {
+          return json({ ok: false, error: "Error obteniendo catálogo: " + catalogErr });
+        }
+      case "buscarProductoRapido":
+        try {
+          var qBuscarPost = body.q || body.codigo || body.producto || "";
+          var limitBuscarPost = Number(body.limit || 50);
+          return json({ ok: true, data: buscarProductosCatalogo(qBuscarPost, limitBuscarPost) });
+        } catch (buscarErr) {
+          return json({ ok: false, error: "Error buscando producto: " + buscarErr });
+        }
+      case "buscarProductoExacto":
+        try {
+          var qExactoPost = body.q || body.codigo || body.producto || "";
+          return json({ ok: true, data: buscarProductoExactoCatalogo(qExactoPost) });
+        } catch (exactErr) {
+          return json({ ok: false, error: "Error buscando producto exacto: " + exactErr });
+        }
+      default:
+        return json({ ok: false, error: "Acción no válida: " + body.action });
+    }
+  } catch (err) {
+    return json({ ok: false, error: err && err.stack ? err.stack : String(err) });
+  }
+}
+
+function add(body) {
+  var sh = getSheet();
+  var headerMap = getHeaderMap(sh);
+  var pedido = nextPedido();
+
+  var status = (body["STATUS"] || "").toString().trim().toUpperCase() || "PENDIENTE";
+  var fechaIngresoActual = formatDateForClient(new Date());
+  var fechaEntregaGuardada = formatDateForClient(body["FECHA ENTREGA"]);
+  var estado = calcularAlertas(fechaEntregaGuardada, status);
+
+  var fotoURL = "";
+  try {
+    if (body.FOTO) {
+      fotoURL = saveImage(body.FOTO);
+    }
+  } catch (err) {
+    fotoURL = "";
+  }
+
+  var pdfURL = "";
+  try {
+    if (body.PDF) {
+      pdfURL = savePdf(body.PDF);
+    }
+  } catch (err) {
+    pdfURL = "";
+  }
+
+  var numCols = sh.getLastColumn();
+  var rowValues = new Array(numCols).fill("");
+
+  Object.keys(headerMap).forEach(function(key) {
+    var idx = headerMap[key] - 1;
+    switch (key) {
+      case "FECHA":
+      case "FECHA INGRESO":
+      case "FECHA DE INGRESO":
+        rowValues[idx] = fechaIngresoActual;
+        break;
+      case "PEDIDO":
+        rowValues[idx] = pedido;
+        break;
+      case "TIPO DOCUMENTO":
+        rowValues[idx] = body["TIPO DOCUMENTO"] || "";
+        break;
+      case "NUMERO DOCUMENTO":
+        rowValues[idx] = body["NUMERO DOCUMENTO"] || "";
+        break;
+      case "CLIENTE":
+        rowValues[idx] = body["CLIENTE"] || "";
+        break;
+      case "DIRECCION":
+        rowValues[idx] = body["DIRECCION"] || "";
+        break;
+      case "COMUNA":
+        rowValues[idx] = body["COMUNA"] || "";
+        break;
+      case "TRANSPORTE":
+        rowValues[idx] = body["TRANSPORTE"] || "";
+        break;
+      case "ETIQUETAS":
+        rowValues[idx] = body["ETIQUETAS"] || "";
+        break;
+      case "OBSERVACIONES":
+        rowValues[idx] = body["OBSERVACIONES"] || "";
+        break;
+      case "STATUS":
+        rowValues[idx] = status;
+        break;
+      case "FECHA ENTREGA":
+      case "FECHA ESTIMADA ENTREGA":
+      case "FECHA ESTIMADA DE ENTREGA":
+        rowValues[idx] = fechaEntregaGuardada;
+        break;
+      case "ALERTA":
+        rowValues[idx] = estado.alerta;
+        break;
+      case "STATUS ENTREGA":
+        rowValues[idx] = estado.statusEntrega;
+        break;
+      case "DIAS ATRASO":
+        rowValues[idx] = estado.diasAtraso;
+        break;
+      case "SEMAFORO":
+        rowValues[idx] = estado.semaforo;
+        break;
+      case "RESPONSABLE":
+        rowValues[idx] = body["RESPONSABLE"] || "";
+        break;
+      case "FOTO":
+        rowValues[idx] = fotoURL;
+        break;
+      case "PDF":
+        rowValues[idx] = pdfURL;
+        break;
+      case "PDF TRASLADO":
+        rowValues[idx] = "";
+        break;
+      case "SOLICITUD TRASLADO":
+      case "TR":
+      case "Nº TR":
+      case "N° TR":
+      case "TRASLADO":
+      case "Nº TRASLADO":
+      case "N° TRASLADO":
+        rowValues[idx] = "";
+        break;
+      default:
+        rowValues[idx] = "";
+    }
+  });
+
+  sh.appendRow(rowValues);
+  var rowNum = sh.getLastRow();
+
+  logAuditoria("CREAR", pedido, "Pedido creado");
+  CacheService.getScriptCache().remove("pedidos");
+  return json({ ok: true, row: rowNum, pedido: pedido, foto: fotoURL, pdf: pdfURL });
+}
+
+function update(body) {
+  var sh = getSheet();
+  var headerMap = getHeaderMap(sh);
+  var row = Number(body.row);
+  if (!row || row < 2) {
+    return json({ ok: false, error: "Fila inválida" });
+  }
+
+  function getVal(headerName) {
+    var col = headerMap[headerName];
+    if (!col) return "";
+    return sh.getRange(row, col).getValue();
+  }
+
+  function setVal(headerName, value) {
+    var col = headerMap[headerName];
+    if (!col) return;
+    sh.getRange(row, col).setValue(value);
+  }
+
+  var statusInput = body["STATUS"];
+  var status = statusInput !== undefined ? String(statusInput).trim().toUpperCase() : String(getVal("STATUS") || "").trim().toUpperCase();
+
+  var fechaEntregaInput = body["FECHA ENTREGA"];
+  var fechaEntregaActual = getVal("FECHA ENTREGA") || getVal("FECHA ESTIMADA ENTREGA") || getVal("FECHA ESTIMADA DE ENTREGA");
+  var fechaEntrega = fechaEntregaInput !== undefined ? formatDateForClient(fechaEntregaInput) : formatDateForClient(fechaEntregaActual);
+
+  var estado = calcularAlertas(fechaEntrega, status);
+
+  var fotoURL = getVal("FOTO");
+  try {
+    if (body.FOTO) {
+      fotoURL = saveImage(body.FOTO);
+    } else if (body.FOTO_URL) {
+      fotoURL = body.FOTO_URL;
+    }
+  } catch (err) {}
+
+  var pdfURL = getVal("PDF");
+  try {
+    if (body.PDF) {
+      pdfURL = savePdf(body.PDF);
+    } else if (body.PDF_URL) {
+      pdfURL = body.PDF_URL;
+    }
+  } catch (err) {}
+
+  var camposTexto = {
+    "TIPO DOCUMENTO": body["TIPO DOCUMENTO"],
+    "NUMERO DOCUMENTO": body["NUMERO DOCUMENTO"],
+    "CLIENTE": body["CLIENTE"],
+    "DIRECCION": body["DIRECCION"],
+    "COMUNA": body["COMUNA"],
+    "TRANSPORTE": body["TRANSPORTE"],
+    "ETIQUETAS": body["ETIQUETAS"],
+    "OBSERVACIONES": body["OBSERVACIONES"],
+    "STATUS": status,
+    "FECHA ENTREGA": fechaEntrega,
+    "RESPONSABLE": body["RESPONSABLE"]
+  };
+
+  Object.keys(camposTexto).forEach(function(key) {
+    var val = camposTexto[key];
+    if (val !== undefined) {
+      setVal(key, val);
+    }
+  });
+
+  setVal("FOTO", fotoURL);
+  setVal("PDF", pdfURL);
+  setVal("ALERTA", estado.alerta);
+  setVal("STATUS ENTREGA", estado.statusEntrega);
+  setVal("DIAS ATRASO", estado.diasAtraso);
+  setVal("SEMAFORO", estado.semaforo);
+
+  var pedidoVal = getVal("PEDIDO");
+  logAuditoria("EDITAR", pedidoVal, "Pedido actualizado");
+  CacheService.getScriptCache().remove("pedidos");
+
+  return json({
+    ok: true,
+    row: row,
+    status: status,
+    statusEntrega: estado.statusEntrega,
+    semaforo: estado.semaforo,
+    diasAtraso: estado.diasAtraso,
+    alerta: estado.alerta,
+    foto: fotoURL,
+    pdf: pdfURL
+  });
+}
+
+function deleteRow(row) {
+  var sh = getSheet();
+  var r = Number(row);
+  if (!r || r < 2) {
+    return json({ ok: false, error: "Fila inválida" });
+  }
+
+  var headerMap = getHeaderMap(sh);
+  var pedido = "";
+  if (headerMap["PEDIDO"]) {
+    pedido = sh.getRange(r, headerMap["PEDIDO"]).getValue();
+  }
+
+  sh.deleteRow(r);
+  logAuditoria("ELIMINAR", pedido, "Pedido eliminado");
+  CacheService.getScriptCache().remove("pedidos");
+  return json({ ok: true });
+}
+
+function crearTraslado(data) {
+  var shPedidos = getSheet();
+  var headerMap = getHeaderMap(shPedidos);
+  var row = Number(data.row);
+  if (!row || row < 2) {
+    return json({ ok: false, error: "Fila inválida" });
+  }
+
+  function getVal(headerName) {
+    var col = headerMap[headerName];
+    if (!col) return "";
+    return shPedidos.getRange(row, col).getValue();
+  }
+
+  var traslado = nextTraslado();
+  var pedido = data.pedido || getVal("PEDIDO");
+  var cliente = data.cliente || getVal("CLIENTE");
+  var direccion = data.direccion || getVal("DIRECCION");
+  var comuna = data.comuna || getVal("COMUNA");
+  var transporte = data.transporte || getVal("TRANSPORTE");
+  var productos = data.productos || [];
+  var total = data.total || 0;
+  var observaciones = data.observaciones || "";
+
+  var productosHTML = "";
+  productos.forEach(function(p) {
+    productosHTML += '<tr>' +
+      '<td>' + (p.producto || "") + '</td>' +
+      '<td>' + (p.detalle || "") + '</td>' +
+      '<td style="text-align:center">' + (p.cantidad || 0) + '</td>' +
+      '</tr>';
+  });
+
+  var logoBlob = UrlFetchApp.fetch('https://drive.google.com/uc?export=download&id=' + LOGO_FILE_ID).getBlob();
+  var logoBase64 = Utilities.base64Encode(logoBlob.getBytes());
+  var logo = 'data:image/png;base64,' + logoBase64;
+
+  var html = '' +
+    '<html><body style="font-family:Arial;font-size:12px">' +
+    '<table width="100%"><tr><td><img src="' + logo + '" style="height:70px"></td></tr></table>' +
+    '<h2>DOCUMENTO DE TRASLADO</h2>' +
+    '<b>N° Traslado:</b> ' + traslado + '<br>' +
+    '<b>Pedido:</b> ' + pedido + '<br>' +
+    '<b>Cliente:</b> ' + cliente + '<br>' +
+    '<b>Dirección:</b> ' + direccion + '<br>' +
+    '<b>Comuna:</b> ' + comuna + '<br>' +
+    '<b>Transporte:</b> ' + transporte + '<br>' +
+    '<br><br>' +
+    '<table border="1" width="100%" style="border-collapse:collapse"><tr style="background:#eee">' +
+    '<th>Producto</th><th>Detalle</th><th>Cantidad</th></tr>' + productosHTML + '</table>' +
+    '<br><b>Total:</b> ' + total + '<br><br>' +
+    '<b>Observaciones:</b><br>' + observaciones + '' +
+    '</body></html>';
+
+  var blob = HtmlService.createHtmlOutput(html).getBlob().getAs('application/pdf').setName('TRASLADO_' + traslado + '.pdf');
+  var tempFile = DriveApp.getFolderById(FOLDER_PDF).createFile(blob);
+  var pdfUrl = 'https://drive.google.com/file/d/' + tempFile.getId() + '/preview';
+
+  var qrBlob = UrlFetchApp.fetch('https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=' + encodeURIComponent(pdfUrl)).getBlob();
+  var qrBase64 = Utilities.base64Encode(qrBlob.getBytes());
+  var qr = 'data:image/png;base64,' + qrBase64;
+
+  var htmlFinal = '' +
+    '<html><body style="font-family:Arial;font-size:12px">' +
+    '<table width="100%"><tr>' +
+    '<td><img src="' + logo + '" style="height:70px"></td>' +
+    '<td style="text-align:right"><img src="' + qr + '" style="height:90px"></td>' +
+    '</tr></table>' +
+    '<h2>DOCUMENTO DE TRASLADO</h2>' +
+    '<b>N° Traslado:</b> ' + traslado + '<br>' +
+    '<b>Pedido:</b> ' + pedido + '<br>' +
+    '<b>Cliente:</b> ' + cliente + '<br>' +
+    '<b>Dirección:</b> ' + direccion + '<br>' +
+    '<b>Comuna:</b> ' + comuna + '<br>' +
+    '<b>Transporte:</b> ' + transporte + '<br>' +
+    '<br><br>' +
+    '<table border="1" width="100%" style="border-collapse:collapse"><tr style="background:#eee">' +
+    '<th>Producto</th><th>Detalle</th><th>Cantidad</th></tr>' + productosHTML + '</table>' +
+    '<br><b>Total:</b> ' + total + '<br><br>' +
+    '<b>Observaciones:</b><br>' + observaciones + '' +
+    '</body></html>';
+
+  var finalBlob = HtmlService.createHtmlOutput(htmlFinal).getBlob().getAs('application/pdf').setName('TRASLADO_' + traslado + '.pdf');
+  tempFile.setTrashed(true);
+  var finalFile = DriveApp.getFolderById(FOLDER_PDF).createFile(finalBlob);
+  var pdfUrlFinal = 'https://drive.google.com/file/d/' + finalFile.getId() + '/preview';
+
+  var shTraslados = getTraslados();
+  shTraslados.appendRow([
+    formatDateForClient(new Date()),
+    traslado,
+    pedido,
+    cliente,
+    direccion,
+    comuna,
+    transporte,
+    pdfUrlFinal
+  ]);
+
+  if (headerMap["PDF TRASLADO"]) {
+    shPedidos.getRange(row, headerMap["PDF TRASLADO"]).setValue(pdfUrlFinal);
+  }
+  if (headerMap["SOLICITUD TRASLADO"]) {
+    shPedidos.getRange(row, headerMap["SOLICITUD TRASLADO"]).setValue(traslado);
+  }
+
+  if (headerMap["STATUS"]) {
+    shPedidos.getRange(row, headerMap["STATUS"]).setValue("ENTREGADO");
+
+    var fechaEnt = "";
+    if (headerMap["FECHA ENTREGA"]) {
+      fechaEnt = shPedidos.getRange(row, headerMap["FECHA ENTREGA"]).getValue();
+    }
+
+    var calc = calcularAlertas(fechaEnt, "ENTREGADO");
+    if (headerMap["ALERTA"]) {
+      shPedidos.getRange(row, headerMap["ALERTA"]).setValue(calc.alerta);
+    }
+    if (headerMap["STATUS ENTREGA"]) {
+      shPedidos.getRange(row, headerMap["STATUS ENTREGA"]).setValue(calc.statusEntrega);
+    }
+    if (headerMap["DIAS ATRASO"]) {
+      shPedidos.getRange(row, headerMap["DIAS ATRASO"]).setValue(calc.diasAtraso);
+    }
+    if (headerMap["SEMAFORO"]) {
+      shPedidos.getRange(row, headerMap["SEMAFORO"]).setValue(calc.semaforo);
+    }
+  }
+
+  logAuditoria("TRASLADO", pedido, "Se generó traslado " + traslado);
+  CacheService.getScriptCache().remove("pedidos");
+  return json({ ok: true, traslado: traslado, pdf: pdfUrlFinal });
+}
+
+function generarPdfPedido(data) {
+  var sh = getSheet();
+  var headerMap = getHeaderMap(sh);
+  var row = Number(data.row);
+  if (!row || row < 2) {
+    return json({ ok: false, error: "Fila inválida" });
+  }
+
+  function getVal(headerName) {
+    var col = headerMap[headerName];
+    if (!col) return "";
+    return sh.getRange(row, col).getValue();
+  }
+
+  var pedido = getVal("PEDIDO");
+  var cliente = getVal("CLIENTE");
+  var direccion = getVal("DIRECCION");
+  var comuna = getVal("COMUNA");
+  var transporte = getVal("TRANSPORTE");
+  var tipoDocumento = getVal("TIPO DOCUMENTO");
+  var numeroDocumento = getVal("NUMERO DOCUMENTO");
+  var fechaEntrega = formatDateForClient(
+    getVal("FECHA ENTREGA") ||
+    getVal("FECHA ESTIMADA ENTREGA") ||
+    getVal("FECHA ESTIMADA DE ENTREGA")
+  );
+  var responsable = getVal("RESPONSABLE");
+  var observaciones = data.observaciones || getVal("OBSERVACIONES") || "";
+  var productos = data.productos || [];
+  var total = data.total || 0;
+
+  var productosHTML = "";
+  productos.forEach(function(p) {
+    productosHTML += '<tr>' +
+      '<td>' + (p.producto || "") + '</td>' +
+      '<td>' + (p.detalle || "") + '</td>' +
+      '<td style="text-align:center">' + (p.cantidad || 0) + '</td>' +
+      '</tr>';
+  });
+
+  var logoBlob = UrlFetchApp.fetch('https://drive.google.com/uc?export=download&id=' + LOGO_FILE_ID).getBlob();
+  var logoBase64 = Utilities.base64Encode(logoBlob.getBytes());
+  var logo = 'data:image/png;base64,' + logoBase64;
+
+  var html = '' +
+    '<html><body style="font-family:Arial;font-size:11px">' +
+    '<table width="100%"><tr>' +
+    '<td><img src="' + logo + '" style="height:60px"></td>' +
+    '<td style="text-align:right;font-size:24px;font-weight:bold">PEDIDO ' + pedido + '</td>' +
+    '</tr></table>' +
+    '<br>' +
+    '<table width="100%" style="font-size:11px">' +
+    '<tr><td><b>Tipo Documento:</b></td><td>' + tipoDocumento + '</td><td><b>N° Documento:</b></td><td>' + numeroDocumento + '</td></tr>' +
+    '<tr><td><b>Cliente:</b></td><td>' + cliente + '</td><td><b>Transporte:</b></td><td>' + transporte + '</td></tr>' +
+    '<tr><td><b>Dirección:</b></td><td>' + direccion + '</td><td><b>Comuna:</b></td><td>' + comuna + '</td></tr>' +
+    '<tr><td><b>Fecha Entrega:</b></td><td>' + (fechaEntrega || "") + '</td><td><b>Responsable:</b></td><td>' + (responsable || "") + '</td></tr>' +
+    '</table>' +
+    '<br>' +
+    '<table border="1" width="100%" style="border-collapse:collapse;font-size:11px">' +
+    '<tr style="background:#eee">' +
+    '<th>Producto</th><th>Detalle</th><th>Cantidad</th>' +
+    '</tr>' + productosHTML +
+    '</table>' +
+    '<br><b>Total:</b> ' + total + '<br><br>' +
+    '<b>Observaciones:</b><br>' + observaciones +
+    '</body></html>';
+
+  var blob = HtmlService.createHtmlOutput(html).getBlob().getAs('application/pdf').setName('PEDIDO_' + pedido + '.pdf');
+  var tempFile = DriveApp.getFolderById(FOLDER_PDF).createFile(blob);
+  var pdfUrl = 'https://drive.google.com/file/d/' + tempFile.getId() + '/preview';
+
+  var qrBlob = UrlFetchApp.fetch('https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=' + encodeURIComponent(pdfUrl)).getBlob();
+  var qrBase64 = Utilities.base64Encode(qrBlob.getBytes());
+  var qr = 'data:image/png;base64,' + qrBase64;
+
+  var htmlFinal = '' +
+    '<html><body style="font-family:Arial;font-size:11px">' +
+    '<table width="100%"><tr>' +
+    '<td><img src="' + logo + '" style="height:60px"></td>' +
+    '<td style="text-align:right"><img src="' + qr + '" style="height:90px"></td>' +
+    '</tr></table>' +
+    '<br>' +
+    '<div style="font-size:24px;font-weight:bold;text-align:left">PEDIDO ' + pedido + '</div>' +
+    '<br>' +
+    '<table width="100%" style="font-size:11px">' +
+    '<tr><td><b>Tipo Documento:</b></td><td>' + tipoDocumento + '</td><td><b>N° Documento:</b></td><td>' + numeroDocumento + '</td></tr>' +
+    '<tr><td><b>Cliente:</b></td><td>' + cliente + '</td><td><b>Transporte:</b></td><td>' + transporte + '</td></tr>' +
+    '<tr><td><b>Dirección:</b></td><td>' + direccion + '</td><td><b>Comuna:</b></td><td>' + comuna + '</td></tr>' +
+    '<tr><td><b>Fecha Entrega:</b></td><td>' + (fechaEntrega || "") + '</td><td><b>Responsable:</b></td><td>' + (responsable || "") + '</td></tr>' +
+    '</table>' +
+    '<br>' +
+    '<table border="1" width="100%" style="border-collapse:collapse;font-size:11px">' +
+    '<tr style="background:#eee">' +
+    '<th>Producto</th><th>Detalle</th><th>Cantidad</th>' +
+    '</tr>' + productosHTML +
+    '</table>' +
+    '<br><b>Total:</b> ' + total + '<br><br>' +
+    '<b>Observaciones:</b><br>' + observaciones +
+    '</body></html>';
+
+  var finalBlob = HtmlService.createHtmlOutput(htmlFinal).getBlob().getAs('application/pdf').setName('PEDIDO_' + pedido + '.pdf');
+  tempFile.setTrashed(true);
+  var finalFile = DriveApp.getFolderById(FOLDER_PDF).createFile(finalBlob);
+  var pdfUrlFinal = 'https://drive.google.com/file/d/' + finalFile.getId() + '/preview';
+
+  if (headerMap["PDF"]) {
+    sh.getRange(row, headerMap["PDF"]).setValue(pdfUrlFinal);
+  }
+
+  logAuditoria("PDF", pedido, "Se generó PDF del pedido");
+  CacheService.getScriptCache().remove("pedidos");
+  return json({ ok: true, pdf: pdfUrlFinal });
+}
+
+function generarDocumentoTraslado(tr) {
+  var sh = getTraslados();
+  var data = sh.getDataRange().getValues();
+  if (data.length < 2) return "";
+
+  var headers = data[0];
+  var colTr = -1;
+  var colPdf = -1;
+
+  for (var i = 0; i < headers.length; i++) {
+    var h = (headers[i] || "").toString().trim().toUpperCase();
+    if (h === "N° TRASLADO" || h === "Nº TRASLADO" || h === "TRASLADO" || h === "TR") {
+      colTr = i;
+    }
+    if (h === "PDF") {
+      colPdf = i;
+    }
+  }
+
+  if (colTr === -1 || colPdf === -1) return "";
+
+  for (var j = 1; j < data.length; j++) {
+    var row = data[j];
+    if (String(row[colTr]) === String(tr)) {
+      return row[colPdf] || "";
+    }
+  }
+
+  return "";
+}
+
+function refrescarAlertasPedidos() {
+  var sh = getSheet();
+  var headerMap = getHeaderMap(sh);
+  var startRow = 2;
+  var numRows = Math.max(sh.getLastRow() - 1, 0);
+  if (numRows <= 0) {
+    return json({ ok: true, updated: 0 });
+  }
+
+  for (var i = 0; i < numRows; i++) {
+    var row = startRow + i;
+    var status = String(sh.getRange(row, headerMap["STATUS"]).getValue() || "").trim().toUpperCase();
+    var fechaEntrega = sh.getRange(row, headerMap["FECHA ENTREGA"]).getValue();
+    var estado = calcularAlertas(fechaEntrega, status);
+    sh.getRange(row, headerMap["ALERTA"]).setValue(estado.alerta);
+    sh.getRange(row, headerMap["STATUS ENTREGA"]).setValue(estado.statusEntrega);
+    sh.getRange(row, headerMap["DIAS ATRASO"]).setValue(estado.diasAtraso);
+    sh.getRange(row, headerMap["SEMAFORO"]).setValue(estado.semaforo);
+  }
+
+  CacheService.getScriptCache().remove("pedidos");
+  logAuditoria("ALERTAS", "", "Se refrescaron alertas de todos los pedidos");
+  return json({ ok: true, updated: numRows });
+}

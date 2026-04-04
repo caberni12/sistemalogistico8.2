@@ -2,7 +2,7 @@
 //const API_OLD="https://script.google.com/macros/s/AKfycbyMhSW9JBm6zb90K1V_qHTuSZ9GqR7XNPAgV3j9upGq66OMQNK9RtEii2gT5QXlTpFD/exec";
 
 // URL base del endpoint de Apps Script. Se actualiza cuando se publica una nueva versión.
-const API="https://script.google.com/macros/s/AKfycbz678Q4t9e22Hd4PMw9xGyeGr_zwB2hNbwdd8dvYyZ7e3fvN8IlIcj_Hl8NVKuza_br/exec";
+const API="https://script.google.com/macros/s/AKfycbyd0yEaSOZUsTHva3ltzBVY-zWqemZYLubnxVGcWP7TccJzHf0-NLJ2KzPj2gP3dYzT/exec";
 //https://script.google.com/macros/s/AKfycbzj3sRVqYDgGVak1PNHrycYQ6FI5Mk5UyADOL0uI4CDAprlT7LDv3ZVWrfMCkwPMCgW/exec
 
 let RAW=[];
@@ -239,6 +239,257 @@ async function obtenerProductosPedidoBD(pedido) {
   } catch (err) {
     console.error("Error al obtener productos desde backend:", err);
     return [];
+  }
+}
+
+
+const PRODUCTO_CACHE_UI_KEY = "catalogo_productos_modal_traslado_v1";
+let PRODUCTOS_CATALOGO_CACHE = [];
+let PRODUCTOS_CATALOGO_CARGADO = false;
+let PRODUCTOS_CATALOGO_PROMISE = null;
+let TIMER_AUTOCOMPLETE_PRODUCTO = null;
+
+function normalizarProductoTexto(v){
+  return String(v || "")
+    .trim()
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[̀-ͯ]/g, "");
+}
+
+function mapProductoCatalogo(item){
+  if(!item) return null;
+  const codigo = String(item.codigo || item.producto || item.PRODUCTO || item.CODIGO || "").trim();
+  const descripcion = String(item.descripcion || item.detalle || item.DETALLE || item.DESCRIPCION || "").trim();
+  if(!codigo && !descripcion) return null;
+  return { codigo, producto: codigo, descripcion };
+}
+
+function guardarCacheCatalogoUI(items){
+  try{
+    localStorage.setItem(PRODUCTO_CACHE_UI_KEY, JSON.stringify({ at: Date.now(), items: items || [] }));
+  }catch(err){}
+}
+
+function leerCacheCatalogoUI(){
+  try{
+    const raw = localStorage.getItem(PRODUCTO_CACHE_UI_KEY);
+    if(!raw) return [];
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed.items) ? parsed.items : [];
+  }catch(err){
+    return [];
+  }
+}
+
+function setEstadoProducto(msg, color){
+  const box = document.getElementById("pDetalleEstado");
+  if(!box) return;
+  box.textContent = msg || "";
+  if(color) box.style.color = color;
+}
+
+function renderDatalistProductosRapidos(items){
+  const list = document.getElementById("listaProductosRapidos");
+  if(!list) return;
+  const top = (items || []).slice(0, 250);
+  list.innerHTML = top.map(item => {
+    const codigo = String(item.codigo || item.producto || "").replace(/"/g, '&quot;');
+    const desc = String(item.descripcion || "").replace(/"/g, '&quot;');
+    return `<option value="${codigo}">${desc}</option>`;
+  }).join("");
+}
+
+function setCatalogoProductosUI(items){
+  const unicos = [];
+  const seen = new Set();
+  (items || []).forEach(item => {
+    const mapped = mapProductoCatalogo(item);
+    if(!mapped) return;
+    const key = `${normalizarProductoTexto(mapped.codigo)}|${normalizarProductoTexto(mapped.descripcion)}`;
+    if(seen.has(key)) return;
+    seen.add(key);
+    unicos.push(mapped);
+  });
+  PRODUCTOS_CATALOGO_CACHE = unicos;
+  PRODUCTOS_CATALOGO_CARGADO = true;
+  renderDatalistProductosRapidos(PRODUCTOS_CATALOGO_CACHE);
+  guardarCacheCatalogoUI(PRODUCTOS_CATALOGO_CACHE);
+}
+
+async function cargarCatalogoProductosUI(force = false){
+  if(PRODUCTOS_CATALOGO_CARGADO && !force) return PRODUCTOS_CATALOGO_CACHE;
+  if(PRODUCTOS_CATALOGO_PROMISE && !force) return PRODUCTOS_CATALOGO_PROMISE;
+
+  const local = leerCacheCatalogoUI();
+  if(local.length && !force){
+    setCatalogoProductosUI(local);
+  }
+
+  PRODUCTOS_CATALOGO_PROMISE = (async () => {
+    let items = [];
+    try{
+      const r = await fetch(`${API}?action=catalogoProductos&_=${Date.now()}`, { cache:"no-store" });
+      const data = await r.json();
+      items = Array.isArray(data?.data) ? data.data : [];
+    }catch(err){}
+
+    if(!items.length){
+      try{
+        const params = new URLSearchParams();
+        params.append("data", JSON.stringify({ action: "catalogoProductos" }));
+        const r = await fetch(API, {
+          method: "POST",
+          headers: { "Content-Type":"application/x-www-form-urlencoded;charset=UTF-8" },
+          body: params.toString(),
+          cache: "no-store"
+        });
+        const data = await r.json();
+        items = Array.isArray(data?.data) ? data.data : [];
+      }catch(err){}
+    }
+
+    if(items.length) setCatalogoProductosUI(items);
+    PRODUCTOS_CATALOGO_PROMISE = null;
+    return PRODUCTOS_CATALOGO_CACHE;
+  })();
+
+  return PRODUCTOS_CATALOGO_PROMISE;
+}
+
+function buscarProductoEnCache(codigo){
+  const q = normalizarProductoTexto(codigo);
+  if(!q) return null;
+  return PRODUCTOS_CATALOGO_CACHE.find(item => normalizarProductoTexto(item.codigo) === q || normalizarProductoTexto(item.producto) === q) || null;
+}
+
+async function buscarProductoBackend(codigo){
+  const cod = String(codigo || "").trim();
+  if(!cod) return null;
+
+  try{
+    const r = await fetch(`${API}?action=buscarProductoExacto&codigo=${encodeURIComponent(cod)}&_=${Date.now()}`, { cache:"no-store" });
+    const data = await r.json();
+    const item = mapProductoCatalogo(data?.data || data);
+    if(item) return item;
+  }catch(err){}
+
+  try{
+    const params = new URLSearchParams();
+    params.append("data", JSON.stringify({ action: "buscarProductoExacto", codigo: cod }));
+    const r = await fetch(API, {
+      method: "POST",
+      headers: { "Content-Type":"application/x-www-form-urlencoded;charset=UTF-8" },
+      body: params.toString(),
+      cache: "no-store"
+    });
+    const data = await r.json();
+    const item = mapProductoCatalogo(data?.data || data);
+    if(item) return item;
+  }catch(err){}
+
+  try{
+    const r = await fetch(`${API}?action=buscarProductoRapido&codigo=${encodeURIComponent(cod)}&limit=20&_=${Date.now()}`, { cache:"no-store" });
+    const data = await r.json();
+    const lista = Array.isArray(data?.data) ? data.data.map(mapProductoCatalogo).filter(Boolean) : [];
+    const exacto = lista.find(item => normalizarProductoTexto(item.codigo) === normalizarProductoTexto(cod));
+    return exacto || lista[0] || null;
+  }catch(err){
+    return null;
+  }
+}
+
+async function autocompletarDescripcionProducto(forceRemote = false){
+  const pProducto = document.getElementById("pProducto");
+  const pDetalle = document.getElementById("pDetalle");
+  if(!pProducto || !pDetalle) return null;
+
+  const codigo = String(pProducto.value || "").trim();
+  if(!codigo){
+    setEstadoProducto("", "#6b7280");
+    return null;
+  }
+
+  if(!PRODUCTOS_CATALOGO_CARGADO){
+    await cargarCatalogoProductosUI(false);
+  }
+
+  if(!forceRemote){
+    const local = buscarProductoEnCache(codigo);
+    if(local){
+      if(!String(pDetalle.value || "").trim()) pDetalle.value = local.descripcion || "";
+      setEstadoProducto(local.descripcion ? "Descripción encontrada." : "Código encontrado.", "#16a34a");
+      return local;
+    }
+  }
+
+  pProducto.classList.add("cargando");
+  pDetalle.classList.add("cargando");
+  setEstadoProducto("Buscando descripción...", "#6b7280");
+
+  try{
+    const item = await buscarProductoBackend(codigo);
+    if(item){
+      if(item.descripcion) pDetalle.value = item.descripcion;
+      setEstadoProducto(item.descripcion ? "Descripción cargada correctamente." : "Código encontrado sin descripción.", item.descripcion ? "#16a34a" : "#f59e0b");
+      if(!buscarProductoEnCache(item.codigo)){
+        setCatalogoProductosUI([item].concat(PRODUCTOS_CATALOGO_CACHE));
+      }
+      return item;
+    }
+    setEstadoProducto("No se encontró descripción para ese código.", "#dc2626");
+    return null;
+  }finally{
+    pProducto.classList.remove("cargando");
+    pDetalle.classList.remove("cargando");
+  }
+}
+
+function bindAutocompleteProducto(){
+  const pProducto = document.getElementById("pProducto");
+  const pDetalle = document.getElementById("pDetalle");
+  const btnAdd = document.getElementById("btnAddProducto");
+  if(!pProducto || pProducto.dataset.bindDescripcion === "1") return;
+
+  pProducto.dataset.bindDescripcion = "1";
+  pProducto.addEventListener("input", () => {
+    setEstadoProducto("", "#6b7280");
+    if(TIMER_AUTOCOMPLETE_PRODUCTO) clearTimeout(TIMER_AUTOCOMPLETE_PRODUCTO);
+    TIMER_AUTOCOMPLETE_PRODUCTO = setTimeout(() => {
+      autocompletarDescripcionProducto(false);
+    }, 250);
+  });
+
+  pProducto.addEventListener("change", () => autocompletarDescripcionProducto(true));
+  pProducto.addEventListener("blur", () => {
+    if(String(pProducto.value || "").trim()) autocompletarDescripcionProducto(true);
+  });
+  pProducto.addEventListener("keydown", async (e) => {
+    if(e.key === "Enter"){
+      e.preventDefault();
+      await autocompletarDescripcionProducto(true);
+      if(pDetalle) pDetalle.focus();
+    }
+  });
+
+  if(pDetalle){
+    pDetalle.addEventListener("keydown", (e) => {
+      if(e.key === "Enter"){
+        e.preventDefault();
+        const qty = document.getElementById("pCantidad");
+        if(qty) qty.focus();
+      }
+    });
+  }
+
+  const qty = document.getElementById("pCantidad");
+  if(qty){
+    qty.addEventListener("keydown", (e) => {
+      if(e.key === "Enter"){
+        e.preventDefault();
+        if(btnAdd) btnAdd.click();
+      }
+    });
   }
 }
 
@@ -711,6 +962,8 @@ async function openTraslado(row){
   }
 
   modal.style.display = "flex";
+  bindAutocompleteProducto();
+  cargarCatalogoProductosUI(false);
 
   const tPedido = document.getElementById("tPedido");
   const tCliente = document.getElementById("tCliente");
@@ -726,6 +979,14 @@ async function openTraslado(row){
 
   const tabla = document.getElementById("detalleTable");
   if(tabla) tabla.innerHTML="";
+
+  const pProducto = document.getElementById("pProducto");
+  const pDetalle = document.getElementById("pDetalle");
+  const pCantidad = document.getElementById("pCantidad");
+  if(pProducto) pProducto.value = "";
+  if(pDetalle) pDetalle.value = "";
+  if(pCantidad) pCantidad.value = "1";
+  setEstadoProducto("Escriba el código para traer la descripción.", "#6b7280");
 
   try{
     const productosGuardados = await obtenerProductosPedidoBD(r.pedido);
@@ -745,7 +1006,7 @@ async function openTraslado(row){
   }
 }
 
-function addProducto(prodArg, detArg, cantArg){
+async function addProducto(prodArg, detArg, cantArg){
   const tabla = document.getElementById("detalleTable");
   if(!tabla) return;
 
@@ -770,12 +1031,20 @@ function addProducto(prodArg, detArg, cantArg){
   const cantEl = document.getElementById("pCantidad");
 
   const prod = prodEl ? prodEl.value.trim() : "";
-  const det  = detEl ? detEl.value.trim() : "";
+  let det  = detEl ? detEl.value.trim() : "";
   const cant = cantEl ? (cantEl.value || 1) : 1;
 
   if(prod === ""){
-    alert("Favor Informe los Productos a Trasladar y Genere Numero de Traslado");
+    alert("Favor informe el código o producto a trasladar.");
     return;
+  }
+
+  if(!det){
+    const item = await autocompletarDescripcionProducto(true);
+    if(item && item.descripcion){
+      det = item.descripcion;
+      if(detEl) detEl.value = det;
+    }
   }
 
   const fila = document.createElement("tr");
@@ -919,6 +1188,19 @@ function closeEdit(){
 function closeTraslado() {
   const modal = document.getElementById("trasladoModal");
   if (modal) modal.style.display = "none";
+  const tabla = document.getElementById("detalleTable");
+  const pProducto = document.getElementById("pProducto");
+  const pDetalle = document.getElementById("pDetalle");
+  const pCantidad = document.getElementById("pCantidad");
+  const tObs = document.getElementById("tObs");
+  const tTotal = document.getElementById("tTotal");
+  if(tabla) tabla.innerHTML = "";
+  if(pProducto) pProducto.value = "";
+  if(pDetalle) pDetalle.value = "";
+  if(pCantidad) pCantidad.value = "1";
+  if(tObs) tObs.value = "";
+  if(tTotal) tTotal.value = "";
+  setEstadoProducto("", "#6b7280");
   localStorage.removeItem("trasladoModalRow");
 }
 
@@ -936,6 +1218,9 @@ function modalAbierto(id){
   const el = document.getElementById(id);
   return !!(el && el.style && el.style.display === "flex");
 }
+
+bindAutocompleteProducto();
+cargarCatalogoProductosUI(false);
 
 /* ================= AUTO-RELOAD ================= */
 let autoLoad = setInterval(() => {

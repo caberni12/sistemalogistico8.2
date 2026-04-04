@@ -1,0 +1,33 @@
+ARCHIVOS ENTREGADOS
+
+1) dashboard.html
+   - Modal de productos con botón X reforzado por onclick.
+   - Botones del modal con type="button" para evitar comportamientos extraños.
+   - Ajustes visuales del botón X y del área de acciones.
+
+2) envio.js
+   - Sigue usando la API principal de pedidos.
+   - La tabla del modal de productos carga SOLO los productos asociados al pedido
+     usando action=obtenerProductos sobre la API principal.
+   - Se reforzó el manejo del cierre del modal y los mensajes del modal.
+
+3) consulta.js
+   - Usa SOLO la API externa de consulta de documentos/pedidos.
+   - No prioriza datos locales cargados en pantalla.
+
+4) productosbd.js
+   - Usa SOLO la API independiente de productos.
+   - No usa la API principal de pedidos para código/descripción.
+
+5) apps_script_completo.gs
+   - Es el Apps Script completo entregado por el usuario.
+   - Se dejó en el paquete sin recortarlo.
+
+RECOMENDACIÓN
+- Mantén cada proceso con su API correspondiente:
+  * envio.js -> API principal de pedidos
+  * consulta.js -> API de consulta externa
+  * productosbd.js -> API propia de productos
+
+- Si publicas una nueva versión de algún Web App, actualiza la URL
+  correspondiente en el archivo que use ese proceso.

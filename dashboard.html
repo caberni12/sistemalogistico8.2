@@ -615,6 +615,89 @@ tr.selected{
   overflow:auto;
 }
 
+
+#modalProducto .modal-content{
+  position:relative;
+  width:min(1120px, calc(100vw - 32px));
+  max-width:calc(100vw - 32px);
+  max-height:calc(100vh - 32px);
+  padding:24px;
+  overflow:auto;
+}
+
+#modalProducto .modal-close{
+  position:absolute;
+  top:12px;
+  right:12px;
+  z-index:50;
+}
+
+#modalProducto h2{
+  padding-right:52px;
+  margin-top:0;
+}
+
+#modalProducto .modal-actions{
+  display:flex;
+  gap:10px;
+  justify-content:flex-end;
+  flex-wrap:wrap;
+}
+
+#modalProducto .modal-actions button{
+  min-width:180px;
+}
+
+#modalProducto table{
+  width:100%;
+  table-layout:fixed;
+}
+
+#modalProducto th,
+#modalProducto td{
+  white-space:normal;
+  word-break:break-word;
+  vertical-align:top;
+}
+
+#modalProducto input,
+#modalProducto select,
+#modalProducto button{
+  max-width:100%;
+}
+
+#modalProducto .grid > *{
+  min-width:0;
+}
+
+@media (max-width:768px){
+  #modalProducto .modal-content{
+    width:calc(100vw - 16px);
+    max-width:calc(100vw - 16px);
+    max-height:calc(100vh - 16px);
+    padding:18px 14px;
+    border-radius:14px;
+  }
+
+  #modalProducto h2{
+    font-size:20px;
+    padding-right:44px;
+  }
+
+  #modalProducto .grid{
+    grid-template-columns:1fr;
+  }
+
+  #modalProducto .modal-actions{
+    flex-direction:column;
+  }
+
+  #modalProducto .modal-actions button{
+    width:100%;
+    min-width:0;
+  }
+}
+
 #modalProducto .form-group{
   display:flex;
   flex-direction:column;
@@ -656,6 +739,41 @@ tr.selected{
 #pTablaProductos td button:hover{
   background:#b91c1c;
 }
+
+
+#modalProducto .modal-close{
+  width:36px;
+  height:36px;
+  min-width:36px;
+  min-height:36px;
+  padding:0;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  line-height:1;
+  font-size:16px;
+  box-shadow:0 4px 12px rgba(0,0,0,.18);
+}
+
+#modalProducto .modal-actions{
+  align-items:stretch;
+}
+
+#modalProducto .modal-actions button{
+  white-space:normal;
+}
+
+@media (max-width:768px){
+  #modalProducto .modal-close{
+    top:10px;
+    right:10px;
+    width:34px;
+    height:34px;
+    min-width:34px;
+    min-height:34px;
+  }
+}
+
 
 
 @keyframes spin{
@@ -831,33 +949,24 @@ grid-template-columns:1fr; /* 1 por fila */
   }
 }
 
-/* 
-  =======================
-  MODAL WIDTHS – DESKTOP
-  =======================
 
-  En pantallas grandes (>768px) se amplían los anchos máximos de los modales para que ocupen más espacio
-  horizontal.  En móviles y tablets se mantienen los anchos originales.
-
-  - `.modal-content`: ocupará 80% del ancho de la pantalla (80%)
-  - `#modalColumnas .modal-content`: ocupará 60% del ancho de la pantalla (60%)
-  - `#modalProducto .modal-content`: ocupará 90% del ancho de la pantalla (90%)
-*/
+/* =======================
+   MODALES DESKTOP / RESPONSIVE
+   ======================= */
 @media (min-width:769px) {
-  .modal-content {
-    /* Al ocupar el 80% del contenedor, el modal se ajusta a pantallas grandes */
-    width: 80%;
-    max-width: none;
+  .modal-content{
+    width:min(980px, calc(100vw - 48px));
+    max-width:calc(100vw - 48px);
   }
-  #modalColumnas .modal-content {
-    /* Este modal es más pequeño; 60% del ancho total */
-    width: 60%;
-    max-width: none;
+
+  #modalColumnas .modal-content{
+    width:min(760px, calc(100vw - 48px));
+    max-width:calc(100vw - 48px);
   }
-  #modalProducto .modal-content {
-    /* Modal de productos ocupa casi toda la pantalla, 90% */
-    width: 90%;
-    max-width: none;
+
+  #modalProducto .modal-content{
+    width:min(1120px, calc(100vw - 40px));
+    max-width:calc(100vw - 40px);
   }
 }
 </style>
@@ -1001,7 +1110,7 @@ margin-top:20px;
     <div class="modal-content">
 
       <!-- Botón de cierre en forma de X con fondo rojo -->
-      <button class="modal-close" onclick="this.closest('.modal').style.display='none';">&#x2716;</button>
+      <button id="btnCerrarFormX" type="button" class="modal-close" aria-label="Cerrar formulario">&#x2716;</button>
 
       <!-- Título del formulario -->
       <h3 id="mtitle">Editar Pedido</h3>
@@ -1088,7 +1197,7 @@ margin-top:20px;
         <button id="btnGuardar">Guardar</button>
         <button id="btnCancelar">Cancelar</button>
         <!-- Botón para abrir el modal de productos desde el modal de pedido -->
-        <button id="btnProductos" type="button" onclick="abrirModalProducto(mPedido ? mPedido.value : '')">Productos</button>
+        <button id="btnProductos" type="button" onclick="abrirModalProducto(document.getElementById('mPedido')?.value || '')">Productos</button>
       </div>
   
     </div>
@@ -1098,8 +1207,7 @@ margin-top:20px;
 
     <div class="modal-content" style="max-width:900px;">
 
-      <!-- Botón de cierre en forma de X con fondo rojo -->
-      <button class="modal-close" onclick="this.closest('.modal').style.display='none';">&#x2716;</button>
+      <button id="btnCerrarProductoX" type="button" class="modal-close" aria-label="Cerrar modal de productos" onclick="if(window.cerrarModalProducto){cerrarModalProducto();} return false;">&#x2716;</button>
   
       <h2>📦 Productos del Pedido</h2>
       <div id="pResumenPedido" style="margin-top:10px;">Selecciona un pedido para cargar sus datos.</div>
@@ -1156,13 +1264,13 @@ margin-top:20px;
   
         <div class="form-group">
           <label>Cantidad</label>
-          <input id="pCantidad" type="number" min="1">
+          <input id="pCantidad" type="number" step="1">
         </div>
   
       </div>
   
       <div style="margin-top:10px">
-        <button id="btnAddProducto">➕ Agregar Producto</button>
+        <button id="btnAddProducto" type="button">➕ Agregar Producto</button>
       </div>
   
       <!-- TABLA PRODUCTOS -->
@@ -1173,6 +1281,7 @@ margin-top:20px;
               <th style="padding:8px">Producto</th>
               <th style="padding:8px">Descripción</th>
               <th style="padding:8px">Cantidad</th>
+              <th style="padding:8px">Editar</th>
               <th style="padding:8px">Acción</th>
             </tr>
           </thead>
@@ -1190,9 +1299,9 @@ margin-top:20px;
         justify-content:flex-end;
         flex-wrap:wrap;
       ">
-        <button id="btnGuardarProducto">💾 Guardar</button>
-        <button id="btnGenerarProductoPDF" class="btn-sec">📄 Generar PDF y Cargar</button>
-        <button id="btnCerrarProducto" class="btn-sec">❌ Cerrar</button>
+        <button id="btnGuardarProducto" type="button">💾 Guardar</button>
+        <button id="btnGenerarProductoPDF" type="button" class="btn-sec">📄 Generar PDF y Cargar</button>
+        <button id="btnCerrarProducto" type="button" class="btn-sec">❌ Cerrar</button>
       </div>
   
     </div>
