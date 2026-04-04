@@ -844,7 +844,7 @@ function render(){
 
       <div class="card-row"><b>Cliente:</b><span>${esc(r.cliente)}</span></div>
       <div class="card-row"><b>Documento:</b><span>${esc(r.tipoDocumento)} ${esc(r.numeroDocumento)}</span></div>
-      <div class="card-row"><b>Etiquetas:</b><span>${esc(r.etiquetas || "—")}</span></div>
+      <div class="card-row"><b>Unidades:</b><span>${esc(r.etiquetas || "—")}</span></div>
       <div class="card-row"><b>TR:</b><span>${esc(r.TR || "—")}</span></div>
 
       <div class="card-row">
@@ -965,6 +965,7 @@ function ver(r){
       ${item(colorEstadoTimeline(r.status),"Estado",r.status,"fa-exclamation")}
       ${item("ok","Cliente",r.cliente,"fa-user")}
       ${item("info","Documento",`${r.tipoDocumento} - ${r.numeroDocumento}`,"fa-file")}
+      ${item("info","Unidades",r.etiquetas,"fa-cubes")}
       ${item("purple","TR",r.TR,"fa-file-lines")}
       ${item("warn","Observaciones",r.observaciones,"fa-comment")}
     </div>
