@@ -9,7 +9,7 @@
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
 <style>
-*{box-sizing:border-box;}
+*{box-sizing:border-box}
 
 html,body{
   margin:0;
@@ -20,9 +20,7 @@ html,body{
   background:#f1f5f9;
 }
 
-body{
-  color:#0f172a;
-}
+body{color:#0f172a}
 
 img,canvas{
   max-width:100%;
@@ -110,9 +108,7 @@ input:focus,select:focus{
   transition:.2s ease;
 }
 
-.btn:hover{
-  filter:brightness(.97);
-}
+.btn:hover{filter:brightness(.97)}
 
 .btn-ver{
   background:linear-gradient(135deg,#14b8a6,#0d9488);
@@ -168,9 +164,7 @@ input:focus,select:focus{
   margin-bottom:10px;
 }
 
-.kpi-title i{
-  color:#14b8a6;
-}
+.kpi-title i{color:#14b8a6}
 
 .kpi-list{
   display:flex;
@@ -240,12 +234,12 @@ th{
   white-space:nowrap;
 }
 
-.entregado{background:#22c55e;}
-.enruta{background:#3b82f6;}
-.pendiente{background:#facc15;color:#000;}
-.recibido{background:#14b8a6;}
-.cancelado{background:#ef4444;}
-.terminado{background:#8b5cf6;}
+.entregado{background:#22c55e}
+.enruta{background:#3b82f6}
+.pendiente{background:#facc15;color:#000}
+.recibido{background:#14b8a6}
+.cancelado{background:#ef4444}
+.terminado{background:#8b5cf6}
 
 .img-preview{
   width:40px;
@@ -304,9 +298,7 @@ th{
   margin-bottom:15px;
 }
 
-.modal-actions button{
-  max-width:100%;
-}
+.modal-actions button{max-width:100%}
 
 /* TIMELINE */
 .timeline{
@@ -344,11 +336,11 @@ th{
   flex-shrink:0;
 }
 
-.ok{background:#22c55e;}
-.info{background:#3b82f6;}
-.warn{background:#facc15;color:#000;}
-.danger{background:#ef4444;}
-.purple{background:#8b5cf6;}
+.ok{background:#22c55e}
+.info{background:#3b82f6}
+.warn{background:#facc15;color:#000}
+.danger{background:#ef4444}
+.purple{background:#8b5cf6}
 
 .timeline-content{
   background:#f8fafc;
@@ -403,9 +395,7 @@ th{
   min-width:0;
 }
 
-.card-row b{
-  flex:0 0 40%;
-}
+.card-row b{flex:0 0 40%}
 
 .card-row span:last-child{
   flex:1;
@@ -414,36 +404,30 @@ th{
   overflow-wrap:anywhere;
 }
 
-.card-actions{
-  margin-top:10px;
-}
+.card-actions{margin-top:10px}
 
-.card-actions .btn-ver{
-  width:100%;
-}
+.card-actions .btn-ver{width:100%}
 
 /* Desktop grande */
 @media(min-width:1600px){
-  .wrap{max-width:1800px;}
+  .wrap{max-width:1800px}
 }
 
 @media(min-width:2000px){
-  .wrap{max-width:95%;}
+  .wrap{max-width:95%}
 }
 
 /* Tablet */
 @media(max-width:992px){
-  .wrap{padding:12px;}
-  .toolbar{gap:8px;}
-  .toolbar > *{max-width:100%;}
-  .modal-content{max-width:95vw;}
+  .wrap{padding:12px}
+  .toolbar{gap:8px}
+  .toolbar > *{max-width:100%}
+  .modal-content{max-width:95vw}
 }
 
 /* Móvil */
 @media(max-width:768px){
-  .wrap{
-    padding:10px;
-  }
+  .wrap{padding:10px}
 
   .toolbar{
     flex-direction:column;
@@ -470,17 +454,9 @@ th{
     height:46px;
   }
 
-  .table-wrap{
-    display:none;
-  }
-
-  .cards-container{
-    display:flex;
-  }
-
-  .kpi-grid{
-    grid-template-columns:1fr;
-  }
+  .table-wrap{display:none}
+  .cards-container{display:flex}
+  .kpi-grid{grid-template-columns:1fr}
 
   .modal{
     padding:8px;
@@ -495,33 +471,17 @@ th{
     padding:14px;
   }
 
-  .modal-header{
-    align-items:flex-start;
-  }
+  .modal-header{align-items:flex-start}
+  .modal-header h3{font-size:18px}
 
-  .modal-header h3{
-    font-size:18px;
-  }
+  .modal-actions{flex-direction:column}
+  .modal-actions button{width:100%}
 
-  .modal-actions{
-    flex-direction:column;
-  }
+  .timeline{padding-left:34px}
 
-  .modal-actions button{
-    width:100%;
-  }
+  .timeline::before{left:12px}
 
-  .timeline{
-    padding-left:34px;
-  }
-
-  .timeline::before{
-    left:12px;
-  }
-
-  .timeline-item{
-    gap:10px;
-  }
+  .timeline-item{gap:10px}
 
   .timeline-icon{
     min-width:26px;
@@ -555,9 +515,7 @@ th{
 }
 
 @media(max-width:420px){
-  .wrap{
-    padding:8px;
-  }
+  .wrap{padding:8px}
 
   .kpi-card,
   .card,
@@ -607,7 +565,7 @@ th{
       <input type="date" id="fechaHasta">
     </div>
 
-    <button class="btn" onclick="toggleKPI()">Kpi</button>
+    <button class="btn" id="btnKpi" onclick="toggleKPI()">Ocultar KPI</button>
   </div>
 
   <div id="kpiWrapper" class="kpi-grid">
@@ -676,6 +634,7 @@ const fechaDesde = document.getElementById("fechaDesde");
 const fechaHasta = document.getElementById("fechaHasta");
 const cardsContainer = document.getElementById("cardsContainer");
 const kpiWrapper = document.getElementById("kpiWrapper");
+const btnKpi = document.getElementById("btnKpi");
 const topClientes = document.getElementById("topClientes");
 const frecuenciaClientes = document.getElementById("frecuenciaClientes");
 const antiguedadClientes = document.getElementById("antiguedadClientes");
@@ -935,10 +894,10 @@ function grafico(d){
       }]
     },
     options: {
-      responsive: true,
-      maintainAspectRatio: true,
-      plugins: {
-        legend: { position: "bottom" }
+      responsive:true,
+      maintainAspectRatio:true,
+      plugins:{
+        legend:{ position:"bottom" }
       }
     }
   });
@@ -988,7 +947,15 @@ function cerrarModal(){
 }
 
 function toggleKPI(){
-  kpiWrapper.style.display = kpiWrapper.style.display === "none" ? "grid" : "none";
+  const oculto = kpiWrapper.style.display === "none";
+
+  if(oculto){
+    kpiWrapper.style.display = "grid";
+    btnKpi.textContent = "Ocultar KPI";
+  }else{
+    kpiWrapper.style.display = "none";
+    btnKpi.textContent = "Mostrar KPI";
+  }
 }
 
 modal.onclick = e => {
