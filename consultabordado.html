@@ -26,6 +26,12 @@ img,canvas{
   display:block;
 }
 
+body{
+  margin:0;
+  font-family:Arial;
+  background:#f1f5f9;
+}
+
 .wrap{
   width:100%;
   max-width:1600px;
@@ -47,6 +53,7 @@ img,canvas{
   align-items:center;
   gap:6px;
   flex-wrap:wrap;
+  font-size:14px;
 }
 
 input,select{
@@ -58,7 +65,9 @@ input,select{
 }
 
 #buscador{
-  flex:1 1 220px;
+  flex:0 1 260px;
+  width:260px;
+  max-width:100%;
 }
 
 .btn{
@@ -369,34 +378,24 @@ th{
   width:100%;
 }
 
-/* desktop ancho */
+/* Desktop grande */
 @media(min-width:1600px){
   .wrap{max-width:1800px;}
 }
+
 @media(min-width:2000px){
   .wrap{max-width:95%;}
 }
 
-/* tablet */
+/* Tablet */
 @media(max-width:992px){
-  .wrap{
-    padding:12px;
-  }
-
-  .toolbar{
-    gap:8px;
-  }
-
-  .toolbar > *{
-    max-width:100%;
-  }
-
-  .modal-content{
-    max-width:95vw;
-  }
+  .wrap{padding:12px;}
+  .toolbar{gap:8px;}
+  .toolbar > *{max-width:100%;}
+  .modal-content{max-width:95vw;}
 }
 
-/* móvil */
+/* Móvil */
 @media(max-width:768px){
   .wrap{
     padding:10px;
@@ -420,6 +419,10 @@ th{
   .toolbar .btn,
   #buscador{
     width:100%;
+  }
+
+  #buscador{
+    flex:1 1 auto;
   }
 
   .table-wrap{
@@ -506,7 +509,6 @@ th{
   }
 }
 
-/* móvil muy pequeño */
 @media(max-width:420px){
   .wrap{
     padding:8px;
