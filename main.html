@@ -20,10 +20,10 @@
   --danger:#dc2626;
   --border:#e2e8f0;
   --radius:14px;
-  --safe-top: env(safe-area-inset-top, 0px);
-  --safe-right: env(safe-area-inset-right, 0px);
-  --safe-bottom: env(safe-area-inset-bottom, 0px);
-  --safe-left: env(safe-area-inset-left, 0px);
+  --safe-top:env(safe-area-inset-top,0px);
+  --safe-right:env(safe-area-inset-right,0px);
+  --safe-bottom:env(safe-area-inset-bottom,0px);
+  --safe-left:env(safe-area-inset-left,0px);
 }
 
 *{
@@ -86,19 +86,42 @@ header{
 .header-left{
   display:flex;
   align-items:center;
-  gap:10px;
+  justify-content:flex-start;
+  gap:12px;
+  min-height:42px;
   min-width:0;
 }
 
 #btnMenu{
   width:42px;
   height:42px;
+  min-width:42px;
+  min-height:42px;
+  max-width:42px;
+  max-height:42px;
   border:none;
   border-radius:12px;
   cursor:pointer;
-  font-size:20px;
-  color:#fff;
   background:linear-gradient(135deg,#2dd4bf,#0d9488);
+  color:#fff;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  padding:0;
+  margin:0;
+  flex:0 0 42px;
+  box-shadow:0 8px 18px rgba(13,148,136,.22);
+}
+
+#btnMenu span{
+  width:100%;
+  height:100%;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-size:22px;
+  line-height:1;
+  transform:translateY(-1px);
 }
 
 #logoEmpresa{
@@ -106,11 +129,14 @@ header{
   max-width:120px;
   object-fit:contain;
   display:none;
+  margin:0;
 }
 
 #tituloSistema{
   font-size:18px;
   font-weight:800;
+  line-height:1.1;
+  margin:0;
   white-space:nowrap;
   overflow:hidden;
   text-overflow:ellipsis;
@@ -118,11 +144,11 @@ header{
 
 .header-info{
   display:flex;
-  flex-wrap:wrap;
   align-items:center;
   gap:12px;
-  color:var(--muted);
+  flex-wrap:wrap;
   font-size:12px;
+  color:var(--muted);
 }
 
 .right{
@@ -134,20 +160,29 @@ header{
 button{
   border:none;
   border-radius:12px;
-  padding:10px 14px;
+  padding:10px 16px;
   font-weight:700;
   cursor:pointer;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  gap:8px;
+  transition:.2s ease;
+}
+
+button:active{
+  transform:scale(.98);
 }
 
 .btn-primary{
-  color:#fff;
   background:linear-gradient(135deg,#60a5fa,#2563eb);
+  color:#fff;
   box-shadow:0 6px 18px rgba(37,99,235,.22);
 }
 
 .btn-danger{
-  color:#fff;
   background:linear-gradient(135deg,#f87171,#dc2626);
+  color:#fff;
   box-shadow:0 6px 18px rgba(220,38,38,.20);
 }
 
@@ -179,7 +214,7 @@ button{
   z-index:1;
 }
 
-/* CARD INFO */
+/* CARD RESUMEN */
 #dashboardMapa{
   position:absolute;
   left:14px;
@@ -252,6 +287,7 @@ button{
   display:block;
   font-size:14px;
   margin-bottom:4px;
+  word-break:break-word;
 }
 
 .map-stat span{
@@ -317,13 +353,17 @@ button{
   border-color:#cfe0ff;
 }
 
-/* VIEWER */
+/* VISOR */
 #viewer{
   position:absolute;
   inset:0;
   background:#fff;
   z-index:2000;
   display:none;
+}
+
+#viewer.abierto{
+  display:block;
 }
 
 #frame{
@@ -376,10 +416,10 @@ button{
 @media (max-width:768px){
   header{
     padding:
-      calc(6px + var(--safe-top))
-      calc(8px + var(--safe-right))
-      6px
-      calc(8px + var(--safe-left));
+      calc(8px + var(--safe-top))
+      calc(10px + var(--safe-right))
+      8px
+      calc(10px + var(--safe-left));
     gap:8px;
   }
 
@@ -389,20 +429,34 @@ button{
     width:100%;
   }
 
+  .header-left{
+    min-height:38px;
+    gap:10px;
+  }
+
   #btnMenu{
-    width:34px;
-    height:34px;
-    font-size:16px;
+    width:38px;
+    height:38px;
+    min-width:38px;
+    min-height:38px;
+    max-width:38px;
+    max-height:38px;
     border-radius:10px;
+    flex:0 0 38px;
+  }
+
+  #btnMenu span{
+    font-size:20px;
   }
 
   #logoEmpresa{
-    height:28px !important;
-    max-width:90px !important;
+    height:30px !important;
+    max-width:95px !important;
   }
 
   #tituloSistema{
-    font-size:14px;
+    font-size:16px;
+    line-height:1.05;
   }
 
   .header-info{
@@ -412,15 +466,15 @@ button{
 
   .right{
     display:grid;
-    grid-template-columns:1fr 1fr;
+    grid-template-columns:1fr;
     gap:8px;
   }
 
   .right button{
     width:100%;
-    min-height:34px;
-    padding:7px 8px;
-    font-size:11px;
+    min-height:38px;
+    padding:8px 10px;
+    font-size:12px;
     border-radius:10px;
   }
 
@@ -482,16 +536,6 @@ button{
     font-size:12px;
   }
 }
-
-@media (max-width:480px){
-  .right{
-    grid-template-columns:1fr;
-  }
-
-  .map-grid{
-    grid-template-columns:1fr 1fr;
-  }
-}
 </style>
 </head>
 <body>
@@ -509,8 +553,12 @@ button{
 
   <header id="mainHeader">
     <div class="header-left">
-      <button id="btnMenu" type="button" onclick="toggleMenu()">☰</button>
+      <button id="btnMenu" type="button" onclick="toggleMenu()" aria-label="Abrir menú">
+        <span>☰</span>
+      </button>
+
       <img id="logoEmpresa" alt="Logo Empresa">
+
       <h1 id="tituloSistema">Panel Logístico</h1>
     </div>
 
@@ -570,12 +618,10 @@ function toggleMapCard(){
   const card = document.getElementById("dashboardMapa");
   const btn = card?.querySelector(".map-toggle");
   if(!card || !btn) return;
-  const colapsado = card.classList.toggle("collapsed");
-  btn.textContent = colapsado ? "＋" : "－";
+  const collapsed = card.classList.toggle("collapsed");
+  btn.textContent = collapsed ? "＋" : "－";
 }
-</script>
 
-<script>
 /***************************************************
 CONFIGURACIÓN GENERAL
 ***************************************************/
@@ -707,7 +753,10 @@ async function cargarMenu(user){
       const item = document.createElement("div");
       item.className = "menu-item";
       item.innerHTML = `${icono || "📦"} ${nombre}`;
-      item.onclick = ()=>{ abrirModulo(archivo,nombre); toggleMenu(); };
+      item.onclick = ()=>{
+        abrirModulo(archivo,nombre);
+        toggleMenu();
+      };
       cont.appendChild(item);
     });
   }catch(e){ console.error(e); }
@@ -752,9 +801,17 @@ function iniciarMapa(){
 
     if(!MAPA){
       MAPA = L.map("mapa").setView([lat,lng],16);
-      L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png").addTo(MAPA);
+      L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",{
+        attribution:"&copy; OpenStreetMap"
+      }).addTo(MAPA);
+
       MARCADOR = L.marker([lat,lng],{icon:ICONO_ESTATICO}).addTo(MAPA);
-      CIRCULO = L.circle([lat,lng],{radius:80,color:"#2563eb",fillOpacity:.15}).addTo(MAPA);
+      CIRCULO = L.circle([lat,lng],{
+        radius:80,
+        color:"#2563eb",
+        fillColor:"#60a5fa",
+        fillOpacity:.15
+      }).addTo(MAPA);
     }
 
     MARCADOR.setLatLng([lat,lng]);
@@ -762,9 +819,10 @@ function iniciarMapa(){
 
     const conn = navigator.connection || {};
     let r = 80;
-    if(conn.effectiveType === "4g") r=150;
-    if(conn.effectiveType === "3g") r=100;
-    if(conn.effectiveType === "2g") r=60;
+    if(conn.effectiveType === "4g") r = 150;
+    if(conn.effectiveType === "3g") r = 100;
+    if(conn.effectiveType === "2g") r = 60;
+
     CIRCULO.setLatLng([lat,lng]);
     CIRCULO.setRadius(r);
 
@@ -775,7 +833,11 @@ function iniciarMapa(){
       actualizarDireccion(lat,lng);
     }
 
-  }, ()=>{}, { enableHighAccuracy:true, maximumAge:2000, timeout:10000 });
+  }, ()=>{}, {
+    enableHighAccuracy:true,
+    maximumAge:2000,
+    timeout:10000
+  });
 }
 
 /***************************************************
@@ -795,7 +857,7 @@ async function actualizarDireccion(lat,lng){
 RED + VELOCIDAD
 ***************************************************/
 function actualizarRedVelocidad(speed){
-  const kmh = ((speed || 0)*3.6).toFixed(1);
+  const kmh = ((speed || 0) * 3.6).toFixed(1);
   const conn = navigator.connection || {};
   document.getElementById("netTexto").textContent =
     `${navigator.onLine ? "Online" : "Offline"} · ${conn.effectiveType || "—"}`;
@@ -825,7 +887,9 @@ function iniciarReloj(){
 /***************************************************
 BOTONES
 ***************************************************/
-function recargarPanel(){ location.reload(); }
+function recargarPanel(){
+  location.reload();
+}
 
 function cerrarSesion(){
   if(WATCH_ID) navigator.geolocation.clearWatch(WATCH_ID);
