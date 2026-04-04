@@ -737,8 +737,8 @@ font-size:15px;
 
     <div class="producto-add">
     
-    <input id="pProducto" placeholder="Producto">
-    <input id="pDetalle" placeholder="Detalle">
+    <input id="pProducto" placeholder="Código / producto">
+    <input id="pDetalle" placeholder="Detalle / descripción">
     <input id="pCantidad" type="number" placeholder="Cantidad">
     
     <button type="button" onclick="addProducto()" id="btnAddProducto">
@@ -776,7 +776,7 @@ font-size:15px;
             <span class="btn-loader"></span>
             </button>
             
-            <button type="button" onclick="document.getElementById('trasladoModal').style.display='none'">
+            <button type="button" onclick="closeTraslado()">
             Cerrar
             </button>
    
@@ -808,7 +808,7 @@ panel.classList.toggle("hidden");
 
 
 <script src="envio2.js"></script>
-<script src="productosbd.js"></script>
+<script src="productostraslado.js"></script>
 
 </body>
 </html>

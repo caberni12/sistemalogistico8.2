@@ -3,6 +3,7 @@
 
 // URL base del endpoint de Apps Script. Se actualiza cuando se publica una nueva versión.
 const API="https://script.google.com/macros/s/AKfycbyd0yEaSOZUsTHva3ltzBVY-zWqemZYLubnxVGcWP7TccJzHf0-NLJ2KzPj2gP3dYzT/exec";
+window.API_PEDIDOS = API;
 //https://script.google.com/macros/s/AKfycbzj3sRVqYDgGVak1PNHrycYQ6FI5Mk5UyADOL0uI4CDAprlT7LDv3ZVWrfMCkwPMCgW/exec
 
 let RAW=[];
@@ -283,7 +284,7 @@ function leerCacheCatalogoUI(){
 }
 
 function setEstadoProducto(msg, color){
-  const box = document.getElementById("pDetalleEstado");
+  const box = document.getElementById("pDetalleEstado") || document.getElementById("msgCodigoProducto");
   if(!box) return;
   box.textContent = msg || "";
   if(color) box.style.color = color;
@@ -962,8 +963,13 @@ async function openTraslado(row){
   }
 
   modal.style.display = "flex";
+
+  if(typeof initConsultaProductoCodigo === "function"){
+    initConsultaProductoCodigo();
+  }
+
   bindAutocompleteProducto();
-  cargarCatalogoProductosUI(false);
+  await cargarCatalogoProductosUI(false);
 
   const tPedido = document.getElementById("tPedido");
   const tCliente = document.getElementById("tCliente");
@@ -1192,14 +1198,18 @@ function closeTraslado() {
   const pProducto = document.getElementById("pProducto");
   const pDetalle = document.getElementById("pDetalle");
   const pCantidad = document.getElementById("pCantidad");
+  const pCodigo = document.getElementById("pCodigo");
   const tObs = document.getElementById("tObs");
   const tTotal = document.getElementById("tTotal");
+  const msgCodigoProducto = document.getElementById("msgCodigoProducto");
   if(tabla) tabla.innerHTML = "";
   if(pProducto) pProducto.value = "";
   if(pDetalle) pDetalle.value = "";
   if(pCantidad) pCantidad.value = "1";
+  if(pCodigo) pCodigo.value = "";
   if(tObs) tObs.value = "";
   if(tTotal) tTotal.value = "";
+  if(msgCodigoProducto) msgCodigoProducto.textContent = "";
   setEstadoProducto("", "#6b7280");
   localStorage.removeItem("trasladoModalRow");
 }
