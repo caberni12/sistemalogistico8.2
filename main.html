@@ -24,7 +24,6 @@
   --danger:#ef4444;
   --border:#e2e8f0;
   --radius:14px;
-
   --safe-top: env(safe-area-inset-top, 0px);
   --safe-right: env(safe-area-inset-right, 0px);
   --safe-bottom: env(safe-area-inset-bottom, 0px);
@@ -69,7 +68,6 @@ body{
   flex-direction:column;
 }
 
-/* HEADER */
 header{
   position:relative;
   z-index:30;
@@ -172,7 +170,6 @@ button:active{
   color:var(--text);
 }
 
-/* MAIN */
 .main{
   position:relative;
   flex:1 1 auto;
@@ -197,7 +194,6 @@ button:active{
   z-index:1;
 }
 
-/* TARJETA MAPA */
 #dashboardMapa{
   position:absolute;
   left:16px;
@@ -212,7 +208,7 @@ button:active{
   padding:14px 16px;
   transition:all .3s ease;
   overflow:hidden;
-  max-width:520px;
+  max-width:560px;
 }
 
 .map-card-header{
@@ -246,7 +242,7 @@ button:active{
 
 #mapCardContent{
   transition:opacity .25s ease,max-height .3s ease;
-  max-height:300px;
+  max-height:360px;
   opacity:1;
   overflow:hidden;
 }
@@ -284,7 +280,40 @@ button:active{
   color:var(--muted);
 }
 
-/* MENU */
+.fs-control{
+  margin-top:10px;
+  background:#f8fafc;
+  border:1px solid var(--border);
+  border-radius:12px;
+  padding:10px 12px;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
+}
+
+.fs-control label{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  font-size:12px;
+  font-weight:700;
+  color:var(--text);
+}
+
+.fs-control input[type="checkbox"]{
+  width:18px;
+  height:18px;
+  accent-color:#2563eb;
+}
+
+.fs-help{
+  font-size:11px;
+  color:var(--muted);
+  line-height:1.3;
+  margin-top:6px;
+}
+
 .menu-lateral{
   position:fixed;
   top:0;
@@ -431,7 +460,6 @@ button:active{
   display:none;
 }
 
-/* punto personalizado */
 .mi-punto-ubicacion{
   width:18px;
   height:18px;
@@ -505,10 +533,6 @@ button:active{
     border-radius:14px;
   }
 
-  .map-card-header{
-    margin-bottom:6px;
-  }
-
   .map-card-title{
     font-size:12px;
   }
@@ -522,7 +546,7 @@ button:active{
   }
 
   #mapCardContent{
-    max-height:220px;
+    max-height:420px;
   }
 
   .map-stats{
@@ -544,6 +568,19 @@ button:active{
   .map-stat span{
     font-size:10px;
     line-height:1.2;
+  }
+
+  .fs-control{
+    padding:8px 10px;
+    border-radius:10px;
+  }
+
+  .fs-control label{
+    font-size:11px;
+  }
+
+  .fs-help{
+    font-size:10px;
   }
 
   .menu-lateral{
@@ -665,9 +702,19 @@ button:active{
             </div>
 
             <div class="map-stat">
-              <strong>200 m</strong>
-              <span>Radio visible</span>
+              <strong id="statFullscreen">Activo</strong>
+              <span>Pantalla completa</span>
             </div>
+          </div>
+
+          <div class="fs-control">
+            <label>
+              <input type="checkbox" id="chkAutoFullscreen">
+              Deshabilitar pantalla completa automática
+            </label>
+          </div>
+          <div class="fs-help">
+            Por defecto el sistema intenta entrar en pantalla completa. Si el navegador lo bloquea, se volverá a intentar en el primer toque o clic.
           </div>
         </div>
       </div>
@@ -689,6 +736,9 @@ let vistaActual = 'main.html';
 let marcadorUbicacion = null;
 let circuloUbicacion = null;
 let watchId = null;
+let fullscreenIntentado = false;
+
+const FULLSCREEN_DISABLED_KEY = 'fullscreenDisabled';
 
 function toggleMapCard(){
   const card = document.getElementById('dashboardMapa');
@@ -814,9 +864,7 @@ function actualizarUbicacionEnMapa(lat, lng, precision){
     circuloUbicacion.setRadius(200);
   }
 
-  mapa.setView(coords, 17, {
-    animate: true
-  });
+  mapa.setView(coords, 17, { animate:true });
 }
 
 function iniciarGeolocalizacion(){
@@ -829,23 +877,158 @@ function iniciarGeolocalizacion(){
 
   watchId = navigator.geolocation.watchPosition(
     (pos) => {
-      const lat = pos.coords.latitude;
-      const lng = pos.coords.longitude;
-      const precision = pos.coords.accuracy || 0;
-
-      actualizarUbicacionEnMapa(lat, lng, precision);
+      actualizarUbicacionEnMapa(
+        pos.coords.latitude,
+        pos.coords.longitude,
+        pos.coords.accuracy || 0
+      );
     },
-    (error) => {
+    () => {
       if(conexionInfo) conexionInfo.textContent = 'No se pudo obtener ubicación';
-      console.error('Error geolocalización:', error);
     },
     {
-      enableHighAccuracy: true,
-      maximumAge: 5000,
-      timeout: 15000
+      enableHighAccuracy:true,
+      maximumAge:5000,
+      timeout:15000
     }
   );
 }
+
+function isFullscreenDisabled(){
+  return localStorage.getItem(FULLSCREEN_DISABLED_KEY) === '1';
+}
+
+function setFullscreenDisabled(value){
+  localStorage.setItem(FULLSCREEN_DISABLED_KEY, value ? '1' : '0');
+  actualizarEstadoFullscreen();
+}
+
+function getFullscreenElement(){
+  return document.fullscreenElement ||
+         document.webkitFullscreenElement ||
+         document.msFullscreenElement ||
+         null;
+}
+
+async function requestAppFullscreen(){
+  if(isFullscreenDisabled()) return false;
+
+  const el = document.documentElement;
+
+  try{
+    if(getFullscreenElement()) return true;
+
+    if(el.requestFullscreen){
+      await el.requestFullscreen();
+      return true;
+    }
+    if(el.webkitRequestFullscreen){
+      await el.webkitRequestFullscreen();
+      return true;
+    }
+    if(el.msRequestFullscreen){
+      await el.msRequestFullscreen();
+      return true;
+    }
+  }catch(e){
+    return false;
+  }
+
+  return false;
+}
+
+async function exitAppFullscreen(){
+  try{
+    if(document.exitFullscreen){
+      await document.exitFullscreen();
+      return;
+    }
+    if(document.webkitExitFullscreen){
+      await document.webkitExitFullscreen();
+      return;
+    }
+    if(document.msExitFullscreen){
+      await document.msExitFullscreen();
+      return;
+    }
+  }catch(e){}
+}
+
+function actualizarEstadoFullscreen(){
+  const chk = document.getElementById('chkAutoFullscreen');
+  const stat = document.getElementById('statFullscreen');
+
+  if(chk){
+    chk.checked = isFullscreenDisabled();
+  }
+
+  if(stat){
+    if(isFullscreenDisabled()){
+      stat.textContent = 'Desactivado';
+    }else if(getFullscreenElement()){
+      stat.textContent = 'Activo';
+    }else{
+      stat.textContent = 'En espera';
+    }
+  }
+}
+
+async function intentarFullscreenAutomatico(){
+  if(isFullscreenDisabled()) return;
+  if(fullscreenIntentado) return;
+
+  fullscreenIntentado = true;
+  const ok = await requestAppFullscreen();
+
+  if(!ok){
+    prepararPrimerGestoFullscreen();
+  }else{
+    actualizarEstadoFullscreen();
+  }
+}
+
+function prepararPrimerGestoFullscreen(){
+  if(isFullscreenDisabled()) return;
+
+  const activar = async () => {
+    document.removeEventListener('click', activar, true);
+    document.removeEventListener('touchstart', activar, true);
+    document.removeEventListener('pointerdown', activar, true);
+
+    if(!isFullscreenDisabled() && !getFullscreenElement()){
+      await requestAppFullscreen();
+      actualizarEstadoFullscreen();
+    }
+  };
+
+  document.addEventListener('click', activar, true);
+  document.addEventListener('touchstart', activar, true);
+  document.addEventListener('pointerdown', activar, true);
+}
+
+function configurarCheckboxFullscreen(){
+  const chk = document.getElementById('chkAutoFullscreen');
+  if(!chk) return;
+
+  chk.checked = isFullscreenDisabled();
+
+  chk.addEventListener('change', async function(){
+    const deshabilitado = this.checked;
+    setFullscreenDisabled(deshabilitado);
+
+    if(deshabilitado){
+      await exitAppFullscreen();
+      actualizarEstadoFullscreen();
+    }else{
+      fullscreenIntentado = false;
+      await intentarFullscreenAutomatico();
+    }
+  });
+}
+
+document.addEventListener('fullscreenchange', actualizarEstadoFullscreen);
+document.addEventListener('webkitfullscreenchange', actualizarEstadoFullscreen);
+document.addEventListener('msfullscreenchange', actualizarEstadoFullscreen);
 
 document.addEventListener('DOMContentLoaded', () => {
   const usuario = localStorage.getItem('nombreUsuario') || 'Usuario';
@@ -854,19 +1037,23 @@ document.addEventListener('DOMContentLoaded', () => {
 
   if(usuarioBox) usuarioBox.textContent = 'Usuario: ' + usuario;
 
+  configurarCheckboxFullscreen();
+  actualizarEstadoFullscreen();
+
   if(document.getElementById('mapa')){
     mapa = L.map('mapa', {
-      zoomControl: true
+      zoomControl:true
     }).setView([-33.4489, -70.6693], 13);
 
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      maxZoom: 19,
-      attribution: '&copy; OpenStreetMap'
+      maxZoom:19,
+      attribution:'&copy; OpenStreetMap'
     }).addTo(mapa);
 
     setTimeout(() => {
       mapa.invalidateSize();
       iniciarGeolocalizacion();
+      intentarFullscreenAutomatico();
     }, 300);
   }
 
