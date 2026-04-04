@@ -6,7 +6,10 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<link rel="stylesheet" href="https://unpkg.com/leaflet-routing-machine@3.2.12/dist/leaflet-routing-machine.css">
+
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://unpkg.com/leaflet-routing-machine@3.2.12/dist/leaflet-routing-machine.js"></script>
 
 <style>
 :root{
@@ -50,6 +53,10 @@ body{
 .leaflet-div-icon{
   background:none !important;
   border:none !important;
+}
+
+.leaflet-routing-container{
+  display:none !important;
 }
 
 .app{
@@ -214,15 +221,15 @@ button:active{
   z-index:1;
 }
 
-/* CARD RESUMEN */
+/* PANEL */
 #dashboardMapa{
   position:absolute;
   left:14px;
   right:14px;
   bottom:calc(14px + var(--safe-bottom));
   z-index:500;
-  max-width:560px;
-  background:rgba(255,255,255,.96);
+  max-width:620px;
+  background:rgba(255,255,255,.97);
   border:1px solid var(--border);
   border-radius:18px;
   box-shadow:0 18px 35px rgba(0,0,0,.18);
@@ -255,8 +262,8 @@ button:active{
 
 #mapCardContent{
   padding:0 14px 14px;
-  transition:opacity .25s ease, max-height .3s ease;
-  max-height:500px;
+  transition:opacity .25s ease,max-height .3s ease;
+  max-height:900px;
   opacity:1;
   overflow:hidden;
 }
@@ -267,6 +274,46 @@ button:active{
   pointer-events:none;
   padding-top:0;
   padding-bottom:0;
+}
+
+/* BUSCADOR */
+.route-search{
+  display:grid;
+  grid-template-columns:1fr auto auto;
+  gap:8px;
+  margin-bottom:10px;
+}
+
+.route-search input,
+.route-search select{
+  width:100%;
+  height:42px;
+  border:1px solid var(--border);
+  border-radius:12px;
+  padding:0 12px;
+  background:#fff;
+  color:var(--text);
+  outline:none;
+}
+
+.route-search input:focus,
+.route-search select:focus{
+  border-color:#93c5fd;
+  box-shadow:0 0 0 3px rgba(147,197,253,.25);
+}
+
+.route-results{
+  margin-bottom:10px;
+}
+
+.route-results select{
+  width:100%;
+  height:42px;
+  border:1px solid var(--border);
+  border-radius:12px;
+  padding:0 12px;
+  background:#fff;
+  color:var(--text);
 }
 
 .map-grid{
@@ -493,6 +540,10 @@ button:active{
     padding:0 10px 10px;
   }
 
+  .route-search{
+    grid-template-columns:1fr;
+  }
+
   .map-grid{
     gap:7px;
   }
@@ -579,15 +630,27 @@ button:active{
 
       <div id="dashboardMapa">
         <div class="map-card-header">
-          <div class="map-card-title">Resumen del mapa</div>
+          <div class="map-card-title">Ruta y ubicación</div>
           <button type="button" class="map-toggle" onclick="toggleMapCard()">－</button>
         </div>
 
         <div id="mapCardContent">
+          <div class="route-search">
+            <input id="dirSearch" type="text" placeholder="Buscar dirección o destino">
+            <button type="button" class="btn-primary" onclick="buscarDireccion()">Buscar</button>
+            <button type="button" class="btn-danger" onclick="limpiarRuta()">Limpiar</button>
+          </div>
+
+          <div class="route-results">
+            <select id="routeResults" onchange="seleccionarResultado(this.value)">
+              <option value="">Selecciona un resultado</option>
+            </select>
+          </div>
+
           <div class="map-grid">
             <div class="map-stat">
               <strong id="dirTexto">—</strong>
-              <span>Dirección actual</span>
+              <span>Ubicación actual</span>
             </div>
             <div class="map-stat">
               <strong id="netTexto">—</strong>
@@ -598,8 +661,8 @@ button:active{
               <span>Velocidad</span>
             </div>
             <div class="map-stat">
-              <strong>GPS activo</strong>
-              <span>Mapa en tiempo real</span>
+              <strong id="routeInfoTexto">Sin ruta activa</strong>
+              <span>Destino / navegación</span>
             </div>
           </div>
         </div>
@@ -633,6 +696,15 @@ let LAST_GEOCODE = 0;
 let MAPA = null;
 let MARCADOR = null;
 let CIRCULO = null;
+
+let ROUTE_CONTROL = null;
+let DESTINO_MARKER = null;
+let RESULTADOS_BUSQUEDA = [];
+let LAT_ACTUAL = null;
+let LNG_ACTUAL = null;
+let REGION_ACTUAL = "";
+let PAIS_ACTUAL = "";
+let DESTINO_ACTUAL = null;
 
 /***************************************************
 🔥 RESTAURACIÓN INMEDIATA DEL MÓDULO
@@ -709,6 +781,16 @@ document.addEventListener("DOMContentLoaded", ()=>{
   setTimeout(iniciarReloj,0);
   iniciarSesionRapido();
   iniciarMapa();
+
+  const input = document.getElementById("dirSearch");
+  if(input){
+    input.addEventListener("keydown", e=>{
+      if(e.key === "Enter"){
+        e.preventDefault();
+        buscarDireccion();
+      }
+    });
+  }
 });
 
 async function iniciarSesionRapido(){
@@ -796,11 +878,14 @@ MAPA + GPS
 function iniciarMapa(){
   if(!navigator.geolocation || !window.L) return;
 
-  WATCH_ID = navigator.geolocation.watchPosition(pos=>{
+  WATCH_ID = navigator.geolocation.watchPosition(async pos=>{
     const {latitude:lat, longitude:lng, speed=0, heading=0} = pos.coords;
+    LAT_ACTUAL = lat;
+    LNG_ACTUAL = lng;
 
     if(!MAPA){
       MAPA = L.map("mapa").setView([lat,lng],16);
+
       L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",{
         attribution:"&copy; OpenStreetMap"
       }).addTo(MAPA);
@@ -830,7 +915,11 @@ function iniciarMapa(){
 
     if(Date.now() - LAST_GEOCODE > 15000){
       LAST_GEOCODE = Date.now();
-      actualizarDireccion(lat,lng);
+      await actualizarDireccion(lat,lng);
+    }
+
+    if(DESTINO_ACTUAL && ROUTE_CONTROL){
+      actualizarRutaOrigen(lat,lng);
     }
 
   }, ()=>{}, {
@@ -841,16 +930,196 @@ function iniciarMapa(){
 }
 
 /***************************************************
-DIRECCIÓN
+DIRECCIÓN ACTUAL + REGIÓN
 ***************************************************/
 async function actualizarDireccion(lat,lng){
   try{
-    const r = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`);
+    const url = `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lng}&addressdetails=1&accept-language=es`;
+    const r = await fetch(url);
     const d = await r.json();
+
     document.getElementById("dirTexto").textContent = d.display_name || "—";
+
+    REGION_ACTUAL =
+      d.address?.state ||
+      d.address?.region ||
+      d.address?.county ||
+      d.address?.state_district ||
+      "";
+
+    PAIS_ACTUAL = d.address?.country_code || "";
   }catch{
     document.getElementById("dirTexto").textContent = "—";
   }
+}
+
+/***************************************************
+BUSCAR DIRECCIÓN
+***************************************************/
+async function buscarDireccion(){
+  const input = document.getElementById("dirSearch");
+  const select = document.getElementById("routeResults");
+  const q = (input?.value || "").trim();
+
+  if(!q || !MAPA) return;
+
+  try{
+    select.innerHTML = `<option value="">Buscando...</option>`;
+
+    const bounds = MAPA.getBounds();
+    const viewbox = [
+      bounds.getWest(),
+      bounds.getNorth(),
+      bounds.getEast(),
+      bounds.getSouth()
+    ].join(",");
+
+    let params = new URLSearchParams({
+      q,
+      format:"jsonv2",
+      addressdetails:"1",
+      limit:"8",
+      "accept-language":"es",
+      viewbox
+    });
+
+    if(PAIS_ACTUAL){
+      params.set("countrycodes", PAIS_ACTUAL);
+    }
+
+    let r = await fetch(`https://nominatim.openstreetmap.org/search?${params.toString()}`);
+    let data = await r.json();
+
+    if((!data || !data.length) && REGION_ACTUAL){
+      const q2 = `${q}, ${REGION_ACTUAL}`;
+      const params2 = new URLSearchParams({
+        q:q2,
+        format:"jsonv2",
+        addressdetails:"1",
+        limit:"8",
+        "accept-language":"es"
+      });
+      if(PAIS_ACTUAL){
+        params2.set("countrycodes", PAIS_ACTUAL);
+      }
+      r = await fetch(`https://nominatim.openstreetmap.org/search?${params2.toString()}`);
+      data = await r.json();
+    }
+
+    RESULTADOS_BUSQUEDA = Array.isArray(data) ? data : [];
+    renderResultadosBusqueda();
+  }catch(e){
+    console.error(e);
+    select.innerHTML = `<option value="">No se pudo buscar</option>`;
+  }
+}
+
+function renderResultadosBusqueda(){
+  const select = document.getElementById("routeResults");
+  if(!select) return;
+
+  if(!RESULTADOS_BUSQUEDA.length){
+    select.innerHTML = `<option value="">Sin resultados</option>`;
+    return;
+  }
+
+  select.innerHTML = `<option value="">Selecciona un resultado</option>`;
+
+  RESULTADOS_BUSQUEDA.forEach((item, i)=>{
+    const op = document.createElement("option");
+    op.value = String(i);
+    op.textContent = item.display_name || `Resultado ${i+1}`;
+    select.appendChild(op);
+  });
+}
+
+function seleccionarResultado(index){
+  if(index === "") return;
+  const item = RESULTADOS_BUSQUEDA[Number(index)];
+  if(!item) return;
+
+  const lat = Number(item.lat);
+  const lng = Number(item.lon);
+  const label = item.display_name || "Destino";
+
+  trazarRuta(lat, lng, label);
+}
+
+/***************************************************
+RUTA TIPO WAZE
+***************************************************/
+function trazarRuta(lat, lng, label){
+  if(!MAPA || LAT_ACTUAL == null || LNG_ACTUAL == null) return;
+
+  DESTINO_ACTUAL = {lat, lng, label};
+
+  if(DESTINO_MARKER){
+    MAPA.removeLayer(DESTINO_MARKER);
+  }
+
+  DESTINO_MARKER = L.marker([lat,lng]).addTo(MAPA).bindPopup(label);
+
+  if(ROUTE_CONTROL){
+    MAPA.removeControl(ROUTE_CONTROL);
+    ROUTE_CONTROL = null;
+  }
+
+  ROUTE_CONTROL = L.Routing.control({
+    waypoints: [
+      L.latLng(LAT_ACTUAL, LNG_ACTUAL),
+      L.latLng(lat, lng)
+    ],
+    routeWhileDragging: false,
+    addWaypoints: false,
+    draggableWaypoints: false,
+    fitSelectedRoutes: true,
+    showAlternatives: false,
+    lineOptions: {
+      styles: [
+        {color:"#0ea5e9", opacity:0.95, weight:7}
+      ]
+    },
+    createMarker: function(){
+      return null;
+    }
+  }).addTo(MAPA);
+
+  document.getElementById("routeInfoTexto").textContent = label;
+}
+
+function actualizarRutaOrigen(lat, lng){
+  if(!ROUTE_CONTROL || !DESTINO_ACTUAL) return;
+  try{
+    ROUTE_CONTROL.setWaypoints([
+      L.latLng(lat, lng),
+      L.latLng(DESTINO_ACTUAL.lat, DESTINO_ACTUAL.lng)
+    ]);
+  }catch{}
+}
+
+function limpiarRuta(){
+  DESTINO_ACTUAL = null;
+  RESULTADOS_BUSQUEDA = [];
+
+  const select = document.getElementById("routeResults");
+  if(select){
+    select.innerHTML = `<option value="">Selecciona un resultado</option>`;
+  }
+
+  const input = document.getElementById("dirSearch");
+  if(input) input.value = "";
+
+  if(DESTINO_MARKER){
+    MAPA?.removeLayer(DESTINO_MARKER);
+    DESTINO_MARKER = null;
+  }
+
+  if(ROUTE_CONTROL){
+    MAPA?.removeControl(ROUTE_CONTROL);
+    ROUTE_CONTROL = null;
+  }
+
+  document.getElementById("routeInfoTexto").textContent = "Sin ruta activa";
 }
 
 /***************************************************
