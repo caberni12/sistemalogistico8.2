@@ -1,13 +1,14 @@
 /***************************************************
- CONSULTA RÁPIDA DE PRODUCTO POR CÓDIGO / SELECT
- - Mantiene API propia de productos
- - Precarga catálogo para respuesta inmediata
- - Completa producto + descripción
- - Si no encuentra en caché, consulta backend
+ CONSULTA DE PRODUCTO POR CÓDIGO
+ - Busca solo con ENTER o botón CONSULTAR
+ - Incluye botón LIMPIAR
+ - Usa select de resultados
+ - Precarga catálogo para búsqueda más rápida
 ***************************************************/
-const API_PRODUCTOS = (window.API_PEDIDOS || "https://script.google.com/macros/s/AKfycbxzSkxz-rVSMLBEGy7k0FPd1EJpfeufZXEzxzf3JXOAQ7ONJ8O3tpxkTXYzdwDbjb7s/exec");
-const PRODUCT_CACHE_KEY = "catalogo_producto_rapido_v2";
-const PRODUCT_CACHE_TTL_MS = 6 * 60 * 60 * 1000;
+const API_PRODUCTOS = "https://script.google.com/macros/s/AKfycbz8IUHeDvRiDUvlq_JIrTY1Rb0ZeMVhRt7al_V3NacKfWAMmK-J7Vngjr-hZ19o0woOaQ/exec";
+
+const PRODUCT_CACHE_KEY = "catalogo_productos_modal_v1";
+const PRODUCT_CACHE_TTL = 1000 * 60 * 30; // 30 min
 
 let CONSULTANDO_PRODUCTO = false;
 let ULTIMO_CODIGO = "";
@@ -18,18 +19,11 @@ let PRODUCTOS_CACHE_PROMISE = null;
 function el(id){ return document.getElementById(id); }
 function txt(v){ return String(v ?? "").trim(); }
 function limpiarCodigo(v){ return String(v ?? "").trim().replace(/\s+/g, ""); }
-function normalizarProducto(v){
-  return String(v ?? "")
-    .trim()
-    .toLowerCase()
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "");
-}
 
 function setMensajeCodigo(msg, color = "#64748b"){
   const box = el("msgCodigoProducto");
   if(box){
-    box.textContent = msg;
+    box.textContent = msg || "";
     box.style.color = color;
   }
 }
@@ -38,213 +32,45 @@ function setLoadingBoton(btn, estado){
   if(!btn) return;
   if(estado){
     btn.disabled = true;
-    btn.dataset.txtOriginal = btn.textContent;
-    btn.textContent = "Buscando...";
-    btn.classList.add("btn-loading");
+    btn.classList.add("loading");
   }else{
     btn.disabled = false;
-    btn.textContent = btn.dataset.txtOriginal || "🔎 Consultar";
-    btn.classList.remove("btn-loading");
+    btn.classList.remove("loading");
   }
 }
 
-function limpiarCamposProductoCodigo(){
+function limpiarCamposProductoSoloConsulta(){
   const pProducto = el("pProducto");
   const pDescripcion = el("pDescripcion");
   if(pProducto) pProducto.value = "";
   if(pDescripcion) pDescripcion.value = "";
 }
 
-function guardarCatalogoLocal(items){
-  try{
-    localStorage.setItem(PRODUCT_CACHE_KEY, JSON.stringify({
-      at: Date.now(),
-      items: items || []
-    }));
-  }catch(err){}
-}
-
-function leerCatalogoLocal(){
-  try{
-    const raw = localStorage.getItem(PRODUCT_CACHE_KEY);
-    if(!raw) return [];
-    const parsed = JSON.parse(raw);
-    if(!parsed || !Array.isArray(parsed.items)) return [];
-    if(Date.now() - Number(parsed.at || 0) > PRODUCT_CACHE_TTL_MS) return parsed.items;
-    return parsed.items;
-  }catch(err){
-    return [];
-  }
-}
-
-function dedupeCatalogo(items){
-  const out = [];
-  const seen = new Set();
-  (items || []).forEach(item => {
-    const codigo = limpiarCodigo(item.codigo || item.producto || "");
-    const descripcion = txt(item.descripcion || item.detalle || "");
-    if(!codigo && !descripcion) return;
-    const key = `${normalizarProducto(codigo)}|${normalizarProducto(descripcion)}`;
-    if(seen.has(key)) return;
-    seen.add(key);
-    out.push({ codigo, producto: codigo, descripcion });
-  });
-  return out;
-}
-
-function setCatalogo(items){
-  PRODUCTOS_CACHE = dedupeCatalogo(items).sort((a,b) => a.codigo.localeCompare(b.codigo, 'es'));
-  PRODUCTOS_CACHE_CARGADO = true;
-  renderCatalogoSelect(PRODUCTOS_CACHE);
-  renderCatalogoDatalist(PRODUCTOS_CACHE);
-  guardarCatalogoLocal(PRODUCTOS_CACHE);
-}
-
-function renderCatalogoSelect(items){
-  let select = el("selectCodigoProducto");
-  if(!select) return;
-  const top = (items || []).slice(0, 500);
-  select.innerHTML = '<option value="">Seleccionar producto rápido...</option>' + top.map(item => {
-    const codigo = item.codigo || item.producto || "";
-    const desc = item.descripcion || "";
-    return `<option value="${codigo.replace(/"/g,'&quot;')}" data-desc="${desc.replace(/"/g,'&quot;')}">${codigo} - ${desc}</option>`;
-  }).join("");
-}
-
-function renderCatalogoDatalist(items){
-  let list = el("listaCodigosProducto");
-  if(!list) return;
-  list.innerHTML = (items || []).slice(0, 1000).map(item => {
-    const codigo = item.codigo || item.producto || "";
-    const desc = item.descripcion || "";
-    return `<option value="${codigo.replace(/"/g,'&quot;')}">${desc}</option>`;
-  }).join("");
-}
-
-function buscarEnCatalogoLocal(termino){
-  const q = normalizarProducto(termino);
-  if(!q) return null;
-  for(const item of PRODUCTOS_CACHE){
-    if(normalizarProducto(item.codigo) === q || normalizarProducto(item.producto) === q){
-      return item;
-    }
-  }
-  return null;
-}
-
-function filtrarCatalogoLocal(termino, limit = 80){
-  const q = normalizarProducto(termino);
-  if(!q) return PRODUCTOS_CACHE.slice(0, limit);
-  const exactos = [];
-  const prefijos = [];
-  const contiene = [];
-  for(const item of PRODUCTOS_CACHE){
-    const codigo = normalizarProducto(item.codigo);
-    const descripcion = normalizarProducto(item.descripcion);
-    if(codigo === q || descripcion === q) exactos.push(item);
-    else if(codigo.startsWith(q) || descripcion.startsWith(q)) prefijos.push(item);
-    else if(codigo.includes(q) || descripcion.includes(q)) contiene.push(item);
-    if(exactos.length + prefijos.length + contiene.length >= limit) break;
-  }
-  return exactos.concat(prefijos, contiene).slice(0, limit);
-}
-
-async function cargarCatalogoProducto(force = false){
-  if(PRODUCTOS_CACHE_CARGADO && !force) return PRODUCTOS_CACHE;
-  if(PRODUCTOS_CACHE_PROMISE && !force) return PRODUCTOS_CACHE_PROMISE;
-
-  const local = leerCatalogoLocal();
-  if(local.length && !force){
-    setCatalogo(local);
-  }
-
-  const mapearLista = (data) => {
-    let lista = [];
-    if(data && Array.isArray(data.data)) lista = data.data;
-    else if(Array.isArray(data)) lista = data;
-    return lista.map(row => ({
-      codigo: limpiarCodigo(Array.isArray(row) ? row[0] : (row.codigo || row.CODIGO || row.producto || row.PRODUCTO || "")),
-      producto: limpiarCodigo(Array.isArray(row) ? row[0] : (row.codigo || row.CODIGO || row.producto || row.PRODUCTO || "")),
-      descripcion: txt(Array.isArray(row) ? row[1] : (row.descripcion || row.DESCRIPCION || row.detalle || row.DETALLE || ""))
-    })).filter(item => item.codigo || item.descripcion);
-  };
-
-  PRODUCTOS_CACHE_PROMISE = (async () => {
-    try{
-      let lista = [];
-
-      try{
-        const res = await fetch(`${API_PRODUCTOS}?action=catalogoProductos&_=${Date.now()}`, { method: 'GET', cache: 'no-store' });
-        const data = await res.json();
-        lista = mapearLista(data);
-      }catch(err){}
-
-      if(!lista.length){
-        try{
-          const resPost = await fetch(API_PRODUCTOS, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ action: "catalogoProductos" }),
-            cache: "no-store"
-          });
-          const dataPost = await resPost.json();
-          lista = mapearLista(dataPost);
-        }catch(err){}
-      }
-
-      if(!lista.length){
-        try{
-          const resCompat = await fetch(`${API_PRODUCTOS}?accion=listar&_=${Date.now()}`, { method: 'GET', cache: 'no-store' });
-          const dataCompat = await resCompat.json();
-          lista = mapearLista(dataCompat);
-        }catch(err){}
-      }
-
-      if(lista.length){
-        setCatalogo(lista);
-      } else if(local.length) {
-        setCatalogo(local);
-      }
-      return PRODUCTOS_CACHE;
-    }catch(err){
-      if(local.length){
-        setCatalogo(local);
-        return PRODUCTOS_CACHE;
-      }
-      console.error('No se pudo cargar catálogo rápido de productos:', err);
-      return PRODUCTOS_CACHE;
-    }finally{
-      PRODUCTOS_CACHE_PROMISE = null;
-    }
-  })();
-
-  return PRODUCTOS_CACHE_PROMISE;
-}
-
-function aplicarProductoEncontrado(item){
+function limpiarBusquedaProducto(){
+  const pCodigo = el("pCodigo");
   const pProducto = el("pProducto");
   const pDescripcion = el("pDescripcion");
   const pCantidad = el("pCantidad");
-  const pCodigo = el("pCodigo");
-  if(!item) return false;
-  const codigo = limpiarCodigo(item.codigo || item.producto || "");
-  const descripcion = txt(item.descripcion || item.detalle || "");
-  if(pCodigo) pCodigo.value = codigo;
-  if(pProducto) pProducto.value = codigo;
-  if(pDescripcion) pDescripcion.value = descripcion;
-  if(pCantidad && !txt(pCantidad.value)) pCantidad.value = "1";
-  ULTIMO_CODIGO = codigo;
-  setMensajeCodigo("Producto cargado correctamente.", "#16a34a");
-  return true;
+
+  if(pCodigo) pCodigo.value = "";
+  if(pProducto) pProducto.value = "";
+  if(pDescripcion) pDescripcion.value = "";
+  if(pCantidad) pCantidad.value = "";
+
+  ULTIMO_CODIGO = "";
+  ocultarSelectProductos();
+  setMensajeCodigo("");
+
+  if(pCodigo) pCodigo.focus();
 }
 
 function crearCampoCodigoSiNoExiste(){
   const modalProducto = el("modalProducto");
   const pProducto = el("pProducto");
-  if(!modalProducto || !pProducto) return;
-  if(el("grupoCodigoProducto")) return;
 
-  const grupoProducto = pProducto.closest(".form-group");
+  if(!modalProducto || !pProducto || el("pCodigo")) return;
+
+  const grupoProducto = pProducto.closest(".form-group") || pProducto.parentNode;
   if(!grupoProducto || !grupoProducto.parentNode) return;
 
   const bloque = document.createElement("div");
@@ -253,11 +79,13 @@ function crearCampoCodigoSiNoExiste(){
   bloque.innerHTML = `
     <label>Código</label>
     <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
-      <input id="pCodigo" type="text" inputmode="text" placeholder="Ingrese código del producto" autocomplete="off" list="listaCodigosProducto" style="flex:1 1 180px;">
+      <input id="pCodigo" type="text" inputmode="numeric" placeholder="Ingrese código del producto" autocomplete="off" style="flex:1;min-width:220px;">
       <button type="button" id="btnBuscarCodigoProducto" style="white-space:nowrap;">🔎 Consultar</button>
+      <button type="button" id="btnLimpiarCodigoProducto" style="white-space:nowrap;">🧹 Limpiar</button>
     </div>
-    <datalist id="listaCodigosProducto"></datalist>
-    <select id="selectCodigoProducto" style="margin-top:8px;width:100%;"></select>
+
+    <select id="selectCodigoProducto" size="6" style="display:none;width:100%;margin-top:8px;padding:8px;border:1px solid #d1d5db;border-radius:10px;background:#fff;"></select>
+
     <div id="msgCodigoProducto" style="font-size:12px;color:#64748b;margin-top:6px;"></div>
   `;
 
@@ -265,159 +93,527 @@ function crearCampoCodigoSiNoExiste(){
 
   const inputCodigo = el("pCodigo");
   const btnBuscar = el("btnBuscarCodigoProducto");
-  const select = el("selectCodigoProducto");
+  const btnLimpiar = el("btnLimpiarCodigoProducto");
+  const selectCodigo = el("selectCodigoProducto");
 
   if(inputCodigo){
     inputCodigo.addEventListener("keydown", function(e){
       if(e.key === "Enter"){
         e.preventDefault();
-        consultarCodigoProducto();
+        consultarCodigoProducto(true);
+      }
+
+      if(e.key === "ArrowDown"){
+        if(selectCodigo && selectCodigo.style.display !== "none" && selectCodigo.options.length > 0){
+          e.preventDefault();
+          selectCodigo.focus();
+          selectCodigo.selectedIndex = 0;
+        }
+      }
+
+      if(e.key === "Escape"){
+        ocultarSelectProductos();
       }
     });
+
     inputCodigo.addEventListener("input", function(){
       ULTIMO_CODIGO = "";
-      const code = limpiarCodigo(this.value);
-      if(!code){
-        setMensajeCodigo("");
-        renderCatalogoSelect(filtrarCatalogoLocal(""));
-        return;
-      }
-      const local = buscarEnCatalogoLocal(code);
-      if(local){
-        aplicarProductoEncontrado(local);
-      }else{
-        setMensajeCodigo("");
-      }
-      renderCatalogoSelect(filtrarCatalogoLocal(code));
-    });
-    inputCodigo.addEventListener("focus", function(){
-      renderCatalogoSelect(filtrarCatalogoLocal(this.value || ""));
+      setMensajeCodigo("");
+      ocultarSelectProductos();
+      limpiarCamposProductoSoloConsulta();
     });
   }
 
   if(btnBuscar){
-    btnBuscar.addEventListener("click", consultarCodigoProducto);
+    btnBuscar.addEventListener("click", function(){
+      consultarCodigoProducto(true);
+    });
   }
 
-  if(select){
-    select.addEventListener("change", function(){
-      const codigo = limpiarCodigo(this.value);
-      if(!codigo) return;
-      const item = buscarEnCatalogoLocal(codigo);
-      if(item){
-        aplicarProductoEncontrado(item);
-        const pCantidad = el('pCantidad');
-        if(pCantidad){ pCantidad.focus(); pCantidad.select?.(); }
+  if(btnLimpiar){
+    btnLimpiar.addEventListener("click", function(){
+      limpiarBusquedaProducto();
+    });
+  }
+
+  if(selectCodigo){
+    selectCodigo.addEventListener("dblclick", aplicarProductoDesdeSelect);
+    selectCodigo.addEventListener("keydown", function(e){
+      if(e.key === "Enter"){
+        e.preventDefault();
+        aplicarProductoDesdeSelect();
+      }
+      if(e.key === "Escape"){
+        ocultarSelectProductos();
+        if(inputCodigo) inputCodigo.focus();
       }
     });
+    selectCodigo.addEventListener("change", aplicarProductoDesdeSelect);
   }
 }
 
-async function consultarCodigoProducto(){
+/***************************************************
+ NORMALIZACIÓN
+***************************************************/
+function normalizarProductoItem(item){
+  if(!item || typeof item !== "object") return null;
+
+  const codigo = limpiarCodigo(
+    item.codigo ||
+    item.CODIGO ||
+    item.cod ||
+    item.Cod ||
+    item.producto ||
+    item.PRODUCTO ||
+    item.id ||
+    item.ID ||
+    ""
+  );
+
+  const descripcion = txt(
+    item.descripcion ||
+    item.DESCRIPCION ||
+    item.detalle ||
+    item.DETALLE ||
+    item.nombre ||
+    item.NOMBRE ||
+    item.productoDescripcion ||
+    item.PRODUCTODESCRIPCION ||
+    ""
+  );
+
+  if(!codigo && !descripcion) return null;
+
+  return { codigo, descripcion };
+}
+
+function normalizarListaProductos(data){
+  if(!data) return [];
+
+  let lista = [];
+
+  if(Array.isArray(data)) lista = data;
+  else if(Array.isArray(data.data)) lista = data.data;
+  else if(Array.isArray(data.items)) lista = data.items;
+  else if(Array.isArray(data.productos)) lista = data.productos;
+  else if(Array.isArray(data.resultado)) lista = data.resultado;
+  else if(Array.isArray(data.results)) lista = data.results;
+  else if(Array.isArray(data.rows)) lista = data.rows;
+  else return [];
+
+  return lista.map(normalizarProductoItem).filter(x => x && x.codigo);
+}
+
+function normalizarRespuestaProducto(data, codigoFallback){
+  if(!data) return null;
+
+  if(Array.isArray(data)){
+    if(!data.length) return null;
+    return normalizarRespuestaProducto(data[0], codigoFallback);
+  }
+
+  if(data.data && !Array.isArray(data.data)) return normalizarRespuestaProducto(data.data, codigoFallback);
+  if(data.item) return normalizarRespuestaProducto(data.item, codigoFallback);
+  if(data.producto && typeof data.producto === "object" && !Array.isArray(data.producto)){
+    return normalizarRespuestaProducto(data.producto, codigoFallback);
+  }
+  if(data.ok === false) return null;
+
+  const codigo = limpiarCodigo(
+    data.codigo ||
+    data.CODIGO ||
+    data.cod ||
+    data.Cod ||
+    data.producto ||
+    data.PRODUCTO ||
+    codigoFallback ||
+    ""
+  );
+
+  const descripcion = txt(
+    data.descripcion ||
+    data.DESCRIPCION ||
+    data.detalle ||
+    data.DETALLE ||
+    data.nombre ||
+    data.NOMBRE ||
+    ""
+  );
+
+  if(!codigo && !descripcion) return null;
+  return { codigo, descripcion };
+}
+
+/***************************************************
+ CACHE LOCAL
+***************************************************/
+function guardarCacheProductos(lista){
+  try{
+    localStorage.setItem(PRODUCT_CACHE_KEY, JSON.stringify({
+      time: Date.now(),
+      data: lista || []
+    }));
+  }catch(e){}
+}
+
+function leerCacheProductos(){
+  try{
+    const raw = localStorage.getItem(PRODUCT_CACHE_KEY);
+    if(!raw) return [];
+    const json = JSON.parse(raw);
+    if(!json || !Array.isArray(json.data)) return [];
+    if((Date.now() - Number(json.time || 0)) > PRODUCT_CACHE_TTL) return [];
+    return json.data.map(normalizarProductoItem).filter(Boolean);
+  }catch(e){
+    return [];
+  }
+}
+
+/***************************************************
+ PRECARGA DE CATÁLOGO
+***************************************************/
+async function precargarCatalogoProductos(force = false){
+  if(PRODUCTOS_CACHE_CARGADO && !force) return PRODUCTOS_CACHE;
+  if(PRODUCTOS_CACHE_PROMISE && !force) return PRODUCTOS_CACHE_PROMISE;
+
+  const cacheLocal = leerCacheProductos();
+  if(cacheLocal.length && !force){
+    PRODUCTOS_CACHE = cacheLocal;
+    PRODUCTOS_CACHE_CARGADO = true;
+  }
+
+  PRODUCTOS_CACHE_PROMISE = (async () => {
+    const urls = [
+      `${API_PRODUCTOS}?accion=listar&_=${Date.now()}`,
+      `${API_PRODUCTOS}?action=listar&_=${Date.now()}`,
+      `${API_PRODUCTOS}?listar=1&_=${Date.now()}`,
+      `${API_PRODUCTOS}?all=1&_=${Date.now()}`,
+      `${API_PRODUCTOS}?_=${Date.now()}`
+    ];
+
+    for(const url of urls){
+      try{
+        const res = await fetch(url, { method: "GET", cache: "no-store" });
+        if(!res.ok) continue;
+
+        const text = await res.text();
+        let data = null;
+
+        try{
+          data = JSON.parse(text);
+        }catch(e){
+          continue;
+        }
+
+        const lista = normalizarListaProductos(data);
+        if(lista.length){
+          PRODUCTOS_CACHE = lista;
+          PRODUCTOS_CACHE_CARGADO = true;
+          guardarCacheProductos(lista);
+          return lista;
+        }
+      }catch(e){}
+    }
+
+    if(cacheLocal.length){
+      PRODUCTOS_CACHE = cacheLocal;
+      PRODUCTOS_CACHE_CARGADO = true;
+      return cacheLocal;
+    }
+
+    PRODUCTOS_CACHE = [];
+    PRODUCTOS_CACHE_CARGADO = true;
+    return [];
+  })();
+
+  try{
+    return await PRODUCTOS_CACHE_PROMISE;
+  }finally{
+    PRODUCTOS_CACHE_PROMISE = null;
+  }
+}
+
+/***************************************************
+ SELECT
+***************************************************/
+function ocultarSelectProductos(){
+  const select = el("selectCodigoProducto");
+  if(!select) return;
+  select.innerHTML = "";
+  select.style.display = "none";
+}
+
+function mostrarSelectProductos(lista){
+  const select = el("selectCodigoProducto");
+  if(!select) return;
+
+  select.innerHTML = "";
+
+  if(!lista || !lista.length){
+    select.style.display = "none";
+    return;
+  }
+
+  lista.forEach((item, i) => {
+    const op = document.createElement("option");
+    op.value = item.codigo;
+    op.dataset.codigo = item.codigo;
+    op.dataset.descripcion = item.descripcion || "";
+    op.textContent = `${item.codigo} - ${item.descripcion || "Sin descripción"}`;
+    if(i === 0) op.selected = true;
+    select.appendChild(op);
+  });
+
+  select.style.display = "block";
+}
+
+function aplicarProductoSeleccionado(item){
+  const inputCodigo = el("pCodigo");
+  const pProducto = el("pProducto");
+  const pDescripcion = el("pDescripcion");
+  const pCantidad = el("pCantidad");
+
+  if(!item) return;
+
+  if(inputCodigo) inputCodigo.value = item.codigo || "";
+  if(pProducto) pProducto.value = item.codigo || "";
+  if(pDescripcion) pDescripcion.value = item.descripcion || "";
+  if(pCantidad && !txt(pCantidad.value)) pCantidad.value = "1";
+
+  ULTIMO_CODIGO = item.codigo || "";
+  ocultarSelectProductos();
+  setMensajeCodigo("Producto cargado correctamente.", "#16a34a");
+
+  if(pCantidad){
+    pCantidad.focus();
+    if(pCantidad.select) pCantidad.select();
+  }
+}
+
+function aplicarProductoDesdeSelect(){
+  const select = el("selectCodigoProducto");
+  if(!select || !select.value) return;
+
+  const op = select.options[select.selectedIndex];
+  if(!op) return;
+
+  aplicarProductoSeleccionado({
+    codigo: txt(op.dataset.codigo || op.value),
+    descripcion: txt(op.dataset.descripcion || "")
+  });
+}
+
+/***************************************************
+ BÚSQUEDA LOCAL
+***************************************************/
+function buscarProductosLocales(texto){
+  const q = limpiarCodigo(texto).toLowerCase();
+  if(!q) return [];
+
+  const exactos = [];
+  const empiezan = [];
+  const contiene = [];
+
+  for(const item of PRODUCTOS_CACHE){
+    const codigo = limpiarCodigo(item.codigo).toLowerCase();
+    const descripcion = txt(item.descripcion).toLowerCase();
+
+    if(!codigo && !descripcion) continue;
+
+    if(codigo === q){
+      exactos.push(item);
+      continue;
+    }
+
+    if(codigo.startsWith(q)){
+      empiezan.push(item);
+      continue;
+    }
+
+    if(codigo.includes(q) || descripcion.includes(q)){
+      contiene.push(item);
+    }
+  }
+
+  return [...exactos, ...empiezan, ...contiene].slice(0, 30);
+}
+
+/***************************************************
+ CONSULTA SOLO CON BOTÓN O ENTER
+***************************************************/
+async function consultarCodigoProducto(mostrarMensajes = true){
   if(CONSULTANDO_PRODUCTO) return;
 
   const inputCodigo = el("pCodigo");
   const btnBuscar = el("btnBuscarCodigoProducto");
+  const pProducto = el("pProducto");
+  const pDescripcion = el("pDescripcion");
   const pCantidad = el("pCantidad");
-  if(!inputCodigo){
-    console.error("No existe #pCodigo");
-    return;
-  }
+
+  if(!inputCodigo || !pProducto || !pDescripcion) return;
 
   const codigo = limpiarCodigo(inputCodigo.value);
+
   if(!codigo){
-    limpiarCamposProductoCodigo();
-    setMensajeCodigo("Ingrese un código.", "#dc2626");
+    limpiarCamposProductoSoloConsulta();
+    ocultarSelectProductos();
+    if(mostrarMensajes) setMensajeCodigo("Ingrese un código.", "#dc2626");
     inputCodigo.focus();
     return;
   }
 
-  const local = buscarEnCatalogoLocal(codigo);
-  if(local){
-    aplicarProductoEncontrado(local);
-    if(pCantidad){ pCantidad.focus(); pCantidad.select?.(); }
-    return;
-  }
+  if(codigo === ULTIMO_CODIGO && txt(pDescripcion.value)) return;
 
-  if(codigo === ULTIMO_CODIGO && txt(el("pDescripcion")?.value)){ return; }
+  await precargarCatalogoProductos(false);
 
-  CONSULTANDO_PRODUCTO = true;
-  setLoadingBoton(btnBuscar, true);
-  setMensajeCodigo("Consultando código...", "#2563eb");
+  const encontrados = buscarProductosLocales(codigo);
 
-  const mapearItem = (payload) => {
-    const raw = payload?.data || payload;
-    if(!raw) return null;
-    const codigoMap = limpiarCodigo(raw.codigo || raw.CODIGO || raw.producto || raw.PRODUCTO || codigo);
-    const descripcionMap = txt(raw.descripcion || raw.DESCRIPCION || raw.detalle || raw.DETALLE || "");
-    if(!codigoMap && !descripcionMap) return null;
-    return { codigo: codigoMap, producto: codigoMap, descripcion: descripcionMap };
-  };
+  if(encontrados.length){
+    mostrarSelectProductos(encontrados);
 
-  try{
-    let item = null;
-
-    try{
-      const url = `${API_PRODUCTOS}?action=buscarProductoExacto&codigo=${encodeURIComponent(codigo)}&_=${Date.now()}`;
-      const res = await fetch(url, { method: "GET", cache: "no-store" });
-      const data = await res.json();
-      if(data?.ok) item = mapearItem(data);
-    }catch(err){}
-
-    if(!item){
-      try{
-        const resPost = await fetch(API_PRODUCTOS, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ action: "buscarProductoExacto", codigo, q: codigo, producto: codigo }),
-          cache: "no-store"
-        });
-        const dataPost = await resPost.json();
-        if(dataPost?.ok) item = mapearItem(dataPost);
-      }catch(err){}
-    }
-
-    if(!item){
-      try{
-        const urlCompat = `${API_PRODUCTOS}?accion=buscar&codigo=${encodeURIComponent(codigo)}&_=${Date.now()}`;
-        const resCompat = await fetch(urlCompat, { method: "GET", cache: "no-store" });
-        const dataCompat = await resCompat.json();
-        if(dataCompat?.ok) item = mapearItem(dataCompat);
-      }catch(err){}
-    }
-
-    if(!item || !item.descripcion){
-      limpiarCamposProductoCodigo();
-      setMensajeCodigo("Código no encontrado.", "#dc2626");
+    const exacto = encontrados.find(x => limpiarCodigo(x.codigo) === codigo);
+    if(exacto){
+      aplicarProductoSeleccionado(exacto);
       return;
     }
 
-    PRODUCTOS_CACHE.unshift(item);
-    setCatalogo(PRODUCTOS_CACHE);
-    aplicarProductoEncontrado(item);
-    if(pCantidad){ pCantidad.focus(); pCantidad.select?.(); }
+    if(mostrarMensajes){
+      setMensajeCodigo(`Seleccione un producto de la lista (${encontrados.length} resultado(s)).`, "#2563eb");
+    }
+    return;
+  }
+
+  CONSULTANDO_PRODUCTO = true;
+  setLoadingBoton(btnBuscar, true);
+  if(mostrarMensajes) setMensajeCodigo("Consultando código...", "#2563eb");
+
+  try{
+    let normalizado = null;
+
+    const urls = [
+      `${API_PRODUCTOS}?accion=buscar&codigo=${encodeURIComponent(codigo)}&_=${Date.now()}`,
+      `${API_PRODUCTOS}?action=buscar&codigo=${encodeURIComponent(codigo)}&_=${Date.now()}`,
+      `${API_PRODUCTOS}?q=${encodeURIComponent(codigo)}&_=${Date.now()}`,
+      `${API_PRODUCTOS}?codigo=${encodeURIComponent(codigo)}&_=${Date.now()}`
+    ];
+
+    for(const url of urls){
+      try{
+        const res = await fetch(url, { method: "GET", cache: "no-store" });
+        if(!res.ok) continue;
+
+        const text = await res.text();
+        let data = null;
+
+        try{
+          data = JSON.parse(text);
+        }catch(e){
+          continue;
+        }
+
+        normalizado = normalizarRespuestaProducto(data, codigo);
+        if(normalizado) break;
+      }catch(e){}
+    }
+
+    if(!normalizado){
+      const params = new URLSearchParams();
+      params.append("accion", "buscar");
+      params.append("codigo", codigo);
+
+      try{
+        const res = await fetch(API_PRODUCTOS, {
+          method: "POST",
+          headers: { "Content-Type": "application/x-www-form-urlencoded;charset=UTF-8" },
+          body: params.toString()
+        });
+
+        if(res.ok){
+          const text = await res.text();
+          try{
+            normalizado = normalizarRespuestaProducto(JSON.parse(text), codigo);
+          }catch(e){}
+        }
+      }catch(e){}
+    }
+
+    if(!normalizado || !txt(normalizado.descripcion)){
+      limpiarCamposProductoSoloConsulta();
+      ocultarSelectProductos();
+      if(mostrarMensajes) setMensajeCodigo("Código no encontrado.", "#dc2626");
+      return;
+    }
+
+    inputCodigo.value = normalizado.codigo || codigo;
+    pProducto.value = normalizado.codigo || codigo;
+    pDescripcion.value = normalizado.descripcion || "";
+    if(pCantidad && !txt(pCantidad.value)) pCantidad.value = "1";
+    ULTIMO_CODIGO = normalizado.codigo || codigo;
+
+    const yaExiste = PRODUCTOS_CACHE.some(x => limpiarCodigo(x.codigo) === limpiarCodigo(normalizado.codigo));
+    if(!yaExiste){
+      PRODUCTOS_CACHE.unshift(normalizado);
+      guardarCacheProductos(PRODUCTOS_CACHE);
+    }
+
+    ocultarSelectProductos();
+    if(mostrarMensajes) setMensajeCodigo("Producto cargado correctamente.", "#16a34a");
+
+    if(pCantidad){
+      pCantidad.focus();
+      if(pCantidad.select) pCantidad.select();
+    }
+
   }catch(error){
     console.error("Error consulta producto:", error);
-    limpiarCamposProductoCodigo();
-    setMensajeCodigo(error.message || "No se pudo consultar el código.", "#dc2626");
+    limpiarCamposProductoSoloConsulta();
+    ocultarSelectProductos();
+    if(mostrarMensajes) setMensajeCodigo(error.message || "No se pudo consultar el código.", "#dc2626");
   }finally{
     CONSULTANDO_PRODUCTO = false;
     setLoadingBoton(btnBuscar, false);
   }
 }
 
-function initConsultaProductoCodigo(){
-  crearCampoCodigoSiNoExiste();
-  cargarCatalogoProducto(false);
+/***************************************************
+ LIMPIAR AL CERRAR MODAL
+***************************************************/
+function vincularLimpiezaAlCerrarModal(){
+  const modal = el("modalProducto");
+  if(!modal || modal.dataset.cleanupBound === "1") return;
+
+  modal.dataset.cleanupBound = "1";
+
+  modal.addEventListener("click", function(e){
+    if(e.target === modal){
+      limpiarBusquedaProducto();
+    }
+  });
+
+  document.addEventListener("keydown", function(e){
+    const modalVisible = modal.style.display === "flex" ||
+                         modal.style.display === "block" ||
+                         modal.classList.contains("show") ||
+                         !modal.hasAttribute("hidden");
+
+    if(e.key === "Escape" && modalVisible){
+      limpiarBusquedaProducto();
+    }
+  });
 }
 
-function refrescarConsultaProductoRapida(){
+/***************************************************
+ INIT
+***************************************************/
+async function initConsultaProductoCodigo(){
   crearCampoCodigoSiNoExiste();
-  cargarCatalogoProducto(false);
+  vincularLimpiezaAlCerrarModal();
+  precargarCatalogoProductos(false).catch(() => {});
 }
 
 document.addEventListener("DOMContentLoaded", initConsultaProductoCodigo);
+
 window.consultarCodigoProducto = consultarCodigoProducto;
 window.initConsultaProductoCodigo = initConsultaProductoCodigo;
-window.refrescarConsultaProductoRapida = refrescarConsultaProductoRapida;
-window.cargarCatalogoProducto = cargarCatalogoProducto;
+window.precargarCatalogoProductos = precargarCatalogoProductos;
+window.limpiarBusquedaProducto = limpiarBusquedaProducto;

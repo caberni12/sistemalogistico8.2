@@ -969,6 +969,384 @@ grid-template-columns:1fr; /* 1 por fila */
     max-width:calc(100vw - 40px);
   }
 }
+
+/* =======================
+   AJUSTE FINAL MODALES
+   ======================= */
+#modalForm .modal-content,
+#modalProducto .modal-content{
+  width:min(1100px, calc(100vw - 28px));
+  max-width:calc(100vw - 28px);
+  max-height:calc(100vh - 28px);
+  padding:24px 22px 20px;
+  overflow:auto;
+}
+
+#modalForm .modal-close,
+#modalProducto .modal-close{
+  top:12px;
+  right:12px;
+}
+
+#modalForm h3,
+#modalProducto h2{
+  margin:0 0 14px 0;
+  padding-right:52px;
+}
+
+.modal-section{
+  background:#f8fafc;
+  border:1px solid #e2e8f0;
+  border-radius:14px;
+  padding:14px;
+  margin-bottom:14px;
+}
+
+.modal-section-title{
+  margin:0 0 12px 0;
+  font-size:14px;
+  font-weight:700;
+  color:#0f172a;
+}
+
+.modal-grid-2,
+.modal-grid-3{
+  display:grid;
+  gap:14px;
+  align-items:start;
+}
+
+.modal-grid-2{
+  grid-template-columns:repeat(2, minmax(0, 1fr));
+}
+
+.modal-grid-3{
+  grid-template-columns:repeat(3, minmax(0, 1fr));
+}
+
+.modal-field{
+  display:flex;
+  flex-direction:column;
+  gap:6px;
+  min-width:0;
+}
+
+.modal-field label{
+  font-size:13px;
+  font-weight:600;
+  color:#334155;
+  margin:0;
+}
+
+.modal-field input,
+.modal-field select{
+  width:100%;
+  min-width:0;
+  margin:0;
+  padding:11px 12px;
+  border-radius:12px;
+  border:1px solid #cbd5e1;
+  background:#fff;
+}
+
+.modal-inline{
+  display:grid;
+  grid-template-columns:minmax(0, 1.2fr) minmax(220px, .9fr) auto;
+  gap:10px;
+  align-items:end;
+}
+
+.modal-inline > *{
+  min-width:0;
+}
+
+.modal-actions-row{
+  display:flex;
+  gap:10px;
+  flex-wrap:wrap;
+  margin-top:16px;
+}
+
+.modal-actions-row button,
+#modalProducto .modal-actions button{
+  min-width:180px;
+}
+
+#modalForm .preview-wrap{
+  display:grid;
+  gap:10px;
+}
+
+#consultaMsg{
+  margin-top:8px !important;
+  margin-bottom:0 !important;
+}
+
+#modalForm #selectResultados,
+#modalProducto #selectCodigoProducto,
+#modalProducto #pSelectPedido{
+  width:100%;
+}
+
+#modalProducto .grid{
+  gap:14px;
+  grid-template-columns:repeat(4, minmax(0, 1fr));
+}
+
+#modalProducto .product-entry-box{
+  display:grid;
+  grid-template-columns:220px 170px minmax(240px, 1.15fr) minmax(340px, 1.7fr) 150px;
+  grid-template-areas:
+    "codigo acciones producto descripcion cantidad"
+    "agregar agregar agregar agregar agregar";
+  gap:16px;
+  align-items:end;
+}
+
+#modalProducto .form-group{
+  display:flex;
+  flex-direction:column;
+  gap:6px;
+  margin-bottom:0;
+  min-width:0;
+}
+
+#modalProducto .form-group label{
+  font-size:13px;
+  font-weight:600;
+  color:#334155;
+  margin:0;
+}
+
+#modalProducto .form-group input,
+#modalProducto .form-group select{
+  width:100%;
+  margin:0;
+  padding:12px 14px;
+  border-radius:12px;
+  min-height:46px;
+}
+
+#modalProducto .product-entry-box .codigo{ grid-area:codigo; }
+#modalProducto .product-entry-box .acciones{ grid-area:acciones; }
+#modalProducto .product-entry-box .producto{ grid-area:producto; }
+#modalProducto .product-entry-box .descripcion{ grid-area:descripcion; }
+#modalProducto .product-entry-box .cantidad{ grid-area:cantidad; }
+#modalProducto .product-entry-box .agregar{ grid-area:agregar; }
+
+#modalProducto #pCodigo,
+#modalProducto #pProducto,
+#modalProducto #pDescripcion,
+#modalProducto #pCantidad{
+  max-width:none;
+}
+
+#modalProducto .product-actions{
+  display:flex;
+  flex-direction:column;
+  gap:10px;
+}
+
+#modalProducto .product-actions button{
+  width:100%;
+  min-height:46px;
+  min-width:0;
+}
+
+#modalProducto .product-entry-box .agregar{
+  display:flex;
+  justify-content:flex-start;
+  margin-top:2px;
+}
+
+#modalProducto .product-entry-box .agregar button{
+  min-width:240px;
+  min-height:46px;
+}
+
+#modalProducto .table-wrap{
+  margin-top:16px;
+  max-height:280px;
+  overflow:auto;
+  border:1px solid #e2e8f0;
+  border-radius:14px;
+  background:#fff;
+}
+
+#modalProducto .helper-note{
+  margin-top:8px;
+  font-size:12px;
+  color:#64748b;
+}
+
+@media (max-width:1100px){
+  .modal-grid-3{
+    grid-template-columns:repeat(2, minmax(0, 1fr));
+  }
+
+  #modalProducto .grid{
+    grid-template-columns:repeat(2, minmax(0, 1fr));
+  }
+
+  #modalProducto .product-entry-box{
+    grid-template-columns:repeat(2, minmax(0, 1fr));
+    grid-template-areas:
+      "codigo acciones"
+      "producto producto"
+      "descripcion descripcion"
+      "cantidad cantidad"
+      "agregar agregar";
+  }
+}
+
+@media (max-width:768px){
+  #modalForm .modal-content,
+  #modalProducto .modal-content{
+    width:calc(100vw - 14px);
+    max-width:calc(100vw - 14px);
+    max-height:calc(100vh - 14px);
+    padding:18px 14px 16px;
+    border-radius:14px;
+  }
+
+  .modal-grid-2,
+  .modal-grid-3,
+  .modal-inline,
+  #modalProducto .grid{
+    grid-template-columns:1fr;
+  }
+
+  #modalProducto .product-entry-box{
+    grid-template-columns:1fr;
+    grid-template-areas:
+      "codigo"
+      "acciones"
+      "producto"
+      "descripcion"
+      "cantidad"
+      "agregar";
+    gap:14px;
+  }
+
+  .modal-actions-row,
+  #modalProducto .modal-actions{
+    flex-direction:column;
+  }
+
+  .modal-actions-row button,
+  #modalProducto .modal-actions button{
+    width:100%;
+    min-width:0;
+  }
+
+  #modalForm h3,
+  #modalProducto h2{
+    font-size:20px;
+    padding-right:42px;
+  }
+}
+
+
+/* ================= AJUSTE FINAL TABLA MODAL PRODUCTOS ================= */
+#modalProducto .modal-content{
+  width:min(1280px, calc(100vw - 24px));
+  max-width:calc(100vw - 24px);
+}
+
+#modalProducto .table-wrap{
+  overflow:auto;
+  padding-bottom:2px;
+}
+
+#modalProducto .productos-table{
+  width:100%;
+  min-width:920px;
+  table-layout:fixed;
+  border-collapse:collapse;
+}
+
+#modalProducto .productos-table th,
+#modalProducto .productos-table td{
+  padding:10px 12px !important;
+  vertical-align:middle;
+}
+
+#modalProducto .productos-table th:nth-child(1),
+#modalProducto .productos-table td:nth-child(1){
+  width:18%;
+}
+
+#modalProducto .productos-table th:nth-child(2),
+#modalProducto .productos-table td:nth-child(2){
+  width:42%;
+}
+
+#modalProducto .productos-table th:nth-child(3),
+#modalProducto .productos-table td:nth-child(3){
+  width:10%;
+  text-align:center;
+}
+
+#modalProducto .productos-table th:nth-child(4),
+#modalProducto .productos-table td:nth-child(4),
+#modalProducto .productos-table th:nth-child(5),
+#modalProducto .productos-table td:nth-child(5){
+  width:120px;
+  min-width:120px;
+}
+
+#modalProducto .productos-table td:nth-child(4),
+#modalProducto .productos-table td:nth-child(5){
+  white-space:normal;
+}
+
+#modalProducto .productos-table td button{
+  width:100%;
+  min-width:0;
+  min-height:40px;
+  padding:10px 12px;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  gap:6px;
+  line-height:1.2;
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  position:relative;
+}
+
+#modalProducto .productos-table td:nth-child(4) button{
+  background:#2563eb;
+}
+
+#modalProducto .productos-table td:nth-child(4) button:hover{
+  background:#1d4ed8;
+}
+
+#modalProducto .productos-table td:nth-child(5) button{
+  background:#dc2626;
+}
+
+#modalProducto .productos-table td:nth-child(5) button:hover{
+  background:#b91c1c;
+}
+
+@media (max-width:768px){
+  #modalProducto .modal-content{
+    width:calc(100vw - 10px);
+    max-width:calc(100vw - 10px);
+  }
+
+  #modalProducto .productos-table{
+    min-width:760px;
+  }
+
+  #modalProducto .productos-table td button{
+    white-space:normal;
+  }
+}
+
 </style>
 
 </head>
@@ -1107,175 +1485,224 @@ margin-top:20px;
 
 <div class="modal" id="modalForm">
 
-    <div class="modal-content">
+  <div class="modal-content">
 
-      <!-- Botón de cierre en forma de X con fondo rojo -->
-      <button id="btnCerrarFormX" type="button" class="modal-close" aria-label="Cerrar formulario">&#x2716;</button>
+    <button id="btnCerrarFormX" type="button" class="modal-close" aria-label="Cerrar formulario">&#x2716;</button>
 
-      <!-- Título del formulario -->
-      <h3 id="mtitle">Editar Pedido</h3>
-  
-      <label>Pedido</label>
-      <input id="mPedido" placeholder="Número de pedido">
-  
-      <label>Tipo de Orden de Trabajo</label>
-      <select id="mTipoDoc">
-        <option>BOLETA</option>
-        <option>FACTURA</option>
-        <option>GUIA</option>
-        <option>ORDEN DE COMPRA</option>
-        <option>NOTA DE VENTA</option>
-        <option>OT-ALIANZA SEGURIDAD</option>
-        <option>OT-BORDADOS</option>
-        <option>OT-ESTAMPADO</option>
-        <option>OT-CONFECCIÓN</option>
-      </select>
-  
-      <!-- CONSULTA -->
-      <label>Consulta de Pedido Sistema Control</label>
-  
-      <div style="display:flex;gap:6px">
+    <h3 id="mtitle">Editar Pedido</h3>
+
+    <div class="modal-section">
+      <div class="modal-grid-2">
+        <div class="modal-field">
+          <label for="mPedido">Pedido</label>
+          <input id="mPedido" placeholder="Número de pedido">
+        </div>
+
+        <div class="modal-field">
+          <label for="mTipoDoc">Tipo de Orden de Trabajo</label>
+          <select id="mTipoDoc">
+            <option>BOLETA</option>
+            <option>FACTURA</option>
+            <option>GUIA</option>
+            <option>ORDEN DE COMPRA</option>
+            <option>NOTA DE VENTA</option>
+            <option>OT-ALIANZA SEGURIDAD</option>
+            <option>OT-BORDADOS</option>
+            <option>OT-ESTAMPADO</option>
+            <option>OT-CONFECCIÓN</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal-section">
+      <div class="modal-section-title">Consulta de Pedido Sistema Control</div>
+
+      <div class="modal-inline">
         <input id="mConsulta" placeholder="Ingrese Nº de pedido">
         <select id="selectResultados" style="display:none;"></select>
-        <button type="button" id="btnConsultar">🔎</button>
-        
+        <button type="button" id="btnConsultar">🔎 Consultar</button>
       </div>
-  
-      <div id="consultaMsg" style="font-size:12px;color:#64748b;margin-bottom:10px"></div>
-     
-      <label>Número Documento</label>
-      <input id="mNumeroDoc" placeholder="Número documento">
-  
-      <!-- DATOS CLIENTE -->
-  
-      <label>Cliente</label>
-      <input id="mCliente" placeholder="Nombre del cliente">
-  
-      <label>Dirección</label>
-      <input id="mDireccion" placeholder="Dirección entrega">
-  
-      <label>Comuna</label>
-      <input id="mComuna" placeholder="Comuna">
-  
-      <label>Transporte</label>
-      <input id="mTransporte" placeholder="Empresa transporte">
-  
-      <label>Cantidad de Unidades</label>
-      <input id="mCajas" type="number" min="1">
-  
-      <label>Estado del Pedido</label>
-      <select id="mStatus">
-        <option>PENDIENTE</option>
-        <option>EN RUTA</option>
-        <option>RECIBIDO</option>
-        <option>ENTREGADO</option>
-        <option>CANCELADO</option>
-        <option>TERMINADO</option>
-      </select>
-  
-      <label>Fecha / Hora Entrega</label>
-      <input id="mHoraEntrega" type="datetime-local">
-  
-      <label>Responsable</label>
-      <input id="mResponsable" placeholder="Responsable entrega">
-  
-      <label>Observaciones</label>
-      <input id="mObs" placeholder="Observaciones del pedido">
-  
-      <!-- ARCHIVOS -->
-  
-      <label>Subir Fotos Opcional</label>
-      <input type="file" id="mFotos" accept="image/*" multiple>
-      <div id="fotoPreview"></div>
-  
-      <label>Subir Pdf de Orden de Trabajo</label>
-      <input type="file" id="mPdf" accept="application/pdf">
-      <div id="pdfPreview"></div>
-  
-  
-      <div style="display:flex;gap:10px;margin-top:14px">
-        <button id="btnGuardar">Guardar</button>
-        <button id="btnCancelar">Cancelar</button>
-        <!-- Botón para abrir el modal de productos desde el modal de pedido -->
-        <button id="btnProductos" type="button" onclick="abrirModalProducto(document.getElementById('mPedido')?.value || '')">Productos</button>
-      </div>
-  
+
+      <div id="consultaMsg" style="font-size:12px;color:#64748b;"></div>
     </div>
-  
+
+    <div class="modal-section">
+      <div class="modal-section-title">Datos del pedido</div>
+
+      <div class="modal-grid-2">
+        <div class="modal-field">
+          <label for="mNumeroDoc">Número Documento</label>
+          <input id="mNumeroDoc" placeholder="Número documento">
+        </div>
+
+        <div class="modal-field">
+          <label for="mCliente">Cliente</label>
+          <input id="mCliente" placeholder="Nombre del cliente">
+        </div>
+
+        <div class="modal-field">
+          <label for="mDireccion">Dirección</label>
+          <input id="mDireccion" placeholder="Dirección entrega">
+        </div>
+
+        <div class="modal-field">
+          <label for="mComuna">Comuna</label>
+          <input id="mComuna" placeholder="Comuna">
+        </div>
+
+        <div class="modal-field">
+          <label for="mTransporte">Transporte</label>
+          <input id="mTransporte" placeholder="Empresa transporte">
+        </div>
+
+        <div class="modal-field">
+          <label for="mCajas">Cantidad de Unidades</label>
+          <input id="mCajas" type="number" min="1">
+        </div>
+      </div>
+    </div>
+
+    <div class="modal-section">
+      <div class="modal-section-title">Estado y seguimiento</div>
+
+      <div class="modal-grid-3">
+        <div class="modal-field">
+          <label for="mStatus">Estado del Pedido</label>
+          <select id="mStatus">
+            <option>PENDIENTE</option>
+            <option>EN RUTA</option>
+            <option>RECIBIDO</option>
+            <option>ENTREGADO</option>
+            <option>CANCELADO</option>
+            <option>TERMINADO</option>
+          </select>
+        </div>
+
+        <div class="modal-field">
+          <label for="mHoraEntrega">Fecha / Hora Entrega</label>
+          <input id="mHoraEntrega" type="datetime-local">
+        </div>
+
+        <div class="modal-field">
+          <label for="mResponsable">Responsable</label>
+          <input id="mResponsable" placeholder="Responsable entrega">
+        </div>
+      </div>
+
+      <div class="modal-field" style="margin-top:14px;">
+        <label for="mObs">Observaciones</label>
+        <input id="mObs" placeholder="Observaciones del pedido">
+      </div>
+    </div>
+
+    <div class="modal-section">
+      <div class="modal-section-title">Archivos</div>
+
+      <div class="preview-wrap">
+        <div class="modal-field">
+          <label for="mFotos">Subir Fotos Opcional</label>
+          <input type="file" id="mFotos" accept="image/*" multiple>
+          <div id="fotoPreview"></div>
+        </div>
+
+        <div class="modal-field">
+          <label for="mPdf">Subir Pdf de Orden de Trabajo</label>
+          <input type="file" id="mPdf" accept="application/pdf">
+          <div id="pdfPreview"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal-actions-row">
+      <button id="btnGuardar">Guardar</button>
+      <button id="btnCancelar">Cancelar</button>
+      <button id="btnProductos" type="button" onclick="abrirModalProducto(document.getElementById('mPedido')?.value || '')">Productos</button>
+    </div>
+
   </div>
-  <div id="modalProducto" class="modal" style="display:none;">
 
-    <div class="modal-content" style="max-width:900px;">
+</div>
 
-      <button id="btnCerrarProductoX" type="button" class="modal-close" aria-label="Cerrar modal de productos" onclick="if(window.cerrarModalProducto){cerrarModalProducto();} return false;">&#x2716;</button>
-  
-      <h2>📦 Productos del Pedido</h2>
-      <div id="pResumenPedido" style="margin-top:10px;">Selecciona un pedido para cargar sus datos.</div>
-  
-      <!-- SELECT PEDIDO -->
-      <div class="form-group">
-        <label>Seleccionar Pedido</label>
+<div id="modalProducto" class="modal" style="display:none;">
+
+  <div class="modal-content">
+
+    <button id="btnCerrarProductoX" type="button" class="modal-close" aria-label="Cerrar modal de productos" onclick="if(window.cerrarModalProducto){cerrarModalProducto();} return false;">&#x2716;</button>
+
+    <h2>📦 Productos del Pedido</h2>
+
+    <div class="modal-section">
+      <div id="pResumenPedido">Selecciona un pedido para cargar sus datos.</div>
+
+      <div class="form-group" style="margin-top:12px;">
+        <label for="pSelectPedido">Seleccionar Pedido</label>
         <select id="pSelectPedido">
           <option value="">-- Seleccionar Pedido --</option>
         </select>
       </div>
-  
-      <!-- DATOS CLIENTE -->
+    </div>
+
+    <div class="modal-section">
+      <div class="modal-section-title">Datos del cliente</div>
+
       <div class="grid" style="margin-top:10px">
-  
+
         <div class="form-group">
-          <label>Pedido</label>
+          <label for="pPedido">Pedido</label>
           <input id="pPedido" readonly>
         </div>
-  
+
         <div class="form-group">
-          <label>Cliente</label>
+          <label for="pCliente">Cliente</label>
           <input id="pCliente" readonly>
         </div>
-  
+
         <div class="form-group">
-          <label>Dirección</label>
+          <label for="pDireccion">Dirección</label>
           <input id="pDireccion" readonly>
         </div>
-  
+
         <div class="form-group">
-          <label>Comuna</label>
+          <label for="pComuna">Comuna</label>
           <input id="pComuna" readonly>
         </div>
-  
+
       </div>
-  
-      <hr>
-  
-      <!-- INGRESO PRODUCTO -->
-      <h3>➕ Agregar Producto</h3>
-  
-      <div class="grid">
-  
+    </div>
+
+    <div class="modal-section">
+      <div class="modal-section-title">Agregar producto</div>
+
+      <div class="grid product-entry">
+
         <div class="form-group">
-          <label>Producto</label>
+          <label for="pProducto">Producto</label>
           <input id="pProducto" placeholder="Nombre del producto">
         </div>
-  
+
         <div class="form-group">
-          <label>Descripción</label>
+          <label for="pDescripcion">Descripción</label>
           <input id="pDescripcion" placeholder="Detalle">
         </div>
-  
+
         <div class="form-group">
-          <label>Cantidad</label>
-          <input id="pCantidad" type="number" step="1">
+          <label for="pCantidad">Cantidad</label>
+          <input id="pCantidad" type="number" step="1" min="1">
         </div>
-  
+
       </div>
-  
-      <div style="margin-top:10px">
+
+      <div style="margin-top:14px">
         <button id="btnAddProducto" type="button">➕ Agregar Producto</button>
       </div>
-  
-      <!-- TABLA PRODUCTOS -->
-      <div style="margin-top:20px; max-height:250px; overflow:auto;">
-        <table style="width:100%; font-size:13px; border-collapse:collapse;">
+    </div>
+
+    <div class="modal-section">
+      <div class="modal-section-title">Listado de productos</div>
+
+      <div class="table-wrap">
+        <table class="productos-table" style="width:100%; font-size:13px; border-collapse:collapse;">
           <thead style="background:#f1f5f9;">
             <tr>
               <th style="padding:8px">Producto</th>
@@ -1288,27 +1715,21 @@ margin-top:20px;
           <tbody id="pTablaProductos"></tbody>
         </table>
       </div>
+
       <div id="pResumenTotales" style="margin-top:12px;">Aún no hay productos agregados.</div>
-      <div style="margin-top:6px;font-size:12px;color:#64748b;">Al generar el PDF, se descargará y también quedará cargado en la columna PDF del pedido.</div>
-  
-      <!-- BOTONES -->
-      <div class="modal-actions" style="
-        margin-top:20px;
-        display:flex;
-        gap:10px;
-        justify-content:flex-end;
-        flex-wrap:wrap;
-      ">
-        <button id="btnGuardarProducto" type="button">💾 Guardar</button>
-        <button id="btnGenerarProductoPDF" type="button" class="btn-sec">📄 Generar PDF y Cargar</button>
-        <button id="btnCerrarProducto" type="button" class="btn-sec">❌ Cerrar</button>
-      </div>
-  
+      <div class="helper-note">Al generar el PDF, se descargará y también quedará cargado en la columna PDF del pedido.</div>
     </div>
-  
+
+    <div class="modal-actions" style="margin-top:20px; display:flex; gap:10px; justify-content:flex-end; flex-wrap:wrap;">
+      <button id="btnGuardarProducto" type="button">💾 Guardar</button>
+      <button id="btnGenerarProductoPDF" type="button" class="btn-sec">📄 Generar PDF y Cargar</button>
+      <button id="btnCerrarProducto" type="button" class="btn-sec">❌ Cerrar</button>
+    </div>
+
   </div>
 
-  
+</div>
+
 <script src="segurity.js"></script>
 <script src="envio.js"></script>
 <script src="consulta.js"></script>
