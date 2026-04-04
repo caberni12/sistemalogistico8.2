@@ -524,7 +524,30 @@ tr.selected{
  padding:24px;
 }
 
-#modalProducto .modal-close{
+/* ================= MODAL PEDIDO MÁS ANCHO ================= */
+#modalForm{
+ padding:16px;
+}
+
+#modalForm .modal-content{
+ width:min(1480px, calc(100vw - 32px));
+ max-width:calc(100vw - 32px);
+ max-height:calc(100vh - 32px);
+ overflow:auto;
+ padding:28px 24px 24px;
+ border-radius:18px;
+}
+
+#modalForm h3{
+ padding-right:56px;
+ margin-top:0;
+}
+
+#modalForm .modal-section{
+ width:100%;
+}
+
+.modal-close{
  position:absolute;
  top:12px;
  right:12px;
@@ -848,6 +871,14 @@ tr.selected{
 }
 
 /* ================= RESPONSIVE ================= */
+@media (max-width:1280px){
+ #modalForm .modal-content{
+  width:calc(100vw - 24px);
+  max-width:calc(100vw - 24px);
+  max-height:calc(100vh - 24px);
+ }
+}
+
 @media (max-width:1100px){
  .modal-grid-3{
   grid-template-columns:repeat(2, minmax(0, 1fr));
