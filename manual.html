@@ -25,6 +25,7 @@
     font-family:Arial, Helvetica, sans-serif;
     background:linear-gradient(180deg,#ecfeff 0%, #f8fafc 24%, #f1f5f9 100%);
     color:var(--text);
+    overflow-x:hidden;
   }
 
   .page{
@@ -127,8 +128,15 @@
     color:#0f172a;
   }
 
+  .btn-print{
+    background:#0f172a;
+    color:#fff;
+    border:1px solid rgba(255,255,255,.15);
+  }
+
   .btn-primary:hover,
   .btn-secondary:hover,
+  .btn-print:hover,
   .btn-top:hover,
   .chip:hover,
   .modal-nav a:hover,
@@ -205,6 +213,7 @@
     grid-template-columns:300px minmax(0,1fr);
     gap:18px;
     margin-top:22px;
+    align-items:start;
   }
 
   .side,
@@ -213,6 +222,7 @@
     border-radius:24px;
     box-shadow:var(--shadow-soft);
     border:1px solid rgba(148,163,184,.14);
+    min-width:0;
   }
 
   .side{
@@ -220,6 +230,8 @@
     position:sticky;
     top:18px;
     height:fit-content;
+    max-height:calc(100vh - 36px);
+    overflow:auto;
   }
 
   .side h2,
@@ -254,6 +266,7 @@
     font-weight:700;
     cursor:pointer;
     border:1px solid #e2e8f0;
+    transition:.18s ease;
   }
 
   .main-preview{
@@ -272,16 +285,13 @@
     background:#f8fafc;
     border-radius:18px;
     padding:16px;
+    min-width:0;
   }
 
   .preview-card h3{
     margin:0 0 8px;
     font-size:16px;
     color:#0f172a;
-  }
-
-  .preview-card p{
-    margin:0 0 10px;
   }
 
   .preview-card ul{
@@ -312,6 +322,7 @@
     box-shadow:0 10px 22px rgba(15,23,42,.18);
     font-size:20px;
     cursor:pointer;
+    transition:.18s ease;
   }
 
   .modal{
@@ -329,6 +340,7 @@
 
   .modal-box{
     width:min(1380px, 100%);
+    height:min(92vh, 920px);
     max-height:92vh;
     background:#fff;
     border-radius:28px;
@@ -342,7 +354,9 @@
     background:linear-gradient(180deg,#f0fdfa 0%, #ffffff 100%);
     border-right:1px solid #e2e8f0;
     padding:22px 18px;
-    overflow:auto;
+    overflow-y:auto;
+    overflow-x:hidden;
+    min-height:0;
   }
 
   .modal-left h3{
@@ -379,6 +393,8 @@
     display:flex;
     flex-direction:column;
     min-width:0;
+    min-height:0;
+    overflow:hidden;
   }
 
   .modal-header{
@@ -389,8 +405,7 @@
     padding:18px 22px;
     border-bottom:1px solid #e2e8f0;
     background:#fff;
-    position:sticky;
-    top:0;
+    flex-shrink:0;
     z-index:4;
   }
 
@@ -405,6 +420,13 @@
     font-size:14px;
   }
 
+  .modal-actions{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    flex-wrap:wrap;
+  }
+
   .close-btn{
     border:none;
     border-radius:14px;
@@ -414,12 +436,18 @@
     font-weight:700;
     padding:12px 16px;
     cursor:pointer;
+    transition:.18s ease;
+    flex-shrink:0;
   }
 
   .manual-body{
-    overflow:auto;
+    flex:1;
+    min-height:0;
+    overflow-y:auto;
+    overflow-x:hidden;
     padding:22px;
     background:#f8fafc;
+    scroll-behavior:smooth;
   }
 
   .module{
@@ -429,7 +457,12 @@
     border-radius:24px;
     padding:22px;
     margin-bottom:16px;
-    scroll-margin-top:22px;
+    scroll-margin-top:16px;
+    position:relative;
+  }
+
+  .module:last-child{
+    margin-bottom:0;
   }
 
   .module-head{
@@ -497,14 +530,6 @@
     line-height:1.7;
   }
 
-  .func-card ul{
-    margin:10px 0 0;
-    padding-left:18px;
-    color:#334155;
-    font-size:14px;
-    line-height:1.65;
-  }
-
   .module-note{
     margin-top:14px;
     padding:14px;
@@ -516,11 +541,51 @@
     line-height:1.65;
   }
 
+  .print-cover,
+  .print-footer{
+    display:none;
+  }
+
+  .side::-webkit-scrollbar,
+  .modal-left::-webkit-scrollbar,
+  .manual-body::-webkit-scrollbar{
+    width:10px;
+  }
+
+  .side::-webkit-scrollbar-track,
+  .modal-left::-webkit-scrollbar-track,
+  .manual-body::-webkit-scrollbar-track{
+    background:#e2e8f0;
+    border-radius:999px;
+  }
+
+  .side::-webkit-scrollbar-thumb,
+  .modal-left::-webkit-scrollbar-thumb,
+  .manual-body::-webkit-scrollbar-thumb{
+    background:#94a3b8;
+    border-radius:999px;
+  }
+
+  .side::-webkit-scrollbar-thumb:hover,
+  .modal-left::-webkit-scrollbar-thumb:hover,
+  .manual-body::-webkit-scrollbar-thumb:hover{
+    background:#64748b;
+  }
+
   @media (max-width:1100px){
     .summary{grid-template-columns:repeat(2,minmax(0,1fr))}
     .content{grid-template-columns:1fr}
-    .side{position:relative;top:auto}
-    .modal-box{grid-template-columns:1fr}
+    .side{
+      position:relative;
+      top:auto;
+      max-height:none;
+      overflow:visible;
+    }
+    .modal-box{
+      grid-template-columns:1fr;
+      height:min(94vh, 960px);
+      max-height:94vh;
+    }
     .modal-left{display:none}
     .func-grid{grid-template-columns:1fr}
   }
@@ -531,17 +596,226 @@
     .hero-grid{grid-template-columns:1fr}
     .summary{grid-template-columns:1fr}
     .preview-grid{grid-template-columns:1fr}
-    .modal{padding:0;align-items:flex-end}
+    .modal{
+      padding:0;
+      align-items:flex-end;
+    }
     .modal-box{
       width:100%;
+      height:96vh;
       max-height:96vh;
       border-radius:24px 24px 0 0;
     }
-    .modal-header{padding:16px}
+    .modal-header{
+      padding:16px;
+      align-items:flex-start;
+      flex-direction:column;
+    }
     .manual-body{padding:16px}
-    .module{padding:18px;border-radius:20px}
+    .module{
+      padding:18px;
+      border-radius:20px;
+    }
     .module-title h3{font-size:20px}
-    .floating-actions{right:12px;bottom:12px}
+    .floating-actions{
+      right:12px;
+      bottom:12px;
+    }
+    .hero-actions{
+      flex-direction:column;
+      align-items:stretch;
+    }
+    .btn{width:100%}
+    .modal-actions{
+      width:100%;
+      flex-direction:column;
+    }
+    .modal-actions .btn-print,
+    .modal-actions .close-btn{
+      width:100%;
+      justify-content:center;
+    }
+  }
+
+  @media print{
+    @page{
+      size:auto;
+      margin:16mm 12mm 18mm 12mm;
+    }
+
+    html,body{
+      background:#fff !important;
+      overflow:visible !important;
+      font-size:12pt;
+      color:#000 !important;
+    }
+
+    .page,
+    .floating-actions,
+    .modal-left,
+    .close-btn,
+    #openManualBtn,
+    #printManualBtn,
+    .btn-secondary,
+    .content,
+    .summary,
+    .hero-side,
+    .hero,
+    .modal-header .btn-print{
+      display:none !important;
+    }
+
+    .modal{
+      position:static !important;
+      display:block !important;
+      background:#fff !important;
+      padding:0 !important;
+      inset:auto !important;
+    }
+
+    .modal-box{
+      display:block !important;
+      width:100% !important;
+      height:auto !important;
+      max-height:none !important;
+      box-shadow:none !important;
+      border-radius:0 !important;
+      overflow:visible !important;
+      background:#fff !important;
+    }
+
+    .modal-right{
+      display:block !important;
+      overflow:visible !important;
+    }
+
+    .modal-header{
+      display:block !important;
+      border:none !important;
+      padding:0 !important;
+      margin:0 !important;
+      background:#fff !important;
+    }
+
+    .modal-header h2,
+    .modal-header p{
+      display:none !important;
+    }
+
+    .print-cover{
+      display:flex !important;
+      flex-direction:column;
+      justify-content:center;
+      align-items:center;
+      text-align:center;
+      min-height:255mm;
+      page-break-after:always;
+      break-after:page;
+      padding:20mm 10mm;
+      border:2px solid #cbd5e1;
+      border-radius:18px;
+    }
+
+    .print-cover-badge{
+      display:inline-block;
+      padding:8px 16px;
+      border:1px solid #94a3b8;
+      border-radius:999px;
+      font-size:13pt;
+      font-weight:700;
+      margin-bottom:18px;
+      color:#0f172a;
+    }
+
+    .print-cover h1{
+      margin:0 0 14px 0;
+      font-size:30pt;
+      line-height:1.1;
+      color:#0f172a;
+    }
+
+    .print-cover h2{
+      margin:0 0 18px 0;
+      font-size:16pt;
+      font-weight:600;
+      color:#334155;
+    }
+
+    .print-cover .line{
+      width:120px;
+      height:4px;
+      border-radius:999px;
+      background:#14b8a6;
+      margin:10px auto 24px;
+    }
+
+    .print-cover p{
+      margin:6px 0;
+      font-size:12pt;
+      color:#334155;
+      line-height:1.7;
+    }
+
+    .print-meta{
+      margin-top:24px;
+      display:grid;
+      gap:8px;
+    }
+
+    .print-meta strong{
+      color:#0f172a;
+    }
+
+    .manual-body{
+      overflow:visible !important;
+      height:auto !important;
+      max-height:none !important;
+      padding:0 !important;
+      background:#fff !important;
+    }
+
+    .module{
+      break-inside:avoid;
+      page-break-inside:avoid;
+      border:1px solid #cbd5e1 !important;
+      box-shadow:none !important;
+      margin-bottom:14px !important;
+      background:#fff !important;
+    }
+
+    .module-note{
+      border:1px solid #cbd5e1 !important;
+      background:#f8fafc !important;
+    }
+
+    .func-card{
+      background:#fff !important;
+      box-shadow:none !important;
+    }
+
+    .print-page-break{
+      page-break-before:always;
+      break-before:page;
+    }
+
+    .print-footer{
+      display:block !important;
+      position:fixed;
+      bottom:0;
+      left:0;
+      right:0;
+      width:100%;
+      font-size:10pt;
+      color:#475569;
+    }
+
+    .print-footer-inner{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      border-top:1px solid #cbd5e1;
+      padding-top:6px;
+    }
   }
 </style>
 </head>
@@ -557,6 +831,7 @@
           </p>
           <div class="hero-actions">
             <button class="btn btn-primary" id="openManualBtn">👁 Ver Manual de Proceso</button>
+            <button class="btn btn-print" id="printManualBtn">🖨 Imprimir / Guardar PDF</button>
             <a class="btn btn-secondary" href="#resumen-general">⬇ Ir al resumen</a>
           </div>
           <div style="margin-top:14px;display:inline-flex;align-items:center;gap:10px;padding:10px 14px;border-radius:14px;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.18);font-size:14px;font-weight:700;">🖋 Desarrollado por Ingeniero Alejandro Silva</div>
@@ -687,10 +962,26 @@
             <h2>Manual de Procesos</h2>
             <p>Explicación funcional por módulos y por acciones visibles del sistema.</p>
           </div>
-          <button class="close-btn" id="closeManualBtn">✕ Cerrar</button>
+          <div class="modal-actions">
+            <button class="btn btn-print" id="printInsideModalBtn">🖨 Imprimir</button>
+            <button class="close-btn" id="closeManualBtn">✕ Cerrar</button>
+          </div>
         </div>
 
         <div class="manual-body" id="manualBody">
+          <section class="print-cover">
+            <div class="print-cover-badge">Documento de Presentación</div>
+            <h1>Manual de Procesos</h1>
+            <h2>Guía funcional avanzada del sistema</h2>
+            <div class="line"></div>
+            <p>Documento preparado para revisión, consulta y presentación formal.</p>
+            <div class="print-meta">
+              <p><strong>Desarrollado por:</strong> Ingeniero Alejandro Silva</p>
+              <p><strong>Fecha de emisión:</strong> <span id="printDate"></span></p>
+              <p><strong>Contenido:</strong> Módulos, funciones, flujo operativo e importador de listado</p>
+            </div>
+          </section>
+
           <article class="module" id="mod-consulta">
             <div class="module-head">
               <div class="module-title">
@@ -700,30 +991,12 @@
               <span class="tag">Consulta</span>
             </div>
             <div class="func-grid">
-              <div class="func-card">
-                <h4>Buscador</h4>
-                <p>Permite localizar pedidos por texto libre. Ayuda a encontrar cliente, número de pedido, documento, dirección, observaciones y otros datos sin revisar fila por fila.</p>
-              </div>
-              <div class="func-card">
-                <h4>Filtro por estado</h4>
-                <p>Sirve para mostrar solamente los registros que están en un estado específico, como pendiente, en ruta, recibido, entregado, cancelado o terminado.</p>
-              </div>
-              <div class="func-card">
-                <h4>Filtro por fechas</h4>
-                <p>Permite revisar pedidos dentro de un rango determinado. Se usa para concentrar la consulta en un período de trabajo concreto.</p>
-              </div>
-              <div class="func-card">
-                <h4>Tabla principal</h4>
-                <p>Muestra el listado general de pedidos con columnas de cliente, documento, estado, unidades, traslado, archivo y botón de visualización.</p>
-              </div>
-              <div class="func-card">
-                <h4>Tarjetas para celular</h4>
-                <p>Presentan la misma información de la tabla, pero en formato de bloques. Su función es mejorar la lectura en pantallas móviles.</p>
-              </div>
-              <div class="func-card">
-                <h4>Botón Ver detalle</h4>
-                <p>Abre el registro seleccionado en una vista ampliada para revisar el pedido con más información y acciones disponibles.</p>
-              </div>
+              <div class="func-card"><h4>Buscador</h4><p>Permite localizar pedidos por texto libre. Ayuda a encontrar cliente, número de pedido, documento, dirección, observaciones y otros datos sin revisar fila por fila.</p></div>
+              <div class="func-card"><h4>Filtro por estado</h4><p>Sirve para mostrar solamente los registros que están en un estado específico, como pendiente, en ruta, recibido, entregado, cancelado o terminado.</p></div>
+              <div class="func-card"><h4>Filtro por fechas</h4><p>Permite revisar pedidos dentro de un rango determinado. Se usa para concentrar la consulta en un período de trabajo concreto.</p></div>
+              <div class="func-card"><h4>Tabla principal</h4><p>Muestra el listado general de pedidos con columnas de cliente, documento, estado, unidades, traslado, archivo y botón de visualización.</p></div>
+              <div class="func-card"><h4>Tarjetas para celular</h4><p>Presentan la misma información de la tabla, pero en formato de bloques. Su función es mejorar la lectura en pantallas móviles.</p></div>
+              <div class="func-card"><h4>Botón Ver detalle</h4><p>Abre el registro seleccionado en una vista ampliada para revisar el pedido con más información y acciones disponibles.</p></div>
             </div>
             <div class="module-note">Este bloque es la puerta de entrada al sistema porque desde aquí se busca, se filtra y se abre cualquier pedido.</div>
           </article>
@@ -737,26 +1010,11 @@
               <span class="tag">Resumen visual</span>
             </div>
             <div class="func-grid">
-              <div class="func-card">
-                <h4>Top clientes</h4>
-                <p>Muestra los clientes que más aparecen en la información visible. Sirve para identificar quién tiene mayor movimiento.</p>
-              </div>
-              <div class="func-card">
-                <h4>Frecuencia</h4>
-                <p>Indica cuántos pedidos tiene cada cliente dentro del listado filtrado. Ayuda a medir repetición y volumen.</p>
-              </div>
-              <div class="func-card">
-                <h4>Antigüedad</h4>
-                <p>Sirve para observar qué registros o clientes acumulan más tiempo desde la fecha de ingreso.</p>
-              </div>
-              <div class="func-card">
-                <h4>Gráfico de estados</h4>
-                <p>Entrega una vista rápida de cómo se distribuyen los pedidos por estado dentro del período consultado.</p>
-              </div>
-              <div class="func-card">
-                <h4>Mostrar u ocultar KPI</h4>
-                <p>Permite dar más espacio a la tabla cuando el usuario quiere concentrarse en la operación y no en el resumen gráfico.</p>
-              </div>
+              <div class="func-card"><h4>Top clientes</h4><p>Muestra los clientes que más aparecen en la información visible. Sirve para identificar quién tiene mayor movimiento.</p></div>
+              <div class="func-card"><h4>Frecuencia</h4><p>Indica cuántos pedidos tiene cada cliente dentro del listado filtrado. Ayuda a medir repetición y volumen.</p></div>
+              <div class="func-card"><h4>Antigüedad</h4><p>Sirve para observar qué registros o clientes acumulan más tiempo desde la fecha de ingreso.</p></div>
+              <div class="func-card"><h4>Gráfico de estados</h4><p>Entrega una vista rápida de cómo se distribuyen los pedidos por estado dentro del período consultado.</p></div>
+              <div class="func-card"><h4>Mostrar u ocultar KPI</h4><p>Permite dar más espacio a la tabla cuando el usuario quiere concentrarse en la operación y no en el resumen gráfico.</p></div>
             </div>
           </article>
 
@@ -769,30 +1027,12 @@
               <span class="tag">Pedido</span>
             </div>
             <div class="func-grid">
-              <div class="func-card">
-                <h4>Apertura del pedido</h4>
-                <p>Carga la información completa del registro seleccionado para trabajar sobre el pedido correcto sin escribir todo nuevamente.</p>
-              </div>
-              <div class="func-card">
-                <h4>Datos del pedido</h4>
-                <p>Permite revisar pedido, tipo de documento, número de documento, cliente, dirección, comuna, transporte, responsable, fecha, estado y observaciones.</p>
-              </div>
-              <div class="func-card">
-                <h4>Guardar cambios</h4>
-                <p>Actualiza la información del pedido después de una corrección o avance en el flujo operativo.</p>
-              </div>
-              <div class="func-card">
-                <h4>Selección de fila</h4>
-                <p>Marca el registro activo para facilitar edición, visualización detallada o acciones posteriores.</p>
-              </div>
-              <div class="func-card">
-                <h4>Recarga del listado</h4>
-                <p>Vuelve a traer la información desde el sistema para mantener actualizados los datos visibles.</p>
-              </div>
-              <div class="func-card">
-                <h4>Eliminar registro</h4>
-                <p>Permite quitar un pedido cuando corresponde. Su función es limpiar la operación y evitar registros erróneos.</p>
-              </div>
+              <div class="func-card"><h4>Apertura del pedido</h4><p>Carga la información completa del registro seleccionado para trabajar sobre el pedido correcto sin escribir todo nuevamente.</p></div>
+              <div class="func-card"><h4>Datos del pedido</h4><p>Permite revisar pedido, tipo de documento, número de documento, cliente, dirección, comuna, transporte, responsable, fecha, estado y observaciones.</p></div>
+              <div class="func-card"><h4>Guardar cambios</h4><p>Actualiza la información del pedido después de una corrección o avance en el flujo operativo.</p></div>
+              <div class="func-card"><h4>Selección de fila</h4><p>Marca el registro activo para facilitar edición, visualización detallada o acciones posteriores.</p></div>
+              <div class="func-card"><h4>Recarga del listado</h4><p>Vuelve a traer la información desde el sistema para mantener actualizados los datos visibles.</p></div>
+              <div class="func-card"><h4>Eliminar registro</h4><p>Permite quitar un pedido cuando corresponde. Su función es limpiar la operación y evitar registros erróneos.</p></div>
             </div>
           </article>
 
@@ -805,30 +1045,12 @@
               <span class="tag">Productos</span>
             </div>
             <div class="func-grid">
-              <div class="func-card">
-                <h4>Selección del pedido</h4>
-                <p>Sirve para vincular los productos con un pedido determinado y evitar que se carguen en el registro equivocado.</p>
-              </div>
-              <div class="func-card">
-                <h4>Agregar producto</h4>
-                <p>Permite ingresar código o producto, descripción y cantidad para formar el detalle del pedido.</p>
-              </div>
-              <div class="func-card">
-                <h4>Autocompletar descripción</h4>
-                <p>Busca automáticamente la descripción del producto al ingresar el código. Su objetivo es acelerar la carga y reducir errores manuales.</p>
-              </div>
-              <div class="func-card">
-                <h4>Resumen del pedido</h4>
-                <p>Presenta una vista de los productos agregados para revisar el contenido antes de guardar o emitir un documento.</p>
-              </div>
-              <div class="func-card">
-                <h4>Guardar productos</h4>
-                <p>Registra el detalle del pedido para que quede asociado al número de pedido correspondiente.</p>
-              </div>
-              <div class="func-card">
-                <h4>Generar PDF de productos</h4>
-                <p>Convierte el detalle del pedido en un documento formal y utilizable como respaldo operativo.</p>
-              </div>
+              <div class="func-card"><h4>Selección del pedido</h4><p>Sirve para vincular los productos con un pedido determinado y evitar que se carguen en el registro equivocado.</p></div>
+              <div class="func-card"><h4>Agregar producto</h4><p>Permite ingresar código o producto, descripción y cantidad para formar el detalle del pedido.</p></div>
+              <div class="func-card"><h4>Autocompletar descripción</h4><p>Busca automáticamente la descripción del producto al ingresar el código. Su objetivo es acelerar la carga y reducir errores manuales.</p></div>
+              <div class="func-card"><h4>Resumen del pedido</h4><p>Presenta una vista de los productos agregados para revisar el contenido antes de guardar o emitir un documento.</p></div>
+              <div class="func-card"><h4>Guardar productos</h4><p>Registra el detalle del pedido para que quede asociado al número de pedido correspondiente.</p></div>
+              <div class="func-card"><h4>Generar PDF de productos</h4><p>Convierte el detalle del pedido en un documento formal y utilizable como respaldo operativo.</p></div>
             </div>
           </article>
 
@@ -841,30 +1063,12 @@
               <span class="tag">Traslado</span>
             </div>
             <div class="func-grid">
-              <div class="func-card">
-                <h4>Abrir traslado</h4>
-                <p>Carga los datos del pedido en el formulario de traslado para iniciar el proceso con cliente, dirección, comuna y transporte.</p>
-              </div>
-              <div class="func-card">
-                <h4>Cargar productos guardados</h4>
-                <p>Trae los productos previamente asociados al pedido para no volver a digitar el detalle desde cero.</p>
-              </div>
-              <div class="func-card">
-                <h4>Agregar líneas al detalle</h4>
-                <p>Permite incorporar productos, detalle y cantidad dentro del traslado, formando la lista definitiva que se moverá.</p>
-              </div>
-              <div class="func-card">
-                <h4>Total de unidades</h4>
-                <p>Suma automáticamente las cantidades para mostrar el total general del traslado.</p>
-              </div>
-              <div class="func-card">
-                <h4>Guardar traslado</h4>
-                <p>Genera el registro del traslado y deja trazabilidad entre el pedido, los productos y el documento emitido.</p>
-              </div>
-              <div class="func-card">
-                <h4>Cerrar traslado</h4>
-                <p>Limpia el proceso temporal para evitar que un pedido se mezcle con el siguiente.</p>
-              </div>
+              <div class="func-card"><h4>Abrir traslado</h4><p>Carga los datos del pedido en el formulario de traslado para iniciar el proceso con cliente, dirección, comuna y transporte.</p></div>
+              <div class="func-card"><h4>Cargar productos guardados</h4><p>Trae los productos previamente asociados al pedido para no volver a digitar el detalle desde cero.</p></div>
+              <div class="func-card"><h4>Agregar líneas al detalle</h4><p>Permite incorporar productos, detalle y cantidad dentro del traslado, formando la lista definitiva que se moverá.</p></div>
+              <div class="func-card"><h4>Total de unidades</h4><p>Suma automáticamente las cantidades para mostrar el total general del traslado.</p></div>
+              <div class="func-card"><h4>Guardar traslado</h4><p>Genera el registro del traslado y deja trazabilidad entre el pedido, los productos y el documento emitido.</p></div>
+              <div class="func-card"><h4>Cerrar traslado</h4><p>Limpia el proceso temporal para evitar que un pedido se mezcle con el siguiente.</p></div>
             </div>
           </article>
 
@@ -877,30 +1081,12 @@
               <span class="tag">Apoyo visual</span>
             </div>
             <div class="func-grid">
-              <div class="func-card">
-                <h4>PDF del pedido</h4>
-                <p>Permite abrir el documento principal del pedido cuando ya existe un archivo asociado.</p>
-              </div>
-              <div class="func-card">
-                <h4>PDF del traslado</h4>
-                <p>Sirve para revisar el documento de traslado generado desde el sistema.</p>
-              </div>
-              <div class="func-card">
-                <h4>Foto opcional</h4>
-                <p>Permite mostrar una imagen relacionada al pedido para usarla como respaldo o evidencia visual.</p>
-              </div>
-              <div class="func-card">
-                <h4>Imagen ampliada</h4>
-                <p>Abre la foto en tamaño mayor para revisar mejor el contenido asociado al registro.</p>
-              </div>
-              <div class="func-card">
-                <h4>Mapa del destino</h4>
-                <p>Usa la dirección del pedido para ubicar el lugar de entrega y facilitar la referencia del destino.</p>
-              </div>
-              <div class="func-card">
-                <h4>Mostrar u ocultar mapa</h4>
-                <p>Permite alternar la vista del mapa para usarlo solo cuando aporta a la operación.</p>
-              </div>
+              <div class="func-card"><h4>PDF del pedido</h4><p>Permite abrir el documento principal del pedido cuando ya existe un archivo asociado.</p></div>
+              <div class="func-card"><h4>PDF del traslado</h4><p>Sirve para revisar el documento de traslado generado desde el sistema.</p></div>
+              <div class="func-card"><h4>Foto opcional</h4><p>Permite mostrar una imagen relacionada al pedido para usarla como respaldo o evidencia visual.</p></div>
+              <div class="func-card"><h4>Imagen ampliada</h4><p>Abre la foto en tamaño mayor para revisar mejor el contenido asociado al registro.</p></div>
+              <div class="func-card"><h4>Mapa del destino</h4><p>Usa la dirección del pedido para ubicar el lugar de entrega y facilitar la referencia del destino.</p></div>
+              <div class="func-card"><h4>Mostrar u ocultar mapa</h4><p>Permite alternar la vista del mapa para usarlo solo cuando aporta a la operación.</p></div>
             </div>
           </article>
 
@@ -913,26 +1099,11 @@
               <span class="tag">Control</span>
             </div>
             <div class="func-grid">
-              <div class="func-card">
-                <h4>Estado del pedido</h4>
-                <p>Informa si el pedido está pendiente, en ruta, recibido, entregado, cancelado o terminado.</p>
-              </div>
-              <div class="func-card">
-                <h4>Alerta de tiempo</h4>
-                <p>Evalúa si un pedido está dentro del plazo, por vencer o atrasado según la fecha comprometida.</p>
-              </div>
-              <div class="func-card">
-                <h4>Días de atraso</h4>
-                <p>Muestra cuántos días lleva vencido un pedido para ayudar a priorizar los casos urgentes.</p>
-              </div>
-              <div class="func-card">
-                <h4>Semáforo visual</h4>
-                <p>Utiliza colores para resumir la situación del pedido y facilitar la lectura rápida del listado.</p>
-              </div>
-              <div class="func-card">
-                <h4>Actualización de alertas</h4>
-                <p>Recalcula la situación del pedido cuando cambian fechas o estados, manteniendo la información operativa alineada con la realidad.</p>
-              </div>
+              <div class="func-card"><h4>Estado del pedido</h4><p>Informa si el pedido está pendiente, en ruta, recibido, entregado, cancelado o terminado.</p></div>
+              <div class="func-card"><h4>Alerta de tiempo</h4><p>Evalúa si un pedido está dentro del plazo, por vencer o atrasado según la fecha comprometida.</p></div>
+              <div class="func-card"><h4>Días de atraso</h4><p>Muestra cuántos días lleva vencido un pedido para ayudar a priorizar los casos urgentes.</p></div>
+              <div class="func-card"><h4>Semáforo visual</h4><p>Utiliza colores para resumir la situación del pedido y facilitar la lectura rápida del listado.</p></div>
+              <div class="func-card"><h4>Actualización de alertas</h4><p>Recalcula la situación del pedido cuando cambian fechas o estados, manteniendo la información operativa alineada con la realidad.</p></div>
             </div>
           </article>
 
@@ -945,33 +1116,23 @@
               <span class="tag">Importación</span>
             </div>
             <div class="func-grid">
-              <div class="func-card">
-                <h4>Área de arrastre o selección</h4>
-                <p>Permite arrastrar el archivo o hacer clic para elegirlo desde el equipo. Su objetivo es facilitar el inicio de la importación.</p>
-              </div>
-              <div class="func-card">
-                <h4>Lectura del archivo</h4>
-                <p>Abre la primera hoja del Excel y extrae la información fila por fila para prepararla antes de subirla al sistema.</p>
-              </div>
-              <div class="func-card">
-                <h4>Detección automática de columnas</h4>
-                <p>Reconoce los encabezados del archivo y los usa para construir la vista previa en pantalla.</p>
-              </div>
-              <div class="func-card">
-                <h4>Vista previa</h4>
-                <p>Muestra una tabla con las primeras filas cargadas para que el usuario revise si el archivo corresponde antes de importarlo.</p>
-              </div>
-              <div class="func-card">
-                <h4>Mensaje de estado</h4>
-                <p>Indica si el archivo está vacío, cuántas filas fueron leídas o si ocurrió un problema de conexión durante el proceso.</p>
-              </div>
-              <div class="func-card">
-                <h4>Botón Importar</h4>
-                <p>Envía los datos cargados al sistema para registrarlos de forma masiva. Su finalidad es ahorrar digitación manual y acelerar la carga operativa.</p>
-              </div>
+              <div class="func-card"><h4>Área de arrastre o selección</h4><p>Permite arrastrar el archivo o hacer clic para elegirlo desde el equipo. Su objetivo es facilitar el inicio de la importación.</p></div>
+              <div class="func-card"><h4>Lectura del archivo</h4><p>Abre la primera hoja del Excel y extrae la información fila por fila para prepararla antes de subirla al sistema.</p></div>
+              <div class="func-card"><h4>Detección automática de columnas</h4><p>Reconoce los encabezados del archivo y los usa para construir la vista previa en pantalla.</p></div>
+              <div class="func-card"><h4>Vista previa</h4><p>Muestra una tabla con las primeras filas cargadas para que el usuario revise si el archivo corresponde antes de importarlo.</p></div>
+              <div class="func-card"><h4>Mensaje de estado</h4><p>Indica si el archivo está vacío, cuántas filas fueron leídas o si ocurrió un problema de conexión durante el proceso.</p></div>
+              <div class="func-card"><h4>Botón Importar</h4><p>Envía los datos cargados al sistema para registrarlos de forma masiva. Su finalidad es ahorrar digitación manual y acelerar la carga operativa.</p></div>
             </div>
             <div class="module-note">Este módulo es ideal cuando necesitas ingresar muchas filas desde una planilla y validar primero su contenido en pantalla.</div>
           </article>
+
+          <div class="print-footer">
+            <div class="print-footer-inner">
+              <span>Manual de Procesos</span>
+              <span id="printFooterDate"></span>
+              <span>Página <span class="pageNumber"></span></span>
+            </div>
+          </div>
         </div>
       </section>
     </div>
@@ -985,6 +1146,31 @@
   const chipButtons = document.querySelectorAll('.chip');
   const navLinks = document.querySelectorAll('.modal-nav a');
   const manualBody = document.getElementById('manualBody');
+  const printManualBtn = document.getElementById('printManualBtn');
+  const printInsideModalBtn = document.getElementById('printInsideModalBtn');
+  const printDate = document.getElementById('printDate');
+  const printFooterDate = document.getElementById('printFooterDate');
+
+  function formatearFechaLarga(){
+    const fecha = new Date();
+    return fecha.toLocaleDateString('es-CL', {
+      year:'numeric',
+      month:'long',
+      day:'numeric'
+    });
+  }
+
+  function prepararDatosImpresion(){
+    const fechaFormateada = formatearFechaLarga();
+    if(printDate) printDate.textContent = fechaFormateada;
+    if(printFooterDate) printFooterDate.textContent = fechaFormateada;
+
+    document.querySelectorAll('.pageNumber').forEach((el, i) => {
+      el.textContent = i + 1;
+    });
+  }
+
+  prepararDatosImpresion();
 
   function openManual(){
     manualModal.classList.add('show');
@@ -998,8 +1184,33 @@
     document.body.style.overflow = '';
   }
 
+  function scrollManualToTarget(targetId){
+    const target = document.getElementById(targetId);
+    if(!target || !manualBody) return;
+    const targetTop = target.offsetTop - 6;
+    manualBody.scrollTo({
+      top: targetTop,
+      behavior: 'smooth'
+    });
+  }
+
+  function imprimirManual(){
+    prepararDatosImpresion();
+    const estabaAbierto = manualModal.classList.contains('show');
+    if(!estabaAbierto){
+      openManual();
+      setTimeout(() => {
+        window.print();
+      }, 250);
+    }else{
+      window.print();
+    }
+  }
+
   openManualBtn.addEventListener('click', openManual);
   closeManualBtn.addEventListener('click', closeManual);
+  printManualBtn.addEventListener('click', imprimirManual);
+  printInsideModalBtn.addEventListener('click', imprimirManual);
 
   manualModal.addEventListener('click', (e) => {
     if(e.target === manualModal) closeManual();
@@ -1016,26 +1227,30 @@
       const id = btn.getAttribute('data-target');
       openManual();
       setTimeout(() => {
-        const target = document.getElementById(id);
-        if(target) target.scrollIntoView({behavior:'smooth', block:'start'});
+        scrollManualToTarget(id);
       }, 120);
     });
   });
 
   navLinks.forEach(link => {
-    link.addEventListener('click', () => {
-      if(window.innerWidth <= 1100){
-        setTimeout(() => {
-          const hash = link.getAttribute('href');
-          const target = document.querySelector(hash);
-          if(target) target.scrollIntoView({behavior:'smooth', block:'start'});
-        }, 50);
-      }
+    link.addEventListener('click', (e) => {
+      e.preventDefault();
+      const hash = link.getAttribute('href');
+      const id = hash.replace('#','');
+      scrollManualToTarget(id);
     });
   });
 
   scrollTopBtn.addEventListener('click', () => {
     window.scrollTo({top:0, behavior:'smooth'});
+  });
+
+  window.addEventListener('afterprint', () => {
+    if(manualModal.classList.contains('show')){
+      document.body.style.overflow = 'hidden';
+    }else{
+      document.body.style.overflow = '';
+    }
   });
 </script>
 </body>
