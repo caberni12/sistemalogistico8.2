@@ -722,7 +722,7 @@ button:active{
       <div id="viewer" class="viewer">
         <div class="viewer-header">
           <span id="viewerTitle">Módulo</span>
-          <button type="button" class="btn-ghost" onclick="volver()">⬅ Volver</button>
+          <button id="btnVolver" type="button" class="btn-ghost" onclick="volver()">⬅ Volver</button>
         </div>
         <iframe id="frame"></iframe>
       </div>
@@ -760,6 +760,21 @@ function toggleMenu(force){
   overlay.classList.toggle('show', open);
 }
 
+function actualizarBotonVolver(){
+  const viewer = document.getElementById('viewer');
+  const btnVolver = document.getElementById('btnVolver');
+
+  if(!viewer || !btnVolver) return;
+
+  if(vistaActual !== 'main.html'){
+    viewer.classList.add('show-back');
+    btnVolver.style.display = 'inline-flex';
+  }else{
+    viewer.classList.remove('show-back');
+    btnVolver.style.display = 'none';
+  }
+}
+
 function mostrarVistaPrincipal(){
   const header = document.getElementById('mainHeader');
   const viewer = document.getElementById('viewer');
@@ -768,13 +783,10 @@ function mostrarVistaPrincipal(){
   vistaActual = 'main.html';
 
   if(header) header.classList.remove('hidden');
-
-  if(viewer){
-    viewer.classList.remove('active');
-    viewer.classList.remove('show-back');
-  }
-
+  if(viewer) viewer.classList.remove('active');
   if(frame) frame.src = '';
+
+  actualizarBotonVolver();
 
   setTimeout(() => {
     if(mapa) mapa.invalidateSize();
@@ -792,12 +804,9 @@ function abrirModulo(url, titulo){
   if(title) title.textContent = titulo || 'Módulo';
   if(frame) frame.src = url || '';
   if(header) header.classList.add('hidden');
+  if(viewer) viewer.classList.add('active');
 
-  if(viewer){
-    viewer.classList.add('active');
-    viewer.classList.add('show-back');
-  }
-
+  actualizarBotonVolver();
   toggleMenu(false);
 }
 
@@ -883,8 +892,6 @@ function iniciarGeolocalizacion(){
         pos.coords.longitude,
         pos.coords.accuracy || 0
       );
-
-      if(conexionInfo) conexionInfo.textContent = 'Ubicación actual cargada';
     },
     (error) => {
       if(conexionInfo) conexionInfo.textContent = 'No se pudo obtener ubicación';
@@ -1045,9 +1052,7 @@ document.addEventListener('DOMContentLoaded', () => {
   actualizarEstadoFullscreen();
 
   if(document.getElementById('mapa')){
-    mapa = L.map('mapa', {
-      zoomControl:true
-    }).setView([-33.4489, -70.6693], 13);
+    mapa = L.map('mapa', { zoomControl:true }).setView([-33.4489, -70.6693], 13);
 
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       maxZoom:19,
