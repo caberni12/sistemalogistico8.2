@@ -3,7 +3,6 @@
 <head>
 <meta charset="UTF-8">
 <title>Panel Logístico Integrado</title>
-
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
@@ -52,8 +51,8 @@ body{
 }
 
 .leaflet-div-icon{
-  background:none!important;
-  border:none!important;
+  background:none !important;
+  border:none !important;
 }
 
 .app{
@@ -68,6 +67,7 @@ body{
   flex-direction:column;
 }
 
+/* HEADER */
 header{
   position:relative;
   z-index:30;
@@ -134,6 +134,7 @@ header .right{
   flex-wrap:wrap;
 }
 
+/* BOTONES */
 button{
   border:none;
   border-radius:var(--radius);
@@ -170,6 +171,7 @@ button:active{
   color:var(--text);
 }
 
+/* MAIN */
 .main{
   position:relative;
   flex:1 1 auto;
@@ -194,6 +196,7 @@ button:active{
   z-index:1;
 }
 
+/* TARJETA */
 #dashboardMapa{
   position:absolute;
   left:16px;
@@ -241,8 +244,8 @@ button:active{
 }
 
 #mapCardContent{
-  transition:opacity .25s ease,max-height .3s ease;
-  max-height:360px;
+  transition:opacity .25s ease, max-height .3s ease;
+  max-height:420px;
   opacity:1;
   overflow:hidden;
 }
@@ -314,6 +317,7 @@ button:active{
   margin-top:6px;
 }
 
+/* MENU */
 .menu-lateral{
   position:fixed;
   top:0;
@@ -383,6 +387,7 @@ button:active{
   display:block;
 }
 
+/* VIEWER */
 .viewer{
   position:absolute;
   inset:0;
@@ -399,34 +404,10 @@ button:active{
 }
 
 .viewer-header{
-  display:none;
-  min-height:56px;
-  padding:
-    calc(8px + var(--safe-top))
-    calc(12px + var(--safe-right))
-    8px
-    calc(12px + var(--safe-left));
-  border-bottom:1px solid var(--border);
-  background:#fff;
-  align-items:center;
-  justify-content:space-between;
-  gap:10px;
-  flex:0 0 auto;
+  display:none !important;
 }
 
-.viewer.show-back .viewer-header{
-  display:flex;
-}
-
-#viewerTitle{
-  font-size:15px;
-  font-weight:800;
-  white-space:nowrap;
-  overflow:hidden;
-  text-overflow:ellipsis;
-}
-
-.viewer iframe{
+#frame{
   flex:1 1 auto;
   width:100%;
   height:100%;
@@ -434,6 +415,27 @@ button:active{
   background:#fff;
 }
 
+/* BOTON VOLVER FLOTANTE */
+.btn-volver-flotante{
+  position:absolute;
+  top:calc(12px + var(--safe-top));
+  left:calc(12px + var(--safe-left));
+  z-index:10020;
+  display:none;
+  align-items:center;
+  justify-content:center;
+  gap:8px;
+  padding:10px 14px;
+  border:none;
+  border-radius:999px;
+  background:linear-gradient(135deg,#0f172a,#334155);
+  color:#fff;
+  font-weight:700;
+  font-size:13px;
+  box-shadow:0 10px 25px rgba(0,0,0,.25);
+}
+
+/* LOADER */
 #loadingOverlay{
   position:fixed;
   inset:0;
@@ -460,6 +462,7 @@ button:active{
   display:none;
 }
 
+/* PUNTO UBICACION */
 .mi-punto-ubicacion{
   width:18px;
   height:18px;
@@ -485,9 +488,7 @@ button:active{
     width:100%;
   }
 
-  .header-left{
-    gap:8px;
-  }
+  .header-left{ gap:8px; }
 
   #btnMenu{
     width:34px;
@@ -501,9 +502,7 @@ button:active{
     max-width:90px !important;
   }
 
-  header h1{
-    font-size:14px;
-  }
+  header h1{ font-size:14px; }
 
   .header-info{
     font-size:10px;
@@ -533,9 +532,7 @@ button:active{
     border-radius:14px;
   }
 
-  .map-card-title{
-    font-size:12px;
-  }
+  .map-card-title{ font-size:12px; }
 
   .map-card-header button{
     width:28px;
@@ -543,10 +540,6 @@ button:active{
     min-width:28px;
     font-size:15px;
     border-radius:8px;
-  }
-
-  #mapCardContent{
-    max-height:420px;
   }
 
   .map-stats{
@@ -575,13 +568,8 @@ button:active{
     border-radius:10px;
   }
 
-  .fs-control label{
-    font-size:11px;
-  }
-
-  .fs-help{
-    font-size:10px;
-  }
+  .fs-control label{ font-size:11px; }
+  .fs-help{ font-size:10px; }
 
   .menu-lateral{
     width:min(270px, calc(100vw - 18px));
@@ -604,23 +592,11 @@ button:active{
     border-radius:10px;
   }
 
-  .viewer-header{
-    min-height:46px;
-    padding:
-      calc(6px + var(--safe-top))
-      calc(8px + var(--safe-right))
-      6px
-      calc(8px + var(--safe-left));
-  }
-
-  #viewerTitle{
-    font-size:13px;
-  }
-
-  .viewer-header .btn-ghost{
-    padding:7px 10px;
-    font-size:11px;
-    border-radius:10px;
+  .btn-volver-flotante{
+    top:calc(10px + var(--safe-top));
+    left:calc(10px + var(--safe-left));
+    padding:9px 12px;
+    font-size:12px;
   }
 }
 
@@ -634,7 +610,6 @@ button:active{
 <body>
 
 <div class="app">
-
   <div id="loadingOverlay">Iniciando sistema…</div>
   <div id="progressBar"></div>
 
@@ -713,6 +688,7 @@ button:active{
               Deshabilitar pantalla completa automática
             </label>
           </div>
+
           <div class="fs-help">
             El sistema intenta entrar en pantalla completa por defecto. Si el navegador lo bloquea, se reintentará en el primer toque.
           </div>
@@ -722,8 +698,12 @@ button:active{
       <div id="viewer" class="viewer">
         <div class="viewer-header">
           <span id="viewerTitle">Módulo</span>
-          <button id="btnVolver" type="button" class="btn-ghost" onclick="volver()">⬅ Volver</button>
         </div>
+
+        <button id="btnVolverFlotante" type="button" class="btn-volver-flotante" onclick="volver()">
+          ⬅ Volver
+        </button>
+
         <iframe id="frame"></iframe>
       </div>
     </section>
@@ -761,18 +741,9 @@ function toggleMenu(force){
 }
 
 function actualizarBotonVolver(){
-  const viewer = document.getElementById('viewer');
-  const btnVolver = document.getElementById('btnVolver');
-
-  if(!viewer || !btnVolver) return;
-
-  if(vistaActual !== 'main.html'){
-    viewer.classList.add('show-back');
-    btnVolver.style.display = 'inline-flex';
-  }else{
-    viewer.classList.remove('show-back');
-    btnVolver.style.display = 'none';
-  }
+  const btnVolver = document.getElementById('btnVolverFlotante');
+  if(!btnVolver) return;
+  btnVolver.style.display = (vistaActual !== 'main.html') ? 'inline-flex' : 'none';
 }
 
 function mostrarVistaPrincipal(){
@@ -797,11 +768,9 @@ function abrirModulo(url, titulo){
   const header = document.getElementById('mainHeader');
   const viewer = document.getElementById('viewer');
   const frame = document.getElementById('frame');
-  const title = document.getElementById('viewerTitle');
 
   vistaActual = url || '';
 
-  if(title) title.textContent = titulo || 'Módulo';
   if(frame) frame.src = url || '';
   if(header) header.classList.add('hidden');
   if(viewer) viewer.classList.add('active');
