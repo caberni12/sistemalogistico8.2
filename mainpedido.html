@@ -1,0 +1,555 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Sistema de Gestión Logística, Servicios AS | Menú Principal</title>
+  <link rel="stylesheet" href="estilos.css" />
+  <style>
+    :root{
+      --infra-bg:#07111f;
+      --infra-panel:rgba(15,23,42,.86);
+      --infra-panel2:rgba(255,255,255,.92);
+      --infra-text:#e5eefb;
+      --infra-muted:#94a3b8;
+      --infra-primary:#14b8a6;
+      --infra-primary2:#2563eb;
+      --infra-danger:#ef4444;
+      --infra-border:rgba(148,163,184,.2);
+      --infra-shadow:0 24px 70px rgba(2,6,23,.28);
+    }
+    *{box-sizing:border-box}
+    html{font-size:14px}
+    body{
+      margin:0;
+      min-height:100vh;
+      color:#0f172a;
+      background:
+        radial-gradient(circle at 12% 12%, rgba(20,184,166,.25), transparent 28%),
+        radial-gradient(circle at 88% 0%, rgba(37,99,235,.22), transparent 30%),
+        linear-gradient(135deg,#f8fafc 0%,#eef2ff 46%,#ecfeff 100%);
+      font-family:Inter,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+      overflow:hidden;
+    }
+    .infra-shell{display:grid;grid-template-columns:260px 1fr;min-height:100vh;height:100vh;transition:grid-template-columns .22s ease;}
+    .infra-sidebar{
+      background:linear-gradient(180deg,#06111f 0%,#0f172a 55%,#111827 100%);
+      color:var(--infra-text);
+      padding:18px 14px;
+      border-right:1px solid rgba(255,255,255,.08);
+      box-shadow:12px 0 30px rgba(2,6,23,.14);
+      display:flex;flex-direction:column;gap:16px;z-index:5;transition:transform .22s ease,padding .22s ease,opacity .22s ease;overflow:hidden;
+    }
+    .infra-brand{display:flex;align-items:center;gap:12px;padding:10px 10px 16px;border-bottom:1px solid rgba(255,255,255,.1)}
+    .brand-logo{width:42px;height:42px;border-radius:16px;background:linear-gradient(135deg,var(--infra-primary),var(--infra-primary2));display:grid;place-items:center;color:white;font-weight:900;box-shadow:0 10px 30px rgba(20,184,166,.28)}
+    .brand-title{font-size:1.1rem;font-weight:900;line-height:1.1;letter-spacing:.04em}.brand-subtitle{font-size:.75rem;color:var(--infra-muted);margin-top:3px}
+    .infra-nav{display:flex;flex-direction:column;gap:8px;overflow:auto;padding-right:4px}
+    .nav-btn{width:100%;border:none;background:transparent;color:#cbd5e1;border-radius:16px;display:flex;align-items:center;gap:11px;padding:12px 12px;font-weight:800;cursor:pointer;text-align:left;transition:.18s ease;}
+    .nav-btn:hover{background:rgba(255,255,255,.08);transform:translateX(2px)}
+    .nav-btn.active{background:linear-gradient(135deg,rgba(20,184,166,.26),rgba(37,99,235,.25));color:white;box-shadow:inset 0 0 0 1px rgba(255,255,255,.08)}
+    .nav-icon{width:28px;height:28px;border-radius:10px;background:rgba(255,255,255,.08);display:grid;place-items:center;flex:none}
+    .infra-footer{margin-top:auto;border-top:1px solid rgba(255,255,255,.09);padding:12px 8px 2px;color:var(--infra-muted);font-size:.78rem;line-height:1.35}
+    .infra-main{min-width:0;display:flex;flex-direction:column;height:100vh;overflow:hidden}
+    .infra-topbar{height:66px;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 18px;background:rgba(255,255,255,.78);backdrop-filter:blur(18px);border-bottom:1px solid rgba(148,163,184,.24);z-index:4}
+    .top-left{display:flex;align-items:center;gap:12px;min-width:0}.mobile-menu{display:inline-flex;align-items:center;justify-content:center;border:none;background:#0f172a;color:white;border-radius:14px;padding:9px 12px;font-size:1rem;cursor:pointer}
+    .page-title{margin:0;font-size:1.12rem;font-weight:900;color:#0f172a}.page-subtitle{font-size:.78rem;color:#64748b;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:52vw}
+    .top-actions{display:flex;gap:8px;align-items:center;flex-wrap:wrap;justify-content:flex-end}
+    .infra-btn{border:none;border-radius:14px;padding:10px 13px;background:linear-gradient(135deg,var(--infra-primary),var(--infra-primary2));color:white;font-weight:850;cursor:pointer;box-shadow:0 12px 25px rgba(37,99,235,.18);transition:.18s ease;white-space:nowrap;display:inline-flex;align-items:center;gap:8px}
+    .infra-btn:hover{transform:translateY(-1px)}.infra-btn.secondary{background:white;color:#0f172a;border:1px solid #dbe4ef;box-shadow:none}.infra-btn.danger{background:linear-gradient(135deg,#ef4444,#f97316)}
+    .infra-content{position:relative;flex:1;min-height:0;overflow:hidden;padding:16px}
+    .home-view,.module-view{position:absolute;inset:16px;display:none}.home-view.active,.module-view.active{display:block}
+    .home-scroll{height:100%;overflow:auto;padding:2px 4px 24px}.hero{border-radius:28px;padding:28px;background:linear-gradient(135deg,rgba(15,23,42,.96),rgba(30,64,175,.82) 52%,rgba(20,184,166,.86));color:white;box-shadow:var(--infra-shadow);position:relative;overflow:hidden}.hero:after{content:"";position:absolute;right:-80px;top:-90px;width:250px;height:250px;border-radius:999px;background:rgba(255,255,255,.12)}
+    .hero h2{margin:0 0 8px;font-size:2rem;letter-spacing:-.04em}.hero p{margin:0;color:#dbeafe;max-width:760px;line-height:1.5}.hero-actions{margin-top:18px;display:flex;gap:10px;flex-wrap:wrap}
+    .quick-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px;margin-top:16px}.quick-card{border:none;background:var(--infra-panel2);box-shadow:0 15px 38px rgba(15,23,42,.09);border-radius:24px;padding:18px;text-align:left;cursor:pointer;transition:.18s ease;min-height:132px;display:flex;flex-direction:column;justify-content:space-between}.quick-card:hover{transform:translateY(-3px);box-shadow:0 22px 50px rgba(15,23,42,.13)}.quick-card .icon{width:42px;height:42px;border-radius:16px;display:grid;place-items:center;background:#ecfeff;color:#0f766e;font-size:1.35rem}.quick-card h3{margin:12px 0 4px;font-size:1rem;color:#0f172a}.quick-card p{margin:0;color:#64748b;font-size:.82rem;line-height:1.35}
+    .status-grid{display:grid;grid-template-columns:1.2fr .8fr;gap:14px;margin-top:16px}.panel{background:rgba(255,255,255,.86);border:1px solid rgba(148,163,184,.22);border-radius:24px;padding:18px;box-shadow:0 15px 36px rgba(15,23,42,.07)}.panel h3{margin:0 0 12px;font-size:1rem}.status-line{display:flex;align-items:center;justify-content:space-between;border-top:1px solid #e2e8f0;padding:10px 0;font-size:.9rem}.status-line:first-of-type{border-top:none}.pill{display:inline-flex;align-items:center;border-radius:999px;padding:5px 10px;font-size:.78rem;font-weight:900;background:#dcfce7;color:#166534}.pill.warn{background:#fef3c7;color:#92400e}.pill.error{background:#fee2e2;color:#991b1b}
+    .module-frame-wrap{height:100%;border-radius:26px;overflow:hidden;background:white;box-shadow:var(--infra-shadow);border:1px solid rgba(148,163,184,.22)}iframe#moduleFrame{width:100%;height:100%;border:0;background:white}.loading-overlay{position:absolute;inset:16px;display:none;align-items:center;justify-content:center;background:rgba(248,250,252,.72);backdrop-filter:blur(6px);border-radius:26px;z-index:3}.loading-overlay.active{display:flex}.spinner{width:42px;height:42px;border-radius:999px;border:4px solid #cbd5e1;border-top-color:var(--infra-primary);animation:spin .8s linear infinite}@keyframes spin{to{transform:rotate(360deg)}}
+    .modal{display:none;position:fixed;inset:0;z-index:99;background:rgba(2,6,23,.58);backdrop-filter:blur(10px);align-items:center;justify-content:center;padding:18px}.modal.active{display:flex}.modal-card{width:min(760px,96vw);max-height:88vh;overflow:auto;background:white;border-radius:28px;box-shadow:0 30px 90px rgba(2,6,23,.34);border:1px solid rgba(255,255,255,.6)}.modal-header{padding:18px 20px;background:linear-gradient(135deg,var(--infra-primary),var(--infra-primary2));color:white;display:flex;align-items:center;justify-content:space-between}.modal-header h2{margin:0;font-size:1.05rem}.modal-body{padding:20px}.modal-body label{display:block;font-weight:900;margin:12px 0 6px;color:#0f172a}.modal-body input{width:100%;border:1px solid #cbd5e1;border-radius:14px;padding:12px;font-size:.95rem}.modal-footer{padding:14px 20px;border-top:1px solid #e2e8f0;display:flex;justify-content:flex-end;gap:10px;flex-wrap:wrap}.close-x{border:none;background:rgba(255,255,255,.16);color:white;border-radius:12px;width:34px;height:34px;cursor:pointer;font-size:1.1rem}.help{font-size:.82rem;color:#64748b;line-height:1.45}.status-box{margin-top:12px;border-radius:16px;background:#f8fafc;border:1px solid #e2e8f0;padding:12px;color:#334155;font-size:.86rem;min-height:42px;white-space:pre-wrap}
+    .infra-shell.sidebar-collapsed{grid-template-columns:0 1fr;}
+    .infra-shell.sidebar-collapsed .infra-sidebar{transform:translateX(-105%);padding-left:0;padding-right:0;border-right:0;box-shadow:none;}
+    .infra-shell.sidebar-collapsed .infra-sidebar>*{opacity:0;pointer-events:none;}
+    .infra-shell.sidebar-collapsed .infra-content{padding-left:16px;}
+    @media (max-width:1366px){html{font-size:13px}.infra-shell{grid-template-columns:236px 1fr}.quick-grid{gap:12px}.quick-card{min-height:118px;padding:15px}.infra-topbar{height:60px}.infra-content{padding:12px}.home-view,.module-view{inset:12px}.loading-overlay{inset:12px}}
+    @media (max-width:1080px){.quick-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.status-grid{grid-template-columns:1fr}.page-subtitle{max-width:38vw}}
+    @media (max-width:760px){body{overflow:auto}.infra-shell{display:block;height:auto;min-height:100vh}.infra-sidebar{position:fixed;left:0;top:0;bottom:0;width:280px;transform:translateX(-105%);transition:.2s ease;z-index:60}.infra-sidebar.open{transform:translateX(0)}.infra-shell.sidebar-collapsed .infra-sidebar{padding:18px 14px;box-shadow:12px 0 30px rgba(2,6,23,.14);border-right:1px solid rgba(255,255,255,.08)}.infra-shell.sidebar-collapsed .infra-sidebar.open{transform:translateX(0)}.infra-shell.sidebar-collapsed .infra-sidebar>*{opacity:1;pointer-events:auto}.mobile-menu{display:inline-flex}.infra-main{height:100vh}.top-actions .infra-btn{padding:9px 10px}.page-subtitle{display:none}.infra-content{padding:10px}.home-view,.module-view,.loading-overlay{inset:10px}.quick-grid{grid-template-columns:1fr}.hero{padding:22px}.hero h2{font-size:1.55rem}.module-frame-wrap{border-radius:20px}.modal{align-items:flex-end;padding:0}.modal-card{width:100%;max-height:92vh;border-radius:24px 24px 0 0}}
+  
+
+    /* =====================================================
+       AJUSTE FINAL NOTEBOOK: MENÚ Y BOTONES MÁS COMPACTOS
+    ===================================================== */
+    @media (min-width: 761px) and (max-width: 1440px){
+      html{font-size:11.5px !important;}
+      .infra-shell{grid-template-columns:210px 1fr !important;}
+      .infra-sidebar{padding:11px 9px !important;gap:9px !important;}
+      .infra-brand{gap:8px !important;padding:6px 6px 10px !important;}
+      .brand-logo{width:32px !important;height:32px !important;border-radius:12px !important;font-size:.9rem !important;}
+      .brand-title{font-size:.86rem !important;line-height:1.05 !important;letter-spacing:.01em !important;}
+      .brand-subtitle{font-size:.62rem !important;}
+      .infra-nav{gap:5px !important;}
+      .nav-btn{padding:8px 8px !important;border-radius:12px !important;gap:8px !important;font-size:.82rem !important;}
+      .nav-icon{width:24px !important;height:24px !important;border-radius:9px !important;font-size:.9rem !important;}
+      .infra-footer{padding:8px 6px 0 !important;font-size:.65rem !important;}
+      .infra-topbar{height:auto !important;min-height:48px !important;padding:8px 10px !important;gap:8px !important;}
+      .top-left{gap:8px !important;}
+      .mobile-menu{padding:7px 9px !important;border-radius:11px !important;font-size:.9rem !important;min-height:32px !important;}
+      .page-title{font-size:.95rem !important;line-height:1.1 !important;}
+      .page-subtitle{font-size:.67rem !important;max-width:35vw !important;}
+      .top-actions{gap:5px !important;flex-wrap:nowrap !important;overflow-x:auto !important;padding-bottom:2px !important;max-width:54vw !important;scrollbar-width:thin;}
+      .top-actions::-webkit-scrollbar{height:5px;}
+      .top-actions::-webkit-scrollbar-thumb{background:#cbd5e1;border-radius:999px;}
+      .infra-btn{padding:7px 9px !important;border-radius:11px !important;font-size:.76rem !important;min-height:31px !important;gap:5px !important;}
+      .infra-content{padding:8px !important;}
+      .home-view,.module-view{inset:8px !important;}
+      .loading-overlay{inset:8px !important;}
+      .hero{padding:18px !important;border-radius:20px !important;}
+      .hero h2{font-size:1.45rem !important;}
+      .hero p{font-size:.85rem !important;line-height:1.35 !important;}
+      .hero-actions{gap:7px !important;margin-top:12px !important;}
+      .quick-grid{grid-template-columns:repeat(4,minmax(0,1fr)) !important;gap:9px !important;margin-top:10px !important;}
+      .quick-card{min-height:92px !important;padding:11px !important;border-radius:17px !important;}
+      .quick-card .icon{width:32px !important;height:32px !important;border-radius:12px !important;font-size:1rem !important;}
+      .quick-card h3{font-size:.82rem !important;margin:8px 0 2px !important;}
+      .quick-card p{font-size:.66rem !important;line-height:1.25 !important;}
+      .status-grid{gap:9px !important;margin-top:10px !important;}
+      .panel{padding:12px !important;border-radius:18px !important;}
+      .panel h3{font-size:.85rem !important;margin-bottom:8px !important;}
+      .status-line{padding:7px 0 !important;font-size:.74rem !important;}
+      .pill{font-size:.65rem !important;padding:4px 8px !important;}
+      .module-frame-wrap{border-radius:18px !important;}
+      .modal-card{border-radius:20px !important;max-width:720px !important;}
+      .modal-header{padding:12px 14px !important;}
+      .modal-body{padding:14px !important;}
+      .modal-footer{padding:10px 14px !important;gap:7px !important;}
+    }
+
+    @media (min-width: 761px) and (max-width: 1180px){
+      html{font-size:10.8px !important;}
+      .infra-shell{grid-template-columns:190px 1fr !important;}
+      .quick-grid{grid-template-columns:repeat(2,minmax(0,1fr)) !important;}
+      .status-grid{grid-template-columns:1fr !important;}
+      .top-actions{max-width:48vw !important;}
+      .page-subtitle{display:none !important;}
+    }
+
+    @media (min-width: 761px){
+      .infra-shell.sidebar-collapsed{grid-template-columns:0 1fr !important;}
+      .infra-shell.sidebar-collapsed .top-actions{max-width:68vw !important;}
+    }
+
+
+    /* =====================================================
+       AJUSTE FINAL SOLICITADO: MAIN / MENÚ AL 90% EN NOTEBOOK
+       Mantiene el sistema más legible, evitando el zoom demasiado pequeño.
+       Este bloque queda al final para sobrescribir reglas anteriores.
+    ===================================================== */
+    @media (min-width: 761px) and (max-width: 1440px){
+      html{
+        font-size:14px !important;
+      }
+      body{
+        zoom:.90 !important;
+      }
+      .infra-shell{
+        grid-template-columns:245px 1fr !important;
+      }
+      .infra-shell.sidebar-collapsed{
+        grid-template-columns:0 1fr !important;
+      }
+      .infra-sidebar{
+        padding:16px 12px !important;
+      }
+      .brand-logo{
+        width:40px !important;
+        height:40px !important;
+      }
+      .brand-title{
+        font-size:1rem !important;
+      }
+      .brand-subtitle{
+        font-size:.72rem !important;
+      }
+      .nav-btn{
+        padding:10px 11px !important;
+        font-size:.9rem !important;
+        border-radius:14px !important;
+        gap:10px !important;
+      }
+      .nav-icon{
+        width:28px !important;
+        height:28px !important;
+      }
+      .infra-topbar{
+        min-height:58px !important;
+        padding:10px 14px !important;
+      }
+      .mobile-menu{
+        min-height:36px !important;
+        padding:8px 11px !important;
+        font-size:1rem !important;
+      }
+      .page-title{
+        font-size:1.05rem !important;
+      }
+      .page-subtitle{
+        display:block !important;
+        font-size:.74rem !important;
+        max-width:42vw !important;
+      }
+      .top-actions{
+        gap:7px !important;
+        max-width:52vw !important;
+        flex-wrap:nowrap !important;
+        overflow-x:auto !important;
+        scrollbar-width:thin;
+      }
+      .infra-btn{
+        padding:8px 11px !important;
+        min-height:34px !important;
+        border-radius:12px !important;
+        font-size:.84rem !important;
+      }
+      .infra-content{
+        padding:12px !important;
+      }
+      .home-view,.module-view{
+        inset:12px !important;
+      }
+      .hero{
+        padding:24px !important;
+        border-radius:24px !important;
+      }
+      .hero h2{
+        font-size:1.85rem !important;
+      }
+      .hero p{
+        font-size:.95rem !important;
+      }
+      .quick-grid{
+        grid-template-columns:repeat(4,minmax(0,1fr)) !important;
+        gap:12px !important;
+      }
+      .quick-card{
+        min-height:118px !important;
+        padding:15px !important;
+        border-radius:21px !important;
+      }
+      .quick-card .icon{
+        width:38px !important;
+        height:38px !important;
+        font-size:1.18rem !important;
+      }
+      .quick-card h3{
+        font-size:.95rem !important;
+      }
+      .quick-card p{
+        font-size:.78rem !important;
+      }
+      .status-grid{
+        gap:12px !important;
+      }
+      .panel{
+        padding:16px !important;
+        border-radius:22px !important;
+      }
+      .module-frame-wrap{
+        border-radius:22px !important;
+      }
+    }
+
+    @media (min-width: 761px) and (max-width: 1180px){
+      html{font-size:13.5px !important;}
+      body{zoom:.90 !important;}
+      .infra-shell{grid-template-columns:225px 1fr !important;}
+      .quick-grid{grid-template-columns:repeat(2,minmax(0,1fr)) !important;}
+      .page-subtitle{max-width:32vw !important;}
+      .top-actions{max-width:48vw !important;}
+    }
+
+
+  </style>
+</head>
+<body>
+  <div class="infra-shell" id="infraShell">
+    <aside class="infra-sidebar" id="sidebar">
+      <div class="infra-brand">
+        <div class="brand-logo">AS</div>
+        <div><div class="brand-title">Sistema de Gestión Logística</div><div class="brand-subtitle">Servicios AS</div></div>
+      </div>
+      <nav class="infra-nav">
+        <button class="nav-btn active" data-view="home"><span class="nav-icon">🏠</span><span>Inicio</span></button>
+        <button class="nav-btn" data-module="orders_system.html" data-title="Pedidos" data-subtitle="Carga, importación, productos asociados y PDF"><span class="nav-icon">📦</span><span>Pedidos</span></button>
+        <button class="nav-btn" data-module="ubicacionesPro.html" data-title="Ubicaciones" data-subtitle="Movimientos, scanner, códigos y descripción rápida"><span class="nav-icon">📍</span><span>Ubicaciones</span></button>
+        <button class="nav-btn" id="btnOpenConfig"><span class="nav-icon">⚙️</span><span>Configuración URL</span></button>
+        <button class="nav-btn" id="btnSyncLocations"><span class="nav-icon">🔄</span><span>Sincronizar ubicaciones</span></button>
+        <button class="nav-btn" id="btnSyncMaestra"><span class="nav-icon">⚡</span><span>Sincronizar MAESTRA</span></button>
+      </nav>
+      <div class="infra-footer">
+        <b>Estado:</b> <span id="sideStatus">Listo</span><br>
+        Las bases quedan en memoria y sólo se actualizan al sincronizar.
+      </div>
+    </aside>
+
+    <main class="infra-main">
+      <header class="infra-topbar">
+        <div class="top-left">
+          <button class="mobile-menu" id="btnMobileMenu">☰</button>
+          <div><h1 class="page-title" id="pageTitle">Sistema de Gestión Logística | Inicio</h1><div class="page-subtitle" id="pageSubtitle">Servicios AS · Centro de control de pedidos, ubicaciones, MAESTRA y configuración.</div></div>
+        </div>
+        <div class="top-actions">
+          <button class="infra-btn secondary" id="btnHome">Inicio</button>
+          <button class="infra-btn secondary" id="btnRefresh">Recargar vista</button>
+          <button class="infra-btn" id="btnConfigTop">Configuración</button>
+        </div>
+      </header>
+
+      <section class="infra-content">
+        <div class="home-view active" id="homeView">
+          <div class="home-scroll">
+            <section class="hero">
+              <h2>Sistema de Gestión Logística</h2>
+              <p>Desde este menú puedes entrar a Pedidos, Ubicaciones, sincronizar ubicaciones, precargar MAESTRA y cambiar la URL del Apps Script sin modificar el proyecto.</p>
+              <div class="hero-actions">
+                <button class="infra-btn" onclick="openModule('orders_system.html','Pedidos','Carga, importación y PDF de pedidos')">Abrir Pedidos</button>
+                <button class="infra-btn secondary" onclick="openModule('ubicacionesPro.html','Ubicaciones','Scanner y movimientos de productos')">Abrir Ubicaciones</button>
+                <button class="infra-btn secondary" onclick="openConfig()">Configurar URL</button>
+              </div>
+            </section>
+
+            <section class="quick-grid">
+              <button class="quick-card" onclick="openModule('orders_system.html','Pedidos','Carga, importación y PDF de pedidos')"><div><div class="icon">📦</div><h3>Pedidos</h3><p>Importar pedidos, ver productos asociados y generar PDF.</p></div></button>
+              <button class="quick-card" onclick="openModule('ubicacionesPro.html','Ubicaciones','Scanner, MAESTRA y movimientos')"><div><div class="icon">📍</div><h3>Ubicaciones</h3><p>Scanner, ingreso de códigos y descripción rápida desde MAESTRA.</p></div></button>
+              <button class="quick-card" onclick="syncLocations()"><div><div class="icon">🔄</div><h3>Ubicaciones</h3><p>Actualiza la memoria local con todas las ubicaciones de MOVIMIENTO.</p></div></button>
+              <button class="quick-card" onclick="syncMaestra()"><div><div class="icon">⚡</div><h3>MAESTRA rápida</h3><p>Precarga códigos y descripciones para búsquedas instantáneas.</p></div></button>
+            </section>
+
+            <section class="status-grid">
+              <div class="panel">
+                <h3>Panel de sincronización</h3>
+                <div class="status-line"><span>URL activa</span><span class="pill" id="urlPill">Configurada</span></div>
+                <div class="status-line"><span>Memoria de ubicaciones</span><span class="pill warn" id="locPill">Pendiente</span></div>
+                <div class="status-line"><span>Memoria MAESTRA</span><span class="pill warn" id="maestraPill">Pendiente</span></div>
+                <div class="status-box" id="mainStatus">Listo para operar.</div>
+              </div>
+              <div class="panel">
+                <h3>Acciones rápidas</h3>
+                <div style="display:flex;gap:8px;flex-wrap:wrap">
+                  <button class="infra-btn" onclick="syncAll()">Sincronizar todo</button>
+                  <button class="infra-btn secondary" onclick="clearCaches()">Limpiar memoria</button>
+                  <button class="infra-btn secondary" onclick="testConnection()">Probar conexión</button>
+                </div>
+                <p class="help">La sincronización guarda datos en memoria local. Pedidos y Ubicaciones Pro los usan sin consultar la base a cada rato.</p>
+              </div>
+            </section>
+          </div>
+        </div>
+        <div class="module-view" id="moduleView">
+          <div class="module-frame-wrap"><iframe id="moduleFrame" title="Módulo"></iframe></div>
+        </div>
+        <div class="loading-overlay" id="loadingOverlay"><div class="spinner"></div></div>
+      </section>
+    </main>
+  </div>
+
+  <div class="modal" id="configModal">
+    <div class="modal-card">
+      <div class="modal-header"><h2>Configuración de URL Apps Script</h2><button class="close-x" onclick="closeConfig()">×</button></div>
+      <div class="modal-body">
+        <label>URL del Apps Script</label>
+        <input id="apiUrlInput" placeholder="https://script.google.com/macros/s/.../exec" />
+        <p class="help">Esta URL queda guardada en memoria local y será usada por Pedidos y Ubicaciones Pro. También puedes descargar un <b>config.txt</b>.</p>
+        <input type="file" id="txtConfigInput" accept=".txt,.json" hidden />
+        <div class="status-box" id="configStatus">Sin cambios.</div>
+      </div>
+      <div class="modal-footer">
+        <button class="infra-btn secondary" onclick="document.getElementById('txtConfigInput').click()">Cargar TXT</button>
+        <button class="infra-btn secondary" onclick="downloadConfigTxt()">Descargar TXT</button>
+        <button class="infra-btn secondary" onclick="testConnection()">Probar</button>
+        <button class="infra-btn" onclick="saveConfig()">Guardar</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const DEFAULT_API_URL = 'https://script.google.com/macros/s/AKfycbyAV0CJN_5Uap7AYMRWP-NNXM4tFfz6uWut2F2KbUcvlQxVTD-84UiHhSbINHIGUjgp4Q/exec';
+    const API_URL_STORAGE_KEY = 'sistema_pedidos_api_url';
+    const UBICACIONES_CACHE_KEY = 'pedidos_ubicaciones_cache_v3_all_locations';
+    const UBICACIONES_CACHE_TS_KEY = 'pedidos_ubicaciones_cache_v3_all_locations_ts';
+    const PRODUCT_CACHE_KEY = 'ubicaciones_productos_cache_v1';
+    const PRODUCT_CACHE_TS_KEY = 'ubicaciones_productos_cache_v1_ts';
+
+    const $ = id => document.getElementById(id);
+    function normalizeCode(c){ return String(c || '').replace(/^'+/,'').trim().toLowerCase(); }
+    function setStatus(msg){ $('mainStatus').textContent = msg; $('sideStatus').textContent = msg.split('\n')[0] || 'Listo'; }
+    function getApiUrl(){ return (localStorage.getItem(API_URL_STORAGE_KEY) || DEFAULT_API_URL).trim(); }
+    function setLoading(on){ $('loadingOverlay').classList.toggle('active', !!on); }
+
+    function parseConfigTxt(text){
+      const raw = String(text || '').trim();
+      if(!raw) return '';
+      try{ const obj = JSON.parse(raw); return String(obj.API_URL || obj.apiUrl || obj.url || '').trim(); }catch(e){}
+      const line = raw.split(/\r?\n/).map(x=>x.trim()).find(x=>/^(API_URL|URL_GS|URL)\s*=/i.test(x));
+      const m = line && line.match(/^(API_URL|URL_GS|URL)\s*=\s*(.+)$/i);
+      return m ? m[2].trim() : '';
+    }
+
+    function showHome(){
+      document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
+      document.querySelector('.nav-btn[data-view="home"]').classList.add('active');
+      $('homeView').classList.add('active');
+      $('moduleView').classList.remove('active');
+      $('pageTitle').textContent = 'Sistema de Gestión Logística | Inicio';
+      $('pageSubtitle').textContent = 'Centro de control de pedidos, ubicaciones, MAESTRA y configuración.';
+      closeSidebarMobile();
+    }
+
+    function openModule(src,title,subtitle){
+      document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
+      const nav = [...document.querySelectorAll('.nav-btn')].find(b=>b.dataset.module === src);
+      if(nav) nav.classList.add('active');
+      $('homeView').classList.remove('active');
+      $('moduleView').classList.add('active');
+      $('pageTitle').textContent = 'Sistema de Gestión Logística | ' + title;
+      $('pageSubtitle').textContent = subtitle || '';
+      setLoading(true);
+      const iframe = $('moduleFrame');
+      iframe.onload = () => setLoading(false);
+      iframe.src = src;
+      closeSidebarMobile();
+    }
+
+    function refreshModule(){
+      if($('moduleView').classList.contains('active')){
+        setLoading(true); $('moduleFrame').contentWindow.location.reload(); setTimeout(()=>setLoading(false),900);
+      }else{
+        updateBadges(); setStatus('Inicio actualizado.');
+      }
+    }
+
+    function openConfig(){ $('apiUrlInput').value = getApiUrl(); $('configModal').classList.add('active'); $('configStatus').textContent = 'URL activa: ' + getApiUrl(); closeSidebarMobile(); }
+    function closeConfig(){ $('configModal').classList.remove('active'); }
+    function saveConfig(){
+      const url = $('apiUrlInput').value.trim();
+      if(!/^https:\/\/script\.google\.com\/macros\/s\/.+\/exec/.test(url)){ $('configStatus').textContent = 'URL inválida. Debe ser una URL de Apps Script que termine en /exec.'; return; }
+      localStorage.setItem(API_URL_STORAGE_KEY, url);
+      clearCaches(false);
+      $('configStatus').textContent = 'URL guardada. Se limpió la memoria anterior para evitar datos cruzados.';
+      updateBadges(); setStatus('URL guardada correctamente.');
+    }
+    async function testConnection(){
+      const url = ($('apiUrlInput').value || getApiUrl()).trim();
+      setLoading(true); setStatus('Probando conexión...');
+      try{
+        const res = await fetch(url + '?accion=listar_maestra&test=' + Date.now(), {cache:'no-store'});
+        const data = await res.json();
+        const ok = data && data.ok;
+        const msg = ok ? 'Conexión correcta. Endpoint MAESTRA disponible.' : 'La URL respondió, pero no confirmó listar_maestra.';
+        $('configStatus').textContent = msg; setStatus(msg);
+      }catch(e){ $('configStatus').textContent = 'No se pudo conectar: ' + e.message; setStatus('Error de conexión.'); }
+      finally{ setLoading(false); updateBadges(); }
+    }
+    function downloadConfigTxt(){
+      const blob = new Blob(['API_URL=' + (($('apiUrlInput').value || getApiUrl()).trim()) + '\n'], {type:'text/plain;charset=utf-8'});
+      const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download='config.txt'; a.click(); URL.revokeObjectURL(a.href);
+    }
+
+    async function syncLocations(){
+      const url = getApiUrl(); setLoading(true); setStatus('Sincronizando ubicaciones desde MOVIMIENTO...');
+      try{
+        const res = await fetch(url + '?accion=listar_ubicaciones_actuales&t=' + Date.now(), {cache:'no-store'});
+        const data = await res.json();
+        if(!(data && data.ok && Array.isArray(data.data))) throw new Error('Respuesta inválida de listar_ubicaciones_actuales');
+        const map = {};
+        data.data.forEach(row=>{
+          let codigo='', ubic='';
+          if(Array.isArray(row)){ codigo = normalizeCode(row[5]); ubic = String(row[4] || '').trim(); }
+          else if(row && typeof row === 'object'){
+            codigo = normalizeCode(row.codigo);
+            if(Array.isArray(row.ubicaciones)){
+              ubic = row.ubicaciones.map(u => (u && typeof u === 'object') ? (u.cantidad ? `${u.ubicacion} (${u.cantidad})` : u.ubicacion) : String(u || '')).filter(Boolean).join(' | ');
+            }else ubic = String(row.ubicacion || '').trim();
+          }
+          if(codigo && ubic && !map[codigo]) map[codigo] = ubic;
+        });
+        localStorage.setItem(UBICACIONES_CACHE_KEY, JSON.stringify(map));
+        localStorage.setItem(UBICACIONES_CACHE_TS_KEY, String(Date.now()));
+        setStatus(`Ubicaciones sincronizadas: ${Object.keys(map).length} códigos guardados en memoria.`);
+      }catch(e){ setStatus('No se pudo sincronizar ubicaciones: ' + e.message); }
+      finally{ setLoading(false); updateBadges(); }
+    }
+
+    async function syncMaestra(){
+      const url = getApiUrl(); setLoading(true); setStatus('Sincronizando MAESTRA para descripción rápida...');
+      try{
+        const res = await fetch(url + '?accion=listar_maestra&t=' + Date.now(), {cache:'no-store'});
+        const data = await res.json();
+        if(!(data && data.ok && Array.isArray(data.data))) throw new Error('Respuesta inválida de listar_maestra');
+        const map = {};
+        data.data.forEach(item=>{
+          const codigo = normalizeCode(item.codigo || item[0]);
+          const descripcion = String(item.descripcion || item[1] || '').trim();
+          const cantidad = Number(item.cantidad || item[2] || 0);
+          if(codigo) map[codigo] = {codigo, descripcion, cantidad};
+        });
+        localStorage.setItem(PRODUCT_CACHE_KEY, JSON.stringify(map));
+        localStorage.setItem(PRODUCT_CACHE_TS_KEY, String(Date.now()));
+        setStatus(`MAESTRA sincronizada: ${Object.keys(map).length} productos guardados en memoria.`);
+      }catch(e){ setStatus('No se pudo sincronizar MAESTRA: ' + e.message); }
+      finally{ setLoading(false); updateBadges(); }
+    }
+
+    async function syncAll(){ await syncLocations(); await syncMaestra(); }
+    function clearCaches(showMsg=true){
+      localStorage.removeItem(UBICACIONES_CACHE_KEY); localStorage.removeItem(UBICACIONES_CACHE_TS_KEY);
+      localStorage.removeItem(PRODUCT_CACHE_KEY); localStorage.removeItem(PRODUCT_CACHE_TS_KEY);
+      if(showMsg) setStatus('Memoria local limpiada. Vuelve a sincronizar cuando corresponda.');
+      updateBadges();
+    }
+
+    function updateBadges(){
+      const url = getApiUrl(); $('urlPill').textContent = url ? 'Configurada' : 'Pendiente';
+      $('urlPill').className = 'pill' + (url ? '' : ' error');
+      const locRaw = localStorage.getItem(UBICACIONES_CACHE_KEY); const locTs = Number(localStorage.getItem(UBICACIONES_CACHE_TS_KEY)||0);
+      const prodRaw = localStorage.getItem(PRODUCT_CACHE_KEY); const prodTs = Number(localStorage.getItem(PRODUCT_CACHE_TS_KEY)||0);
+      let locCount=0, prodCount=0; try{locCount=Object.keys(JSON.parse(locRaw||'{}')).length}catch(e){} try{prodCount=Object.keys(JSON.parse(prodRaw||'{}')).length}catch(e){}
+      $('locPill').textContent = locCount ? `${locCount} códigos` : 'Pendiente'; $('locPill').className = 'pill' + (locCount ? '' : ' warn');
+      $('maestraPill').textContent = prodCount ? `${prodCount} productos` : 'Pendiente'; $('maestraPill').className = 'pill' + (prodCount ? '' : ' warn');
+      const info = [];
+      if(locTs) info.push('Ubicaciones: ' + new Date(locTs).toLocaleString('es-CL'));
+      if(prodTs) info.push('MAESTRA: ' + new Date(prodTs).toLocaleString('es-CL'));
+      if(info.length) setStatus(info.join('\n'));
+    }
+
+    function isMobileView(){ return window.matchMedia('(max-width:760px)').matches; }
+    function closeSidebarMobile(){ if(isMobileView()) $('sidebar').classList.remove('open'); }
+    function toggleSidebar(){
+      if(isMobileView()){
+        $('sidebar').classList.toggle('open');
+        return;
+      }
+      const shell = $('infraShell');
+      shell.classList.toggle('sidebar-collapsed');
+      localStorage.setItem('sistema_sidebar_collapsed', shell.classList.contains('sidebar-collapsed') ? '1' : '0');
+    }
+    if(localStorage.getItem('sistema_sidebar_collapsed') === '1'){
+      $('infraShell').classList.add('sidebar-collapsed');
+    }
+    $('btnMobileMenu').addEventListener('click', toggleSidebar);
+    $('btnHome').addEventListener('click', showHome);
+    $('btnRefresh').addEventListener('click', refreshModule);
+    $('btnConfigTop').addEventListener('click', openConfig);
+    $('btnOpenConfig').addEventListener('click', openConfig);
+    $('btnSyncLocations').addEventListener('click', syncLocations);
+    $('btnSyncMaestra').addEventListener('click', syncMaestra);
+    document.querySelectorAll('.nav-btn[data-module]').forEach(btn=>btn.addEventListener('click',()=>openModule(btn.dataset.module,btn.dataset.title,btn.dataset.subtitle)));
+    document.querySelector('.nav-btn[data-view="home"]').addEventListener('click', showHome);
+    $('txtConfigInput').addEventListener('change', async e=>{
+      const file = e.target.files[0]; if(!file) return;
+      const txt = await file.text(); const url = parseConfigTxt(txt);
+      if(url){ $('apiUrlInput').value = url; $('configStatus').textContent = 'URL cargada desde archivo. Presiona Guardar.'; }
+      else $('configStatus').textContent = 'No se encontró API_URL en el archivo.';
+      e.target.value = '';
+    });
+    updateBadges();
+  </script>
+  <script src="loader_buttons.js"></script>
+</body>
+</html>
