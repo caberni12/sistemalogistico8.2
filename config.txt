@@ -1,3 +1,1 @@
-# Configuracion del Sistema de Gestion Logistica, Servicios AS
-# Puede cambiar esta URL desde el modulo Configuracion del sistema.
 API_URL=https://script.google.com/macros/s/AKfycbyAV0CJN_5Uap7AYMRWP-NNXM4tFfz6uWut2F2KbUcvlQxVTD-84UiHhSbINHIGUjgp4Q/exec

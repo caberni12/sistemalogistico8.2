@@ -147,6 +147,9 @@
       overflow-x: auto;
     }
   
+    #btnSyncPedidos{
+      background:linear-gradient(135deg,#2563eb,#14b8a6);
+    }
     #btnSyncUbicaciones{
       background:linear-gradient(135deg,#0ea5e9,#14b8a6);
     }
@@ -174,6 +177,127 @@
       word-break:break-word;
     }
 
+    /* =====================================================
+       AJUSTE COMPACTO SUPERIOR + FILTROS
+       Reduce el espacio del encabezado y buscador para que
+       la tabla tenga más área visible en notebook.
+    ===================================================== */
+    body{
+      font-size:14px;
+    }
+    header{
+      padding:10px 18px !important;
+      min-height:auto !important;
+      gap:14px !important;
+      align-items:center !important;
+      flex-wrap:wrap !important;
+    }
+    header h1{
+      margin:0 !important;
+      line-height:1.12 !important;
+      font-size:clamp(22px, 2.4vw, 30px) !important;
+      max-width:520px;
+      flex:1 1 360px;
+    }
+    header .module-subtitle{
+      margin:0 !important;
+      font-size:11px !important;
+      line-height:1.15 !important;
+      color:#64748b;
+      max-width:150px;
+      flex:0 0 150px;
+    }
+    header > div{
+      display:flex !important;
+      align-items:center !important;
+      justify-content:flex-end !important;
+      gap:6px !important;
+      flex-wrap:wrap !important;
+      flex:1 1 420px;
+    }
+    header button{
+      padding:9px 13px !important;
+      min-height:36px !important;
+      border-radius:14px !important;
+      font-size:12px !important;
+      white-space:nowrap;
+    }
+    .filter-card{
+      padding:10px 14px !important;
+      margin:12px !important;
+      border-radius:16px !important;
+    }
+    .filter-row{
+      display:grid;
+      grid-template-columns:minmax(260px, 1fr) 145px 135px 135px 86px;
+      gap:8px;
+      align-items:center;
+    }
+    .filter-row input,
+    .filter-row select{
+      margin-top:0 !important;
+      height:38px !important;
+      min-height:38px !important;
+      padding:0 12px !important;
+      border-radius:12px !important;
+      font-size:13px !important;
+    }
+    .filter-row .search{
+      padding:0 14px !important;
+      font-size:13px !important;
+    }
+    .filter-row button{
+      height:38px !important;
+      min-height:38px !important;
+      padding:0 12px !important;
+      border-radius:12px !important;
+      font-size:12px !important;
+      background:linear-gradient(135deg,#475569,#1e293b);
+    }
+    #syncInfo{
+      margin-top:6px !important;
+      font-size:11px !important;
+      line-height:1.2 !important;
+    }
+    .table-wrap{
+      margin-top:8px !important;
+    }
+    table.orders-table th,
+    table.orders-table td{
+      padding:8px 10px !important;
+      font-size:13px !important;
+    }
+    table.orders-table thead th{
+      padding:10px !important;
+      font-size:11px !important;
+    }
+    @media (max-width: 980px){
+      header{
+        padding:10px 12px !important;
+      }
+      header h1{
+        flex-basis:100%;
+        max-width:none;
+      }
+      header .module-subtitle{
+        flex:1 1 160px;
+      }
+      header > div{
+        justify-content:flex-start !important;
+      }
+      .filter-row{
+        grid-template-columns:1fr 1fr;
+      }
+      .filter-row .search{
+        grid-column:1 / -1;
+      }
+    }
+    @media (max-width: 560px){
+      .filter-row{
+        grid-template-columns:1fr;
+      }
+    }
+
 </style>
 <!-- Include jsPDF and autotable from CDN -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
@@ -188,14 +312,27 @@
   <p class="module-subtitle">Módulo de pedidos de cliente</p>
   <div>
     <button id="btnImport">Importar</button>
+    <button id="btnSyncPedidos" title="Enviar pedidos importados a la hoja PEDIDOS">Sincronizar pedidos</button>
     <button id="btnSyncUbicaciones" title="Actualizar memoria de ubicaciones desde Google Sheets">Sincronizar ubicaciones</button>
     <button id="btnConfigSistema" title="Cambiar URL de Apps Script">Configuración</button>
     <button id="btnAdd">Agregar</button>
   </div>
 </header>
 
-<div class="card">
-  <input class="search" placeholder="Buscar…" id="searchInput">
+<div class="card filter-card">
+  <div class="filter-row">
+    <input class="search" placeholder="Buscar por pedido, cliente, vendedor, código, descripción o ubicación…" id="searchInput">
+    <select id="statusFilter" title="Filtrar por status">
+      <option value="">Todos los status</option>
+      <option value="pendiente">Pendiente</option>
+      <option value="terminado">Terminado</option>
+      <option value="atrasado">Atrasado</option>
+      <option value="cancelado">Cancelado</option>
+    </select>
+    <input id="fechaDesde" type="date" title="Fecha desde">
+    <input id="fechaHasta" type="date" title="Fecha hasta">
+    <button id="btnClearFilters" type="button">Limpiar</button>
+  </div>
   <span id="syncInfo"></span>
 </div>
 
@@ -319,6 +456,7 @@
   const modal = document.getElementById('modal');
   const btnAdd = document.getElementById('btnAdd');
   const btnImport = document.getElementById('btnImport');
+  const btnSyncPedidos = document.getElementById('btnSyncPedidos');
   const btnSyncUbicaciones = document.getElementById('btnSyncUbicaciones');
   const btnConfigSistema = document.getElementById('btnConfigSistema');
   const configModal = document.getElementById('configModal');
@@ -333,6 +471,10 @@
   const syncInfo = document.getElementById('syncInfo');
   const fileInput = document.getElementById('fileInput');
   const searchInput = document.getElementById('searchInput');
+  const statusFilter = document.getElementById('statusFilter');
+  const fechaDesde = document.getElementById('fechaDesde');
+  const fechaHasta = document.getElementById('fechaHasta');
+  const btnClearFilters = document.getElementById('btnClearFilters');
   const btnCancel = document.getElementById('btnCancel');
   const btnSave = document.getElementById('btnSave');
   const editIndexInput = document.getElementById('editIndex');
@@ -840,26 +982,63 @@
     });
   }
   
+  function fechaToComparable(value){
+    const raw = String(value || '').trim();
+    if(!raw) return '';
+    const firstPart = raw.split(/[,\s]+/)[0].trim();
+
+    let m = firstPart.match(/^(\d{4})[-\/](\d{1,2})[-\/](\d{1,2})$/);
+    if(m){
+      return `${m[1]}-${String(m[2]).padStart(2,'0')}-${String(m[3]).padStart(2,'0')}`;
+    }
+
+    m = firstPart.match(/^(\d{1,2})[-\/](\d{1,2})[-\/](\d{2,4})$/);
+    if(m){
+      let year = String(m[3]);
+      if(year.length === 2) year = '20' + year;
+      return `${year}-${String(m[2]).padStart(2,'0')}-${String(m[1]).padStart(2,'0')}`;
+    }
+
+    const d = new Date(raw);
+    if(!Number.isNaN(d.getTime())){
+      return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+    }
+    return '';
+  }
+
   // Update filtered orders and render summary
   function updateFilter(){
-    const txt = searchInput.value.toLowerCase();
+    const txt = (searchInput.value || '').toLowerCase().trim();
+    const estadoFiltro = normalizarEstado(statusFilter ? statusFilter.value : '');
+    const desde = fechaDesde ? fechaDesde.value : '';
+    const hasta = fechaHasta ? fechaHasta.value : '';
+
     const filtered = orders.filter(item => {
-      return (
-        item.codigo.toLowerCase().includes(txt) ||
-        item.descripcion.toLowerCase().includes(txt) ||
-        item.ubicacion.toLowerCase().includes(txt) ||
-        item.pedido.toLowerCase().includes(txt) ||
-        ((item.cliente || '').toLowerCase().includes(txt)) ||
-        ((item.vendedor || '').toLowerCase().includes(txt)) ||
-        ((item.fecha || '').toLowerCase().includes(txt)) ||
-        ((item.status || '').toLowerCase().includes(txt))
+      const itemStatus = normalizarEstado(item.status || 'pendiente');
+      const itemFecha = fechaToComparable(item.fecha || '');
+
+      const matchTexto = !txt || (
+        String(item.codigo || '').toLowerCase().includes(txt) ||
+        String(item.descripcion || '').toLowerCase().includes(txt) ||
+        String(item.ubicacion || '').toLowerCase().includes(txt) ||
+        String(item.pedido || '').toLowerCase().includes(txt) ||
+        String(item.cliente || '').toLowerCase().includes(txt) ||
+        String(item.vendedor || '').toLowerCase().includes(txt) ||
+        String(item.fecha || '').toLowerCase().includes(txt) ||
+        String(item.status || '').toLowerCase().includes(txt)
       );
+
+      const matchEstado = !estadoFiltro || itemStatus === estadoFiltro;
+      const matchDesde = !desde || (itemFecha && itemFecha >= desde);
+      const matchHasta = !hasta || (itemFecha && itemFecha <= hasta);
+
+      return matchTexto && matchEstado && matchDesde && matchHasta;
     });
-    const dataToShow = filtered.length ? filtered : orders;
-    const summary = groupOrders(dataToShow);
+
+    const summary = groupOrders(filtered);
     renderSummary(summary);
   }
-  
+
   // Show modal for adding/editing
   function openModal(editIndex){
     if(editIndex != null){
@@ -1368,30 +1547,87 @@
           }
         }
       });
-      // If we have an API URL, send imported items to server
-      if(API_URL && itemsForServer.length){
-        try{
-          const result = await postToAppsScript({ accion: 'importar_pedidos', items: itemsForServer });
-          if(result && result.ok){
-            console.log('Pedidos importados en servidor', result.msg);
-          } else {
-            console.error('Error al importar en servidor', result);
-          }
-        }catch(err){
-          console.error('Fallo al enviar pedidos al servidor', err);
-        }
-      }
+      // El archivo queda cargado en pantalla. La hoja PEDIDOS se actualiza sólo al presionar Sincronizar pedidos.
       updateFilter();
+      if(itemsForServer.length){
+        updateSyncInfo(`Archivo cargado: ${itemsForServer.length} producto(s) nuevo(s). Presiona Sincronizar pedidos para enviarlos a Google Sheets.`);
+      }else{
+        updateSyncInfo('Archivo leído: no se agregaron productos nuevos pendientes.');
+      }
       fileInput.value = ''; // reset
     };
     reader.readAsArrayBuffer(file);
   }
   
+
+  async function syncPedidosToServer(){
+    if(!API_URL){
+      alert('Primero configura la URL del Apps Script.');
+      return;
+    }
+    const pendientes = orders
+      .filter(item => normalizarEstado(item.status || 'pendiente') === 'pendiente')
+      .map(item => ({
+        codigo: String(item.codigo || '').trim(),
+        descripcion: String(item.descripcion || '').trim(),
+        ubicacion: String(item.ubicacion || '').trim(),
+        pedido: String(item.pedido || '').trim(),
+        cliente: String(item.cliente || '').trim(),
+        vendedor: String(item.vendedor || '').trim(),
+        fecha: String(item.fecha || '').trim(),
+        status: 'pendiente'
+      }))
+      .filter(item => item.codigo && item.descripcion && item.pedido);
+
+    if(!pendientes.length){
+      alert('No hay productos pendientes para sincronizar.');
+      return;
+    }
+
+    const originalText = btnSyncPedidos.textContent;
+    btnSyncPedidos.disabled = true;
+    btnSyncPedidos.textContent = 'Sincronizando...';
+
+    try{
+      const result = await postToAppsScript({
+        accion: 'importar_pedidos',
+        items: pendientes
+      });
+
+      if(result && result.ok){
+        const insertados = Number(result.insertados || 0);
+        const recibidos = Number(result.recibidos || pendientes.length);
+        updateSyncInfo(`Sincronización lista. Recibidos: ${recibidos}. Nuevos guardados en PEDIDOS: ${insertados}. Ya existentes no se duplicaron.`);
+        alert(`Sincronización lista.\nRecibidos: ${recibidos}\nNuevos guardados: ${insertados}\nLos existentes no se duplicaron.`);
+      }else{
+        const msg = (result && result.msg) ? result.msg : 'No se pudo sincronizar con Apps Script.';
+        throw new Error(msg);
+      }
+    }catch(err){
+      console.error('Error al sincronizar pedidos', err);
+      alert('No se pudo sincronizar pedidos: ' + (err.message || err));
+    }finally{
+      btnSyncPedidos.textContent = originalText;
+      btnSyncPedidos.disabled = false;
+    }
+  }
+
   // Event listeners
   btnAdd.addEventListener('click', () => openModal());
   btnImport.addEventListener('click', () => fileInput.click());
+  btnSyncPedidos.addEventListener('click', syncPedidosToServer);
   fileInput.addEventListener('change', handleFile);
   searchInput.addEventListener('input', updateFilter);
+  statusFilter.addEventListener('change', updateFilter);
+  fechaDesde.addEventListener('change', updateFilter);
+  fechaHasta.addEventListener('change', updateFilter);
+  btnClearFilters.addEventListener('click', () => {
+    searchInput.value = '';
+    statusFilter.value = '';
+    fechaDesde.value = '';
+    fechaHasta.value = '';
+    updateFilter();
+  });
   btnCancel.addEventListener('click', closeModal);
   btnSave.addEventListener('click', saveEntry);
 
