@@ -1,0 +1,1443 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>Sistema de Gestión Logística, Servicios AS | Pedidos</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<!-- Link external stylesheet for unified styles -->
+<link rel="stylesheet" href="estilos.css">
+  <!-- Estilos específicos para la interfaz de pedidos -->
+  <style>
+    /* Ampliar el ancho máximo del modal para el formulario de pedidos */
+    #modal .modal-card {
+      /* El modal ocupa casi toda la pantalla con un margen lateral para un mejor uso del espacio. */
+      width: 95%;
+      /* Aumentamos el ancho máximo para escritorios para que quepa más contenido. */
+      max-width: 900px;
+      /* Limitar la altura para que en pantallas pequeñas se pueda hacer scroll vertical */
+      max-height: 90vh;
+      /* Habilitar scroll vertical si el contenido es más alto que la ventana */
+      overflow-y: auto;
+    }
+    /* Hacer que la lista de pedidos tenga aspecto de tabla clásica */
+    table.orders-table {
+      border-collapse: collapse;
+      border-spacing: 0;
+    }
+    table.orders-table th,
+    table.orders-table td {
+      border: 1px solid var(--border);
+      padding: 10px;
+    }
+    table.orders-table tbody tr:nth-child(even) {
+      background-color: #f9f9f9;
+    }
+    /* Acciones del pedido: evitar que el select se desborde de la celda.
+       La celda mantiene scroll horizontal propio cuando el contenido es mayor. */
+    table.orders-table td.actions-cell {
+      width: 1%;
+      max-width: 390px;
+      min-width: 300px;
+      vertical-align: middle;
+    }
+    .actions-scroll {
+      max-width: 100%;
+      overflow-x: auto;
+      overflow-y: hidden;
+      white-space: nowrap;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 2px 2px 6px;
+      scrollbar-width: thin;
+    }
+    .actions-scroll::-webkit-scrollbar { height: 6px; }
+    .actions-scroll::-webkit-scrollbar-thumb {
+      background: #cbd5e1;
+      border-radius: 999px;
+    }
+    @media (max-width: 900px) {
+      table.orders-table td.actions-cell {
+        min-width: 250px;
+        max-width: 250px;
+      }
+      .estado-select {
+        width: 108px;
+        max-width: 108px;
+        flex-basis: 108px;
+      }
+    }
+    .ubicacion-cell {
+      white-space: normal;
+      line-height: 1.35;
+      min-width: 180px;
+    }
+
+    /* Modal de detalles: ampliar ancho y permitir scroll vertical */
+    #detailsModal .modal-card {
+      width: 95%;
+      max-width: 900px;
+      max-height: 90vh;
+      overflow-y: auto;
+    }
+
+    /* Badges for order status */
+    .status-badge {
+      display: inline-block;
+      padding: 4px 8px;
+      border-radius: 4px;
+      font-size: 12px;
+      text-transform: capitalize;
+    }
+    .status-pendiente {
+      background-color: #facc15;
+      color: #7f3f00;
+    }
+    .status-terminado {
+      background-color: #34d399;
+      color: #065f46;
+    }
+    .status-cancelado {
+      background-color: #f87171;
+      color: #7f1d1d;
+    }
+    .status-atrasado {
+      background-color: #fb923c;
+      color: #7c2d12;
+    }
+    .estado-actions {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      flex: 0 0 auto;
+      white-space: nowrap;
+    }
+    .estado-select {
+      height: 32px;
+      width: 118px;
+      max-width: 118px;
+      flex: 0 0 118px;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 0 6px;
+      font-size: 12px;
+      background: #fff;
+      color: #0f172a;
+      outline: none;
+    }
+    .btn-estado {
+      height: 32px;
+      padding: 0 10px;
+      border-radius: 10px;
+      font-size: 12px;
+      background: linear-gradient(135deg,#334155,#0f172a);
+    }
+
+    /* Ajustes responsivos y de desplazamiento para los modales */
+    /* Reducir el tamaño de fuente dentro de los modales en pantallas pequeñas para que no se vean sobredimensionados. */
+    @media (max-width: 768px) {
+      #modal .modal-card,
+      #detailsModal .modal-card {
+        font-size: 14px;
+      }
+    }
+
+    /* Habilitar desplazamiento horizontal en el cuerpo del modal de detalles para las tablas anchas */
+    #detailsModal .modal-body {
+      overflow-x: auto;
+    }
+  
+    #btnSyncUbicaciones{
+      background:linear-gradient(135deg,#0ea5e9,#14b8a6);
+    }
+    #syncInfo{
+      display:block;
+      font-size:12px;
+      color:#64748b;
+      margin-top:8px;
+    }
+
+    #btnConfigSistema{
+      background:linear-gradient(135deg,#334155,#0f172a);
+    }
+    .config-help{
+      font-size:12px;
+      color:#64748b;
+      line-height:1.35;
+      margin:6px 0 10px;
+    }
+    .config-status{
+      display:block;
+      margin-top:8px;
+      font-size:12px;
+      color:#0f766e;
+      word-break:break-word;
+    }
+
+</style>
+<!-- Include jsPDF and autotable from CDN -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.29/jspdf.plugin.autotable.min.js"></script>
+<!-- Include XLSX for import -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+</head>
+<body>
+
+<header>
+  <h1>Sistema de Gestión Logística, Servicios AS</h1>
+  <p class="module-subtitle">Módulo de pedidos de cliente</p>
+  <div>
+    <button id="btnImport">Importar</button>
+    <button id="btnSyncUbicaciones" title="Actualizar memoria de ubicaciones desde Google Sheets">Sincronizar ubicaciones</button>
+    <button id="btnConfigSistema" title="Cambiar URL de Apps Script">Configuración</button>
+    <button id="btnAdd">Agregar</button>
+  </div>
+</header>
+
+<div class="card">
+  <input class="search" placeholder="Buscar…" id="searchInput">
+  <span id="syncInfo"></span>
+</div>
+
+<div class="card table-wrap">
+  <!-- Apply custom class to give classic table look -->
+  <table class="orders-table">
+    <thead>
+      <tr>
+        <!-- Summary view shows one row per pedido -->
+        <th>Pedido</th>
+        <th>Cliente</th>
+        <th>Vendedor</th>
+        <th>Fecha</th>
+        <th>Estado</th>
+        <th>Acciones</th>
+      </tr>
+    </thead>
+    <tbody id="summaryTable">
+      <!-- summary rows go here -->
+    </tbody>
+  </table>
+</div>
+
+<!-- Hidden file input for import -->
+<input type="file" id="fileInput" accept=".xlsx,.xls,.csv" style="display:none">
+
+<!-- Modal for manual entry -->
+<div class="modal" id="modal">
+  <div class="modal-card">
+    <h2>Agregar pedido</h2>
+    <input type="hidden" id="editIndex">
+    <label>Código</label>
+    <input id="inputCodigo">
+    <label>Descripción</label>
+    <input id="inputDescripcion">
+    <label>Ubicación</label>
+    <input id="inputUbicacion" readonly>
+    <label>Cliente</label>
+    <input id="inputCliente">
+    <label>Vendedor</label>
+    <input id="inputVendedor">
+    <label>Fecha</label>
+    <input id="inputFecha" type="date">
+    <label>Pedido</label>
+    <input id="inputPedido">
+    <div class="modal-footer">
+      <button class="cancel" id="btnCancel">Cancelar</button>
+      <button id="btnSave">Guardar</button>
+    </div>
+  </div>
+
+</div>
+
+<!-- Modal for order details placed outside the add/edit modal -->
+<div class="modal" id="detailsModal">
+  <div class="modal-card">
+    <h2 id="detailsTitle">Detalle del Pedido</h2>
+    <div class="modal-body">
+      <table class="orders-table">
+        <thead>
+          <tr>
+            <th>Código</th>
+            <th>Descripción</th>
+            <th>Ubicación</th>
+            <th>Acciones</th>
+          </tr>
+        </thead>
+        <tbody id="detailsBody">
+          <!-- product rows go here -->
+        </tbody>
+      </table>
+    </div>
+    <div class="modal-footer">
+      <button class="cancel" id="btnCloseDetails">Cerrar</button>
+    </div>
+  </div>
+</div>
+
+
+<!-- Modal de configuración -->
+<div class="modal" id="configModal">
+  <div class="modal-card">
+    <h2>Configuración del sistema</h2>
+    <div class="modal-body">
+      <label>URL del Apps Script</label>
+      <input id="configApiUrl" placeholder="https://script.google.com/macros/s/.../exec">
+      <p class="config-help">
+        Esta URL queda guardada en la memoria del navegador. También puedes usar un archivo local llamado
+        <b>config.txt</b> junto al HTML. Formatos aceptados:<br>
+        <code>API_URL=https://script.google.com/macros/s/.../exec</code><br>
+        o <code>{"API_URL":"https://script.google.com/macros/s/.../exec"}</code>
+      </p>
+      <input id="configTxtInput" type="file" accept=".txt,.json" style="display:none">
+      <span id="configStatus" class="config-status"></span>
+    </div>
+    <div class="modal-footer">
+      <button id="btnLoadConfigTxt">Cargar TXT</button>
+      <button id="btnDownloadConfigTxt">Descargar TXT</button>
+      <button id="btnTestConfig">Probar</button>
+      <button id="btnSaveConfig">Guardar</button>
+      <button class="cancel" id="btnCloseConfig">Cerrar</button>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  // Data store
+  let orders = [];
+  let filteredOrders = [];
+  
+  // DOM elements
+  // Body for the summary table (one row per pedido)
+  const summaryTableBody = document.getElementById('summaryTable');
+  // Detail modal elements
+  const detailsModal = document.getElementById('detailsModal');
+  const detailsTitle = document.getElementById('detailsTitle');
+  const detailsBody = document.getElementById('detailsBody');
+  const btnCloseDetails = document.getElementById('btnCloseDetails');
+
+  const modal = document.getElementById('modal');
+  const btnAdd = document.getElementById('btnAdd');
+  const btnImport = document.getElementById('btnImport');
+  const btnSyncUbicaciones = document.getElementById('btnSyncUbicaciones');
+  const btnConfigSistema = document.getElementById('btnConfigSistema');
+  const configModal = document.getElementById('configModal');
+  const configApiUrl = document.getElementById('configApiUrl');
+  const configStatus = document.getElementById('configStatus');
+  const configTxtInput = document.getElementById('configTxtInput');
+  const btnLoadConfigTxt = document.getElementById('btnLoadConfigTxt');
+  const btnDownloadConfigTxt = document.getElementById('btnDownloadConfigTxt');
+  const btnTestConfig = document.getElementById('btnTestConfig');
+  const btnSaveConfig = document.getElementById('btnSaveConfig');
+  const btnCloseConfig = document.getElementById('btnCloseConfig');
+  const syncInfo = document.getElementById('syncInfo');
+  const fileInput = document.getElementById('fileInput');
+  const searchInput = document.getElementById('searchInput');
+  const btnCancel = document.getElementById('btnCancel');
+  const btnSave = document.getElementById('btnSave');
+  const editIndexInput = document.getElementById('editIndex');
+  const inputCodigo = document.getElementById('inputCodigo');
+  const inputDescripcion = document.getElementById('inputDescripcion');
+  const inputUbicacion = document.getElementById('inputUbicacion');
+  const inputCliente = document.getElementById('inputCliente');
+  const inputVendedor = document.getElementById('inputVendedor');
+  const inputPedido = document.getElementById('inputPedido');
+  const inputFecha = document.getElementById('inputFecha');
+
+  // Configuración de API dinámica
+  // No vuelvas a editar el código para cambiar la URL: usa el módulo Configuración o config.txt.
+  const DEFAULT_API_URL = 'https://script.google.com/macros/s/AKfycbyAV0CJN_5Uap7AYMRWP-NNXM4tFfz6uWut2F2KbUcvlQxVTD-84UiHhSbINHIGUjgp4Q/exec';
+  const API_URL_STORAGE_KEY = 'sistema_pedidos_api_url';
+  let API_URL = '';
+  // Mapa de ubicaciones por código.
+  // Se guarda en memoria local para que el sistema no se quede pegado consultando Google Sheets a cada rato.
+  let ubicacionesMap = {};
+  const UBICACIONES_CACHE_KEY = 'pedidos_ubicaciones_cache_v3_all_locations';
+  const UBICACIONES_CACHE_TS_KEY = 'pedidos_ubicaciones_cache_v3_all_locations_ts';
+
+  /**
+   * Normaliza un código de producto quitando comillas iniciales, apóstrofes,
+   * espacios y convirtiéndolo a minúsculas. Esto permite cruzar códigos con
+   * ceros a la izquierda aunque vengan desde Excel, Google Sheets o scanner.
+   */
+  function normalizeCode(c){
+    return String(c || '')
+      .replace(/^['’`´]+/, '')
+      .trim()
+      .toLowerCase();
+  }
+
+  async function postToAppsScript(payload){
+    if(!API_URL) throw new Error('API_URL no configurada');
+    const body = new URLSearchParams();
+    body.append('data', JSON.stringify(payload || {}));
+    const res = await fetch(API_URL, {
+      method: 'POST',
+      body
+    });
+    const text = await res.text();
+    try{
+      return JSON.parse(text);
+    }catch(err){
+      throw new Error('Respuesta inválida del Apps Script: ' + text.slice(0, 160));
+    }
+  }
+
+
+  function parseConfigText(text){
+    const raw = String(text || '').trim();
+    if(!raw) return '';
+    try{
+      const obj = JSON.parse(raw);
+      return String(obj.API_URL || obj.apiUrl || obj.url || obj.URL_GS || '').trim();
+    }catch(err){
+      // No es JSON, seguimos con formato texto simple
+    }
+    const line = raw.split(/\r?\n/).map(x => x.trim()).find(x => x && !x.startsWith('#')) || '';
+    const eq = line.match(/^(API_URL|URL_GS|URL)\s*=\s*(.+)$/i);
+    if(eq) return eq[2].trim().replace(/^['"]|['"]$/g,'');
+    if(/^https?:\/\//i.test(line)) return line.trim();
+    return '';
+  }
+
+  async function loadApiConfig(){
+    const saved = localStorage.getItem(API_URL_STORAGE_KEY);
+    if(saved && saved.trim()){
+      API_URL = saved.trim();
+    }else{
+      try{
+        const res = await fetch('config.txt?ts=' + Date.now(), { cache:'no-store' });
+        if(res.ok){
+          const urlFromTxt = parseConfigText(await res.text());
+          if(urlFromTxt){
+            API_URL = urlFromTxt;
+            localStorage.setItem(API_URL_STORAGE_KEY, API_URL);
+          }
+        }
+      }catch(err){
+        // En file:// algunos navegadores bloquean fetch de config.txt; se mantiene fallback.
+      }
+    }
+    if(!API_URL) API_URL = DEFAULT_API_URL;
+    if(configApiUrl) configApiUrl.value = API_URL;
+    updateConfigStatus('URL activa: ' + API_URL);
+    return API_URL;
+  }
+
+  function updateConfigStatus(text){
+    if(configStatus) configStatus.textContent = text || '';
+  }
+
+  function abrirConfiguracion(){
+    if(configApiUrl) configApiUrl.value = API_URL || DEFAULT_API_URL;
+    updateConfigStatus('URL activa: ' + (API_URL || DEFAULT_API_URL));
+    configModal.classList.add('active');
+  }
+
+  function cerrarConfiguracion(){
+    configModal.classList.remove('active');
+  }
+
+  function guardarConfiguracion(){
+    const url = (configApiUrl.value || '').trim();
+    if(!/^https:\/\/script\.google\.com\/macros\/s\/.+\/exec$/i.test(url)){
+      updateConfigStatus('URL inválida. Debe terminar en /exec y ser de script.google.com/macros/s/.');
+      return;
+    }
+    API_URL = url;
+    localStorage.setItem(API_URL_STORAGE_KEY, API_URL);
+    updateConfigStatus('Configuración guardada. URL activa: ' + API_URL);
+  }
+
+  async function probarConfiguracion(){
+    guardarConfiguracion();
+    if(!API_URL) return;
+    updateConfigStatus('Probando conexión...');
+    try{
+      const res = await fetch(API_URL + '?accion=listar_ubicaciones_actuales&test=' + Date.now(), { cache:'no-store' });
+      const data = await res.json();
+      if(data && data.ok){
+        updateConfigStatus('Conexión correcta. Apps Script respondió OK.');
+      }else{
+        updateConfigStatus('La URL respondió, pero no entregó OK. Revisa que pegaste el Apps Script actualizado.');
+      }
+    }catch(err){
+      updateConfigStatus('No se pudo conectar. Revisa URL, permisos del despliegue y conexión.');
+    }
+  }
+
+  function descargarConfigTxt(){
+    const url = (configApiUrl.value || API_URL || DEFAULT_API_URL).trim();
+    const contenido = `API_URL=${url}\n`;
+    const blob = new Blob([contenido], {type:'text/plain;charset=utf-8'});
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'config.txt';
+    a.click();
+    URL.revokeObjectURL(a.href);
+  }
+
+  function cargarConfigTxtArchivo(file){
+    if(!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      const url = parseConfigText(reader.result);
+      if(url){
+        configApiUrl.value = url;
+        guardarConfiguracion();
+      }else{
+        updateConfigStatus('No se encontró una URL válida dentro del archivo.');
+      }
+    };
+    reader.readAsText(file);
+  }
+
+  function updateSyncInfo(texto){
+    if(syncInfo){
+      syncInfo.textContent = texto || '';
+    }
+  }
+
+  function cargarUbicacionesDesdeMemoria(){
+    try{
+      const raw = localStorage.getItem(UBICACIONES_CACHE_KEY);
+      if(!raw) return false;
+      const parsed = JSON.parse(raw);
+      if(!parsed || typeof parsed !== 'object') return false;
+      ubicacionesMap = parsed;
+      const ts = localStorage.getItem(UBICACIONES_CACHE_TS_KEY);
+      const total = Object.keys(ubicacionesMap).length;
+      const fecha = ts ? new Date(Number(ts)).toLocaleString() : 'sin fecha';
+      updateSyncInfo(`Ubicaciones en memoria: ${total} | Última sincronización: ${fecha}`);
+      return total > 0;
+    }catch(err){
+      console.error('No se pudo leer memoria de ubicaciones', err);
+      return false;
+    }
+  }
+
+  function guardarUbicacionesEnMemoria(){
+    try{
+      localStorage.setItem(UBICACIONES_CACHE_KEY, JSON.stringify(ubicacionesMap || {}));
+      localStorage.setItem(UBICACIONES_CACHE_TS_KEY, String(Date.now()));
+      const total = Object.keys(ubicacionesMap || {}).length;
+      updateSyncInfo(`Ubicaciones sincronizadas: ${total} | ${new Date().toLocaleString()}`);
+    }catch(err){
+      console.error('No se pudo guardar memoria de ubicaciones', err);
+    }
+  }
+
+  function aplicarUbicacionesEnPedidos(){
+    let actualizados = 0;
+    orders.forEach(item => {
+      const loc = getUbicacion(item.codigo);
+      if(loc && item.ubicacion !== loc){
+        item.ubicacion = loc;
+        actualizados++;
+      }
+    });
+    return actualizados;
+  }
+
+  // Carga ubicaciones.
+  // Por defecto usa la memoria local; sólo consulta Google Sheets cuando force=true
+  // o cuando aún no existe caché.
+  async function loadUbicaciones(options = {}){
+    const force = options.force === true;
+
+    if(!force && cargarUbicacionesDesdeMemoria()){
+      return true;
+    }
+
+    if(!API_URL){
+      updateSyncInfo('API_URL no configurada. No se pueden sincronizar ubicaciones.');
+      return false;
+    }
+
+    try{
+      updateSyncInfo('Sincronizando ubicaciones desde Google Sheets...');
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), 25000);
+
+      // Endpoint optimizado: devuelve TODAS las ubicaciones por código desde la hoja MOVIMIENTO.
+      const res = await fetch(`${API_URL}?accion=listar_ubicaciones_actuales`, { signal: controller.signal });
+      clearTimeout(timer);
+      const data = await res.json();
+
+      if(data && data.ok && Array.isArray(data.data)){
+        const nuevoMapa = {};
+        const movimientos = data.data;
+
+        // Si el endpoint devuelve objetos, cada objeto ya viene con todas las ubicaciones unidas.
+        for(let i = movimientos.length - 1; i >= 0; i--){
+          const row = movimientos[i];
+
+          let codigoRow = '';
+          let ubic = '';
+
+          if(Array.isArray(row)){
+            // Compatibilidad con acción listar: [id, fecha_registro, fecha_entrada, fecha_salida, ubicacion, codigo, ...]
+            codigoRow = normalizeCode(row[5]);
+            ubic = String(row[4] || '').trim();
+          }else if(row && typeof row === 'object'){
+            // Acción optimizada listar_ubicaciones_actuales: {codigo, ubicacion, ubicaciones:[...]}
+            codigoRow = normalizeCode(row.codigo);
+            if(Array.isArray(row.ubicaciones)){
+              ubic = row.ubicaciones
+                .map(u => (u && typeof u === 'object') ? (u.cantidad ? `${u.ubicacion} (${u.cantidad})` : u.ubicacion) : String(u || ''))
+                .filter(Boolean)
+                .join(' | ');
+            }else{
+              ubic = String(row.ubicacion || '').trim();
+            }
+          }
+
+          if(!codigoRow || !ubic) continue;
+          if(!nuevoMapa[codigoRow]){
+            nuevoMapa[codigoRow] = ubic;
+          }
+        }
+
+        ubicacionesMap = nuevoMapa;
+        guardarUbicacionesEnMemoria();
+        aplicarUbicacionesEnPedidos();
+        updateFilter();
+        return true;
+      }
+
+      updateSyncInfo('No se recibieron ubicaciones válidas desde la hoja MOVIMIENTO.');
+      return false;
+    }catch(err){
+      console.error('Error al sincronizar ubicaciones', err);
+      updateSyncInfo('No se pudo sincronizar. Se mantiene la memoria local.');
+      return false;
+    }
+  }
+
+  // Obtener ubicación por código desde la memoria local
+  function getUbicacion(cod){
+    const key = normalizeCode(cod);
+    return ubicacionesMap[key] || '';
+  }
+
+  function escapeHtml(value){
+    return String(value ?? '')
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#039;');
+  }
+
+  function ubicacionHtml(value){
+    return escapeHtml(value).replace(/\s*\|\s*/g, '<br>');
+  }
+
+  function ubicacionPdf(value){
+    return String(value || '').replace(/\s*\|\s*/g, '\n');
+  }
+
+  function normalizarEstado(value){
+    const estado = String(value || 'pendiente')
+      .trim()
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '');
+    if(estado === 'terminado') return 'terminado';
+    if(estado === 'cancelado') return 'cancelado';
+    if(estado === 'atrasado') return 'atrasado';
+    return 'pendiente';
+  }
+
+  function labelEstado(value){
+    const estado = normalizarEstado(value);
+    return estado.charAt(0).toUpperCase() + estado.slice(1);
+  }
+
+  function appsScriptJsonp(params, timeoutMs=25000){
+    return new Promise((resolve, reject) => {
+      if(!API_URL){
+        reject(new Error('API_URL no configurada'));
+        return;
+      }
+      const cbName = '__sgl_cb_' + Date.now() + '_' + Math.floor(Math.random() * 1000000);
+      const script = document.createElement('script');
+      const timer = setTimeout(() => {
+        cleanup();
+        reject(new Error('Tiempo de espera agotado al actualizar Apps Script'));
+      }, timeoutMs);
+      function cleanup(){
+        clearTimeout(timer);
+        try{ delete window[cbName]; }catch(e){ window[cbName] = undefined; }
+        if(script && script.parentNode) script.parentNode.removeChild(script);
+      }
+      window[cbName] = function(data){
+        cleanup();
+        resolve(data);
+      };
+      const qs = new URLSearchParams(Object.assign({}, params, {
+        callback: cbName,
+        ts: Date.now()
+      }));
+      script.onerror = function(){
+        cleanup();
+        reject(new Error('No se pudo conectar con Apps Script'));
+      };
+      script.src = API_URL + '?' + qs.toString();
+      document.head.appendChild(script);
+    });
+  }
+
+  async function appsScriptPostForm(params, timeoutMs=25000){
+    if(!API_URL) throw new Error('API_URL no configurada');
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), timeoutMs);
+    try{
+      const res = await fetch(API_URL, {
+        method: 'POST',
+        body: new URLSearchParams(params),
+        cache: 'no-store',
+        signal: controller.signal
+      });
+      const text = await res.text();
+      try{
+        return JSON.parse(text);
+      }catch(err){
+        throw new Error('Respuesta no JSON de Apps Script: ' + text.slice(0,180));
+      }
+    }finally{
+      clearTimeout(timeout);
+    }
+  }
+
+  function itemsPedidoParaServidor(orderNum){
+    return orders
+      .filter(item => String(item.pedido || '') === String(orderNum || ''))
+      .map(item => ({
+        id: item.id || '',
+        codigo: item.codigo || '',
+        descripcion: item.descripcion || '',
+        ubicacion: item.ubicacion || getUbicacion(item.codigo) || '',
+        pedido: item.pedido || orderNum,
+        cliente: item.cliente || '',
+        vendedor: item.vendedor || '',
+        fecha: item.fecha || '',
+        status: item.status || 'pendiente',
+        cantidad: item.cantidad || 1
+      }));
+  }
+
+  function pedidoProductoKey(item){
+    return String(item?.pedido || '').trim() + '|' + normalizeCode(item?.codigo || '');
+  }
+
+  function existePedidoProducto(item){
+    const key = pedidoProductoKey(item);
+    if(!key || key === '|') return false;
+    return orders.some(actual => pedidoProductoKey(actual) === key);
+  }
+
+  function agregarPedidoPendienteSinDuplicar(item){
+    if(!item || !item.codigo || !item.pedido) return false;
+    if(normalizarEstado(item.status || 'pendiente') !== 'pendiente') return false;
+    if(existePedidoProducto(item)) return false;
+    orders.push(item);
+    return true;
+  }
+
+
+  async function loadPedidosFromServer(){
+    if(!API_URL) return;
+    try{
+      const res = await fetch(`${API_URL}?accion=listar_pedidos`);
+      const data = await res.json();
+      if(!data || !data.ok || !Array.isArray(data.data)) return;
+
+      const pedidos = data.data
+        .filter(r => Array.isArray(r) && String(r[0] || '').startsWith('PD-'))
+        .map(r => ({
+          id: String(r[0] || ''),
+          codigo: String(r[1] || '').replace(/^'+/, '').trim(),
+          descripcion: String(r[2] || '').trim(),
+          ubicacion: String(r[3] || '').trim(),
+          pedido: String(r[4] || '').trim(),
+          cliente: String(r[5] || '').trim(),
+          vendedor: String(r[6] || '').trim(),
+          status: String(r[7] || 'pendiente').trim() || 'pendiente',
+          fecha: String(r[8] || '').trim()
+        }))
+        .filter(x => x.codigo && x.pedido && normalizarEstado(x.status || 'pendiente') === 'pendiente');
+
+      if(pedidos.length){
+        let agregados = 0;
+        pedidos.forEach(item => {
+          if(agregarPedidoPendienteSinDuplicar(item)) agregados++;
+        });
+        await ensureLocationsForItems(orders);
+        if(agregados){
+          updateSyncInfo(`Pedidos pendientes nuevos agregados: ${agregados}`);
+        }
+      }
+    }catch(err){
+      console.error('No se pudieron cargar pedidos desde Apps Script', err);
+    }
+  }
+
+  // Group orders by pedido to generate summary rows
+  function groupOrders(arr){
+    const map = {};
+    arr.forEach(item => {
+      const key = item.pedido;
+      if(!map[key]){
+        map[key] = {
+          pedido: key,
+          cliente: item.cliente || '',
+          vendedor: item.vendedor || '',
+          fecha: item.fecha || '',
+          status: normalizarEstado(item.status || 'pendiente')
+        };
+      }
+    });
+    return Object.values(map);
+  }
+
+  // Render summary table (one row per pedido)
+  function renderSummary(data){
+    summaryTableBody.innerHTML = '';
+    if(!data.length){
+      summaryTableBody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:20px">Sin registros</td></tr>';
+      return;
+    }
+    data.forEach(order => {
+      const estado = normalizarEstado(order.status);
+      const pedidoArg = JSON.stringify(order.pedido || '');
+      const clienteArg = JSON.stringify(order.cliente || '');
+      const vendedorArg = JSON.stringify(order.vendedor || '');
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td>${escapeHtml(order.pedido)}</td>
+        <td>${escapeHtml(order.cliente)}</td>
+        <td>${escapeHtml(order.vendedor)}</td>
+        <td>${escapeHtml(order.fecha || '')}</td>
+        <td><span class="status-badge status-${estado}">${labelEstado(estado)}</span></td>
+        <td class="actions-cell">
+          <div class="actions-scroll">
+            <button class="actions-button" onclick='showDetails(${pedidoArg})'>👁️ Ver productos</button>
+            <button class="actions-button" onclick='generatePDF(${pedidoArg}, ${clienteArg}, ${vendedorArg})'>📄 PDF</button>
+            <span class="estado-actions">
+              <select class="estado-select" id="estado_${encodeURIComponent(order.pedido || '')}">
+                <option value="pendiente" ${estado === 'pendiente' ? 'selected' : ''}>Pendiente</option>
+                <option value="terminado" ${estado === 'terminado' ? 'selected' : ''}>Terminado</option>
+                <option value="atrasado" ${estado === 'atrasado' ? 'selected' : ''}>Atrasado</option>
+                <option value="cancelado" ${estado === 'cancelado' ? 'selected' : ''}>Cancelado</option>
+              </select>
+              <button class="actions-button btn-estado" onclick='cambiarEstadoPedido(${pedidoArg}, this)'>Cambiar</button>
+            </span>
+          </div>
+        </td>
+      `;
+      summaryTableBody.appendChild(tr);
+    });
+  }
+  
+  // Update filtered orders and render summary
+  function updateFilter(){
+    const txt = searchInput.value.toLowerCase();
+    const filtered = orders.filter(item => {
+      return (
+        item.codigo.toLowerCase().includes(txt) ||
+        item.descripcion.toLowerCase().includes(txt) ||
+        item.ubicacion.toLowerCase().includes(txt) ||
+        item.pedido.toLowerCase().includes(txt) ||
+        ((item.cliente || '').toLowerCase().includes(txt)) ||
+        ((item.vendedor || '').toLowerCase().includes(txt)) ||
+        ((item.fecha || '').toLowerCase().includes(txt)) ||
+        ((item.status || '').toLowerCase().includes(txt))
+      );
+    });
+    const dataToShow = filtered.length ? filtered : orders;
+    const summary = groupOrders(dataToShow);
+    renderSummary(summary);
+  }
+  
+  // Show modal for adding/editing
+  function openModal(editIndex){
+    if(editIndex != null){
+      editIndexInput.value = editIndex;
+      const item = orders[editIndex];
+      inputCodigo.value = item.codigo;
+      inputDescripcion.value = item.descripcion;
+      inputUbicacion.value = item.ubicacion;
+      inputCliente.value = item.cliente || '';
+      inputVendedor.value = item.vendedor || '';
+      inputFecha.value = item.fecha || '';
+      inputPedido.value = item.pedido;
+    }else{
+      editIndexInput.value = '';
+      inputCodigo.value = '';
+      inputDescripcion.value = '';
+      inputUbicacion.value = '';
+      inputCliente.value = '';
+      inputVendedor.value = '';
+      inputFecha.value = '';
+      inputPedido.value = '';
+    }
+    modal.classList.add('active');
+  }
+  function closeModal(){
+    modal.classList.remove('active');
+  }
+  
+  // Save entry from modal
+  function saveEntry(){
+    const codigo = inputCodigo.value.trim();
+    const descripcion = inputDescripcion.value.trim();
+    // Obtener ubicación desde el input o, si está vacío, desde el mapa
+    let ubicacion = inputUbicacion.value.trim();
+    if(!ubicacion){
+      const locMap = getUbicacion(codigo);
+      if(locMap){
+        ubicacion = locMap;
+        inputUbicacion.value = locMap;
+      }
+    }
+    const cliente = inputCliente.value.trim();
+    const vendedor = inputVendedor.value.trim();
+    const pedido = inputPedido.value.trim();
+    const fecha = inputFecha.value.trim();
+    if(!codigo || !descripcion || !pedido){
+      alert('Ingrese todos los campos obligatorios: código, descripción y pedido.');
+      return;
+    }
+    const idx = editIndexInput.value;
+    if(idx){
+      const existing = orders[idx] || {};
+      orders[idx] = {
+        codigo,
+        descripcion,
+        ubicacion,
+        cliente,
+        vendedor,
+        pedido,
+        fecha,
+        status: existing.status || 'pendiente'
+      };
+    }else{
+      orders.push({
+        codigo,
+        descripcion,
+        ubicacion,
+        cliente,
+        vendedor,
+        pedido,
+        fecha,
+        status: 'pendiente'
+      });
+    }
+    closeModal();
+    updateFilter();
+  }
+  
+  // Edit entry
+  window.editEntry = function(index){
+    openModal(index);
+  };
+  
+  // Delete entry
+  window.deleteEntry = function(index){
+    if(confirm('¿Eliminar este registro?')){
+      orders.splice(index,1);
+      updateFilter();
+    }
+  };
+
+  window.cambiarEstadoPedido = async function(orderNum, btn){
+    const select = document.getElementById('estado_' + encodeURIComponent(orderNum || ''));
+    const nuevoEstado = normalizarEstado(select ? select.value : 'pendiente');
+    const estadoAnterior = orders.find(item => String(item.pedido) === String(orderNum))?.status || 'pendiente';
+    const itemsPedido = itemsPedidoParaServidor(orderNum);
+
+    if(!itemsPedido.length){
+      alert('No se encontraron productos asociados al pedido ' + orderNum + '.');
+      return;
+    }
+
+    await ensureLocationsForItems(itemsPedido);
+
+    const originalText = btn ? btn.textContent : '';
+    if(btn){
+      btn.disabled = true;
+      btn.textContent = 'Guardando...';
+      btn.classList.add('is-loading');
+    }
+
+    try{
+      if(!API_URL){
+        throw new Error('API_URL no configurada. Revise el módulo Configuración.');
+      }
+
+      const basePayload = {
+        accion: 'actualizar_estado_pedido',
+        pedido: orderNum,
+        nuevo_estado: nuevoEstado,
+        cliente: itemsPedido[0]?.cliente || '',
+        vendedor: itemsPedido[0]?.vendedor || '',
+        items: JSON.stringify(itemsPedido)
+      };
+
+      // Primero usamos JSONP por GET para evitar bloqueos CORS en Apps Script.
+      // Si el URL queda demasiado largo, usamos POST form como respaldo.
+      let data = null;
+      const testQuery = new URLSearchParams(Object.assign({}, basePayload, { callback:'x', ts:Date.now() })).toString();
+      if((API_URL + '?' + testQuery).length < 7500){
+        data = await appsScriptJsonp(basePayload);
+      }else{
+        data = await appsScriptPostForm(basePayload);
+      }
+
+      if(!data || !data.ok){
+        throw new Error((data && data.msg) ? data.msg : 'Apps Script no confirmó la actualización');
+      }
+
+      // Confirmado por Apps Script: recién aquí actualizamos la vista.
+      if(nuevoEstado === 'terminado' && data.removido_de_pedidos){
+        orders = orders.filter(item => String(item.pedido) !== String(orderNum));
+      }else{
+        orders.forEach(item => {
+          if(String(item.pedido) === String(orderNum)){
+            item.status = nuevoEstado;
+          }
+        });
+      }
+      updateFilter();
+      alert(data.msg || 'Estado actualizado correctamente.');
+    }catch(err){
+      console.error('Error al actualizar estado del pedido', err);
+      orders.forEach(item => {
+        if(String(item.pedido) === String(orderNum)){
+          item.status = normalizarEstado(estadoAnterior);
+        }
+      });
+      updateFilter();
+      if(select) select.value = normalizarEstado(estadoAnterior);
+      alert('No se pudo guardar el estado en Apps Script. Se dejó el estado anterior.\nDetalle: ' + (err && err.message ? err.message : err));
+    }finally{
+      if(btn){
+        btn.disabled = false;
+        btn.textContent = originalText || 'Cambiar';
+        btn.classList.remove('is-loading');
+      }
+    }
+  };
+
+  // Show order details in modal
+  // Completa ubicaciones sólo desde la memoria local. No consulta Google Sheets aquí
+  // para evitar que el sistema se pegue al abrir pedidos o generar PDF.
+  async function ensureLocationsForItems(items){
+    if(!items || !items.length) return;
+    if(!ubicacionesMap || !Object.keys(ubicacionesMap).length){
+      cargarUbicacionesDesdeMemoria();
+    }
+
+    for(const item of items){
+      const loc = getUbicacion(item.codigo);
+      if(loc){
+        item.ubicacion = loc;
+      }
+    }
+  }
+
+  // Show order details in modal
+  window.showDetails = async function(orderNum){
+    const items = orders.filter(item => item.pedido === orderNum);
+    // Intentar completar las ubicaciones vacías
+    await ensureLocationsForItems(items);
+    detailsTitle.textContent = 'Pedido: ' + orderNum;
+    detailsBody.innerHTML = '';
+    if(!items.length){
+      detailsBody.innerHTML = '<tr><td colspan="4" style="text-align:center;padding:20px">Sin productos</td></tr>';
+    } else {
+      items.forEach(item => {
+        const idx = orders.indexOf(item);
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td>${escapeHtml(item.codigo)}</td>
+          <td>${escapeHtml(item.descripcion)}</td>
+          <td class="ubicacion-cell">${ubicacionHtml(item.ubicacion)}</td>
+          <td>
+            <button class="actions-button" onclick="editEntry(${idx})">✏️</button>
+            <button class="actions-button" onclick="deleteEntry(${idx})">🗑️</button>
+          </td>
+        `;
+        detailsBody.appendChild(tr);
+      });
+    }
+    detailsModal.classList.add('active');
+  };
+
+  // Close details modal
+  btnCloseDetails.addEventListener('click', () => {
+    detailsModal.classList.remove('active');
+  });
+  
+  // Generate PDF for a specific order
+  window.generatePDF = async function(orderNum, clienteName='', vendedorName=''){
+    // Collect all entries with this order number
+    const items = orders.filter(item => item.pedido === orderNum);
+    if(!items.length){
+      alert('No se encontraron productos para este pedido.');
+      return;
+    }
+
+    // Asegurar que las ubicaciones estén completas antes de generar el PDF
+    await ensureLocationsForItems(items);
+
+    // Determine cliente y vendedor desde el primer item si no se pasan
+    const firstItem = items[0] || {};
+    const cliente = clienteName || firstItem.cliente || '';
+    const vendedor = vendedorName || firstItem.vendedor || '';
+    const fechaPedido = firstItem.fecha || new Date().toLocaleDateString('es-CL');
+
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF('p', 'pt', 'a4');
+    const totalPagesExp = '{total_pages_count_string}';
+    const pageWidth = doc.internal.pageSize.getWidth();
+    const pageHeight = doc.internal.pageSize.getHeight();
+
+    function drawPdfHeader(data){
+      const pageNumber = data && data.pageNumber ? data.pageNumber : doc.internal.getNumberOfPages();
+      const marginLeft = 36;
+      const marginTop = 26;
+      const boxWidth = pageWidth - 72;
+      const titleH = 30;
+      const metaH = 34;
+      const infoH = 64;
+      const boxHeight = titleH + metaH + infoH;
+
+      function fitOneLine(text, maxWidth){
+        let value = String(text || '');
+        if(doc.getTextWidth(value) <= maxWidth) return value;
+        while(value.length > 0 && doc.getTextWidth(value + '...') > maxWidth){
+          value = value.slice(0, -1);
+        }
+        return value + '...';
+      }
+
+      function splitLimited(text, maxWidth, maxLines){
+        const raw = String(text || '');
+        let lines = doc.splitTextToSize(raw, maxWidth);
+        if(lines.length > maxLines){
+          lines = lines.slice(0, maxLines);
+          lines[maxLines - 1] = fitOneLine(lines[maxLines - 1], maxWidth);
+        }
+        return lines;
+      }
+
+      function drawInfoCell(x, y, w, h, label, value, maxLines){
+        doc.setDrawColor(15, 23, 42);
+        doc.setLineWidth(0.45);
+        doc.rect(x, y, w, h);
+        doc.setTextColor(15, 23, 42);
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(8);
+        doc.text(String(label || ''), x + 6, y + 13, { maxWidth: w - 12 });
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(8);
+        const lines = splitLimited(value, w - 12, maxLines || 3);
+        doc.text(lines, x + 6, y + 28, { maxWidth: w - 12, lineHeightFactor: 1.12 });
+      }
+
+      // Marco general de página
+      doc.setDrawColor(30, 41, 59);
+      doc.setLineWidth(0.7);
+      doc.rect(24, 20, pageWidth - 48, pageHeight - 44);
+
+      // Encabezado principal en cuadro
+      doc.setDrawColor(15, 23, 42);
+      doc.setLineWidth(0.8);
+      doc.rect(marginLeft, marginTop, boxWidth, boxHeight);
+
+      // Franja de título
+      doc.setFillColor(15, 118, 110);
+      doc.rect(marginLeft, marginTop, boxWidth, titleH, 'F');
+      doc.setTextColor(255, 255, 255);
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(13);
+      doc.text('SISTEMA DE GESTIÓN LOGÍSTICA, SERVICIOS AS', marginLeft + 12, marginTop + 20, { maxWidth: boxWidth - 24 });
+
+      // Fila de detalle y fecha del PDF
+      const metaY = marginTop + titleH;
+      const halfW = boxWidth / 2;
+      doc.setDrawColor(15, 23, 42);
+      doc.setLineWidth(0.45);
+      doc.rect(marginLeft, metaY, halfW, metaH);
+      doc.rect(marginLeft + halfW, metaY, halfW, metaH);
+
+      doc.setTextColor(15, 23, 42);
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(9);
+      doc.text('DETALLE DE PEDIDO', marginLeft + 12, metaY + 21, { maxWidth: halfW - 24 });
+      doc.text('FECHA PDF', marginLeft + halfW + 12, metaY + 21, { maxWidth: 70 });
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(8.5);
+      doc.text(new Date().toLocaleString('es-CL'), marginLeft + halfW + 82, metaY + 21, { maxWidth: halfW - 94 });
+
+      // Fila de información: cada dato queda dentro de su celda, con texto ajustado.
+      const infoY = metaY + metaH;
+      const pedidoW = 82;
+      const fechaW = 88;
+      const clienteW = 178;
+      const vendedorW = boxWidth - pedidoW - clienteW - fechaW;
+      let x = marginLeft;
+      drawInfoCell(x, infoY, pedidoW, infoH, 'PEDIDO:', orderNum, 2);
+      x += pedidoW;
+      drawInfoCell(x, infoY, clienteW, infoH, 'CLIENTE:', cliente, 3);
+      x += clienteW;
+      drawInfoCell(x, infoY, vendedorW, infoH, 'VENDEDOR:', vendedor, 3);
+      x += vendedorW;
+      drawInfoCell(x, infoY, fechaW, infoH, 'FECHA PEDIDO:', fechaPedido, 3);
+
+      // Pie de página con numeración
+      doc.setDrawColor(148, 163, 184);
+      doc.setLineWidth(0.4);
+      doc.line(36, pageHeight - 38, pageWidth - 36, pageHeight - 38);
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(8);
+      doc.setTextColor(71, 85, 105);
+      doc.text('Documento generado automáticamente por Sistema de Gestión Logística, Servicios AS', 36, pageHeight - 22, { maxWidth: pageWidth - 190 });
+      doc.text('Página ' + pageNumber + ' de ' + totalPagesExp, pageWidth - 112, pageHeight - 22);
+    }
+
+    // Prepare table data
+    const body = items.map((it, idx) => [
+      String(idx + 1),
+      String(it.codigo || ''),
+      String(it.descripcion || ''),
+      ubicacionPdf(it.ubicacion || '')
+    ]);
+
+    doc.autoTable({
+      startY: 166,
+      margin: { top: 166, left: 36, right: 36, bottom: 54 },
+      head: [['#', 'Código', 'Descripción', 'Ubicación']],
+      body: body,
+      theme: 'grid',
+      showHead: 'everyPage',
+      pageBreak: 'auto',
+      rowPageBreak: 'avoid',
+      tableLineColor: [15, 23, 42],
+      tableLineWidth: 0.6,
+      styles: {
+        font: 'helvetica',
+        fontSize: 8.5,
+        cellPadding: 5,
+        valign: 'top',
+        overflow: 'linebreak',
+        lineColor: [51, 65, 85],
+        lineWidth: 0.35,
+        textColor: [15, 23, 42]
+      },
+      headStyles: {
+        fillColor: [20, 184, 166],
+        textColor: 255,
+        fontStyle: 'bold',
+        halign: 'center',
+        lineColor: [15, 23, 42],
+        lineWidth: 0.55
+      },
+      alternateRowStyles: {
+        fillColor: [248, 250, 252]
+      },
+      columnStyles: {
+        0: { cellWidth: 28, halign: 'center' },
+        1: { cellWidth: 82 },
+        2: { cellWidth: 230 },
+        3: { cellWidth: 'auto' }
+      },
+      didDrawPage: drawPdfHeader
+    });
+
+    if(typeof doc.putTotalPages === 'function'){
+      doc.putTotalPages(totalPagesExp);
+    }
+
+    // Show PDF in new tab
+    doc.output('dataurlnewwindow');
+  };
+  
+  // Import file and optionally send new orders to the Apps Script
+  async function handleFile(evt){
+    const file = evt.target.files[0];
+    if(!file) return;
+    const reader = new FileReader();
+    reader.onload = async function(e){
+      // Antes de procesar el archivo, asegúrate de que el mapa de ubicaciones esté cargado.
+      // Esto garantiza que getUbicacion devuelva resultados correctos al importar pedidos.
+      await loadUbicaciones();
+
+      const data = new Uint8Array(e.target.result);
+      const workbook = XLSX.read(data, { type: 'array' });
+      const firstSheetName = workbook.SheetNames[0];
+      const worksheet = workbook.Sheets[firstSheetName];
+      // Parse worksheet to JSON, using formatted strings (raw:false) so that
+      // leading zeros in codes are preserved if the cell is formatted as text.
+      const json = XLSX.utils.sheet_to_json(worksheet, { defval: '', raw: false });
+      // Keep track of items to send to server
+      const itemsForServer = [];
+      json.forEach(row => {
+        // Map various possible column names to our internal fields. Some spreadsheets
+        // use different headers such as "PRODUCTO" for code, "DESCRIPCIÓN" for
+        // description and "NÚMERO" for the order number. If you add more header
+        // possibilities here, keep them lowercase so we don't duplicate logic.
+        const codigo =
+          row.Codigo ||
+          row.codigo ||
+          row['Código'] ||
+          row['codigo'] ||
+          row['CODIGO'] ||
+          row.PRODUCTO ||
+          row['PRODUCTO'] ||
+          row['Producto'] ||
+          '';
+        const descripcion =
+          row.Descripcion ||
+          row.descripcion ||
+          row['Descripción'] ||
+          row['descripcion'] ||
+          row['DESCRIPCIÓN'] ||
+          row['DESCRIPCION'] ||
+          '';
+        let ubicacion =
+          row.Ubicacion ||
+          row.ubicacion ||
+          row['Ubicación'] ||
+          row['ubicacion'] ||
+          row['UBICACION'] ||
+          '';
+        const pedido =
+          row.Pedido ||
+          row.pedido ||
+          row['Pedido'] ||
+          row['pedido'] ||
+          row['PEDIDO'] ||
+          row['NÚMERO'] ||
+          row['Numero'] ||
+          row['NÚMERO '] ||
+          row['NUMERO'] ||
+          '';
+        // Leer cliente y vendedor si existen
+        const cliente =
+          row.Cliente ||
+          row.cliente ||
+          row['Cliente'] ||
+          row['CLIENTE'] ||
+          '';
+        const vendedor =
+          row.Vendedor ||
+          row.vendedor ||
+          row['Vendedor'] ||
+          row['VENDEDOR'] ||
+          '';
+        // Leer fecha si existe en la fila
+        const fecha =
+          row.Fecha ||
+          row.fecha ||
+          row['Fecha'] ||
+          row['FECHA'] ||
+          row['FECHA '] ||
+          '';
+        // Only include orders that have at least a code, description and order number.
+        if (codigo && descripcion && pedido) {
+          // Determine final location using map if provided
+          const locFromMap = getUbicacion(codigo);
+          const finalUbicacion = (locFromMap || String(ubicacion).trim() || '').trim();
+          // Determine status from row or default
+          const estado = String(row.status || row.Status || row.ESTADO || '').trim() || 'pendiente';
+          const newItem = {
+            codigo: String(codigo).trim(),
+            descripcion: String(descripcion).trim(),
+            ubicacion: finalUbicacion,
+            cliente: String(cliente).trim(),
+            vendedor: String(vendedor).trim(),
+            pedido: String(pedido).trim(),
+            fecha: String(fecha).trim(),
+            status: normalizarEstado(estado || 'pendiente')
+          };
+          if(agregarPedidoPendienteSinDuplicar(newItem)){
+            itemsForServer.push(newItem);
+          }
+        }
+      });
+      // If we have an API URL, send imported items to server
+      if(API_URL && itemsForServer.length){
+        try{
+          const result = await postToAppsScript({ accion: 'importar_pedidos', items: itemsForServer });
+          if(result && result.ok){
+            console.log('Pedidos importados en servidor', result.msg);
+          } else {
+            console.error('Error al importar en servidor', result);
+          }
+        }catch(err){
+          console.error('Fallo al enviar pedidos al servidor', err);
+        }
+      }
+      updateFilter();
+      fileInput.value = ''; // reset
+    };
+    reader.readAsArrayBuffer(file);
+  }
+  
+  // Event listeners
+  btnAdd.addEventListener('click', () => openModal());
+  btnImport.addEventListener('click', () => fileInput.click());
+  fileInput.addEventListener('change', handleFile);
+  searchInput.addEventListener('input', updateFilter);
+  btnCancel.addEventListener('click', closeModal);
+  btnSave.addEventListener('click', saveEntry);
+
+  btnConfigSistema.addEventListener('click', abrirConfiguracion);
+  btnCloseConfig.addEventListener('click', cerrarConfiguracion);
+  btnSaveConfig.addEventListener('click', guardarConfiguracion);
+  btnTestConfig.addEventListener('click', probarConfiguracion);
+  btnDownloadConfigTxt.addEventListener('click', descargarConfigTxt);
+  btnLoadConfigTxt.addEventListener('click', () => configTxtInput.click());
+  configTxtInput.addEventListener('change', e => cargarConfigTxtArchivo(e.target.files[0]));
+
+  btnSyncUbicaciones.addEventListener('click', async () => {
+    const originalText = btnSyncUbicaciones.textContent;
+    btnSyncUbicaciones.disabled = true;
+    btnSyncUbicaciones.textContent = 'Sincronizando...';
+    await loadUbicaciones({ force:true });
+    const actualizados = aplicarUbicacionesEnPedidos();
+    updateFilter();
+    btnSyncUbicaciones.textContent = originalText;
+    btnSyncUbicaciones.disabled = false;
+    if(actualizados){
+      updateSyncInfo(`${syncInfo.textContent} | Pedidos actualizados: ${actualizados}`);
+    }
+  });
+
+    // Cuando se ingresa código manualmente, rellenar ubicación si existe
+    inputCodigo.addEventListener('blur', () => {
+      const cod = inputCodigo.value.trim();
+      if(!cod) return;
+      const loc = getUbicacion(cod);
+      if(loc){
+        inputUbicacion.value = loc;
+      }
+    });
+  
+    // Initialize: usar ubicaciones desde memoria y cargar pedidos.
+    // Sólo sincroniza ubicaciones desde Google Sheets si no existe memoria local.
+    (async function init(){
+      await loadApiConfig();
+      await loadUbicaciones();
+      await loadPedidosFromServer();
+      aplicarUbicacionesEnPedidos();
+      updateFilter();
+    })();
+})();
+</script>
+<script src="loader_buttons.js"></script>
+</body>
+</html>

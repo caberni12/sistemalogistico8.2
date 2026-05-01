@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>Sistema de Gestión Logística, Servicios AS | Ubicaciones</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+
+-
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.29/jspdf.plugin.autotable.min.js"></script>
+
+<!-- XLSX -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+
+<!-- SCANNER -->
+<script src="https://unpkg.com/html5-qrcode"></script>
+
+<link rel="stylesheet" href="estilos.css">
+</head>
+
+<body>
+
+<div id="progress-bar"></div>
+
+<header>
+  📍 Sistema de Gestión Logística, Servicios AS · Ubicaciones
+  <button onclick="abrirConfiguracion()">⚙️ Configuración</button>
+  <button onclick="abrirModal()">➕ Agregar</button>
+</header>
+
+<div class="card">
+  <input class="search" placeholder="Buscar…" oninput="filtrar(this.value)">
+</div>
+
+<div class="card acciones">
+  <button onclick="recargar()">🔄 Recargar</button>
+  <button onclick="sincronizarMaestra()">🔁 Sincronizar MAESTRA</button>
+  <button onclick="exportarPDF()">📄 PDF</button>
+  <button onclick="exportarXLSX()">📊 Excel</button>
+</div>
+
+<div class="card table-wrap">
+<table>
+<thead>
+<tr>
+
+<th>Código</th>
+<th>Descripción</th>
+<th>Ubicación</th>
+<th>Cant.</th>
+<th>Registro</th>
+<th>Entrada</th>
+<th>Salida</th>
+<th>Resp.</th>
+<th>Status</th>
+<th>Origen</th>
+<th>Acciones</th>
+</tr>
+</thead>
+<tbody id="tabla"></tbody>
+</table>
+<div id="cards" class="cards"></div>
+</div>
+
+<div class="modal" id="modal">
+<div class="modal-card">
+<div class="modal-body">
+
+<input type="hidden" id="id">
+
+<label>Fecha Entrada</label>
+<input id="fecha_entrada" type="date">
+
+<label>Fecha Salida</label>
+<input id="fecha_salida" type="date">
+
+<label>Ubicación</label>
+<input id="ubicacion">
+
+<label>Código</label>
+<input id="codigo" autocomplete="off" oninput="buscarCodigo()" onblur="buscarCodigo()" onkeydown="if(event.key==='Enter'){buscarCodigo();}">
+
+<button class="btn scan" onclick="abrirScanner()">📷 Escanear</button>
+<div id="scannerBox" style="display:none"></div>
+
+<audio id="beep">
+  <source src="https://actions.google.com/sounds/v1/cartoon/wood_plank_flicks.ogg">
+</audio>
+
+<audio id="beepQR" src="https://actions.google.com/sounds/v1/cartoon/pop.ogg"></audio>
+<audio id="beepEAN" src="https://actions.google.com/sounds/v1/cartoon/clang_and_wobble.ogg"></audio>
+
+<button class="btn scan" id="torchBtn" onclick="toggleTorch()" style="display:none">
+🔦 Linterna
+</button>
+
+<div id="suggest" class="suggest"></div>
+
+<label>Descripción</label>
+<input id="descripcion" readonly>
+
+<label>Tipo movimiento</label>
+<div class="mov">
+<button id="btnEntrada" onclick="setMovimiento('ENTRADA')">➕ Entrada</button>
+<button id="btnSalida" onclick="setMovimiento('SALIDA')">➖ Salida</button>
+</div>
+
+<label>Cantidad movimiento</label>
+<input id="cantidad_mov" type="number">
+
+<label>Stock actual</label>
+<input id="cantidad" readonly>
+
+<label>Responsable</label>
+<input id="responsable">
+
+<label>Status</label>
+<select id="status">
+<option value="VIGENTE">VIGENTE</option>
+<option value="RETIRADO">RETIRADO</option>
+</select>
+
+<label>Origen</label>
+<input id="origen" readonly>
+
+</div>
+<div class="modal-footer">
+  <button id="btnGuardar" onclick="guardar()">Guardar</button>
+
+<button onclick="cerrarModal()">Cancelar</button>
+</div>
+</div>
+</div>
+
+
+<div class="modal" id="configModal">
+<div class="modal-card">
+<div class="modal-body">
+<h2>Configuración</h2>
+<label>URL del Apps Script</label>
+<input id="configUrlGs" placeholder="https://script.google.com/macros/s/.../exec">
+<p style="font-size:12px;color:#64748b;line-height:1.35">
+Puedes guardar la URL aquí o cargarla desde un archivo <b>config.txt</b> ubicado junto al HTML.<br>
+Formatos aceptados: <code>API_URL=https://script.google.com/macros/s/.../exec</code> o JSON con <code>API_URL</code>.
+</p>
+<input id="configTxtInput" type="file" accept=".txt,.json" style="display:none" onchange="cargarConfigTxtArchivo(this.files[0])">
+<span id="configStatus" style="display:block;font-size:12px;color:#0f766e;word-break:break-word"></span>
+</div>
+<div class="modal-footer">
+<button onclick="document.getElementById('configTxtInput').click()">Cargar TXT</button>
+<button onclick="descargarConfigTxt()">Descargar TXT</button>
+<button onclick="probarConfiguracionUrl()">Probar</button>
+<button onclick="guardarConfiguracionUrl()">Guardar</button>
+<button onclick="cerrarConfiguracion()">Cerrar</button>
+</div>
+</div>
+</div>
+
+<script src="ubicacionesPro.js"></script>
+  <script src="segurity.js"></script>
+  <script src="auth.js"></script>
+<script src="loader_buttons.js"></script>
+</body>
+</html>

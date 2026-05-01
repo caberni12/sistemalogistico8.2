@@ -525,3 +525,623 @@ tbody td:nth-child(7){
 }
 
 
+
+/* =====================================================
+   AJUSTE GLOBAL DE ZOOM Y MODALES MODERNOS
+   Versión optimizada para notebooks y pantallas chicas
+===================================================== */
+
+/* Escala visual más compacta en notebooks sin perder legibilidad */
+@media (min-width: 769px) and (max-width: 1440px){
+  html{font-size:13px;}
+  body{zoom:.90;}
+
+  header{
+    padding:12px 16px !important;
+    font-size:17px !important;
+  }
+
+  header h1{
+    font-size:18px !important;
+    margin:0 !important;
+  }
+
+  .card{
+    margin:14px auto !important;
+    padding:16px 20px !important;
+    border-radius:18px !important;
+  }
+
+  input, select, .search{
+    padding:11px 13px !important;
+    font-size:13px !important;
+    border-radius:14px !important;
+  }
+
+  label{
+    margin-top:10px !important;
+    font-size:12px !important;
+  }
+
+  button{
+    padding:9px 13px !important;
+    font-size:12.5px !important;
+    border-radius:13px !important;
+  }
+
+  thead th{
+    padding:11px 14px !important;
+    font-size:11px !important;
+  }
+
+  tbody td{
+    padding:12px 14px !important;
+    font-size:12.5px !important;
+    line-height:1.45 !important;
+  }
+}
+
+/* Fallback para navegadores sin soporte de zoom */
+@supports not (zoom:.90){
+  @media (min-width: 769px) and (max-width: 1440px){
+    body{font-size:90%;}
+  }
+}
+
+/* Modal moderno global para todos los HTML */
+.modal{
+  position:fixed !important;
+  inset:0 !important;
+  display:none;
+  align-items:center !important;
+  justify-content:center !important;
+  padding:22px !important;
+  background:
+    radial-gradient(circle at top left, rgba(20,184,166,.28), transparent 34%),
+    radial-gradient(circle at bottom right, rgba(14,165,233,.25), transparent 32%),
+    rgba(15,23,42,.66) !important;
+  backdrop-filter:blur(18px) saturate(135%) !important;
+  -webkit-backdrop-filter:blur(18px) saturate(135%) !important;
+  z-index:99999 !important;
+}
+
+.modal.active{display:flex !important;}
+
+.modal-card{
+  position:relative !important;
+  width:min(96vw,1120px) !important;
+  max-width:1120px !important;
+  max-height:86vh !important;
+  overflow-y:auto !important;
+  overflow-x:hidden !important;
+  background:linear-gradient(180deg,rgba(255,255,255,.98),rgba(248,250,252,.97)) !important;
+  border:1px solid rgba(255,255,255,.72) !important;
+  border-radius:28px !important;
+  box-shadow:
+    0 30px 90px rgba(2,6,23,.35),
+    0 8px 24px rgba(15,23,42,.16),
+    inset 0 1px 0 rgba(255,255,255,.9) !important;
+  display:flex !important;
+  flex-direction:column !important;
+  animation:modalPop .18s ease-out !important;
+  scrollbar-width:thin;
+  scrollbar-color:#94a3b8 transparent;
+}
+
+.modal-card::-webkit-scrollbar,
+.modal-body::-webkit-scrollbar{width:8px;height:8px;}
+.modal-card::-webkit-scrollbar-thumb,
+.modal-body::-webkit-scrollbar-thumb{background:#94a3b8;border-radius:999px;}
+.modal-card::-webkit-scrollbar-track,
+.modal-body::-webkit-scrollbar-track{background:transparent;}
+
+.modal-card::before{
+  content:"";
+  position:sticky;
+  top:0;
+  display:block;
+  height:5px;
+  min-height:5px;
+  background:linear-gradient(90deg,var(--primary),var(--primary-dark),#6366f1);
+  z-index:4;
+}
+
+.modal-card h2{
+  position:sticky;
+  top:5px;
+  z-index:3;
+  margin:0 !important;
+  padding:18px 24px 14px !important;
+  background:rgba(255,255,255,.88) !important;
+  backdrop-filter:blur(12px) !important;
+  border-bottom:1px solid rgba(226,232,240,.85) !important;
+  color:#0f172a !important;
+  font-size:20px !important;
+  font-weight:950 !important;
+  letter-spacing:-.03em !important;
+}
+
+.modal-body{
+  padding:20px 24px !important;
+  overflow:auto !important;
+}
+
+/* En modales que no tienen modal-body, dar aire directo a los campos */
+.modal-card > label,
+.modal-card > input,
+.modal-card > select,
+.modal-card > .mov,
+.modal-card > .suggest,
+.modal-card > #scannerBox,
+.modal-card > audio,
+.modal-card > .btn{
+  margin-left:24px !important;
+  margin-right:24px !important;
+}
+
+.modal-card input,
+.modal-card select,
+.modal-card textarea{
+  min-height:42px !important;
+  border-radius:16px !important;
+  border:1px solid rgba(148,163,184,.35) !important;
+  background:rgba(255,255,255,.96) !important;
+  box-shadow:0 1px 2px rgba(15,23,42,.04) !important;
+}
+
+.modal-card input:focus,
+.modal-card select:focus,
+.modal-card textarea:focus{
+  border-color:var(--primary) !important;
+  box-shadow:0 0 0 4px rgba(20,184,166,.16) !important;
+}
+
+.modal-footer{
+  position:sticky !important;
+  bottom:0 !important;
+  z-index:5 !important;
+  padding:14px 20px !important;
+  border-top:1px solid rgba(226,232,240,.9) !important;
+  background:rgba(248,250,252,.92) !important;
+  backdrop-filter:blur(14px) !important;
+  display:flex !important;
+  justify-content:flex-end !important;
+  align-items:center !important;
+  flex-wrap:wrap !important;
+  gap:10px !important;
+}
+
+.modal-footer button{
+  min-width:112px !important;
+  border-radius:14px !important;
+  box-shadow:0 10px 22px rgba(15,23,42,.12) !important;
+}
+
+.modal-footer .cancel,
+.modal-footer button[onclick*="cerrar"],
+.modal-footer button[onclick*="Cancelar"]{
+  background:#e2e8f0 !important;
+  color:#0f172a !important;
+}
+
+.modal .table-wrap,
+.modal table{
+  min-width:720px;
+}
+
+.modal table.orders-table,
+.modal table{
+  border-collapse:separate !important;
+  border-spacing:0 !important;
+  background:#fff !important;
+  border-radius:18px !important;
+  overflow:hidden !important;
+  box-shadow:0 10px 28px rgba(15,23,42,.08) !important;
+}
+
+.modal thead th{
+  background:#f1f5f9 !important;
+  border-bottom:1px solid #e2e8f0 !important;
+}
+
+.modal tbody tr{
+  box-shadow:none !important;
+}
+
+.modal tbody td{
+  border-bottom:1px solid #eef2f7 !important;
+}
+
+@keyframes modalPop{
+  from{opacity:0;transform:translateY(10px) scale(.985);}
+  to{opacity:1;transform:translateY(0) scale(1);}
+}
+
+/* Modales en notebooks: más compactos y con más área visible */
+@media (min-width:769px) and (max-width:1440px){
+  .modal{padding:14px !important;}
+  .modal-card{
+    width:min(98vw,1180px) !important;
+    max-width:1180px !important;
+    max-height:90vh !important;
+    border-radius:22px !important;
+  }
+  .modal-card h2{
+    padding:13px 18px 10px !important;
+    font-size:17px !important;
+  }
+  .modal-body{padding:14px 18px !important;}
+  .modal-card > label,
+  .modal-card > input,
+  .modal-card > select,
+  .modal-card > .mov,
+  .modal-card > .suggest,
+  .modal-card > #scannerBox,
+  .modal-card > audio,
+  .modal-card > .btn{
+    margin-left:18px !important;
+    margin-right:18px !important;
+  }
+  .modal-footer{padding:10px 14px !important;}
+}
+
+/* Modales en celular/tablet */
+@media (max-width:768px){
+  .modal{
+    align-items:flex-end !important;
+    padding:10px !important;
+  }
+  .modal-card{
+    width:100% !important;
+    max-width:100% !important;
+    max-height:92vh !important;
+    border-radius:22px 22px 16px 16px !important;
+  }
+  .modal-card h2{
+    font-size:17px !important;
+    padding:14px 16px 10px !important;
+  }
+  .modal-body{padding:14px 16px !important;}
+  .modal-card > label,
+  .modal-card > input,
+  .modal-card > select,
+  .modal-card > .mov,
+  .modal-card > .suggest,
+  .modal-card > #scannerBox,
+  .modal-card > audio,
+  .modal-card > .btn{
+    margin-left:16px !important;
+    margin-right:16px !important;
+  }
+  .modal-footer{
+    display:grid !important;
+    grid-template-columns:1fr !important;
+  }
+  .modal-footer button{width:100% !important;}
+}
+
+/* =====================================================
+   LOADER GLOBAL PARA BOTONES
+===================================================== */
+button {
+  position: relative;
+  overflow: hidden;
+}
+button.btn-loading,
+button[aria-busy="true"] {
+  pointer-events: none;
+  opacity: 0.88;
+  color: transparent !important;
+}
+button.btn-loading::after,
+button[aria-busy="true"]::after {
+  content: "";
+  position: absolute;
+  width: 18px;
+  height: 18px;
+  top: 50%;
+  left: 50%;
+  margin-top: -9px;
+  margin-left: -9px;
+  border-radius: 50%;
+  border: 2.5px solid rgba(255,255,255,0.55);
+  border-top-color: #ffffff;
+  animation: btnSpin 0.72s linear infinite;
+  z-index: 5;
+}
+button.cancel.btn-loading::after,
+button.cancel[aria-busy="true"]::after,
+button.actions-button.btn-loading::after,
+button.actions-button[aria-busy="true"]::after {
+  border-color: rgba(15, 23, 42, 0.20);
+  border-top-color: #0f766e;
+}
+@keyframes btnSpin {
+  to { transform: rotate(360deg); }
+}
+
+.module-subtitle{margin:4px 0 14px;color:#64748b;font-size:.9rem;font-weight:600;}
+
+/* =====================================================
+   AJUSTE FINAL: ZOOM COMPACTO PARA NOTEBOOK Y CONTENIDO ORDENADO
+===================================================== */
+html{
+  font-size:14px;
+}
+body{
+  font-size:14px;
+}
+
+/* El contenido usa mejor el ancho real de la pantalla */
+.card{
+  max-width:none !important;
+}
+
+/* Botones más compactos y legibles */
+button,
+.actions-button,
+.infra-btn{
+  min-height:34px;
+  line-height:1.15;
+  white-space:nowrap;
+}
+
+/* Formularios más compactos */
+input,
+select,
+textarea{
+  min-height:34px;
+}
+
+/* Tablas más ordenadas */
+.table-wrap{
+  max-width:100%;
+  overflow:auto;
+}
+
+table{
+  table-layout:auto;
+}
+
+thead th,
+tbody td{
+  vertical-align:middle;
+}
+
+/* Evita que acciones, selects o botones rompan la celda */
+td.actions-cell,
+td:last-child{
+  max-width:420px;
+  overflow:auto;
+}
+
+.actions-scroll,
+.actions-td{
+  max-width:100%;
+  overflow-x:auto;
+  overflow-y:hidden;
+  white-space:nowrap;
+  scrollbar-width:thin;
+}
+
+.actions-scroll select,
+.actions-scroll button,
+.actions-td select,
+.actions-td button{
+  flex:0 0 auto;
+}
+
+/* Scroll visible suave dentro de celdas de acción */
+.actions-scroll::-webkit-scrollbar,
+.actions-td::-webkit-scrollbar{
+  height:6px;
+}
+.actions-scroll::-webkit-scrollbar-thumb,
+.actions-td::-webkit-scrollbar-thumb{
+  background:#cbd5e1;
+  border-radius:999px;
+}
+
+/* Notebook: todo más pequeño para que entre más contenido */
+@media (min-width:769px) and (max-width:1440px){
+  html{font-size:12px;}
+  body{font-size:12.5px;}
+
+  header{
+    padding:10px 14px !important;
+    font-size:16px !important;
+    min-height:48px;
+  }
+
+  .card{
+    margin:10px !important;
+    padding:12px 14px !important;
+    border-radius:16px !important;
+  }
+
+  .card.acciones{
+    gap:6px !important;
+    align-items:center;
+  }
+
+  input,
+  select,
+  textarea{
+    padding:9px 11px !important;
+    margin-top:6px !important;
+    border-radius:12px !important;
+    font-size:12px !important;
+    min-height:32px !important;
+  }
+
+  label{
+    font-size:11px !important;
+    margin-top:8px !important;
+  }
+
+  button{
+    padding:8px 10px !important;
+    border-radius:11px !important;
+    font-size:11.5px !important;
+    min-height:32px !important;
+  }
+
+  .search{
+    padding:10px 12px !important;
+    font-size:12.5px !important;
+  }
+
+  table{
+    min-width:1040px !important;
+    border-spacing:0 8px !important;
+  }
+
+  thead th{
+    padding:9px 10px !important;
+    font-size:10px !important;
+  }
+
+  tbody td{
+    padding:9px 10px !important;
+    font-size:11.5px !important;
+    line-height:1.35 !important;
+  }
+
+  thead th:nth-child(2),
+  tbody td:nth-child(2){
+    min-width:320px !important;
+    max-width:520px !important;
+  }
+
+  .status-badge{
+    padding:3px 7px !important;
+    font-size:10.5px !important;
+    border-radius:999px !important;
+  }
+
+  .estado-actions{
+    gap:4px !important;
+  }
+
+  .estado-select{
+    width:104px !important;
+    max-width:104px !important;
+    flex-basis:104px !important;
+    height:30px !important;
+    font-size:10.5px !important;
+    padding:0 5px !important;
+  }
+
+  .btn-estado{
+    height:30px !important;
+    padding:0 8px !important;
+    font-size:10.5px !important;
+  }
+
+  table.orders-table td.actions-cell{
+    min-width:250px !important;
+    max-width:280px !important;
+  }
+
+  .modal-card{
+    width:96vw !important;
+    max-width:1040px !important;
+    max-height:88vh !important;
+    border-radius:18px !important;
+  }
+
+  .modal-body{
+    padding:12px !important;
+  }
+
+  .modal-footer{
+    padding:10px 12px !important;
+    gap:7px !important;
+  }
+
+  #scannerBox{
+    height:210px !important;
+    margin:12px 0 8px !important;
+  }
+}
+
+/* Notebook pequeño: aún más compacto */
+@media (min-width:769px) and (max-width:1180px){
+  html{font-size:11.5px;}
+  .card{margin:8px !important;padding:10px 12px !important;}
+  button{padding:7px 9px !important;font-size:11px !important;}
+  thead th{padding:8px 9px !important;}
+  tbody td{padding:8px 9px !important;font-size:11px !important;}
+  table.orders-table td.actions-cell{min-width:235px !important;max-width:250px !important;}
+}
+
+/* =====================================================
+   AJUSTE FINAL DE ZOOM MEDIO
+   Se aumenta un poco el tamaño porque la versión anterior quedó demasiado pequeña.
+   Mantiene el contenido compacto, pero con mejor lectura en notebook.
+===================================================== */
+@media (min-width:769px) and (max-width:1440px){
+  html{font-size:13.2px !important;}
+  body{font-size:13.2px !important; zoom:.96 !important;}
+
+  header{
+    padding:12px 16px !important;
+    font-size:17px !important;
+    min-height:52px !important;
+  }
+
+  .card{
+    margin:12px !important;
+    padding:14px 16px !important;
+    border-radius:17px !important;
+  }
+
+  input,
+  select,
+  textarea{
+    padding:10px 12px !important;
+    font-size:12.8px !important;
+    min-height:36px !important;
+  }
+
+  button,
+  .actions-button,
+  .infra-btn{
+    padding:9px 12px !important;
+    font-size:12.2px !important;
+    min-height:34px !important;
+  }
+
+  thead th{
+    padding:10px 11px !important;
+    font-size:10.8px !important;
+  }
+
+  tbody td{
+    padding:10px 11px !important;
+    font-size:12px !important;
+    line-height:1.4 !important;
+  }
+
+  .estado-select{
+    width:118px !important;
+    max-width:118px !important;
+    flex-basis:118px !important;
+    height:32px !important;
+    font-size:11.2px !important;
+  }
+
+  .btn-estado{
+    height:32px !important;
+    font-size:11.2px !important;
+  }
+}
+
+@media (min-width:769px) and (max-width:1180px){
+  html{font-size:12.6px !important;}
+  body{font-size:12.6px !important; zoom:.94 !important;}
+  button,
+  .actions-button,
+  .infra-btn{font-size:11.8px !important;}
+  tbody td{font-size:11.6px !important;}
+}
