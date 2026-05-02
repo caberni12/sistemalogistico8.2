@@ -1,4 +1,3 @@
-
 (function(){
   // Data store
   let orders = [];
@@ -10,12 +9,18 @@
   // Detail modal elements
   const detailsModal = document.getElementById('detailsModal');
   const detailsTitle = document.getElementById('detailsTitle');
+  const detailsPedidoMeta = document.getElementById('detailsPedidoMeta');
   const detailsBody = document.getElementById('detailsBody');
+  const detailsPrintFormat = document.getElementById('detailsPrintFormat');
+  const detailsPrintBtn = document.getElementById('detailsPrintBtn');
+  const detailsEstadoSelect = document.getElementById('detailsEstadoSelect');
+  const detailsEstadoBtn = document.getElementById('detailsEstadoBtn');
   const btnCloseDetails = document.getElementById('btnCloseDetails');
 
   const modal = document.getElementById('modal');
   const btnAdd = document.getElementById('btnAdd');
   const btnImport = document.getElementById('btnImport');
+  const btnSyncPedidos = document.getElementById('btnSyncPedidos');
   const btnSyncUbicaciones = document.getElementById('btnSyncUbicaciones');
   const btnConfigSistema = document.getElementById('btnConfigSistema');
   const configModal = document.getElementById('configModal');
@@ -30,6 +35,10 @@
   const syncInfo = document.getElementById('syncInfo');
   const fileInput = document.getElementById('fileInput');
   const searchInput = document.getElementById('searchInput');
+  const statusFilter = document.getElementById('statusFilter');
+  const fechaDesde = document.getElementById('fechaDesde');
+  const fechaHasta = document.getElementById('fechaHasta');
+  const btnClearFilters = document.getElementById('btnClearFilters');
   const btnCancel = document.getElementById('btnCancel');
   const btnSave = document.getElementById('btnSave');
   const editIndexInput = document.getElementById('editIndex');
@@ -43,9 +52,20 @@
 
   // Configuración de API dinámica
   // No vuelvas a editar el código para cambiar la URL: usa el módulo Configuración o config.txt.
-  const DEFAULT_API_URL = 'https://script.google.com/macros/s/AKfycbyAV0CJN_5Uap7AYMRWP-NNXM4tFfz6uWut2F2KbUcvlQxVTD-84UiHhSbINHIGUjgp4Q/exec';
+  const DEFAULT_API_URL = 'https://script.google.com/macros/s/AKfycbwOG9W7fdVqDrhacHp3Ry1A-pM5eKVFXwFXl4Q2V2SYS1uclU9Ko7XcqS5iOcP2BKEb7g/exec';
   const API_URL_STORAGE_KEY = 'sistema_pedidos_api_url';
   let API_URL = '';
+  let currentDetailsOrder = '';
+  let currentDetailsCliente = '';
+  let currentDetailsVendedor = '';
+
+  // Actualización automática de pedidos cada 20 segundos.
+  // Consulta pedidos pendientes, atrasados y cancelados, no duplica productos
+  // y mantiene los pedidos importados localmente que aún no tienen ID de Google Sheets.
+  const AUTO_REFRESH_MS = 20000;
+  let autoRefreshTimer = null;
+  let isAutoRefreshing = false;
+
   // Mapa de ubicaciones por código.
   // Se guarda en memoria local para que el sistema no se quede pegado consultando Google Sheets a cada rato.
   let ubicacionesMap = {};
@@ -62,6 +82,13 @@
       .replace(/^['’`´]+/, '')
       .trim()
       .toLowerCase();
+  }
+
+  // Limpia el código sólo para mostrar/enviar, sin convertirlo a número ni quitar ceros a la izquierda.
+  function displayCode(c){
+    return String(c ?? '')
+      .replace(/^['’`´]+/, '')
+      .trim();
   }
 
   async function postToAppsScript(payload){
@@ -256,7 +283,7 @@
       const controller = new AbortController();
       const timer = setTimeout(() => controller.abort(), 25000);
 
-      // Endpoint optimizado: devuelve TODAS las ubicaciones por código desde la hoja MOVIMIENTO.
+      // Endpoint optimizado: devuelve TODAS las ubicaciones por código desde la BD-MOVIMIENTO.
       const res = await fetch(`${API_URL}?accion=listar_ubicaciones_actuales`, { signal: controller.signal });
       clearTimeout(timer);
       const data = await res.json();
@@ -302,7 +329,7 @@
         return true;
       }
 
-      updateSyncInfo('No se recibieron ubicaciones válidas desde la hoja MOVIMIENTO.');
+      updateSyncInfo('No se recibieron ubicaciones válidas desde la BD-MOVIMIENTO.');
       return false;
     }catch(err){
       console.error('Error al sincronizar ubicaciones', err);
@@ -349,6 +376,13 @@
   function labelEstado(value){
     const estado = normalizarEstado(value);
     return estado.charAt(0).toUpperCase() + estado.slice(1);
+  }
+
+  function estadoVisibleEnListado(value){
+    // Sólo se oculta/elimina visualmente el estado TERMINADO.
+    // Todo estado distinto de terminado debe permanecer visible en la TD/listado de pedidos.
+    const estado = normalizarEstado(value || 'pendiente');
+    return estado !== 'terminado';
   }
 
   function appsScriptJsonp(params, timeoutMs=25000){
@@ -412,7 +446,7 @@
       .filter(item => String(item.pedido || '') === String(orderNum || ''))
       .map(item => ({
         id: item.id || '',
-        codigo: item.codigo || '',
+        codigo: displayCode(item.codigo || ''),
         descripcion: item.descripcion || '',
         ubicacion: item.ubicacion || getUbicacion(item.codigo) || '',
         pedido: item.pedido || orderNum,
@@ -424,19 +458,104 @@
       }));
   }
 
+  function pedidoProductoKey(item){
+    return String(item?.pedido || '').trim() + '|' + normalizeCode(item?.codigo || '');
+  }
 
-  async function loadPedidosFromServer(){
-    if(!API_URL) return;
+  function existePedidoProducto(item){
+    const key = pedidoProductoKey(item);
+    if(!key || key === '|') return false;
+    return orders.some(actual => pedidoProductoKey(actual) === key);
+  }
+
+  function agregarPedidoPendienteSinDuplicar(item){
+    if(!item || !item.codigo || !item.pedido) return false;
+    if(!estadoVisibleEnListado(item.status || 'pendiente')) return false;
+    if(existePedidoProducto(item)) return false;
+    orders.push(item);
+    return true;
+  }
+
+
+  function esItemServidor(item){
+    return String(item?.id || '').trim().startsWith('PD-');
+  }
+
+  function reconciliarPedidosServidor(pedidosServidor, options = {}){
+    const silent = !!options.silent;
+    const serverByKey = new Map();
+    pedidosServidor.forEach(item => {
+      const key = pedidoProductoKey(item);
+      if(key && key !== '|') serverByKey.set(key, item);
+    });
+
+    let agregados = 0;
+    let actualizados = 0;
+    let removidos = 0;
+
+    const nuevos = [];
+    orders.forEach(actual => {
+      const key = pedidoProductoKey(actual);
+      if(serverByKey.has(key)){
+        const servidor = serverByKey.get(key);
+        const combinado = Object.assign({}, actual, servidor);
+        const antes = JSON.stringify({
+          id: actual.id || '', codigo: actual.codigo || '', descripcion: actual.descripcion || '',
+          ubicacion: actual.ubicacion || '', pedido: actual.pedido || '', cliente: actual.cliente || '',
+          vendedor: actual.vendedor || '', status: actual.status || '', fecha: actual.fecha || ''
+        });
+        const despues = JSON.stringify({
+          id: combinado.id || '', codigo: combinado.codigo || '', descripcion: combinado.descripcion || '',
+          ubicacion: combinado.ubicacion || '', pedido: combinado.pedido || '', cliente: combinado.cliente || '',
+          vendedor: combinado.vendedor || '', status: combinado.status || '', fecha: combinado.fecha || ''
+        });
+        nuevos.push(combinado);
+        serverByKey.delete(key);
+        if(antes !== despues) actualizados++;
+      }else if(esItemServidor(actual)){
+        // No ocultar ni eliminar de la vista pedidos con estados distintos de TERMINADO.
+        // Si Apps Script todavía no devuelve un atrasado/cancelado por caché o despliegue,
+        // se conserva en la TD/listado local para evitar que desaparezca.
+        const estadoActual = normalizarEstado(actual.status || 'pendiente');
+        if(estadoActual === 'terminado'){
+          removidos++;
+        }else{
+          nuevos.push(actual);
+        }
+      }else{
+        // Pedido importado manualmente y aún no sincronizado: se conserva.
+        nuevos.push(actual);
+      }
+    });
+
+    serverByKey.forEach(item => {
+      nuevos.push(item);
+      agregados++;
+    });
+
+    orders = nuevos;
+    orders.sort(compararPedidoMasNuevo);
+
+    if(!silent && (agregados || actualizados || removidos)){
+      updateSyncInfo(`Pedidos actualizados automáticamente. Nuevos: ${agregados}. Actualizados: ${actualizados}. Retirados terminados: ${removidos}.`);
+    }
+
+    return { agregados, actualizados, removidos };
+  }
+
+  async function loadPedidosFromServer(options = {}){
+    if(!API_URL) return { agregados:0, actualizados:0, removidos:0 };
+    const silent = !!options.silent;
     try{
-      const res = await fetch(`${API_URL}?accion=listar_pedidos`);
+      const res = await fetch(`${API_URL}?accion=listar_pedidos&ts=${Date.now()}`, { cache:'no-store' });
       const data = await res.json();
-      if(!data || !data.ok || !Array.isArray(data.data)) return;
+      if(!data || !data.ok || !Array.isArray(data.data)) return { agregados:0, actualizados:0, removidos:0 };
 
       const pedidos = data.data
         .filter(r => Array.isArray(r) && String(r[0] || '').startsWith('PD-'))
         .map(r => ({
           id: String(r[0] || ''),
-          codigo: String(r[1] || '').replace(/^'+/, '').trim(),
+          codigo: displayCode(r[1] || ''),
           descripcion: String(r[2] || '').trim(),
           ubicacion: String(r[3] || '').trim(),
           pedido: String(r[4] || '').trim(),
@@ -445,15 +564,90 @@
           status: String(r[7] || 'pendiente').trim() || 'pendiente',
           fecha: String(r[8] || '').trim()
         }))
-        .filter(x => x.codigo && x.pedido);
+        .filter(x => x.codigo && x.pedido && estadoVisibleEnListado(x.status || 'pendiente'));
 
-      if(pedidos.length){
-        orders = pedidos;
-        await ensureLocationsForItems(orders);
-      }
+      const resultado = reconciliarPedidosServidor(pedidos, { silent });
+      await ensureLocationsForItems(orders);
+      updateFilter();
+      return resultado;
     }catch(err){
       console.error('No se pudieron cargar pedidos desde Apps Script', err);
+      if(!silent){
+        updateSyncInfo('No se pudieron actualizar pedidos desde Apps Script. Revisa la conexión o la URL.');
+      }
+      return { agregados:0, actualizados:0, removidos:0, error:true };
     }
+  }
+
+  async function autoActualizarPedidos(){
+    if(isAutoRefreshing || !API_URL) return;
+    if(document.hidden) return;
+    isAutoRefreshing = true;
+    try{
+      const resultado = await loadPedidosFromServer({ silent:true });
+      aplicarUbicacionesEnPedidos();
+      updateFilter();
+      const totalCambios = (resultado.agregados || 0) + (resultado.actualizados || 0) + (resultado.removidos || 0);
+      if(totalCambios){
+        updateSyncInfo(`Actualización automática cada 20 segundos. Nuevos: ${resultado.agregados || 0}. Actualizados: ${resultado.actualizados || 0}. Retirados terminados: ${resultado.removidos || 0}. ${new Date().toLocaleTimeString()}`);
+      }
+    }finally{
+      isAutoRefreshing = false;
+    }
+  }
+
+  function iniciarActualizacionAutomatica(){
+    if(autoRefreshTimer) clearInterval(autoRefreshTimer);
+    autoRefreshTimer = setInterval(autoActualizarPedidos, AUTO_REFRESH_MS);
+    updateSyncInfo('Actualización automática activa cada 20 segundos.');
+  }
+
+  function numeroPedidoOrden(value){
+    const raw = String(value || '').trim();
+    const nums = raw.match(/\d+/g);
+    if(!nums) return -1;
+    const joined = nums.join('');
+    const n = Number(joined);
+    return Number.isFinite(n) ? n : -1;
+  }
+
+  function fechaHoraOrden(value){
+    const raw = String(value || '').trim();
+    if(!raw) return 0;
+
+    // Formatos comunes: dd-mm-yyyy, dd/mm/yyyy, yyyy-mm-dd, con o sin hora.
+    let m = raw.match(/^(\d{1,2})[-\/](\d{1,2})[-\/](\d{2,4})(?:[\s,]+(\d{1,2}):(\d{2})(?::(\d{2}))?\s*(a\.?\s*m\.?|p\.?\s*m\.?|am|pm)?)?/i);
+    if(m){
+      let year = String(m[3]);
+      if(year.length === 2) year = '20' + year;
+      let hour = Number(m[4] || 0);
+      const min = Number(m[5] || 0);
+      const sec = Number(m[6] || 0);
+      const ap = String(m[7] || '').toLowerCase().replace(/\s|\./g,'');
+      if(ap === 'pm' && hour < 12) hour += 12;
+      if(ap === 'am' && hour === 12) hour = 0;
+      return new Date(Number(year), Number(m[2])-1, Number(m[1]), hour, min, sec).getTime() || 0;
+    }
+
+    m = raw.match(/^(\d{4})[-\/](\d{1,2})[-\/](\d{1,2})(?:[\s,T]+(\d{1,2}):(\d{2})(?::(\d{2}))?)?/);
+    if(m){
+      return new Date(Number(m[1]), Number(m[2])-1, Number(m[3]), Number(m[4] || 0), Number(m[5] || 0), Number(m[6] || 0)).getTime() || 0;
+    }
+
+    const d = new Date(raw);
+    return Number.isNaN(d.getTime()) ? 0 : d.getTime();
+  }
+
+  function compararPedidoMasNuevo(a, b){
+    const pedidoB = numeroPedidoOrden(b && b.pedido);
+    const pedidoA = numeroPedidoOrden(a && a.pedido);
+    if(pedidoB !== pedidoA) return pedidoB - pedidoA;
+
+    const fechaB = fechaHoraOrden(b && b.fecha);
+    const fechaA = fechaHoraOrden(a && a.fecha);
+    if(fechaB !== fechaA) return fechaB - fechaA;
+
+    return String(b && b.id || '').localeCompare(String(a && a.id || ''));
   }
 
   // Group orders by pedido to generate summary rows
@@ -471,7 +665,7 @@
         };
       }
     });
-    return Object.values(map);
+    return Object.values(map).sort(compararPedidoMasNuevo);
   }
 
   // Render summary table (one row per pedido)
@@ -494,51 +688,76 @@
         <td>${escapeHtml(order.fecha || '')}</td>
         <td><span class="status-badge status-${estado}">${labelEstado(estado)}</span></td>
         <td class="actions-cell">
-          <div class="actions-scroll">
-            <button class="actions-button" onclick='showDetails(${pedidoArg})'>👁️ Ver productos</button>
-            <button class="actions-button" onclick='generatePDF(${pedidoArg}, ${clienteArg}, ${vendedorArg})'>📄 PDF</button>
-            <span class="estado-actions">
-              <select class="estado-select" id="estado_${encodeURIComponent(order.pedido || '')}">
-                <option value="pendiente" ${estado === 'pendiente' ? 'selected' : ''}>Pendiente</option>
-                <option value="terminado" ${estado === 'terminado' ? 'selected' : ''}>Terminado</option>
-                <option value="atrasado" ${estado === 'atrasado' ? 'selected' : ''}>Atrasado</option>
-                <option value="cancelado" ${estado === 'cancelado' ? 'selected' : ''}>Cancelado</option>
-              </select>
-              <button class="actions-button btn-estado" onclick='cambiarEstadoPedido(${pedidoArg}, this)'>Cambiar</button>
-            </span>
-          </div>
+          <button class="actions-button" onclick='showDetails(${pedidoArg})'>👁️ Ver / Acciones</button>
         </td>
       `;
       summaryTableBody.appendChild(tr);
     });
   }
   
+  function fechaToComparable(value){
+    const raw = String(value || '').trim();
+    if(!raw) return '';
+    const firstPart = raw.split(/[,\s]+/)[0].trim();
+
+    let m = firstPart.match(/^(\d{4})[-\/](\d{1,2})[-\/](\d{1,2})$/);
+    if(m){
+      return `${m[1]}-${String(m[2]).padStart(2,'0')}-${String(m[3]).padStart(2,'0')}`;
+    }
+
+    m = firstPart.match(/^(\d{1,2})[-\/](\d{1,2})[-\/](\d{2,4})$/);
+    if(m){
+      let year = String(m[3]);
+      if(year.length === 2) year = '20' + year;
+      return `${year}-${String(m[2]).padStart(2,'0')}-${String(m[1]).padStart(2,'0')}`;
+    }
+
+    const d = new Date(raw);
+    if(!Number.isNaN(d.getTime())){
+      return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+    }
+    return '';
+  }
+
   // Update filtered orders and render summary
   function updateFilter(){
-    const txt = searchInput.value.toLowerCase();
+    const txt = (searchInput.value || '').toLowerCase().trim();
+    const estadoFiltro = normalizarEstado(statusFilter ? statusFilter.value : '');
+    const desde = fechaDesde ? fechaDesde.value : '';
+    const hasta = fechaHasta ? fechaHasta.value : '';
+
     const filtered = orders.filter(item => {
-      return (
-        item.codigo.toLowerCase().includes(txt) ||
-        item.descripcion.toLowerCase().includes(txt) ||
-        item.ubicacion.toLowerCase().includes(txt) ||
-        item.pedido.toLowerCase().includes(txt) ||
-        ((item.cliente || '').toLowerCase().includes(txt)) ||
-        ((item.vendedor || '').toLowerCase().includes(txt)) ||
-        ((item.fecha || '').toLowerCase().includes(txt)) ||
-        ((item.status || '').toLowerCase().includes(txt))
+      const itemStatus = normalizarEstado(item.status || 'pendiente');
+      const itemFecha = fechaToComparable(item.fecha || '');
+
+      const matchTexto = !txt || (
+        displayCode(item.codigo || '').toLowerCase().includes(txt) ||
+        String(item.descripcion || '').toLowerCase().includes(txt) ||
+        String(item.ubicacion || '').toLowerCase().includes(txt) ||
+        String(item.pedido || '').toLowerCase().includes(txt) ||
+        String(item.cliente || '').toLowerCase().includes(txt) ||
+        String(item.vendedor || '').toLowerCase().includes(txt) ||
+        String(item.fecha || '').toLowerCase().includes(txt) ||
+        String(item.status || '').toLowerCase().includes(txt)
       );
+
+      const matchEstado = !estadoFiltro || itemStatus === estadoFiltro;
+      const matchDesde = !desde || (itemFecha && itemFecha >= desde);
+      const matchHasta = !hasta || (itemFecha && itemFecha <= hasta);
+
+      return matchTexto && matchEstado && matchDesde && matchHasta;
     });
-    const dataToShow = filtered.length ? filtered : orders;
-    const summary = groupOrders(dataToShow);
+
+    const summary = groupOrders(filtered);
     renderSummary(summary);
   }
-  
+
   // Show modal for adding/editing
   function openModal(editIndex){
     if(editIndex != null){
       editIndexInput.value = editIndex;
       const item = orders[editIndex];
-      inputCodigo.value = item.codigo;
+      inputCodigo.value = displayCode(item.codigo);
       inputDescripcion.value = item.descripcion;
       inputUbicacion.value = item.ubicacion;
       inputCliente.value = item.cliente || '';
@@ -563,7 +782,7 @@
   
   // Save entry from modal
   function saveEntry(){
-    const codigo = inputCodigo.value.trim();
+    const codigo = displayCode(inputCodigo.value);
     const descripcion = inputDescripcion.value.trim();
     // Obtener ubicación desde el input o, si está vacío, desde el mapa
     let ubicacion = inputUbicacion.value.trim();
@@ -625,7 +844,9 @@
   };
 
   window.cambiarEstadoPedido = async function(orderNum, btn){
-    const select = document.getElementById('estado_' + encodeURIComponent(orderNum || ''));
+    const select = (String(currentDetailsOrder || '') === String(orderNum || '') && detailsEstadoSelect)
+      ? detailsEstadoSelect
+      : document.getElementById('estado_' + encodeURIComponent(orderNum || ''));
     const nuevoEstado = normalizarEstado(select ? select.value : 'pendiente');
     const estadoAnterior = orders.find(item => String(item.pedido) === String(orderNum))?.status || 'pendiente';
     const itemsPedido = itemsPedidoParaServidor(orderNum);
@@ -675,12 +896,18 @@
       // Confirmado por Apps Script: recién aquí actualizamos la vista.
       if(nuevoEstado === 'terminado' && data.removido_de_pedidos){
         orders = orders.filter(item => String(item.pedido) !== String(orderNum));
+        if(String(currentDetailsOrder || '') === String(orderNum || '')){
+          detailsModal.classList.remove('active');
+        }
       }else{
         orders.forEach(item => {
           if(String(item.pedido) === String(orderNum)){
             item.status = nuevoEstado;
           }
         });
+        if(String(currentDetailsOrder || '') === String(orderNum || '') && detailsEstadoSelect){
+          detailsEstadoSelect.value = nuevoEstado;
+        }
       }
       updateFilter();
       alert(data.msg || 'Estado actualizado correctamente.');
@@ -725,7 +952,20 @@
     const items = orders.filter(item => item.pedido === orderNum);
     // Intentar completar las ubicaciones vacías
     await ensureLocationsForItems(items);
+    const firstItem = items[0] || {};
+    currentDetailsOrder = String(orderNum || '');
+    currentDetailsCliente = firstItem.cliente || '';
+    currentDetailsVendedor = firstItem.vendedor || '';
     detailsTitle.textContent = 'Pedido: ' + orderNum;
+    if(detailsPedidoMeta){
+      detailsPedidoMeta.textContent = `Cliente: ${currentDetailsCliente || '—'} | Vendedor: ${currentDetailsVendedor || '—'} | Fecha: ${firstItem.fecha || '—'}`;
+    }
+    if(detailsEstadoSelect){
+      detailsEstadoSelect.value = normalizarEstado(firstItem.status || 'pendiente');
+    }
+    if(detailsPrintFormat){
+      detailsPrintFormat.value = 'a4';
+    }
     detailsBody.innerHTML = '';
     if(!items.length){
       detailsBody.innerHTML = '<tr><td colspan="4" style="text-align:center;padding:20px">Sin productos</td></tr>';
@@ -734,7 +974,7 @@
         const idx = orders.indexOf(item);
         const tr = document.createElement('tr');
         tr.innerHTML = `
-          <td>${escapeHtml(item.codigo)}</td>
+          <td>${escapeHtml(displayCode(item.codigo))}</td>
           <td>${escapeHtml(item.descripcion)}</td>
           <td class="ubicacion-cell">${ubicacionHtml(item.ubicacion)}</td>
           <td>
@@ -752,9 +992,47 @@
   btnCloseDetails.addEventListener('click', () => {
     detailsModal.classList.remove('active');
   });
+
+  if(detailsPrintBtn){
+    detailsPrintBtn.addEventListener('click', () => {
+      if(!currentDetailsOrder){
+        alert('No hay pedido seleccionado.');
+        return;
+      }
+      generatePDF(
+        currentDetailsOrder,
+        currentDetailsCliente,
+        currentDetailsVendedor,
+        detailsPrintFormat && detailsPrintFormat.value ? detailsPrintFormat.value : 'a4'
+      );
+    });
+  }
+
+  if(detailsEstadoBtn){
+    detailsEstadoBtn.addEventListener('click', () => {
+      if(!currentDetailsOrder){
+        alert('No hay pedido seleccionado.');
+        return;
+      }
+      cambiarEstadoPedido(currentDetailsOrder, detailsEstadoBtn);
+    });
+  }
   
+
+
+  window.getPrintFormat = function(orderNum){
+    const sel = document.getElementById('formato_' + encodeURIComponent(orderNum || ''));
+    return sel && sel.value ? sel.value : 'a4';
+  };
+
+
   // Generate PDF for a specific order
-  window.generatePDF = async function(orderNum, clienteName='', vendedorName=''){
+  window.getPrintFormat = window.getPrintFormat || function(orderNum){
+    const sel = document.getElementById('formato_' + encodeURIComponent(orderNum || ''));
+    return sel && sel.value ? sel.value : 'a4';
+  };
+
+  window.generatePDF = async function(orderNum, clienteName='', vendedorName='', formato='a4'){
     // Collect all entries with this order number
     const items = orders.filter(item => item.pedido === orderNum);
     if(!items.length){
@@ -765,13 +1043,21 @@
     // Asegurar que las ubicaciones estén completas antes de generar el PDF
     await ensureLocationsForItems(items);
 
-    // Determine cliente y vendedor desde el primer item si no se pasan
     const firstItem = items[0] || {};
     const cliente = clienteName || firstItem.cliente || '';
     const vendedor = vendedorName || firstItem.vendedor || '';
     const fechaPedido = firstItem.fecha || new Date().toLocaleDateString('es-CL');
-
     const { jsPDF } = window.jspdf;
+
+    if(String(formato || '').toLowerCase() === 'ticket80'){
+      generarTicket80PDF({ jsPDF, items, orderNum, cliente, vendedor, fechaPedido });
+      return;
+    }
+
+    generarA4PDF({ jsPDF, items, orderNum, cliente, vendedor, fechaPedido });
+  };
+
+  function generarA4PDF({ jsPDF, items, orderNum, cliente, vendedor, fechaPedido }){
     const doc = new jsPDF('p', 'pt', 'a4');
     const totalPagesExp = '{total_pages_count_string}';
     const pageWidth = doc.internal.pageSize.getWidth();
@@ -884,7 +1170,7 @@
     // Prepare table data
     const body = items.map((it, idx) => [
       String(idx + 1),
-      String(it.codigo || ''),
+      displayCode(it.codigo || ''),
       String(it.descripcion || ''),
       ubicacionPdf(it.ubicacion || '')
     ]);
@@ -936,8 +1222,104 @@
 
     // Show PDF in new tab
     doc.output('dataurlnewwindow');
-  };
-  
+  }
+
+  function estimarAltoTicket(items){
+    const base = 58;
+    const pie = 22;
+    const filas = items.reduce((acc, it) => {
+      const desc = String(it.descripcion || '');
+      const ubic = ubicacionPdf(it.ubicacion || '');
+      const lineasDesc = Math.max(1, Math.ceil(desc.length / 30));
+      const lineasUbic = Math.max(1, Math.ceil(String(ubic).length / 17));
+      return acc + Math.max(9, 4 + (lineasDesc * 3.2) + (lineasUbic * 3.2));
+    }, 0);
+    return Math.max(160, Math.min(2500, base + filas + pie));
+  }
+
+  function generarTicket80PDF({ jsPDF, items, orderNum, cliente, vendedor, fechaPedido }){
+    const ticketHeight = estimarAltoTicket(items);
+    const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: [80, ticketHeight] });
+    const pageWidth = 80;
+    const margin = 4;
+
+    doc.setTextColor(15, 23, 42);
+    doc.setDrawColor(15, 23, 42);
+    doc.setLineWidth(0.25);
+    doc.rect(3, 3, pageWidth - 6, ticketHeight - 6);
+
+    doc.setFillColor(15, 118, 110);
+    doc.rect(3, 3, pageWidth - 6, 10, 'F');
+    doc.setTextColor(255,255,255);
+    doc.setFont('helvetica','bold');
+    doc.setFontSize(8);
+    doc.text('SISTEMA DE GESTIÓN LOGÍSTICA', pageWidth / 2, 9.5, { align:'center', maxWidth: pageWidth - 8 });
+
+    doc.setTextColor(15, 23, 42);
+    doc.setFontSize(7);
+    doc.text('SERVICIOS AS', pageWidth / 2, 17, { align:'center' });
+    doc.setFont('helvetica','bold');
+    doc.setFontSize(8);
+    doc.text('PEDIDO: ' + String(orderNum || ''), margin, 24, { maxWidth: pageWidth - (margin * 2) });
+
+    doc.setFont('helvetica','normal');
+    doc.setFontSize(6.5);
+    doc.text('Cliente: ' + String(cliente || ''), margin, 30, { maxWidth: pageWidth - (margin * 2) });
+    doc.text('Vendedor: ' + String(vendedor || ''), margin, 36, { maxWidth: pageWidth - (margin * 2) });
+    doc.text('Fecha pedido: ' + String(fechaPedido || ''), margin, 42, { maxWidth: pageWidth - (margin * 2) });
+    doc.text('Fecha PDF: ' + new Date().toLocaleString('es-CL'), margin, 48, { maxWidth: pageWidth - (margin * 2) });
+
+    const body = items.map((it, idx) => [
+      String(idx + 1),
+      displayCode(it.codigo || ''),
+      String(it.descripcion || ''),
+      ubicacionPdf(it.ubicacion || '')
+    ]);
+
+    doc.autoTable({
+      startY: 53,
+      margin: { left: margin, right: margin, bottom: 8 },
+      head: [['#', 'Código', 'Descripción', 'Ubicación']],
+      body,
+      theme: 'grid',
+      tableWidth: pageWidth - (margin * 2),
+      showHead: 'everyPage',
+      pageBreak: 'auto',
+      rowPageBreak: 'avoid',
+      styles: {
+        font: 'helvetica',
+        fontSize: 5.4,
+        cellPadding: 1.1,
+        valign: 'top',
+        overflow: 'linebreak',
+        lineColor: [51, 65, 85],
+        lineWidth: 0.15,
+        textColor: [15, 23, 42]
+      },
+      headStyles: {
+        fillColor: [20, 184, 166],
+        textColor: 255,
+        fontStyle: 'bold',
+        halign: 'center',
+        fontSize: 5.5,
+        lineWidth: 0.15
+      },
+      columnStyles: {
+        0: { cellWidth: 6.5, halign: 'center' },
+        1: { cellWidth: 15.5 },
+        2: { cellWidth: 32.5 },
+        3: { cellWidth: 17.5 }
+      }
+    });
+
+    const finalY = Math.min(ticketHeight - 11, (doc.lastAutoTable && doc.lastAutoTable.finalY ? doc.lastAutoTable.finalY + 6 : ticketHeight - 18));
+    doc.setFont('helvetica','normal');
+    doc.setFontSize(6);
+    doc.setTextColor(71, 85, 105);
+    doc.text('Formato ticket 80mm - Documento generado automáticamente', pageWidth / 2, finalY, { align:'center', maxWidth: pageWidth - 8 });
+    doc.output('dataurlnewwindow');
+  }
+
   // Import file and optionally send new orders to the Apps Script
   async function handleFile(evt){
     const file = evt.target.files[0];
@@ -952,118 +1334,157 @@
       const workbook = XLSX.read(data, { type: 'array' });
       const firstSheetName = workbook.SheetNames[0];
       const worksheet = workbook.Sheets[firstSheetName];
-      // Parse worksheet to JSON, using formatted strings (raw:false) so that
-      // leading zeros in codes are preserved if the cell is formatted as text.
-      const json = XLSX.utils.sheet_to_json(worksheet, { defval: '', raw: false });
-      // Keep track of items to send to server
+      // Parsear como matriz usando texto formateado (raw:false). Esto es clave para
+      // conservar códigos como 00123 cuando Excel los trae como texto/formato visible.
+      const rows = XLSX.utils.sheet_to_json(worksheet, { header: 1, defval: '', raw: false, blankrows: false });
       const itemsForServer = [];
-      json.forEach(row => {
-        // Map various possible column names to our internal fields. Some spreadsheets
-        // use different headers such as "PRODUCTO" for code, "DESCRIPCIÓN" for
-        // description and "NÚMERO" for the order number. If you add more header
-        // possibilities here, keep them lowercase so we don't duplicate logic.
-        const codigo =
-          row.Codigo ||
-          row.codigo ||
-          row['Código'] ||
-          row['codigo'] ||
-          row['CODIGO'] ||
-          row.PRODUCTO ||
-          row['PRODUCTO'] ||
-          row['Producto'] ||
-          '';
-        const descripcion =
-          row.Descripcion ||
-          row.descripcion ||
-          row['Descripción'] ||
-          row['descripcion'] ||
-          row['DESCRIPCIÓN'] ||
-          row['DESCRIPCION'] ||
-          '';
-        let ubicacion =
-          row.Ubicacion ||
-          row.ubicacion ||
-          row['Ubicación'] ||
-          row['ubicacion'] ||
-          row['UBICACION'] ||
-          '';
-        const pedido =
-          row.Pedido ||
-          row.pedido ||
-          row['Pedido'] ||
-          row['pedido'] ||
-          row['PEDIDO'] ||
-          row['NÚMERO'] ||
-          row['Numero'] ||
-          row['NÚMERO '] ||
-          row['NUMERO'] ||
-          '';
-        // Leer cliente y vendedor si existen
-        const cliente =
-          row.Cliente ||
-          row.cliente ||
-          row['Cliente'] ||
-          row['CLIENTE'] ||
-          '';
-        const vendedor =
-          row.Vendedor ||
-          row.vendedor ||
-          row['Vendedor'] ||
-          row['VENDEDOR'] ||
-          '';
-        // Leer fecha si existe en la fila
-        const fecha =
-          row.Fecha ||
-          row.fecha ||
-          row['Fecha'] ||
-          row['FECHA'] ||
-          row['FECHA '] ||
-          '';
-        // Only include orders that have at least a code, description and order number.
-        if (codigo && descripcion && pedido) {
-          // Determine final location using map if provided
-          const locFromMap = getUbicacion(codigo);
-          const finalUbicacion = (locFromMap || String(ubicacion).trim() || '').trim();
-          // Determine status from row or default
-          const estado = String(row.status || row.Status || row.ESTADO || '').trim() || 'pendiente';
-          const newItem = {
-            codigo: String(codigo).trim(),
-            descripcion: String(descripcion).trim(),
-            ubicacion: finalUbicacion,
-            cliente: String(cliente).trim(),
-            vendedor: String(vendedor).trim(),
-            pedido: String(pedido).trim(),
-            fecha: String(fecha).trim(),
-            status: estado
-          };
-          orders.push(newItem);
-          itemsForServer.push(newItem);
+      if(!rows.length){
+        updateSyncInfo('Archivo vacío o sin encabezados.');
+        fileInput.value = '';
+        return;
+      }
+
+      const normalizeHeader = value => String(value || '')
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .replace(/[^a-zA-Z0-9]/g, '')
+        .toLowerCase();
+
+      const headers = rows[0].map(normalizeHeader);
+      const colIndex = aliases => {
+        const normalizedAliases = aliases.map(normalizeHeader);
+        for(const alias of normalizedAliases){
+          const idx = headers.indexOf(alias);
+          if(idx !== -1) return idx;
         }
-      });
-      // If we have an API URL, send imported items to server
-      if(API_URL && itemsForServer.length){
-        try{
-          const result = await postToAppsScript({ accion: 'importar_pedidos', items: itemsForServer });
-          if(result && result.ok){
-            console.log('Pedidos importados en servidor', result.msg);
-          } else {
-            console.error('Error al importar en servidor', result);
+        return -1;
+      };
+      const getValue = (row, aliases) => {
+        const idx = colIndex(aliases);
+        if(idx === -1) return '';
+        return row[idx] ?? '';
+      };
+
+      for(let r = 1; r < rows.length; r++){
+        const row = rows[r];
+        const codigo = displayCode(getValue(row, ['codigo','código','producto','sku']));
+        const descripcion = String(getValue(row, ['descripcion','descripción','detalle','producto descripcion','descripcion producto']) || '').trim();
+        const ubicacion = String(getValue(row, ['ubicacion','ubicación','posicion','posición']) || '').trim();
+        const pedido = String(getValue(row, ['pedido','numero','número','nro pedido','nro_pedido','orden','orden compra']) || '').trim();
+        const cliente = String(getValue(row, ['cliente','nombre cliente','razon social','razón social']) || '').trim();
+        const vendedor = String(getValue(row, ['vendedor','asesor','ejecutivo']) || '').trim();
+        const fecha = String(getValue(row, ['fecha','fecha pedido','fecha_pedido','fecha ingreso']) || '').trim();
+        const estadoRaw = String(getValue(row, ['status','estado']) || '').trim() || 'pendiente';
+
+        if(codigo && descripcion && pedido){
+          const locFromMap = getUbicacion(codigo);
+          const finalUbicacion = (locFromMap || ubicacion || '').trim();
+          const newItem = {
+            codigo: displayCode(codigo),
+            descripcion,
+            ubicacion: finalUbicacion,
+            cliente,
+            vendedor,
+            pedido,
+            fecha,
+            status: normalizarEstado(estadoRaw || 'pendiente')
+          };
+          if(agregarPedidoPendienteSinDuplicar(newItem)){
+            itemsForServer.push(newItem);
           }
-        }catch(err){
-          console.error('Fallo al enviar pedidos al servidor', err);
         }
       }
+      // El archivo queda cargado en pantalla. La BD-PEDIDOS se actualiza sólo al presionar Sincronizar pedidos.
       updateFilter();
+      if(itemsForServer.length){
+        updateSyncInfo(`Archivo cargado: ${itemsForServer.length} producto(s) nuevo(s). Presiona Sincronizar pedidos para enviarlos a Google Sheets.`);
+      }else{
+        updateSyncInfo('Archivo leído: no se agregaron productos nuevos visibles.');
+      }
       fileInput.value = ''; // reset
     };
     reader.readAsArrayBuffer(file);
   }
   
+
+  async function syncPedidosToServer(){
+    if(!API_URL){
+      alert('Primero configura la URL del Apps Script.');
+      return;
+    }
+    const pendientes = orders
+      .filter(item => normalizarEstado(item.status || 'pendiente') === 'pendiente')
+      .map(item => ({
+        codigo: displayCode(item.codigo || ''),
+        descripcion: String(item.descripcion || '').trim(),
+        ubicacion: String(item.ubicacion || '').trim(),
+        pedido: String(item.pedido || '').trim(),
+        cliente: String(item.cliente || '').trim(),
+        vendedor: String(item.vendedor || '').trim(),
+        fecha: String(item.fecha || '').trim(),
+        status: 'pendiente'
+      }))
+      .filter(item => item.codigo && item.descripcion && item.pedido);
+
+    if(!pendientes.length){
+      updateSyncInfo('No hay productos locales pendientes. Actualizando listado desde Google Sheets en tiempo real...');
+      await loadPedidosFromServer({ silent:false, force:true });
+      aplicarUbicacionesEnPedidos();
+      updateFilter();
+      updateSyncInfo(`Listado actualizado en tiempo real desde Google Sheets. ${new Date().toLocaleTimeString()}`);
+      return;
+    }
+
+    const originalText = btnSyncPedidos.textContent;
+    btnSyncPedidos.disabled = true;
+    btnSyncPedidos.textContent = 'Sincronizando...';
+
+    try{
+      const result = await postToAppsScript({
+        accion: 'importar_pedidos',
+        items: pendientes
+      });
+
+      if(result && result.ok){
+        const insertados = Number(result.insertados || 0);
+        const recibidos = Number(result.recibidos || pendientes.length);
+        updateSyncInfo(`Sincronización en tiempo real ejecutada. Recibidos: ${recibidos}. Nuevos guardados en PEDIDOS: ${insertados}. Actualizando listado...`);
+        // Sincronización inmediata: después de guardar en Apps Script, se consulta PEDIDOS al instante.
+        // Esto deja la pantalla exactamente igual que la BD, sin esperar los 20 segundos del automático.
+        await loadPedidosFromServer({ silent:false, force:true });
+        aplicarUbicacionesEnPedidos();
+        updateFilter();
+        updateSyncInfo(`Sincronización lista en tiempo real. Recibidos: ${recibidos}. Nuevos guardados: ${insertados}. Ya existentes no se duplicaron. ${new Date().toLocaleTimeString()}`);
+        alert(`Sincronización lista.\nRecibidos: ${recibidos}\nNuevos guardados: ${insertados}\nLos existentes no se duplicaron.`);
+      }else{
+        const msg = (result && result.msg) ? result.msg : 'No se pudo sincronizar con Apps Script.';
+        throw new Error(msg);
+      }
+    }catch(err){
+      console.error('Error al sincronizar pedidos', err);
+      alert('No se pudo sincronizar pedidos: ' + (err.message || err));
+    }finally{
+      btnSyncPedidos.textContent = originalText;
+      btnSyncPedidos.disabled = false;
+    }
+  }
+
   // Event listeners
   btnAdd.addEventListener('click', () => openModal());
   btnImport.addEventListener('click', () => fileInput.click());
+  btnSyncPedidos.addEventListener('click', syncPedidosToServer);
   fileInput.addEventListener('change', handleFile);
   searchInput.addEventListener('input', updateFilter);
+  statusFilter.addEventListener('change', updateFilter);
+  fechaDesde.addEventListener('change', updateFilter);
+  fechaHasta.addEventListener('change', updateFilter);
+  btnClearFilters.addEventListener('click', () => {
+    searchInput.value = '';
+    statusFilter.value = '';
+    fechaDesde.value = '';
+    fechaHasta.value = '';
+    updateFilter();
+  });
   btnCancel.addEventListener('click', closeModal);
   btnSave.addEventListener('click', saveEntry);
 
@@ -1107,5 +1528,6 @@
       await loadPedidosFromServer();
       aplicarUbicacionesEnPedidos();
       updateFilter();
+      iniciarActualizacionAutomatica();
     })();
 })();

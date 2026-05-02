@@ -278,13 +278,19 @@
         <button class="nav-btn active" data-view="home"><span class="nav-icon">🏠</span><span>Inicio</span></button>
         <button class="nav-btn" data-module="orders_system.html" data-title="Pedidos" data-subtitle="Carga, importación, productos asociados y PDF"><span class="nav-icon">📦</span><span>Pedidos</span></button>
         <button class="nav-btn" data-module="ubicacionesPro.html" data-title="Ubicaciones" data-subtitle="Movimientos, scanner, códigos y descripción rápida"><span class="nav-icon">📍</span><span>Ubicaciones</span></button>
+        <button class="nav-btn" data-module="bd_pedidos.html" data-title="BD-PEDIDOS" data-subtitle="Consulta directa de PEDIDOS con actualización automática"><span class="nav-icon">📋</span><span>BD-PEDIDOS</span></button>
+        <button class="nav-btn" data-module="bd_ubicaciones.html" data-title="BD-UBICACIONES" data-subtitle="Consulta directa de UBICACIONES"><span class="nav-icon">🗂️</span><span>BD-UBICACIONES</span></button>
+        <button class="nav-btn" data-module="bd_maestra.html" data-title="BD-MAESTRA" data-subtitle="Códigos y descripciones maestras"><span class="nav-icon">⚡</span><span>BD-MAESTRA</span></button>
+        <button class="nav-btn" data-module="bd_movimiento.html" data-title="BD-MOVIMIENTO" data-subtitle="Movimientos generales"><span class="nav-icon">🔁</span><span>BD-MOVIMIENTO</span></button>
+        <button class="nav-btn" data-module="bd_movimiento_ubicacion.html" data-title="BD-MOVIMIENTO UBICACIÓN" data-subtitle="Movimientos por ubicación asociados a pedidos"><span class="nav-icon">📌</span><span>BD-MOV. UBICACIÓN</span></button>
+        <button class="nav-btn" data-module="bd_movimiento_pedidos.html" data-title="BD-MOVIMIENTO PEDIDOS" data-subtitle="Historial de cambios de estado de pedidos"><span class="nav-icon">🧾</span><span>BD-MOV. PEDIDOS</span></button>
         <button class="nav-btn" id="btnOpenConfig"><span class="nav-icon">⚙️</span><span>Configuración URL</span></button>
         <button class="nav-btn" id="btnSyncLocations"><span class="nav-icon">🔄</span><span>Sincronizar ubicaciones</span></button>
         <button class="nav-btn" id="btnSyncMaestra"><span class="nav-icon">⚡</span><span>Sincronizar MAESTRA</span></button>
       </nav>
       <div class="infra-footer">
         <b>Estado:</b> <span id="sideStatus">Listo</span><br>
-        Las bases quedan en memoria y sólo se actualizan al sincronizar.
+        Pedidos y BD se actualizan cada 20 segundos. El botón sincroniza en tiempo real.
       </div>
     </aside>
 
@@ -317,8 +323,8 @@
             <section class="quick-grid">
               <button class="quick-card" onclick="openModule('orders_system.html','Pedidos','Carga, importación y PDF de pedidos')"><div><div class="icon">📦</div><h3>Pedidos</h3><p>Importar pedidos, ver productos asociados y generar PDF.</p></div></button>
               <button class="quick-card" onclick="openModule('ubicacionesPro.html','Ubicaciones','Scanner, MAESTRA y movimientos')"><div><div class="icon">📍</div><h3>Ubicaciones</h3><p>Scanner, ingreso de códigos y descripción rápida desde MAESTRA.</p></div></button>
-              <button class="quick-card" onclick="syncLocations()"><div><div class="icon">🔄</div><h3>Ubicaciones</h3><p>Actualiza la memoria local con todas las ubicaciones de MOVIMIENTO.</p></div></button>
-              <button class="quick-card" onclick="syncMaestra()"><div><div class="icon">⚡</div><h3>MAESTRA rápida</h3><p>Precarga códigos y descripciones para búsquedas instantáneas.</p></div></button>
+              <button class="quick-card" onclick="openModule('bd_pedidos.html','BD-PEDIDOS','Consulta directa con actualización automática')"><div><div class="icon">📋</div><h3>BD-PEDIDOS</h3><p>Ver la BD-PEDIDOS en tabla con filtros y sincronización cada 20 segundos.</p></div></button>
+              <button class="quick-card" onclick="openModule('bd_movimiento_pedidos.html','BD-MOVIMIENTO PEDIDOS','Historial de cambios de estado')"><div><div class="icon">🧾</div><h3>BD-MOVIMIENTOS</h3><p>Consultar historial de estados, ubicaciones y bases del sistema.</p></div></button>
             </section>
 
             <section class="status-grid">
@@ -369,7 +375,7 @@
   </div>
 
   <script>
-    const DEFAULT_API_URL = 'https://script.google.com/macros/s/AKfycbyAV0CJN_5Uap7AYMRWP-NNXM4tFfz6uWut2F2KbUcvlQxVTD-84UiHhSbINHIGUjgp4Q/exec';
+    const DEFAULT_API_URL = 'https://script.google.com/macros/s/AKfycbwOG9W7fdVqDrhacHp3Ry1A-pM5eKVFXwFXl4Q2V2SYS1uclU9Ko7XcqS5iOcP2BKEb7g/exec';
     const API_URL_STORAGE_KEY = 'sistema_pedidos_api_url';
     const UBICACIONES_CACHE_KEY = 'pedidos_ubicaciones_cache_v3_all_locations';
     const UBICACIONES_CACHE_TS_KEY = 'pedidos_ubicaciones_cache_v3_all_locations_ts';

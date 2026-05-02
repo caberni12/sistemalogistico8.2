@@ -3,7 +3,7 @@ let CARD_STATE = {}; // idFila => true (expandida) | false (colapsada)
    CONFIGURACIÓN
 ===================================================== */
 const DEFAULT_URL_GS =
-  'https://script.google.com/macros/s/AKfycbyAV0CJN_5Uap7AYMRWP-NNXM4tFfz6uWut2F2KbUcvlQxVTD-84UiHhSbINHIGUjgp4Q/exec';
+  'https://script.google.com/macros/s/AKfycbwOG9W7fdVqDrhacHp3Ry1A-pM5eKVFXwFXl4Q2V2SYS1uclU9Ko7XcqS5iOcP2BKEb7g/exec';
 const API_URL_STORAGE_KEY = 'sistema_pedidos_api_url';
 let URL_GS = '';
 
@@ -362,8 +362,8 @@ function buscarCodigo(){
     return;
   }
 
-  // Si no está en memoria, consultar la hoja MAESTRA por URL casi de inmediato.
-  // Usamos buscar_maestra para leer directo desde la hoja MAESTRA del Apps Script.
+  // Si no está en memoria, consultar la BD-MAESTRA por URL casi de inmediato.
+  // Usamos buscar_maestra para leer directo desde la BD-MAESTRA del Apps Script.
   timerBuscar = setTimeout(()=>{
     if(ultimoCodigoBuscado === cod) return;
     ultimoCodigoBuscado = cod;
