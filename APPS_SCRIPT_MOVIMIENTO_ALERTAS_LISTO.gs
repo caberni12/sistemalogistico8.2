@@ -581,9 +581,32 @@ function alertaTipoEstado_(estado){
   return estado ? 'STATUS_' + nh_(estado) : 'STATUS';
 }
 
-function mensajeVozEstado_(pedido, estado, pikeador){
+function clientePedido_(pedido){
+  pedido = t_(pedido);
+  if(!pedido) return '';
+  try{
+    const sh = pedidosSheet_(false);
+    if(!sh) return '';
+    const v = values_(sh);
+    const ix = idx_(v.headers);
+    const key = pedido_(pedido);
+    for(let i=0; i<v.data.length; i++){
+      if(pedido_(getCell_(v.data[i], ix.pedido)) === key){
+        const cliente = getCell_(v.data[i], ix.cliente);
+        if(cliente) return cliente;
+      }
+    }
+  }catch(e){}
+  return '';
+}
+
+function mensajeVozEstado_(pedido, estado, pikeador, cliente){
+  pedido = t_(pedido);
   estado = estadoSeguro_(estado, 'PENDIENTE');
+  cliente = t_(cliente) || clientePedido_(pedido);
   const quien = t_(pikeador) ? ' Pikeador asignado: ' + t_(pikeador) + '.' : '';
+  const pedidoTxt = pedido ? 'pedido ' + pedido : 'pedido sin número';
+  const clienteTxt = cliente ? ', cliente ' + cliente : '';
   const mensajes = {
     'PENDIENTE':'Pedido ' + pedido + ' quedó pendiente.' + quien,
     'PREPARACION':'Pedido ' + pedido + ' enviado a preparación.' + quien,
@@ -592,7 +615,7 @@ function mensajeVozEstado_(pedido, estado, pikeador){
     'DESPACHADO':'Pedido ' + pedido + ' fue despachado.' + quien,
     'EN RUTA':'Pedido ' + pedido + ' está en ruta.' + quien,
     'ENTREGADO':'Pedido ' + pedido + ' fue entregado.' + quien,
-    'TERMINADO':'Pedido terminado',
+    'TERMINADO':'Pedido terminado, ' + pedidoTxt + clienteTxt,
     'CANCELADO':'Pedido ' + pedido + ' fue cancelado.' + quien
   };
   return mensajes[estado] || ('Pedido ' + pedido + ' cambió a estado ' + estado + '.' + quien);
@@ -603,7 +626,7 @@ function emitirAlertaStatus_(pedido, estado, cliente, vendedor, pikeador, origen
   estado = estadoSeguro_(estado, '');
   if(!pedido || !estado) return {ok:false,msg:'Pedido o estado vacío'};
   const tipo = alertaTipoEstado_(estado);
-  const mensaje = mensajeVozEstado_(pedido, estado, pikeador);
+  const mensaje = mensajeVozEstado_(pedido, estado, pikeador, cliente);
   const token = 'ALERTA-' + nh_(estado) + '-' + Date.now() + '-' + Utilities.getUuid().slice(0,8).toUpperCase();
   const ts = Utilities.formatDate(new Date(), TZ, 'yyyy-MM-dd HH:mm:ss');
   let count = 0;
@@ -711,7 +734,7 @@ function alertaPedido_(b, tipo, mensaje, cambiarEstado){
   const estadoSolicitado = estadoSeguro_(b.status || b.estado || b.nuevo_estado || b.state || (cambiarEstado ? 'PREPARACION' : ''), '');
   if(estadoSolicitado && estadoSolicitado !== 'PREPARACION'){
     tipo = alertaTipoEstado_(estadoSolicitado);
-    mensaje = mensajeVozEstado_(pedido, estadoSolicitado, b.pikeador || b.picker || b.preparador || '');
+    mensaje = mensajeVozEstado_(pedido, estadoSolicitado, b.pikeador || b.picker || b.preparador || '', b.cliente || '');
     cambiarEstado = false;
   }
 

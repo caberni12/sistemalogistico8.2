@@ -553,7 +553,7 @@ async function actualizarEstadoActual(){
   const r=await api('actualizar_estado_pedido',{pedido:p.pedido,status:estado,pikeador:pk});
   if(!r.ok)return toast(r.msg||'No se pudo actualizar estado');
   toast('Estado actualizado: '+estado);
-  const vozMsg = estado==='TERMINADO' ? 'Pedido terminado' : (r.voice || (estado==='PREPARACION' ? 'Pedido enviado a preparación' : ''));
+  const vozMsg = estado==='TERMINADO' ? mensajePedidoTerminado(p) : (r.voice || (estado==='PREPARACION' ? 'Pedido enviado a preparación' : ''));
   if(vozMsg) voz(vozMsg);
   await cargarTodo();
   abrirModal(p.key);
@@ -586,7 +586,7 @@ async function verificarAlertas(){
       if(old&&old!==p.alerta_token){
         hubo=true;
         const estadoAlerta = String(p.status || p.estado || '').trim().toUpperCase();
-        const msgAlerta = p.alerta_mensaje || (estadoAlerta === 'TERMINADO' ? 'Pedido terminado' : (estadoAlerta === 'PREPARACION' ? 'Pedido enviado a preparación' : ('Pedido ' + p.pedido + ' cambió de estado')));
+        const msgAlerta = p.alerta_mensaje || (estadoAlerta === 'TERMINADO' ? mensajePedidoTerminado(p) : (estadoAlerta === 'PREPARACION' ? 'Pedido enviado a preparación' : ('Pedido ' + p.pedido + ' cambió de estado')));
         toast('🔔 ' + msgAlerta + ': ' + p.pedido);
         voz(msgAlerta);
       }
@@ -1239,6 +1239,12 @@ function badgeEstado(s){
 function badgeAlerta(p){ return p.alerta_token?`<span class="badge alerta">${esc(p.alerta_tipo||'ALERTA')}</span>`:'<span style="color:#94a3b8">Sin alerta</span>'; }
 function setStatus(t){ if($('statusLine')) $('statusLine').textContent=t; }
 function toast(m){ const e=$('toast'); if(!e)return alert(m); e.textContent=m; e.classList.add('show'); setTimeout(()=>e.classList.remove('show'),4200); }
+function mensajePedidoTerminado(p){
+  p = p || {};
+  const pedido = String(p.pedido || '').trim();
+  const cliente = String(p.cliente || '').trim();
+  return 'Pedido terminado' + (pedido ? ', pedido ' + pedido : '') + (cliente ? ', cliente ' + cliente : '');
+}
 function voz(t){ try{const u=new SpeechSynthesisUtterance(t);u.lang='es-CL';speechSynthesis.cancel();speechSynthesis.speak(u);}catch(e){} }
 function pick(r,i,f){return (i == null || i < 0 || !Array.isArray(r) || i >= r.length || r[i] == null || String(r[i]).trim()==='') ? f : String(r[i]).trim();}
 function norm(v){return String(v||'').toUpperCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[\s_\-.]+/g,'')}
