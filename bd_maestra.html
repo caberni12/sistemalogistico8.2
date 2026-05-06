@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>BD-MAESTRA | Sistema de Gestión Logística, Servicios AS</title>
+<title>BD-MAESTRA | Sistema de Gestión Servicios AS</title>
 <style>
   :root{--bg:#f8fafc;--panel:#fff;--ink:#0f172a;--muted:#64748b;--primary:#2563eb;--teal:#14b8a6;--border:#dbe4ef;--shadow:0 18px 45px rgba(15,23,42,.10);}
   *{box-sizing:border-box}
@@ -41,7 +41,7 @@
     </div>
     <div class="actions">
       <button id="btnSync" class="primary">🔄 Sincronizar ahora</button>
-      <button id="btnExport" class="secondary">⬇ Exportar CSV</button>
+      <button id="btnExport" class="secondary">⬇ Exportar XLSX</button>
     </div>
   </section>
 
@@ -67,6 +67,7 @@
   </section>
 </div>
 <script>window.SHEET_NAME='MAESTRA';window.SHEET_TITLE='BD-MAESTRA';</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="sheet_module.js"></script>
 </body>
 </html>

@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<title>Ubicaciones PRO</title>
+<title>Sistema de Gestión Servicios AS | Ubicaciones</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 
 
@@ -25,7 +25,8 @@
 <div id="progress-bar"></div>
 
 <header>
-  📍 Ubicaciones PRO
+  📍 Sistema de Gestión Servicios AS · Ubicaciones
+  <button onclick="abrirConfiguracion()">⚙️ Configuración</button>
   <button onclick="abrirModal()">➕ Agregar</button>
 </header>
 
@@ -35,6 +36,7 @@
 
 <div class="card acciones">
   <button onclick="recargar()">🔄 Recargar</button>
+  <button onclick="sincronizarMaestra()">🔁 Sincronizar MAESTRA</button>
   <button onclick="exportarPDF()">📄 PDF</button>
   <button onclick="exportarXLSX()">📊 Excel</button>
 </div>
@@ -78,7 +80,7 @@
 <input id="ubicacion">
 
 <label>Código</label>
-<input id="codigo" oninput="buscarCodigo()">
+<input id="codigo" autocomplete="off" oninput="buscarCodigo()" onblur="buscarCodigo()" onkeydown="if(event.key==='Enter'){buscarCodigo();}">
 
 <button class="btn scan" onclick="abrirScanner()">📷 Escanear</button>
 <div id="scannerBox" style="display:none"></div>
@@ -132,8 +134,33 @@
 </div>
 </div>
 
+
+<div class="modal" id="configModal">
+<div class="modal-card">
+<div class="modal-body">
+<h2>Configuración</h2>
+<label>URL del Apps Script</label>
+<input id="configUrlGs" placeholder="https://script.google.com/macros/s/AKfycbxUTnIFy_2gEByhDLx1TtrtSrblLPeoCpCtr8OmHip7xfwA6Sabp6U3ALGIhJfW0cHLAA/exec">
+<p style="font-size:12px;color:#64748b;line-height:1.35">
+Puedes guardar la URL aquí o cargarla desde un archivo <b>config.txt</b> ubicado junto al HTML.<br>
+Formatos aceptados: <code>API_URL=https://script.google.com/macros/s/AKfycbxUTnIFy_2gEByhDLx1TtrtSrblLPeoCpCtr8OmHip7xfwA6Sabp6U3ALGIhJfW0cHLAA/exec</code> o JSON con <code>API_URL</code>.
+</p>
+<input id="configTxtInput" type="file" accept=".txt,.json" style="display:none" onchange="cargarConfigTxtArchivo(this.files[0])">
+<span id="configStatus" style="display:block;font-size:12px;color:#0f766e;word-break:break-word"></span>
+</div>
+<div class="modal-footer">
+<button onclick="document.getElementById('configTxtInput').click()">Cargar TXT</button>
+<button onclick="descargarConfigTxt()">Descargar TXT</button>
+<button onclick="probarConfiguracionUrl()">Probar</button>
+<button onclick="guardarConfiguracionUrl()">Guardar</button>
+<button onclick="cerrarConfiguracion()">Cerrar</button>
+</div>
+</div>
+</div>
+
 <script src="ubicaciones.js"></script>
   <script src="segurity.js"></script>
   <script src="auth.js"></script>
+<script src="loader_buttons.js"></script>
 </body>
 </html>

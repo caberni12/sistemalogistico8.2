@@ -1,0 +1,31 @@
+CAMBIOS APLICADOS - 2026-05-04
+
+1) Apps Script
+- Se agregó APPS_SCRIPT_MOVIMIENTO_ALERTAS_LISTO.gs.
+- Debes copiar ese archivo completo en tu proyecto de Google Apps Script y publicar una nueva implementación del Web App.
+- El Apps Script acepta ahora las acciones:
+  agregar / guardar_movimiento / agregar_movimiento / guardar_ubicacion
+  editar / editar_movimiento / actualizar_movimiento / actualizar_ubicacion
+  eliminar / eliminar_movimiento / borrar_movimiento / eliminar_ubicacion
+  listar / listar_movimiento / listar_ubicaciones / listar_bd&sheet=MOVIMIENTO
+- La hoja usada para el módulo Ubicaciones es MOVIMIENTO.
+- Las alertas se escriben con token único en PEDIDOS y registro en ALERTAS_PEDIDOS.
+
+2) URL actualizada
+- Se reemplazó la URL anterior por:
+  https://script.google.com/macros/s/AKfycbxUTnIFy_2gEByhDLx1TtrtSrblLPeoCpCtr8OmHip7xfwA6Sabp6U3ALGIhJfW0cHLAA/exec
+
+3) Versión web
+- ubicaciones.js ahora envía guardar_movimiento, editar_movimiento y eliminar_movimiento.
+- Las alertas en orden_pedidos.js se revisan cada 1 segundo.
+- Al reenviar o preparar un pedido, se fuerza una verificación inmediata de alertas.
+
+4) Versión Android
+- UbicacionesActivity ahora envía guardar_movimiento, editar_movimiento y eliminar_movimiento.
+- OrdenPedidosActivity baja la sincronización de alertas a 1 segundo.
+- MainActivity incluye botón flotante superpuesto siempre visible.
+  Toque normal: abre/cierra el menú lateral.
+  Toque largo: abre Ubicaciones.
+
+5) Importante
+- Si sigue apareciendo “Acción POST no válida”, significa que el Web App publicado todavía usa el Apps Script antiguo. Copia APPS_SCRIPT_MOVIMIENTO_ALERTAS_LISTO.gs, guarda, implementa nueva versión y usa esa URL publicada.

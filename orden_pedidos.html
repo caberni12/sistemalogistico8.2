@@ -1,0 +1,124 @@
+<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Orden de Pedidos</title><script src="https://unpkg.com/xlsx/dist/xlsx.full.min.js"></script><script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script><script src="https://cdn.jsdelivr.net/npm/jspdf-autotable@3.5.29/dist/jspdf.plugin.autotable.min.js"></script><style>
+:root{--bg:#f4f7fb;--card:#fff;--txt:#0f172a;--muted:#64748b;--line:#dbe3ef;--pri:#0f766e;--danger:#dc2626;--warn:#d97706;--info:#2563eb;--ok:#16a34a}*{box-sizing:border-box}body{margin:0;font-family:Inter,Arial,sans-serif;background:var(--bg);color:var(--txt);padding:14px}.header{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:12px}h1{font-size:22px;margin:0}.status-line{font-size:12px;color:var(--muted);margin-top:4px}.card{background:var(--card);border:1px solid var(--line);border-radius:16px;box-shadow:0 8px 24px rgba(15,23,42,.08);padding:14px;margin-bottom:12px}.toolbar{display:grid;grid-template-columns:repeat(12,1fr);gap:8px;align-items:end}.field{display:flex;flex-direction:column;gap:4px;min-width:0}.field label{font-size:12px;font-weight:700;color:#334155}input,select,button{font-family:inherit;font-size:13px;border-radius:10px}input,select{border:1px solid #cbd5e1;padding:10px;background:#fff;min-width:0;width:100%}button{border:0;background:var(--pri);color:white;padding:10px 12px;font-weight:700;cursor:pointer;white-space:nowrap}.secondary{background:#e2e8f0;color:#0f172a}.warn{background:var(--warn)}.info{background:var(--info)}.ok{background:var(--ok)}.span-2{grid-column:span 2}.span-3{grid-column:span 3}.kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}.kpi{background:#f8fafc;border:1px solid #e2e8f0;border-radius:14px;padding:12px}.kpi .t{font-size:12px;color:var(--muted)}.kpi .v{font-size:22px;font-weight:800;margin-top:4px}.table-wrap{height:calc(100vh - 300px);min-height:360px;overflow:auto;border:1px solid var(--line);border-radius:16px;background:#fff}table{border-collapse:separate;border-spacing:0;width:100%;min-width:1120px}th,td{border-bottom:1px solid #e2e8f0;padding:9px 10px;text-align:left;font-size:13px;vertical-align:middle;white-space:nowrap}th{position:sticky;top:0;background:#f8fafc;color:#475569;z-index:5;font-size:12px;text-transform:uppercase}.badge{display:inline-flex;border-radius:999px;padding:4px 9px;font-size:12px;font-weight:800;max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.pendiente{background:#fef3c7;color:#92400e}.preparacion{background:#dbeafe;color:#1e40af}.terminado{background:#dcfce7;color:#166534}.cancelado{background:#fee2e2;color:#991b1b}.alerta{background:#fde68a;color:#78350f}.actions-cell button{padding:7px 10px;font-size:12px}.mobile-list{display:none}.modal{position:fixed;inset:0;background:rgba(15,23,42,.68);display:none;align-items:center;justify-content:center;z-index:9999;padding:14px}.modal.show{display:flex}.modal-box{width:min(1180px,100%);max-height:calc(100vh - 28px);background:#fff;border-radius:18px;box-shadow:0 25px 80px rgba(0,0,0,.35);display:flex;flex-direction:column;overflow:hidden}.modal-head{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;padding:16px 18px;border-bottom:1px solid #e2e8f0;background:#f8fafc}.modal-head h2{margin:0;font-size:20px}.close{background:#dc2626;width:38px;height:38px;padding:0;font-size:20px;display:flex;align-items:center;justify-content:center}.modal-actions-top{display:flex;gap:8px;flex-wrap:wrap;padding:12px 18px;border-bottom:1px solid #e2e8f0;background:#fff;z-index:2}.modal-body{padding:16px 18px;overflow:auto}.detail-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin-bottom:14px}.detail-item{background:#f8fafc;border:1px solid #e2e8f0;border-radius:12px;padding:10px;min-width:0}.detail-item .l{font-size:12px;color:#64748b;font-weight:700}.detail-item .v{font-size:14px;font-weight:800;margin-top:3px;overflow:hidden;text-overflow:ellipsis}.products-wrap{max-height:360px;overflow:auto;border:1px solid #e2e8f0;border-radius:14px;background:#fff}.products-wrap table{min-width:720px}.toast{position:fixed;right:18px;bottom:18px;background:#0f172a;color:white;border-radius:14px;padding:13px 16px;box-shadow:0 15px 40px rgba(0,0,0,.25);z-index:12000;display:none;max-width:360px}.toast.show{display:block}.hidden{display:none!important}@media(max-width:900px){body{padding:10px}.toolbar{grid-template-columns:1fr}.span-2,.span-3{grid-column:span 1}.kpis{grid-template-columns:1fr 1fr}.table-wrap{display:none}.mobile-list{display:block}.pedido-card{background:#fff;border:1px solid #e2e8f0;border-radius:14px;padding:12px;margin-bottom:10px;box-shadow:0 6px 18px rgba(15,23,42,.08)}.pedido-card .top{display:flex;justify-content:space-between;gap:8px;margin-bottom:8px;font-weight:800}.pedido-card p{margin:5px 0;font-size:13px;color:#334155}.pedido-card button{width:100%;margin-top:8px}.modal-box{height:calc(100vh - 18px);max-height:calc(100vh - 18px)}.detail-grid{grid-template-columns:1fr 1fr}.modal-actions-top button{width:100%}}
+.import-summary{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin:10px 0}.import-summary .box{background:#f8fafc;border:1px solid #e2e8f0;border-radius:12px;padding:10px}.import-summary .box b{display:block;font-size:18px;margin-top:3px}.import-preview{max-height:310px;overflow:auto;border:1px solid #e2e8f0;border-radius:14px;background:#fff}.import-preview table{min-width:960px}.import-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}.hint{font-size:12px;color:#64748b;line-height:1.4}
+@media(max-width:900px){.import-summary{grid-template-columns:1fr 1fr}.import-actions button{width:100%}}
+@media(max-width:480px){.kpis{grid-template-columns:1fr}.detail-grid{grid-template-columns:1fr}}
+/* ================= LOADER DE BOTONES ================= */
+button{position:relative;display:inline-flex;align-items:center;justify-content:center;gap:7px;transition:.18s ease;}
+button.btn-loading,button[aria-busy="true"]{pointer-events:none;opacity:.82;padding-right:34px!important;filter:saturate(.9);}
+button.btn-loading::after,button[aria-busy="true"]::after{content:"";position:absolute;right:10px;top:50%;width:15px;height:15px;margin-top:-7.5px;border:3px solid rgba(255,255,255,.95);border-top-color:transparent;border-radius:50%;animation:btnSpin .75s linear infinite;}
+button.secondary.btn-loading::after,button.secondary[aria-busy="true"]::after{border-color:rgba(15,23,42,.85);border-top-color:transparent;}
+@keyframes btnSpin{to{transform:rotate(360deg)}}.btn-link{display:inline-flex;align-items:center;justify-content:center;text-decoration:none;padding:10px 12px;border-radius:10px;background:#e2e8f0;color:#0f172a;font-weight:700;border:0;min-height:40px}.btn-link:hover{background:#cbd5e1}.estado-import{display:inline-flex;align-items:center;gap:5px;border-radius:999px;padding:4px 9px;font-weight:800;font-size:11px}.estado-nuevo{background:#dbeafe;color:#1e40af}.estado-cambio{background:#fef3c7;color:#92400e}.estado-igual{background:#dcfce7;color:#166534}.estado-error{background:#fee2e2;color:#991b1b}.changes-list{font-size:11px;color:#475569;max-width:220px;white-space:normal}
+/* ================= PROGRESO IMPORTADOR XLSX ================= */
+.import-progress{margin:12px 0 14px;background:#f8fafc;border:1px solid #dbe3ef;border-radius:14px;padding:12px;box-shadow:inset 0 1px 0 rgba(255,255,255,.75)}
+.import-progress-head{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:8px;font-size:13px;font-weight:800;color:#0f172a}
+.import-progress-percent{font-size:18px;font-weight:900;color:#0f766e;min-width:54px;text-align:right}
+.import-progress-bar{height:16px;background:#e2e8f0;border-radius:999px;overflow:hidden;border:1px solid #cbd5e1}
+.import-progress-fill{height:100%;width:0%;background:linear-gradient(90deg,#0f766e,#14b8a6,#22c55e);border-radius:999px;transition:width .22s ease}
+.import-progress-detail{font-size:12px;color:#64748b;margin-top:7px;line-height:1.35}
+.import-progress.ok .import-progress-fill{background:linear-gradient(90deg,#16a34a,#22c55e)}
+.import-progress.error .import-progress-fill{background:linear-gradient(90deg,#dc2626,#ef4444)}
+
+/* ================= MODAL PEDIDO MANUAL ================= */
+.manual-products{max-height:260px;overflow:auto;border:1px solid #e2e8f0;border-radius:14px;background:#fff;margin-top:10px}
+.manual-products table{min-width:760px}
+.manual-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+.manual-preview{background:#f8fafc;border:1px solid #e2e8f0;border-radius:14px;padding:12px;margin:12px 0;font-size:13px;color:#334155}
+.manual-preview b{color:#0f172a}
+@media(max-width:900px){.manual-actions button{width:100%}}
+</style></head><body><div class="header"><div><h1>📦 Orden de Pedidos</h1><div id="statusLine" class="status-line">Conectando con Web App...</div></div><button id="btnTogglePanel" class="secondary">Ocultar panel</button></div><section id="panelControl" class="card"><div class="toolbar"><button id="btnCargar" class="span-2">🔄 Cargar lista</button><button id="btnSync" class="span-2 info">📡 Sincronizar</button><button id="btnSyncMaestra" class="span-2 secondary">📚 Sincronizar Maestra</button><button id="btnSyncUbicaciones" class="span-2 info">📍 Sincronizar Ubicaciones</button><button id="btnImportar" class="span-2 warn">📥 Importar listado</button><button id="btnManual" class="span-2 ok">➕ Pedido manual</button><button id="btnPDF" class="span-2 secondary">📄 PDF general</button><div class="field span-3"><label>Buscar</label><input id="txtBuscar" placeholder="Pedido, cliente, código..."></div><div class="field span-2"><label>Estado</label><select id="selEstado"><option value="">Todos</option><option>PENDIENTE</option><option>PREPARACION</option><option>RECIBIDO</option><option>DESPACHADO</option><option>TERMINADO</option><option>CANCELADO</option></select></div><div class="field span-3"><label>Pikeador</label><select id="selFiltroPikeador"><option value="">Todos</option></select></div><div class="field span-3"><label>Agregar Pikeador</label><input id="txtNuevoPikeador" placeholder="Nombre del pikeador"></div><button id="btnAgregarPikeador" class="span-2 ok">➕ Guardar Pikeador</button></div></section><section id="panelKpis" class="card kpis"><div class="kpi"><div class="t">Pedidos</div><div class="v" id="kPedidos">0</div></div><div class="kpi"><div class="t">Productos</div><div class="v" id="kProductos">0</div></div><div class="kpi"><div class="t">Unidades</div><div class="v" id="kUnidades">0</div></div><div class="kpi"><div class="t">Pendientes</div><div class="v" id="kPendientes">0</div></div></section><section id="panelTabla" class="card"><div class="table-wrap"><table><thead><tr><th>Fecha</th><th>Pedido</th><th>Cliente</th><th>Vendedor</th><th>Pikeador</th><th>Productos</th><th>Unidades</th><th>Estado</th><th>Alerta</th><th>Acción</th></tr></thead><tbody id="tbodyPedidos"></tbody></table></div><div id="mobileList" class="mobile-list"></div></section><div id="modalPedido" class="modal" role="dialog" aria-modal="true"><div class="modal-box"><div class="modal-head"><div><h2 id="modalTitle">Pedido</h2><div id="modalSub" class="status-line"></div></div><button id="btnCerrarModal" class="close">×</button></div><div class="modal-actions-top"><select id="selModalPikeador" style="max-width:260px"></select><button id="btnAsignarPikeador" class="ok">Asignar Pikeador</button><select id="selModalEstado" style="max-width:220px"><option>PENDIENTE</option><option>PREPARACION</option><option>RECIBIDO</option><option>DESPACHADO</option><option>TERMINADO</option><option>CANCELADO</option></select><button id="btnActualizarEstado" class="info">Actualizar Estado</button><button id="btnActualizarUbicacionesModal" class="info">📍 Actualizar Ubicaciones</button><button id="btnPreparar" class="info">Enviar a Preparación</button><button id="btnReenviar" class="warn">Reenviar Alerta</button><button id="btnPdfPedido" class="secondary">PDF Pedido A4</button><button id="btnPdfPedido80" class="secondary">PDF 80mm</button></div><div class="modal-body"><div id="detallePedido" class="detail-grid"></div><h3>Productos preagregados</h3><div class="products-wrap"><table><thead><tr><th>Código</th><th>Descripción</th><th>Ubicación</th><th>Cantidad</th></tr></thead><tbody id="tbodyProductos"></tbody></table></div></div></div></div>
+<div id="modalImportar" class="modal" role="dialog" aria-modal="true">
+  <div class="modal-box">
+    <div class="modal-head">
+      <div>
+        <h2>Importar listado de pedidos</h2>
+        <div class="status-line">Carga la plantilla XLSX, valida contra la hoja PEDIDOS y envía solo nuevos productos o campos modificados.</div>
+      </div>
+      <button id="btnCerrarImportar" class="close">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="toolbar" style="margin-bottom:12px">
+        <div class="field span-3"><label>Archivo Excel/CSV</label><input id="fileImportar" type="file" accept=".xlsx,.xls,.csv"></div>
+        <div class="field span-2"><label>Estado por defecto</label><select id="impStatus"><option>PENDIENTE</option><option>PREPARACION</option><option>RECIBIDO</option><option>DESPACHADO</option><option>TERMINADO</option><option>CANCELADO</option></select></div>
+        <div class="field span-3"><label>Pikeador por defecto</label><select id="impPikeador"><option value="">Sin asignar</option></select></div>
+        <div class="field span-2"><label>Fecha por defecto</label><input id="impFecha" type="date"></div>
+        <a class="btn-link span-2 secondary" href="Plantilla_Importar_Pedidos_Ergonomica.xlsx" download>📘 Descargar plantilla XLSX</a><button id="btnProcesarImport" class="span-2 info">👁️ Validar y previsualizar</button>
+      </div>
+      <div class="hint">Formato recomendado: descarga la plantilla XLSX. El sistema valida contra PEDIDOS: si existe PEDIDO + CÓDIGO actualiza solo campos cambiados; si no existe, agrega la línea; si está igual, no duplica.</div>
+      <div id="importProgress" class="import-progress" aria-live="polite">
+        <div class="import-progress-head">
+          <span id="importProgressMsg">Esperando archivo para importar</span>
+          <span id="importProgressPercent" class="import-progress-percent">0%</span>
+        </div>
+        <div class="import-progress-bar">
+          <div id="importProgressFill" class="import-progress-fill"></div>
+        </div>
+        <div id="importProgressDetail" class="import-progress-detail">Selecciona un XLSX/CSV y presiona Validar y previsualizar.</div>
+      </div>
+      <div class="import-summary">
+        <div class="box">Pedidos detectados<b id="impPedidos">0</b></div>
+        <div class="box">Filas/productos<b id="impFilas">0</b></div>
+        <div class="box">Unidades<b id="impUnidades">0</b></div>
+        <div class="box">Con errores<b id="impErrores">0</b></div><div class="box">Nuevos<b id="impNuevos">0</b></div><div class="box">Cambios<b id="impCambios">0</b></div><div class="box">Sin cambio<b id="impIguales">0</b></div>
+      </div>
+      <div class="import-preview">
+        <table>
+          <thead><tr><th>#</th><th>Validación</th><th>Cambios detectados</th><th>Fecha</th><th>Pedido</th><th>Cliente</th><th>Pikeador</th><th>Código</th><th>Descripción</th><th>Ubicación</th><th>Cantidad</th><th>Estado</th></tr></thead>
+          <tbody id="tbodyImportar"><tr><td colspan="12" style="text-align:center;color:#64748b;padding:20px">Selecciona un archivo y presiona Previsualizar.</td></tr></tbody>
+        </table>
+      </div>
+      <div class="import-actions">
+        <button id="btnEnviarImport" class="ok">📤 Enviar a Base de Datos</button>
+        <button id="btnLimpiarImport" class="secondary">Limpiar importación</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="modalManual" class="modal" role="dialog" aria-modal="true">
+  <div class="modal-box">
+    <div class="modal-head">
+      <div>
+        <h2>Crear pedido manual</h2>
+        <div class="status-line">Ingresa los datos del pedido y agrega uno o más productos antes de guardar en la hoja PEDIDOS.</div>
+      </div>
+      <button id="btnCerrarManual" class="close">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="toolbar" style="margin-bottom:12px">
+        <div class="field span-2"><label>Fecha</label><input id="manFecha" type="date"></div>
+        <div class="field span-2"><label>Pedido</label><input id="manPedido" placeholder="N° pedido"></div>
+        <div class="field span-3"><label>Cliente</label><input id="manCliente" placeholder="Cliente"></div>
+        <div class="field span-2"><label>Vendedor</label><input id="manVendedor" placeholder="Vendedor"></div>
+        <div class="field span-3"><label>Pikeador</label><select id="manPikeador"><option value="">Sin asignar</option></select></div>
+        <div class="field span-2"><label>Estado</label><select id="manStatus"><option>PENDIENTE</option><option>PREPARACION</option><option>RECIBIDO</option><option>DESPACHADO</option><option>TERMINADO</option><option>CANCELADO</option></select></div>
+      </div>
+
+      <div class="manual-preview" id="manualPreview">Pedido manual sin productos agregados.</div>
+
+      <h3>Agregar producto al pedido</h3>
+      <div class="toolbar" style="margin-bottom:10px">
+        <div class="field span-2"><label>Código</label><input id="manCodigo" list="dlProductosMaestra" placeholder="Código/SKU"><datalist id="dlProductosMaestra"></datalist></div>
+        <div class="field span-4"><label>Descripción</label><input id="manDescripcion" placeholder="Descripción del producto"></div>
+        <div class="field span-3"><label>Ubicación</label><input id="manUbicacion" placeholder="Ubicación"></div>
+        <div class="field span-1"><label>Cantidad</label><input id="manCantidad" type="number" min="1" value="1"></div>
+        <button id="btnBuscarCodigoManual" class="span-2 secondary">🔎 Buscar en Maestra</button><button id="btnManualAddProducto" class="span-2 info">➕ Agregar producto</button>
+      </div>
+      <div class="status-line" id="manualMaestraMsg">La descripción se completará automáticamente al digitar el código si existe en MAESTRA.</div>
+
+      <div class="manual-products">
+        <table>
+          <thead><tr><th>#</th><th>Código</th><th>Descripción</th><th>Ubicación</th><th>Cantidad</th><th>Acción</th></tr></thead>
+          <tbody id="tbodyManualProductos"><tr><td colspan="6" style="text-align:center;color:#64748b;padding:18px">Aún no hay productos agregados.</td></tr></tbody>
+        </table>
+      </div>
+
+      <div class="manual-actions">
+        <button id="btnGuardarManual" class="ok">💾 Guardar pedido manual</button>
+        <button id="btnLimpiarManual" class="secondary">Limpiar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="toast" class="toast"></div><script src="loader_buttons.js"></script><script src="orden_pedidos.js"></script></body></html>

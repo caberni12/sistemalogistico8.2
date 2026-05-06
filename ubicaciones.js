@@ -2,8 +2,25 @@ let CARD_STATE = {}; // idFila => true (expandida) | false (colapsada)
 /* =====================================================
    CONFIGURACIÓN
 ===================================================== */
-const URL_GS =
-  'https://script.google.com/macros/s/AKfycbyRRSuT2TZURNw-09_n23MpxRsYsr6KBG2pJ9j9-pwMjWHgBy4fVBU99hEfa0ENxHeIXQ/exec';
+const DEFAULT_URL_GS =
+  'https://script.google.com/macros/s/AKfycbxUTnIFy_2gEByhDLx1TtrtSrblLPeoCpCtr8OmHip7xfwA6Sabp6U3ALGIhJfW0cHLAA/exec';
+
+function abrirDialogoImpresionPdf(doc,nombreArchivo){
+  try{
+    if(doc && typeof doc.setProperties==='function') doc.setProperties({title:String(nombreArchivo||'documento').replace(/\.pdf$/i,'')});
+    if(doc && typeof doc.autoPrint==='function') doc.autoPrint();
+    const blob=doc.output('blob');
+    const url=URL.createObjectURL(blob);
+    const iframe=document.createElement('iframe');
+    iframe.style.position='fixed'; iframe.style.right='0'; iframe.style.bottom='0'; iframe.style.width='0'; iframe.style.height='0'; iframe.style.border='0';
+    iframe.onload=()=>setTimeout(()=>{try{iframe.contentWindow.focus(); iframe.contentWindow.print();}catch(e){window.open(url,'_blank','noopener');}},350);
+    iframe.src=url; document.body.appendChild(iframe);
+    setTimeout(()=>{try{document.body.removeChild(iframe);}catch(e){} try{URL.revokeObjectURL(url);}catch(e){}},120000);
+  }catch(err){ console.error(err); try{doc.save(nombreArchivo||'documento.pdf');}catch(e){} }
+}
+
+const API_URL_STORAGE_KEY = 'sistema_pedidos_api_url';
+let URL_GS = '';
 
 let DATA = [];
 let DATA_FILTRADA = [];
@@ -13,6 +30,13 @@ let ORIGEN = /android|iphone|ipad|mobile/i.test(navigator.userAgent)
 
 let timerBuscar = null;
 let TIPO_MOV = null;
+let productoFetchController = null;
+let ultimoCodigoBuscado = '';
+
+const PRODUCT_CACHE_KEY = 'ubicaciones_productos_cache_v1';
+const PRODUCT_CACHE_TS_KEY = 'ubicaciones_productos_cache_v1_ts';
+const PRODUCT_CACHE_TTL = 6 * 60 * 60 * 1000; // 6 horas
+let PRODUCT_MAP = {}; // codigo normalizado => {codigo, descripcion, cantidad}
 
 /* =====================================================
    UTILIDADES
@@ -20,7 +44,123 @@ let TIPO_MOV = null;
 function $(id){ return document.getElementById(id); }
 
 function normalizarCodigo(v){
-  return String(v ?? '').trim();
+  return String(v ?? '')
+    .replace(/^['’`´]+/, '')
+    .trim()
+    .replace(/\s+/g, '')
+    .toUpperCase();
+}
+
+
+function parseConfigText(text){
+  const raw = String(text || '').trim();
+  if(!raw) return '';
+  try{
+    const obj = JSON.parse(raw);
+    return String(obj.API_URL || obj.apiUrl || obj.url || obj.URL_GS || '').trim();
+  }catch(err){}
+  const line = raw.split(/\r?\n/).map(x => x.trim()).find(x => x && !x.startsWith('#')) || '';
+  const eq = line.match(/^(API_URL|URL_GS|URL)\s*=\s*(.+)$/i);
+  if(eq) return eq[2].trim().replace(/^['"]|['"]$/g,'');
+  if(/^https?:\/\//i.test(line)) return line.trim();
+  return '';
+}
+
+async function cargarConfiguracionUrl(){
+  URL_GS = DEFAULT_URL_GS;
+  try{ localStorage.removeItem(API_URL_STORAGE_KEY); }catch(err){}
+  const input = $('configUrlGs');
+  if(input) input.value = URL_GS;
+  const status = $('configStatus');
+  if(status) status.textContent = 'URL activa interna: ' + URL_GS;
+  return URL_GS;
+}
+
+
+function abrirConfiguracion(){
+  const input = $('configUrlGs');
+  if(input) input.value = URL_GS || DEFAULT_URL_GS;
+  const status = $('configStatus');
+  if(status) status.textContent = 'URL activa: ' + (URL_GS || DEFAULT_URL_GS);
+  $('configModal').classList.add('active');
+}
+
+function cerrarConfiguracion(){
+  $('configModal').classList.remove('active');
+}
+
+function guardarConfiguracionUrl(){
+  const input = $('configUrlGs');
+  const status = $('configStatus');
+  const url = String(input?.value || '').trim();
+  if(!/^https:\/\/script\.google\.com\/macros\/s\/.+\/exec$/i.test(url)){
+    if(status) status.textContent = 'URL inválida. Debe ser una URL de Apps Script y terminar en /exec.';
+    return false;
+  }
+  const anterior = URL_GS;
+  URL_GS = url;
+  localStorage.setItem(API_URL_STORAGE_KEY, URL_GS);
+  if(anterior && anterior !== URL_GS){
+    localStorage.removeItem(PRODUCT_CACHE_KEY);
+    localStorage.removeItem(PRODUCT_CACHE_TS_KEY);
+    PRODUCT_MAP = {};
+    precargarCatalogo(true);
+  }
+  if(status) status.textContent = 'Configuración guardada: ' + URL_GS;
+  return true;
+}
+
+async function probarConfiguracionUrl(){
+  if(!guardarConfiguracionUrl()) return;
+  const status = $('configStatus');
+  if(status) status.textContent = 'Probando conexión...';
+  try{
+    const res = await fetch(URL_GS + '?accion=listar_maestra&test=' + Date.now(), { cache:'no-store' });
+    const data = await res.json();
+    if(data && data.ok){
+      if(status) status.textContent = 'Conexión correcta. Apps Script respondió OK.';
+    }else{
+      if(status) status.textContent = 'La URL respondió, pero no entregó OK. Revisa Apps Script.';
+    }
+  }catch(err){
+    if(status) status.textContent = 'No se pudo conectar. Revisa URL y permisos del despliegue.';
+  }
+}
+
+function descargarConfigTxt(){
+  const input = $('configUrlGs');
+  const url = String(input?.value || URL_GS || DEFAULT_URL_GS).trim();
+  const blob = new Blob([`API_URL=${url}\n`], {type:'text/plain;charset=utf-8'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'config.txt';
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
+
+function cargarConfigTxtArchivo(file){
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = () => {
+    const url = parseConfigText(reader.result);
+    const status = $('configStatus');
+    if(url){
+      $('configUrlGs').value = url;
+      guardarConfiguracionUrl();
+    }else if(status){
+      status.textContent = 'No se encontró una URL válida dentro del TXT.';
+    }
+  };
+  reader.readAsText(file);
+}
+
+function escapeHtml(value){
+  return String(value ?? '')
+    .replace(/&/g,'&amp;')
+    .replace(/</g,'&lt;')
+    .replace(/>/g,'&gt;')
+    .replace(/"/g,'&quot;')
+    .replace(/'/g,'&#039;');
 }
 
 /* ===== FECHA PARA TABLA / TARJETA ===== */
@@ -108,51 +248,175 @@ function setMovimiento(tipo){
 }
 
 /* =====================================================
-   AUTOCOMPLETE
+   AUTOCOMPLETE RÁPIDO CON MEMORIA LOCAL
 ===================================================== */
+function cargarCatalogoDesdeMemoria(){
+  try{
+    const raw = localStorage.getItem(PRODUCT_CACHE_KEY);
+    if(!raw) return false;
+    const parsed = JSON.parse(raw);
+    if(!parsed || typeof parsed !== 'object') return false;
+    PRODUCT_MAP = parsed;
+    return Object.keys(PRODUCT_MAP).length > 0;
+  }catch(err){
+    console.warn('No se pudo leer catálogo local', err);
+    return false;
+  }
+}
+
+function guardarCatalogoEnMemoria(){
+  try{
+    localStorage.setItem(PRODUCT_CACHE_KEY, JSON.stringify(PRODUCT_MAP || {}));
+    localStorage.setItem(PRODUCT_CACHE_TS_KEY, String(Date.now()));
+  }catch(err){
+    console.warn('No se pudo guardar catálogo local', err);
+  }
+}
+
+function setProductoEnCache(codigo, descripcion, cantidad){
+  const key = normalizarCodigo(codigo);
+  if(!key) return;
+  PRODUCT_MAP[key] = {
+    codigo: normalizarCodigo(codigo),
+    descripcion: String(descripcion || '').trim(),
+    cantidad: Number(cantidad || 0)
+  };
+  guardarCatalogoEnMemoria();
+}
+
+function productoLocal(cod){
+  const key = normalizarCodigo(cod);
+  return PRODUCT_MAP[key] || null;
+}
+
+function pintarProducto(prod, mostrarSugerencia=true){
+  if(!prod) return;
+  $('descripcion').value = prod.descripcion || '';
+  $('cantidad').value = Number(prod.cantidad || 0);
+  if(mostrarSugerencia){
+    const sug = $('suggest');
+    sug.innerHTML = `
+      <div onclick="selectProducto('${escapeHtml(prod.codigo)}','${escapeHtml(prod.descripcion)}',${Number(prod.cantidad || 0)})">
+        ${escapeHtml(prod.codigo)} – ${escapeHtml(prod.descripcion)}
+      </div>`;
+    sug.style.display = 'block';
+  }
+}
+
+function limpiarProductoUI(){
+  $('descripcion').value = '';
+  $('cantidad').value = '';
+  $('suggest').style.display = 'none';
+}
+
+async function precargarCatalogo(force=false){
+  const ts = Number(localStorage.getItem(PRODUCT_CACHE_TS_KEY) || 0);
+  const vigente = ts && (Date.now() - ts < PRODUCT_CACHE_TTL);
+
+  if(!force && cargarCatalogoDesdeMemoria() && vigente){
+    return true;
+  }
+
+  try{
+    const controller = new AbortController();
+    const timer = setTimeout(()=>controller.abort(), 25000);
+    const res = await fetch(`${URL_GS}?accion=listar_maestra`, { signal: controller.signal });
+    clearTimeout(timer);
+    const data = await res.json();
+    if(data && data.ok && Array.isArray(data.data)){
+      const nuevo = {};
+      data.data.forEach(item => {
+        const codigo = normalizarCodigo(item.codigo || item[0]);
+        const descripcion = String(item.descripcion || item[1] || '').trim();
+        if(codigo){
+          nuevo[codigo] = { codigo, descripcion, cantidad: Number(item.cantidad || item[2] || 0) };
+        }
+      });
+      if(Object.keys(nuevo).length){
+        PRODUCT_MAP = nuevo;
+        guardarCatalogoEnMemoria();
+        return true;
+      }
+    }
+  }catch(err){
+    // Mantener catálogo local si falla la red
+    cargarCatalogoDesdeMemoria();
+  }
+  return false;
+}
+
 function buscarCodigo(){
   clearTimeout(timerBuscar);
 
   const cod = normalizarCodigo($('codigo').value);
-  const sug = $('suggest');
 
   if(!cod){
-    $('descripcion').value = '';
-    $('cantidad').value = '';
-    sug.style.display = 'none';
+    limpiarProductoUI();
     return;
   }
 
+  // Respuesta inmediata desde memoria local. Esto evita que el sistema piense lento.
+  const local = productoLocal(cod);
+  if(local){
+    pintarProducto(local, true);
+    return;
+  }
+
+  // Si no está en memoria, consultar la BD-MAESTRA por URL casi de inmediato.
+  // Usamos buscar_maestra para leer directo desde la BD-MAESTRA del Apps Script.
   timerBuscar = setTimeout(()=>{
-    fetch(`${URL_GS}?accion=buscar&codigo=${encodeURIComponent(cod)}`)
+    if(ultimoCodigoBuscado === cod) return;
+    ultimoCodigoBuscado = cod;
+
+    if(productoFetchController){
+      productoFetchController.abort();
+    }
+    productoFetchController = new AbortController();
+
+    const url = `${URL_GS}?accion=buscar_maestra&codigo=${encodeURIComponent(cod)}&t=${Date.now()}`;
+    fetch(url, { signal: productoFetchController.signal, cache:'no-store' })
       .then(r=>r.json())
       .then(d=>{
-        if(d.ok){
-          $('descripcion').value = d.descripcion;
-          $('cantidad').value = Number(d.cantidad || 0);
-          sug.innerHTML = `
-            <div onclick="selectProducto('${d.codigo}','${d.descripcion}',${d.cantidad})">
-              ${d.codigo} – ${d.descripcion}
-            </div>`;
-          sug.style.display = 'block';
+        if(normalizarCodigo($('codigo').value) !== cod) return;
+        if(d && d.ok){
+          const prod = {
+            codigo: normalizarCodigo(d.codigo || cod),
+            descripcion: d.descripcion || '',
+            cantidad: Number(d.cantidad || 0)
+          };
+          setProductoEnCache(prod.codigo, prod.descripcion, prod.cantidad);
+          pintarProducto(prod, true);
         }else{
-          $('descripcion').value='';
-          $('cantidad').value='';
-          sug.style.display='none';
+          $('descripcion').value = '';
+          $('cantidad').value = '';
+          $('suggest').style.display = 'none';
         }
       })
-      .catch(()=>{
-        $('descripcion').value='';
-        $('cantidad').value='';
-        sug.style.display='none';
+      .catch(err=>{
+        if(err && err.name === 'AbortError') return;
+        $('descripcion').value = '';
+        $('cantidad').value = '';
+        $('suggest').style.display = 'none';
       });
-  },300);
+  },30);
+}
+
+async function sincronizarMaestra(){
+  const btn = event?.target || null;
+  startBtnLoader(btn);
+  try{
+    const ok = await precargarCatalogo(true);
+    alert(ok ? 'Maestra sincronizada correctamente.' : 'No se pudo sincronizar la maestra.');
+  }finally{
+    endBtnLoader(btn);
+  }
 }
 
 function selectProducto(c,d,stock){
-  $('codigo').value = c;
+  $('codigo').value = normalizarCodigo(c);
   $('descripcion').value = d;
   $('cantidad').value = Number(stock || 0);
+  setProductoEnCache(c, d, stock);
   $('suggest').style.display = 'none';
 }
 
@@ -283,7 +547,7 @@ function eliminar(idFila, btn){
 
   fetch(URL_GS,{
     method:'POST',
-    body:JSON.stringify({accion:'eliminar',id:idFila})
+    body:JSON.stringify({accion:'eliminar_movimiento',id:idFila})
   })
   .then(()=>{ endBtnLoader(btn); cargar(); })
   .catch(()=>{ endBtnLoader(btn); alert('Error al eliminar'); });
@@ -325,7 +589,7 @@ function guardar(){
   fetch(URL_GS,{
     method:'POST',
     body:JSON.stringify({
-      accion: $('id').value ? 'editar' : 'agregar',
+      accion: $('id').value ? 'editar_movimiento' : 'guardar_movimiento',
       id: $('id').value,
       fecha_entrada: $('fecha_entrada').value,
       fecha_salida: $('fecha_salida').value,
@@ -447,7 +711,7 @@ function exportarPDF(){
     headStyles:{ fillColor:[20,184,166], textColor:255 }
   });
 
-  doc.save('ubicaciones.pdf');
+  abrirDialogoImpresionPdf(doc,'ubicaciones.pdf');
 }
 
 /* =====================================================
@@ -488,3 +752,13 @@ function toggleCard(id, btn){
   body.style.display = CARD_STATE[id] ? 'block' : 'none';
   btn.textContent = CARD_STATE[id] ? '−' : '+';
 }
+
+/* =====================================================
+   INICIO
+===================================================== */
+document.addEventListener('DOMContentLoaded', async ()=>{
+  await cargarConfiguracionUrl();
+  cargarCatalogoDesdeMemoria();
+  precargarCatalogo(false); // sincroniza catálogo en segundo plano sólo si falta o está vencido
+  cargar();
+});

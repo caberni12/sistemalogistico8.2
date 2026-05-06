@@ -1,0 +1,21 @@
+CAMBIOS REALIZADOS - 2026-05-04
+
+Nueva URL operativa configurada:
+https://script.google.com/macros/s/AKfycbxUTnIFy_2gEByhDLx1TtrtSrblLPeoCpCtr8OmHip7xfwA6Sabp6U3ALGIhJfW0cHLAA/exec
+
+Módulos actualizados en Web:
+- MAESTRA / BD-MAESTRA
+- ORDEN DE PEDIDO
+- UBICACIONES
+- BD MÓDULOS
+
+Archivos principales modificados:
+- index.html
+- sheet_module.js
+- orden_pedidos.js
+- ubicaciones.js
+- ubicaciones.html
+
+Nota:
+- Se eliminó la referencia a la URL anterior del proyecto web.
+- La URL nueva queda como predeterminada para los módulos indicados.

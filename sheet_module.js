@@ -1,6 +1,15 @@
 (function(){
-  const DEFAULT_API_URL = 'https://script.google.com/macros/s/AKfycbwOG9W7fdVqDrhacHp3Ry1A-pM5eKVFXwFXl4Q2V2SYS1uclU9Ko7XcqS5iOcP2BKEb7g/exec';
-  const AUTO_REFRESH_MS = 20000;
+  const DEFAULT_API_URL = 'https://script.google.com/macros/s/AKfycbxUTnIFy_2gEByhDLx1TtrtSrblLPeoCpCtr8OmHip7xfwA6Sabp6U3ALGIhJfW0cHLAA/exec';
+  const AUTO_REFRESH_MS = 2000;
+  const DEVICE_ID = (() => {
+    const key = 'sgsa_device_id';
+    let id = localStorage.getItem(key);
+    if(!id){
+      id = 'DEV-' + Date.now() + '-' + Math.random().toString(36).slice(2, 10);
+      localStorage.setItem(key, id);
+    }
+    return id;
+  })();
   const SHEET_NAME = window.SHEET_NAME || 'PEDIDOS';
   const SHEET_TITLE = window.SHEET_TITLE || SHEET_NAME;
   const STATUS_VALUES = ['pendiente','atrasado','cancelado','terminado','recibido','despachado','recepcionado'];
@@ -28,6 +37,19 @@
 
   function txt(v){ return String(v ?? '').trim(); }
 
+  function isCodeHeader(header){
+    const h = normalizeHeader(header);
+    return ['codigo','codigo producto','codigoproducto','sku','producto'].includes(h);
+  }
+
+  function cellText(header, value){
+    let v = txt(value);
+    if(isCodeHeader(header)){
+      v = v.replace(/^['’`´]+/, '').replace(/\.0$/, '');
+    }
+    return v;
+  }
+
   function normalizeHeader(value){
     return txt(value).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
   }
@@ -49,27 +71,13 @@
   }
 
   async function loadApiConfig(){
-    const local = localStorage.getItem('API_URL_SGL') || localStorage.getItem('API_URL_PEDIDOS') || localStorage.getItem('API_URL_UBICACIONES');
-    if(local && local.includes('/exec')){
-      API_URL = local.trim();
-      return;
-    }
+    API_URL = DEFAULT_API_URL;
     try{
-      const res = await fetch('config.txt?ts=' + Date.now(), { cache:'no-store' });
-      if(!res.ok) throw new Error('config no disponible');
-      const text = await res.text();
-      let url = '';
-      try{
-        const json = JSON.parse(text);
-        url = json.API_URL || json.url || '';
-      }catch(err){
-        const match = text.match(/API_URL\s*=\s*(.+)/i);
-        url = match ? match[1].trim() : text.trim();
-      }
-      if(url && url.includes('/exec')) API_URL = url;
-    }catch(err){
-      API_URL = DEFAULT_API_URL;
-    }
+      localStorage.removeItem('API_URL_SGL');
+      localStorage.removeItem('API_URL_PEDIDOS');
+      localStorage.removeItem('API_URL_UBICACIONES');
+      localStorage.removeItem('sistema_pedidos_api_url');
+    }catch(err){}
   }
 
   function findIndex(possibleNames){
@@ -140,7 +148,7 @@
     }
     tableHead.innerHTML = '<tr>' + headers.map(h => `<th>${escapeHtml(h)}</th>`).join('') + '</tr>';
     tableBody.innerHTML = data.map(row => {
-      return '<tr>' + headers.map((_,idx) => `<td>${escapeHtml(row[idx] || '')}</td>`).join('') + '</tr>';
+      return '<tr>' + headers.map((_,idx) => `<td>${escapeHtml(cellText(headers[idx], row[idx] || ''))}</td>`).join('') + '</tr>';
     }).join('') || `<tr><td colspan="${headers.length}">No hay registros con los filtros seleccionados.</td></tr>`;
   }
 
@@ -170,8 +178,11 @@
     isLoading = true;
     if(manual) setButtonLoading(btnSync, true, 'Sincronizando...');
     try{
-      const url = `${API_URL}?accion=listar_bd&sheet=${encodeURIComponent(SHEET_NAME)}&ts=${Date.now()}`;
-      const res = await fetch(url, { cache:'no-store' });
+      const url = `${API_URL}?accion=listar_bd&sheet=${encodeURIComponent(SHEET_NAME)}&device=${encodeURIComponent(DEVICE_ID)}&rt=${Date.now()}&nocache=${Math.random().toString(36).slice(2)}`;
+      const res = await fetch(url, {
+        cache:'no-store',
+        headers:{'Cache-Control':'no-cache, no-store, max-age=0','Pragma':'no-cache'}
+      });
       const data = await res.json();
       if(!data || !data.ok){
         throw new Error((data && data.msg) || 'No se pudo leer la BD');
@@ -180,7 +191,7 @@
       rows = Array.isArray(data.data) ? data.data : [];
       fillStatusOptions();
       render();
-      updateInfo(`${manual ? 'Sincronización en tiempo real' : 'Actualización automática cada 20 segundos'} | ${SHEET_NAME}: ${rows.length} registro(s) | ${new Date().toLocaleTimeString()}`);
+      updateInfo(`${manual ? 'Sincronización en tiempo real' : 'Actualización automática cada 2 segundos'} | ${SHEET_NAME}: ${rows.length} registro(s) | ${new Date().toLocaleTimeString()}`);
     }catch(err){
       console.error(err);
       updateInfo('No se pudo sincronizar la BD: ' + (err.message || err));
@@ -190,9 +201,25 @@
     }
   }
 
-  function exportCsv(){
+  function exportXlsx(){
     const data = visibleRows();
-    const csvRows = [headers, ...data].map(row => row.map(v => '"' + txt(v).replace(/"/g,'""') + '"').join(';'));
+    const aoa = [headers, ...data.map(row => headers.map((h, idx) => cellText(h, row[idx] || '')))];
+    if(window.XLSX){
+      const ws = XLSX.utils.aoa_to_sheet(aoa);
+      headers.forEach((h, c) => {
+        if(isCodeHeader(h)){
+          for(let r=1; r<=data.length; r++){
+            const addr = XLSX.utils.encode_cell({r, c});
+            if(ws[addr]){ ws[addr].t = 's'; ws[addr].z = '@'; }
+          }
+        }
+      });
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, SHEET_NAME.substring(0, 31));
+      XLSX.writeFile(wb, `${SHEET_NAME}_${new Date().toISOString().slice(0,10)}.xlsx`);
+      return;
+    }
+    const csvRows = aoa.map(row => row.map(v => '"' + txt(v).replace(/"/g,'""') + '"').join(';'));
     const blob = new Blob([csvRows.join('\n')], { type:'text/csv;charset=utf-8;' });
     const a = document.createElement('a');
     a.href = URL.createObjectURL(blob);
@@ -209,7 +236,7 @@
   }
 
   if(titleEl) titleEl.textContent = SHEET_TITLE;
-  if(subtitleEl) subtitleEl.textContent = `${SHEET_NAME} | Actualización automática cada 20 segundos y sincronización manual en tiempo real`;
+  if(subtitleEl) subtitleEl.textContent = `${SHEET_NAME} | Actualización automática cada 2 segundos y sincronización manual en tiempo real`;
   btnSync && btnSync.addEventListener('click', () => loadData(true));
   btnClear && btnClear.addEventListener('click', () => {
     searchInput.value = '';
@@ -218,7 +245,7 @@
     fechaHasta.value = '';
     render();
   });
-  btnExport && btnExport.addEventListener('click', exportCsv);
+  btnExport && btnExport.addEventListener('click', exportXlsx);
   searchInput && searchInput.addEventListener('input', render);
   statusFilter && statusFilter.addEventListener('change', render);
   fechaDesde && fechaDesde.addEventListener('change', render);
