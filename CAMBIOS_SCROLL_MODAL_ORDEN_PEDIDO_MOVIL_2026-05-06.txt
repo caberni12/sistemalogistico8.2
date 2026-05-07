@@ -1,0 +1,21 @@
+CAMBIO APLICADO - SCROLL MODAL ORDEN DE PEDIDO WEB MOVIL
+Fecha: 2026-05-06
+
+Archivo modificado:
+- sistemaweb/sistemawebpedidos8.0/sistemawebpedidos/orden_pedidos.html
+
+Ajustes realizados:
+1. Se corrigió el modal de Orden de Pedido para versión web móvil.
+2. Se agregó altura compatible con móviles usando 100dvh y variable --app-vh.
+3. Se dejó el encabezado y la zona de acciones fijos dentro del flujo del modal.
+4. Se agregó scroll vertical real en .modal-body para poder ver todos los productos y detalles.
+5. Se agregó scroll propio en la zona de botones/acciones del modal cuando hay muchos botones.
+6. Se ajustó el ancho de botones/select en móvil para que no se salgan del modal.
+7. Se agregó scroll horizontal interno para la tabla de productos cuando el teléfono es angosto.
+8. Se mantuvo todo lo anterior: importación de Ubicaciones, previsualización y preformato.
+
+Validación realizada:
+- Revisión HTML básica OK.
+- node --check orden_pedidos.js OK.
+
+No se modificó Apps Script.

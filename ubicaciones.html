@@ -37,6 +37,9 @@
 <div class="card acciones">
   <button onclick="recargar()">🔄 Recargar</button>
   <button onclick="sincronizarMaestra()">🔁 Sincronizar MAESTRA</button>
+  <button onclick="descargarFormatoUbicaciones()">⬇️ Descargar preformato</button>
+  <button onclick="abrirImportadorUbicaciones()">📥 Importar archivo</button>
+  <input id="inputImportUbicaciones" type="file" accept=".xlsx,.xls,.csv,.txt" style="display:none" onchange="importarArchivoUbicaciones(this.files[0])">
   <button onclick="exportarPDF()">📄 PDF</button>
   <button onclick="exportarXLSX()">📊 Excel</button>
 </div>
@@ -154,6 +157,40 @@ Formatos aceptados: <code>API_URL=https://script.google.com/macros/s/AKfycbxUTnI
 <button onclick="probarConfiguracionUrl()">Probar</button>
 <button onclick="guardarConfiguracionUrl()">Guardar</button>
 <button onclick="cerrarConfiguracion()">Cerrar</button>
+</div>
+</div>
+</div>
+
+
+<div class="modal" id="importPreviewModal">
+<div class="modal-card" style="max-width:96vw;width:1100px;max-height:92vh;overflow:hidden;display:flex;flex-direction:column">
+<div class="modal-body" style="overflow:auto">
+<h2>Previsualización de importación · BD-UBICACIONES</h2>
+<p id="importPreviewResumen" style="font-size:13px;color:#334155;line-height:1.4;margin:8px 0 12px"></p>
+<div style="overflow:auto;border:1px solid #e2e8f0;border-radius:14px;max-height:58vh">
+<table style="min-width:980px">
+<thead>
+<tr>
+<th>Fila</th>
+<th>Estado</th>
+<th>Código</th>
+<th>Descripción</th>
+<th>Ubicación</th>
+<th>Cantidad</th>
+<th>Resp.</th>
+<th>Status</th>
+<th>Entrada</th>
+<th>Salida</th>
+</tr>
+</thead>
+<tbody id="importPreviewTabla"></tbody>
+</table>
+</div>
+<p style="font-size:12px;color:#64748b;margin-top:10px">Solo se enviarán al Apps Script las filas marcadas como válidas. Deben tener al menos <b>Código</b> y <b>Ubicación</b>.</p>
+</div>
+<div class="modal-footer">
+<button id="btnConfirmarImportUbicaciones" onclick="confirmarImportacionUbicaciones()">Confirmar importación</button>
+<button onclick="cerrarPreviewImportacionUbicaciones()">Cancelar</button>
 </div>
 </div>
 </div>

@@ -1,0 +1,29 @@
+CAMBIOS APLICADOS - 2026-05-06
+
+Módulo: Ubicaciones / BD-UBICACIONES
+
+VERSIÓN WEB
+- Se agregó botón: Descargar preformato.
+- Se agregó botón: Importar archivo.
+- Al seleccionar XLSX/CSV/TXT, el sistema ahora primero muestra una previsualización.
+- La previsualización indica filas detectadas, filas válidas y filas ignoradas.
+- Solo se envían al Apps Script las filas válidas después de presionar Confirmar importación.
+- Se agregó preformato XLSX descargable con columnas estándar:
+  CODIGO, DESCRIPCION, UBICACION, CANTIDAD, RESPONSABLE, STATUS, FECHA_ENTRADA, FECHA_SALIDA, ORIGEN.
+
+VERSIÓN ANDROID NATIVA
+- Se agregó botón Formato en el módulo Ubicaciones.
+- El botón Formato descarga un CSV compatible con el importador.
+- Al seleccionar un archivo XLSX/CSV/TXT se muestra una previsualización antes de enviar datos.
+- Solo al confirmar se importan los registros al Apps Script.
+- Se mantiene Android nativo, sin WebView.
+
+VALIDACIONES
+- JavaScript validado con node --check.
+- XML de activity_ubicaciones validado.
+- Balance básico de llaves/paréntesis Kotlin validado.
+- No fue posible compilar Gradle en este entorno porque el wrapper intenta descargar Gradle desde services.gradle.org y no hay acceso externo.
+
+IMPORTANTE
+- No se modificó el Apps Script.
+- La importación sigue usando la acción existente: guardar_movimiento.

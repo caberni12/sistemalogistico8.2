@@ -689,6 +689,328 @@ function recargar(){
 }
 
 
+/* =====================================================
+   IMPORTAR ARCHIVOS XLSX / CSV A BD-UBICACIONES
+   Flujo: descargar preformato -> leer archivo -> previsualizar -> confirmar.
+   Usa el Apps Script existente mediante guardar_movimiento.
+===================================================== */
+let IMPORT_PREVIEW_ROWS = [];
+let IMPORT_PREVIEW_VALIDAS = [];
+let IMPORT_PREVIEW_FILE_NAME = '';
+
+function abrirImportadorUbicaciones(){
+  const input = $('inputImportUbicaciones');
+  if(!input){ alert('No se encontró el selector de archivo.'); return; }
+  input.value = '';
+  input.click();
+}
+
+function descargarFormatoUbicaciones(){
+  if(!window.XLSX){
+    const csv = generarCsvPreformatoUbicaciones();
+    descargarBlob('Preformato_Importar_Ubicaciones.csv', csv, 'text/csv;charset=utf-8');
+    return;
+  }
+
+  const headers = [
+    'CODIGO',
+    'DESCRIPCION',
+    'UBICACION',
+    'CANTIDAD',
+    'RESPONSABLE',
+    'STATUS',
+    'FECHA_ENTRADA',
+    'FECHA_SALIDA',
+    'ORIGEN'
+  ];
+
+  const ejemplo = [
+    {
+      CODIGO:'000123456789',
+      DESCRIPCION:'PRODUCTO EJEMPLO CON CÓDIGO COMO TEXTO',
+      UBICACION:'A-01-01',
+      CANTIDAD:10,
+      RESPONSABLE:'Alejandro Silva',
+      STATUS:'VIGENTE',
+      FECHA_ENTRADA:todayIso(),
+      FECHA_SALIDA:'',
+      ORIGEN:'WEB'
+    },
+    {
+      CODIGO:'000987654321',
+      DESCRIPCION:'OTRO PRODUCTO EJEMPLO',
+      UBICACION:'B-02-03',
+      CANTIDAD:5,
+      RESPONSABLE:'',
+      STATUS:'VIGENTE',
+      FECHA_ENTRADA:todayIso(),
+      FECHA_SALIDA:'',
+      ORIGEN:'WEB'
+    }
+  ];
+
+  const instrucciones = [
+    ['INSTRUCCIONES'],
+    ['1. No cambies los nombres de las columnas.'],
+    ['2. El campo CODIGO debe escribirse como texto para conservar ceros iniciales.'],
+    ['3. Las columnas obligatorias son CODIGO y UBICACION.'],
+    ['4. CANTIDAD acepta números enteros.'],
+    ['5. STATUS recomendado: VIGENTE o RETIRADO.'],
+    ['6. Antes de importar, el sistema mostrará una previsualización y pedirá confirmación.']
+  ];
+
+  const ws = XLSX.utils.json_to_sheet(ejemplo, {header: headers});
+  XLSX.utils.sheet_add_aoa(ws, [headers], {origin:'A1'});
+  ws['!cols'] = [
+    {wch:18},{wch:38},{wch:16},{wch:12},{wch:20},{wch:12},{wch:16},{wch:16},{wch:12}
+  ];
+  const wsInfo = XLSX.utils.aoa_to_sheet(instrucciones);
+  wsInfo['!cols'] = [{wch:95}];
+
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'BD-UBICACIONES');
+  XLSX.utils.book_append_sheet(wb, wsInfo, 'INSTRUCCIONES');
+  XLSX.writeFile(wb, 'Preformato_Importar_Ubicaciones.xlsx');
+}
+
+function generarCsvPreformatoUbicaciones(){
+  const rows = [
+    ['CODIGO','DESCRIPCION','UBICACION','CANTIDAD','RESPONSABLE','STATUS','FECHA_ENTRADA','FECHA_SALIDA','ORIGEN'],
+    ['000123456789','PRODUCTO EJEMPLO CON CODIGO COMO TEXTO','A-01-01','10','Alejandro Silva','VIGENTE',todayIso(),'','WEB'],
+    ['000987654321','OTRO PRODUCTO EJEMPLO','B-02-03','5','','VIGENTE',todayIso(),'','WEB']
+  ];
+  return rows.map(row => row.map(csvEscape).join(';')).join('\n');
+}
+
+function csvEscape(value){
+  const raw = String(value ?? '');
+  return /[";\n\r]/.test(raw) ? '"' + raw.replace(/"/g,'""') + '"' : raw;
+}
+
+function descargarBlob(filename, content, type){
+  const blob = new Blob([content], {type});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  setTimeout(()=>{
+    try{ document.body.removeChild(a); }catch(e){}
+    try{ URL.revokeObjectURL(a.href); }catch(e){}
+  }, 500);
+}
+
+function todayIso(){
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+
+function normalizarHeaderImport(h){
+  return String(h ?? '')
+    .normalize('NFD').replace(/[\u0300-\u036f]/g,'')
+    .trim().toLowerCase()
+    .replace(/[\._-]+/g,' ')
+    .replace(/\s+/g,' ');
+}
+
+function valorImport(row, aliases){
+  const keys = Object.keys(row || {});
+  for(const alias of aliases){
+    const objetivo = normalizarHeaderImport(alias);
+    const key = keys.find(k => normalizarHeaderImport(k) === objetivo);
+    if(key && String(row[key] ?? '').trim() !== '') return String(row[key] ?? '').trim();
+  }
+  return '';
+}
+
+function numeroImport(v, def=0){
+  const raw = String(v ?? '').trim().replace(/\./g,'').replace(',', '.');
+  const n = Number(raw);
+  return Number.isFinite(n) ? n : def;
+}
+
+function mapearFilaUbicacion(row, index=0){
+  const codigo = normalizarCodigo(valorImport(row, ['codigo','código','cod','sku','producto','item','codigo producto','código producto']));
+  const descripcion = valorImport(row, ['descripcion','descripción','detalle','nombre','producto descripcion','producto descripción','nombre producto']);
+  const ubicacion = valorImport(row, ['ubicacion','ubicación','bodega','posicion','posición','location','ubicacion producto','ubicación producto']);
+  const cantidadRaw = valorImport(row, ['cantidad','cant','stock','unidades','saldo','cantidad actual','stock actual']);
+  const cantidad = numeroImport(cantidadRaw, 0);
+  const status = (valorImport(row, ['status','estado']) || 'VIGENTE').toUpperCase();
+
+  const payload = {
+    accion: 'guardar_movimiento',
+    fecha_entrada: valorImport(row, ['fecha entrada','fecha_entrada','entrada','fecha ingreso','fecha']),
+    fecha_salida: valorImport(row, ['fecha salida','fecha_salida','salida']),
+    ubicacion,
+    codigo,
+    descripcion,
+    cantidad,
+    responsable: valorImport(row, ['responsable','operador','usuario','encargado']),
+    status,
+    origen: valorImport(row, ['origen','fuente']) || ORIGEN
+  };
+
+  const errores = [];
+  if(!codigo) errores.push('Falta código');
+  if(!ubicacion) errores.push('Falta ubicación');
+
+  return {
+    fila: index + 2,
+    valida: errores.length === 0,
+    errores,
+    payload
+  };
+}
+
+async function leerArchivoImportacion(file){
+  const ext = String(file?.name || '').split('.').pop().toLowerCase();
+  if(['csv','txt'].includes(ext)){
+    const text = await file.text();
+    return XLSX.read(text, {type:'string', raw:false});
+  }
+  const buffer = await file.arrayBuffer();
+  return XLSX.read(buffer, {type:'array', cellDates:false, raw:false});
+}
+
+async function importarArchivoUbicaciones(file){
+  if(!file) return;
+  if(!window.XLSX){ alert('No está disponible el lector Excel/CSV.'); return; }
+
+  startProgress();
+  try{
+    const wb = await leerArchivoImportacion(file);
+    const sheetName = wb.SheetNames[0];
+    if(!sheetName) throw new Error('El archivo no contiene hojas válidas.');
+
+    const ws = wb.Sheets[sheetName];
+    const rows = XLSX.utils.sheet_to_json(ws, {defval:'', raw:false});
+    const previewRows = rows.map((row, index) => mapearFilaUbicacion(row, index));
+    const validas = previewRows.filter(x => x.valida).map(x => x.payload);
+
+    if(!previewRows.length){
+      alert('El archivo está vacío o no contiene encabezados válidos.');
+      return;
+    }
+
+    IMPORT_PREVIEW_ROWS = previewRows;
+    IMPORT_PREVIEW_VALIDAS = validas;
+    IMPORT_PREVIEW_FILE_NAME = file.name || 'archivo seleccionado';
+    renderPreviewImportacionUbicaciones();
+  }catch(err){
+    alert('Error al leer archivo: ' + (err.message || err));
+  }finally{
+    endProgress();
+    const input = $('inputImportUbicaciones');
+    if(input) input.value = '';
+  }
+}
+
+function renderPreviewImportacionUbicaciones(){
+  const modal = $('importPreviewModal');
+  const resumen = $('importPreviewResumen');
+  const tabla = $('importPreviewTabla');
+  const btn = $('btnConfirmarImportUbicaciones');
+  if(!modal || !resumen || !tabla) return;
+
+  const total = IMPORT_PREVIEW_ROWS.length;
+  const validas = IMPORT_PREVIEW_ROWS.filter(x => x.valida).length;
+  const ignoradas = total - validas;
+  resumen.innerHTML = `Archivo: <b>${escapeHtml(IMPORT_PREVIEW_FILE_NAME)}</b><br>` +
+    `Filas detectadas: <b>${total}</b> · Válidas para importar: <b>${validas}</b> · Ignoradas: <b>${ignoradas}</b>`;
+
+  tabla.innerHTML = '';
+  IMPORT_PREVIEW_ROWS.slice(0, 120).forEach(item => {
+    const p = item.payload;
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td>${item.fila}</td>
+      <td>${item.valida ? '✅ Válida' : '⚠️ ' + escapeHtml(item.errores.join(', '))}</td>
+      <td>${escapeHtml(p.codigo)}</td>
+      <td>${escapeHtml(p.descripcion)}</td>
+      <td>${escapeHtml(p.ubicacion)}</td>
+      <td>${escapeHtml(p.cantidad)}</td>
+      <td>${escapeHtml(p.responsable)}</td>
+      <td>${escapeHtml(p.status)}</td>
+      <td>${escapeHtml(p.fecha_entrada)}</td>
+      <td>${escapeHtml(p.fecha_salida)}</td>`;
+    tabla.appendChild(tr);
+  });
+
+  if(IMPORT_PREVIEW_ROWS.length > 120){
+    const tr = document.createElement('tr');
+    tr.innerHTML = `<td colspan="10">Vista limitada a las primeras 120 filas. Al confirmar se importarán todas las filas válidas.</td>`;
+    tabla.appendChild(tr);
+  }
+
+  if(btn) btn.disabled = validas === 0;
+  modal.classList.add('active');
+}
+
+function cerrarPreviewImportacionUbicaciones(){
+  const modal = $('importPreviewModal');
+  if(modal) modal.classList.remove('active');
+}
+
+async function confirmarImportacionUbicaciones(){
+  const mapeadas = IMPORT_PREVIEW_VALIDAS.slice();
+  if(!mapeadas.length){
+    alert('No hay filas válidas para importar.');
+    return;
+  }
+
+  const btn = $('btnConfirmarImportUbicaciones');
+  startBtnLoader(btn);
+  startProgress();
+
+  try{
+    let insertados = 0;
+    const errores = [];
+    const bar = $('progress-bar');
+
+    for(let i=0; i<mapeadas.length; i++){
+      const payload = mapeadas[i];
+      try{
+        const res = await fetch(URL_GS, {
+          method:'POST',
+          body: JSON.stringify(payload)
+        });
+        const json = await res.json().catch(()=>({ok:res.ok}));
+        if(json && json.ok === false){
+          errores.push(`Fila válida ${i+1}: ${json.msg || 'rechazada por Apps Script'}`);
+        }else{
+          insertados++;
+          if(payload.codigo && payload.descripcion){
+            setProductoEnCache(payload.codigo, payload.descripcion, payload.cantidad);
+          }
+        }
+      }catch(err){
+        errores.push(`Fila válida ${i+1}: ${err.message || err}`);
+      }
+      if(bar) bar.style.width = `${Math.max(8, Math.round(((i+1)/mapeadas.length)*100))}%`;
+    }
+
+    cerrarPreviewImportacionUbicaciones();
+    await recargar();
+    const resumen = [
+      `Importación terminada.`,
+      `Registros válidos enviados: ${mapeadas.length}`,
+      `Insertados/aceptados: ${insertados}`,
+      `Errores: ${errores.length}`
+    ];
+    if(errores.length){
+      resumen.push('\nPrimeros errores:');
+      resumen.push(errores.slice(0,8).join('\n'));
+    }
+    alert(resumen.join('\n'));
+  }catch(err){
+    alert('Error al importar archivo: ' + (err.message || err));
+  }finally{
+    endBtnLoader(btn);
+    endProgress();
+  }
+}
+
+
 function exportarPDF(){
   const { jsPDF } = window.jspdf;
   const doc = new jsPDF('l','pt','a4');
