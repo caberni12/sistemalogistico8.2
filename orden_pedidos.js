@@ -1,4 +1,4 @@
-const API_URL='https://script.google.com/macros/s/AKfycbxUTnIFy_2gEByhDLx1TtrtSrblLPeoCpCtr8OmHip7xfwA6Sabp6U3ALGIhJfW0cHLAA/exec';
+const API_URL='https://script.google.com/macros/s/AKfycbw47SxU42yTG1yb8Tlc7H3fnhH77SZVEYSlqyTMI8xzsXEHDK0i7PDDFaj3-Y29vQo7Ng/exec';
 
 const state={
   pedidos:[],
@@ -418,6 +418,9 @@ function normPedidos(r){
       alerta_ts:String(p.alerta_ts||'').trim(),
       alerta_tipo:String(p.alerta_tipo||'').trim(),
       alerta_mensaje:String(p.alerta_mensaje||'').trim(),
+      hora_inicio:String(p.hora_inicio||p.horaInicio||p.inicio_preparacion||p.fecha_inicio||p.fecha_asignacion||'').trim(),
+      hora_termino:String(p.hora_termino||p.horaTermino||p.termino_preparacion||p.fecha_termino||'').trim(),
+      tiempo_preparacion_min:Number(p.tiempo_preparacion_min||p.tiempoPreparacionMin||p.tiempo_preparacion||0)||0,
       total_productos:Number(p.total_productos||(p.productos?p.productos.length:0)||0),
       total_unidades:Number(p.total_unidades||0),
       productos:Array.isArray(p.productos)?p.productos:[],
@@ -432,9 +435,10 @@ function agrupar(h,rows){
     if(!Array.isArray(r))return;
     const ped=pick(r,ix.pedido,'SIN_PEDIDO_'+(i+1));
     const key=String(ped).replace(/\s+/g,'').toUpperCase();
-    if(!m.has(key))m.set(key,{key,pedido:ped,fecha:pick(r,ix.fecha,''),cliente:pick(r,ix.cliente,''),vendedor:pick(r,ix.vendedor,''),pikeador:limpiarPikeador(pick(r,ix.pikeador,''), pick(r,ix.cliente,'')),status:estadoSeguroImport(pick(r,ix.status,''),'PENDIENTE'),alerta_token:pick(r,ix.alerta_token,''),alerta_ts:pick(r,ix.alerta_ts,''),alerta_tipo:pick(r,ix.alerta_tipo,''),alerta_mensaje:pick(r,ix.alerta_mensaje,''),total_productos:0,total_unidades:0,productos:[],rows:[]});
+    if(!m.has(key))m.set(key,{key,pedido:ped,fecha:pick(r,ix.fecha,''),cliente:pick(r,ix.cliente,''),vendedor:pick(r,ix.vendedor,''),pikeador:limpiarPikeador(pick(r,ix.pikeador,''), pick(r,ix.cliente,'')),status:estadoSeguroImport(pick(r,ix.status,''),'PENDIENTE'),alerta_token:pick(r,ix.alerta_token,''),alerta_ts:pick(r,ix.alerta_ts,''),alerta_tipo:pick(r,ix.alerta_tipo,''),alerta_mensaje:pick(r,ix.alerta_mensaje,''),hora_inicio:pick(r,ix.hora_inicio,''),hora_termino:pick(r,ix.hora_termino,''),tiempo_preparacion_min:Number(String(pick(r,ix.tiempo_preparacion_min,0)).replace(',','.'))||0,total_productos:0,total_unidades:0,productos:[],rows:[]});
     const p=m.get(key);
-    ['fecha','cliente','vendedor','alerta_token','alerta_ts','alerta_tipo','alerta_mensaje'].forEach(k=>{if(ix[k]>=0&&pick(r,ix[k],''))p[k]=pick(r,ix[k],'')});
+    ['fecha','cliente','vendedor','alerta_token','alerta_ts','alerta_tipo','alerta_mensaje','hora_inicio','hora_termino'].forEach(k=>{if(ix[k]>=0&&pick(r,ix[k],''))p[k]=pick(r,ix[k],'')});
+    if(ix.tiempo_preparacion_min>=0){ const tm=Number(String(pick(r,ix.tiempo_preparacion_min,0)).replace(',','.'))||0; if(tm>0)p.tiempo_preparacion_min=tm; }
     if(ix.pikeador>=0){ const pk=limpiarPikeador(pick(r,ix.pikeador,''), p.cliente||pick(r,ix.cliente,'')); if(pk) p.pikeador=pk; }
     if(ix.status>=0 && normalizarEstadoPermitido(pick(r,ix.status,''))) p.status=normalizarEstadoPermitido(pick(r,ix.status,''));
     const cant=Number(String(pick(r,ix.cantidad,1)).replace(',','.'))||1;
@@ -477,7 +481,10 @@ function mapH(h){
     alerta_token:i(['alerta_token','token_alerta','alert token','alerta token']),
     alerta_ts:i(['alerta_ts','fecha_alerta','alert_ts','alerta fecha']),
     alerta_tipo:i(['alerta_tipo','tipo_alerta','tipo alerta']),
-    alerta_mensaje:i(['alerta_mensaje','mensaje_alerta','mensaje alerta'])
+    alerta_mensaje:i(['alerta_mensaje','mensaje_alerta','mensaje alerta']),
+    hora_inicio:i(['hora_inicio','hora inicio','inicio_preparacion','inicio preparación','fecha_inicio','fecha inicio','fecha_asignacion','fecha asignacion','asignado_en','asignado en']),
+    hora_termino:i(['hora_termino','hora termino','hora término','termino_preparacion','término preparación','termino preparación','fecha_termino','fecha término','finalizado_en','finalizado en']),
+    tiempo_preparacion_min:i(['tiempo_preparacion_min','tiempo preparacion min','tiempo preparación min','minutos_preparacion','minutos preparación','duracion_min','duración min'])
   };
 }
 
@@ -496,19 +503,27 @@ function filtrar(){
 function render(){
   const tb=$('tbodyPedidos'), mob=$('mobileList');
   if(!state.filtrados.length){
-    tb.innerHTML='<tr><td colspan="12" style="text-align:center;padding:26px;color:#64748b">Sin registros para mostrar. Presiona Cargar lista o revisa la hoja PEDIDOS.</td></tr>';
+    tb.innerHTML='<tr><td colspan="13" style="text-align:center;padding:26px;color:#64748b">Sin registros para mostrar. Presiona Cargar lista o revisa la hoja PEDIDOS.</td></tr>';
     mob.innerHTML='<div class="pedido-card">Sin registros para mostrar.</div>';
     return;
   }
-  tb.innerHTML=state.filtrados.map(p=>`<tr><td>${esc(p.fecha)}</td><td><b>${esc(p.pedido)}</b></td><td>${esc(p.cliente)}</td><td>${esc(p.vendedor)}</td><td>${esc(pikeadorVisible(p.pikeador))}</td><td>${p.total_productos}</td><td><b>${p.total_unidades}</b></td><td>${badgeEstado(p.status)}</td><td>${badgeAlerta(p)}</td><td class="actions-cell"><button data-ver-pedido="${esc(p.key)}">Ver</button></td></tr>`).join('');
-  mob.innerHTML=state.filtrados.map(p=>`<div class="pedido-card"><div class="top"><span>${esc(p.pedido)}</span>${badgeEstado(p.status)}</div><p><b>Cliente:</b> ${esc(p.cliente||'-')}</p><p><b>Pikeador:</b> ${esc(pikeadorVisible(p.pikeador))}</p><p><b>Productos:</b> ${p.total_productos} | <b>Unidades:</b> ${p.total_unidades}</p><p>${badgeAlerta(p)}</p><button data-ver-pedido="${esc(p.key)}">Ver opciones</button></div>`).join('');
+  tb.innerHTML=state.filtrados.map(p=>`<tr><td>${esc(p.fecha)}</td><td><b>${esc(p.pedido)}</b></td><td>${esc(p.cliente)}</td><td>${esc(p.vendedor)}</td><td>${esc(pikeadorVisible(p.pikeador))}</td><td>${p.total_productos}</td><td><b>${p.total_unidades}</b></td><td>${badgeEstado(p.status)}</td><td>${esc(horaCorta(p.hora_inicio)||'-')}</td><td>${esc(horaCorta(p.hora_termino)||'-')}</td><td><b>${esc(tiempoPreparacionTexto(p))}</b></td><td>${badgeAlerta(p)}</td><td class="actions-cell"><button data-ver-pedido="${esc(p.key)}">Ver</button></td></tr>`).join('');
+  mob.innerHTML=state.filtrados.map(p=>`<div class="pedido-card"><div class="top"><span>${esc(p.pedido)}</span>${badgeEstado(p.status)}</div><p><b>Cliente:</b> ${esc(p.cliente||'-')}</p><p><b>Pikeador:</b> ${esc(pikeadorVisible(p.pikeador))}</p><p><b>Productos:</b> ${p.total_productos} | <b>Unidades:</b> ${p.total_unidades}</p><p><b>Inicio:</b> ${esc(horaCorta(p.hora_inicio)||'-')} | <b>Término:</b> ${esc(horaCorta(p.hora_termino)||'-')}</p><p><b>Tiempo preparación:</b> ${esc(tiempoPreparacionTexto(p))}</p><p>${badgeAlerta(p)}</p><button data-ver-pedido="${esc(p.key)}">Ver opciones</button></div>`).join('');
 }
 function kpis(){
   const a=state.filtrados;
-  $('kPedidos').textContent=a.length;
-  $('kProductos').textContent=a.reduce((s,p)=>s+p.total_productos,0);
-  $('kUnidades').textContent=a.reduce((s,p)=>s+p.total_unidades,0);
-  $('kPendientes').textContent=a.filter(p=>String(p.status||'').toUpperCase()!=='TERMINADO').length;
+  const procesados=a.filter(esPedidoProcesado);
+  const tiempos=procesados.map(minutosPreparacionPedido).filter(x=>x>0);
+  const setTxt=(id,val)=>{ const el=$(id); if(el) el.textContent=val; };
+  setTxt('kPedidos',a.length);
+  setTxt('kProductos',a.reduce((s,p)=>s+p.total_productos,0));
+  setTxt('kUnidades',a.reduce((s,p)=>s+p.total_unidades,0));
+  setTxt('kPendientes',a.filter(p=>String(p.status||'').toUpperCase()!=='TERMINADO').length);
+  setTxt('kProcesados',procesados.length);
+  setTxt('kPromedioProductos',procesados.length?(procesados.reduce((s,p)=>s+p.total_productos,0)/procesados.length).toFixed(1):'0');
+  setTxt('kPromedioUnidades',procesados.length?(procesados.reduce((s,p)=>s+p.total_unidades,0)/procesados.length).toFixed(1):'0');
+  setTxt('kTiempoPromedio',tiempos.length?formatearMinutos(tiempos.reduce((s,x)=>s+x,0)/tiempos.length):'0 min');
+  renderRotacionYRendimiento(a);
 }
 
 /* ================= MODAL PEDIDO ================= */
@@ -518,7 +533,7 @@ function abrirModal(key){
   state.sel=p;
   $('modalTitle').textContent='Pedido '+p.pedido;
   $('modalSub').textContent=(p.cliente||'')+' | Total unidades: '+(p.total_unidades||0);
-  $('detallePedido').innerHTML=[['Fecha',p.fecha],['Pedido',p.pedido],['Cliente',p.cliente],['Vendedor',p.vendedor],['Pikeador',pikeadorVisible(p.pikeador)],['Estado',p.status],['Productos',p.total_productos],['Total unidades',p.total_unidades]].map(([l,v])=>`<div class="detail-item"><div class="l">${l}</div><div class="v">${esc(v)}</div></div>`).join('');
+  $('detallePedido').innerHTML=[['Fecha',p.fecha],['Pedido',p.pedido],['Cliente',p.cliente],['Vendedor',p.vendedor],['Pikeador',pikeadorVisible(p.pikeador)],['Estado',p.status],['Hora inicio',horaCorta(p.hora_inicio)||'-'],['Hora término',horaCorta(p.hora_termino)||'-'],['Tiempo preparación',tiempoPreparacionTexto(p)],['Productos',p.total_productos],['Total unidades',p.total_unidades],['Avance cliente',porcentajeAvancePedido(p)+'%']].map(([l,v])=>`<div class="detail-item"><div class="l">${l}</div><div class="v">${esc(v)}</div></div>`).join('');
   $('tbodyProductos').innerHTML=p.productos.length?p.productos.map(x=>`<tr><td>${esc(x.codigo)}</td><td>${esc(x.descripcion)}</td><td>${esc(x.ubicacion)}</td><td><b>${x.cantidad}</b></td></tr>`).join(''):'<tr><td colspan="4" style="text-align:center;color:#64748b">Este pedido no tiene productos detallados.</td></tr>';
   llenarSelects();
   $('selModalPikeador').value=p.pikeador||'';
@@ -540,7 +555,7 @@ async function asignarPikeadorActual(){
   if(!p||!pk)return toast('Selecciona un pikeador');
   const r=await api('asignar_pikeador_pedido',{pedido:p.pedido,pikeador:pk});
   if(!r.ok)return toast(r.msg||'No se pudo asignar');
-  toast('Pikeador asignado');
+  toast('Pikeador asignado. Hora de inicio registrada.');
   await cargarTodo(); abrirModal(p.key);
 }
 async function actualizarEstadoActual(){
@@ -564,7 +579,7 @@ async function prepararActual(){
   if(!confirm(`Enviar pedido ${p.pedido} a preparación?\nProductos: ${p.total_productos}\nUnidades: ${p.total_unidades}`))return;
   const r=await api('preparar_pedido',{pedido:p.pedido,pikeador:pk});
   if(!r.ok)return toast(r.msg||'No se pudo enviar');
-  voz('Pedido enviado a preparación'); toast('Pedido enviado a preparación');
+  voz('Pedido enviado a preparación'); toast('Pedido enviado a preparación. Hora de inicio registrada.');
   await cargarTodo(); await verificarAlertas(); abrirModal(p.key);
 }
 async function reenviarActual(){
@@ -1206,9 +1221,85 @@ function ticketText(d,label,value,y){
 }
 function line80(d,y){ d.setDrawColor(120); d.line(4,y,76,y); }
 
+
+/* ================= ANALÍTICA / TIEMPOS ================= */
+function estadoPedido(p){ return String(p?.status||'').toUpperCase().trim(); }
+function esPedidoProcesado(p){ return ['TERMINADO','DESPACHADO','RECIBIDO'].includes(estadoPedido(p)); }
+function fechaHoraValida(v){
+  v=String(v||'').trim();
+  if(!v) return null;
+  let d=null;
+  const m=v.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})(?:\s+(\d{1,2}):(\d{2})(?::(\d{2}))?)?/);
+  if(m) d=new Date(Number(m[3]),Number(m[2])-1,Number(m[1]),Number(m[4]||0),Number(m[5]||0),Number(m[6]||0));
+  else d=new Date(v.replace(' ','T'));
+  return isNaN(d.getTime())?null:d;
+}
+function minutosPreparacionPedido(p){
+  const directo=Number(String(p?.tiempo_preparacion_min||0).replace(',','.'))||0;
+  if(directo>0) return directo;
+  const ini=fechaHoraValida(p?.hora_inicio), fin=fechaHoraValida(p?.hora_termino);
+  if(!ini||!fin) return 0;
+  return Math.max(0,Math.round((fin.getTime()-ini.getTime())/60000));
+}
+function formatearMinutos(min){
+  min=Math.round(Number(min)||0);
+  if(min<=0) return '0 min';
+  const h=Math.floor(min/60), m=min%60;
+  return h?`${h}h ${String(m).padStart(2,'0')}m`:`${m} min`;
+}
+function tiempoPreparacionTexto(p){
+  const min=minutosPreparacionPedido(p);
+  if(min>0) return formatearMinutos(min);
+  if(p?.hora_inicio && !p?.hora_termino) return 'En preparación';
+  return '-';
+}
+function horaCorta(v){
+  v=String(v||'').trim();
+  if(!v) return '';
+  return v.replace('T',' ').replace(/\.\d+Z?$/,'').slice(0,19);
+}
+function porcentajeAvancePedido(p){
+  const orden=['PENDIENTE','PREPARACION','RECIBIDO','DESPACHADO','TERMINADO'];
+  const st=estadoPedido(p);
+  if(st==='CANCELADO') return 0;
+  const ix=Math.max(0,orden.indexOf(st));
+  return Math.round((ix/(orden.length-1))*100);
+}
+function renderRotacionYRendimiento(lista){
+  const tbodyRot=$('tbodyRotacionProductos');
+  const tbodyPik=$('tbodyRendimientoPikeador');
+  if(tbodyRot){
+    const map={};
+    (lista||[]).forEach(p=>{
+      (p.productos||[]).forEach(prod=>{
+        const k=(normCodigo(prod.codigo)||norm(prod.descripcion)||'SIN_CODIGO');
+        if(!map[k]) map[k]={codigo:prod.codigo||'-',descripcion:prod.descripcion||'-',unidades:0,pedidos:new Set()};
+        map[k].unidades += Number(prod.cantidad||0)||0;
+        map[k].pedidos.add(p.pedido);
+      });
+    });
+    const top=Object.values(map).sort((a,b)=>b.unidades-a.unidades).slice(0,8);
+    tbodyRot.innerHTML=top.length?top.map((x,i)=>`<tr><td>${i+1}</td><td><b>${esc(x.codigo)}</b></td><td>${esc(short(x.descripcion,42))}</td><td><b>${x.unidades}</b></td><td>${x.pedidos.size}</td></tr>`).join(''):'<tr><td colspan="5" style="text-align:center;color:#64748b">Sin productos para calcular rotación.</td></tr>';
+  }
+  if(tbodyPik){
+    const map={};
+    (lista||[]).forEach(p=>{
+      const pk=pikeadorVisible(p.pikeador);
+      if(pk==='Sin asignar') return;
+      if(!map[pk]) map[pk]={pikeador:pk,pedidos:0,procesados:0,unidades:0,tiempos:[]};
+      map[pk].pedidos++;
+      map[pk].unidades+=Number(p.total_unidades||0)||0;
+      if(esPedidoProcesado(p)) map[pk].procesados++;
+      const min=minutosPreparacionPedido(p); if(min>0) map[pk].tiempos.push(min);
+    });
+    const rows=Object.values(map).sort((a,b)=>b.procesados-a.procesados || b.unidades-a.unidades).slice(0,8);
+    tbodyPik.innerHTML=rows.length?rows.map(x=>`<tr><td><b>${esc(x.pikeador)}</b></td><td>${x.pedidos}</td><td>${x.procesados}</td><td>${x.unidades}</td><td><b>${x.tiempos.length?formatearMinutos(x.tiempos.reduce((s,t)=>s+t,0)/x.tiempos.length):'-'}</b></td></tr>`).join(''):'<tr><td colspan="5" style="text-align:center;color:#64748b">Sin pikeadores asignados.</td></tr>';
+  }
+}
+
 /* ================= UTILIDADES ================= */
 function togglePanel(){
-  const b=[$('panelControl'),$('panelKpis'),$('panelTabla')];
+  const b=[$('panelControl'),$('panelKpis'),$('panelAnalitica'),$('panelTabla')].filter(Boolean);
   const h=b[0].classList.toggle('hidden');
   b.slice(1).forEach(x=>x.classList.toggle('hidden',h));
   $('btnTogglePanel').textContent=h?'Mostrar panel y tabla':'Ocultar panel';
@@ -1230,7 +1321,7 @@ function api(accion,params={}){
     document.body.appendChild(s);
   });
 }
-function errorTabla(m){ $('tbodyPedidos').innerHTML=`<tr><td colspan="12" style="padding:28px;text-align:center;color:#991b1b">${esc(m)}</td></tr>`; }
+function errorTabla(m){ $('tbodyPedidos').innerHTML=`<tr><td colspan="13" style="padding:28px;text-align:center;color:#991b1b">${esc(m)}</td></tr>`; }
 function badgeEstado(s){
   s=String(s||'PENDIENTE').toUpperCase(); let c='pendiente';
   if(s.includes('PREPAR'))c='preparacion'; else if(s.includes('TERMIN'))c='terminado'; else if(s.includes('CANCEL'))c='cancelado';

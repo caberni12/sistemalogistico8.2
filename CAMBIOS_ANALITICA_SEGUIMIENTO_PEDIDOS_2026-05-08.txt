@@ -1,0 +1,48 @@
+CAMBIOS APLICADOS - ANALÍTICA Y SEGUIMIENTO DE PEDIDOS
+Fecha: 2026-05-08
+
+1) ORDEN DE PEDIDOS - FRONTEND
+- Se agregaron KPIs nuevos:
+  * Pedidos procesados.
+  * Promedio de productos por pedido procesado.
+  * Promedio de unidades por pedido procesado.
+  * Tiempo promedio de preparación.
+- Se agregó panel de productos con más rotación, calculado según el filtro actual.
+- Se agregó panel de rendimiento por pikeador:
+  * Pedidos asignados.
+  * Pedidos procesados.
+  * Unidades preparadas.
+  * Tiempo promedio de preparación.
+- La tabla de pedidos ahora muestra:
+  * Hora de inicio.
+  * Hora de término.
+  * Tiempo de preparación.
+- El modal del pedido ahora muestra:
+  * Hora de inicio.
+  * Hora de término.
+  * Tiempo de preparación.
+  * Porcentaje de avance para vista cliente.
+- Se agregó botón "Vista cliente" para abrir el HTML público de seguimiento.
+
+2) APPS SCRIPT - BACKEND
+- Se agregaron/soportaron columnas en PEDIDOS:
+  * hora_inicio
+  * hora_termino
+  * tiempo_preparacion_min
+- Al asignar un pikeador se registra automáticamente hora_inicio si está vacía.
+- Al enviar a PREPARACION se registra automáticamente hora_inicio si está vacía.
+- Al cambiar a TERMINADO se registra automáticamente hora_termino y se calcula tiempo_preparacion_min.
+- Se agregó acción JSONP/GET/POST:
+  * accion=seguimiento_pedido
+  * Alias: consulta_cliente_pedido, consultar_pedido_cliente, estado_pedido_cliente
+- La acción seguimiento_pedido devuelve estado, avance, pasos, horas y tiempo de preparación.
+
+3) NUEVO HTML CLIENTE
+- Se agregó seguimiento_cliente.html.
+- Permite al cliente consultar por número de pedido.
+- Incluye cliente/RUT opcional para validación.
+- Muestra barra de avance, pasos de estado, productos, unidades y tiempo de preparación.
+- Incluye actualización automática cada 20 segundos.
+
+NOTA IMPORTANTE
+Para que el HTML del cliente funcione contra Google Sheets, se debe publicar nuevamente el Apps Script actualizado como Web App y mantener la URL API_URL en los HTML/JS apuntando a esa publicación.

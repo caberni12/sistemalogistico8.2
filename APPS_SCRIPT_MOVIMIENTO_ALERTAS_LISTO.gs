@@ -36,6 +36,7 @@ function doGet(e){
     else if(['reparar_pikeadores','reparar_pikeadores_pedidos','limpiar_pikeadores'].includes(accion)) r = repararPikeadoresPedidos_();
     else if(['listar','listar_movimiento','listar_movimientos','cargar_movimiento','cargar_movimientos','listar_ubicaciones','cargar_ubicaciones','listar_movimiento_ubicaciones'].includes(accion)) r = listarMovimiento_(p);
     else if(['listar_pedidos','listar_pedidos_rapido','cargar_pedidos'].includes(accion)) r = listarPedidos_(p);
+    else if(['seguimiento_pedido','consulta_cliente_pedido','consultar_pedido_cliente','estado_pedido_cliente'].includes(accion)) r = seguimientoPedido_(p);
     else if(['listar_alertas','listar_alertas_pedidos','cargar_alertas','alertas_pedidos','ultimas_alertas'].includes(accion)) r = listarAlertas_(p);
     else if(accion === 'listar_bd') r = listarBD_(p.sheet || p.bd || p.hoja || '');
     else if(['listar_pikeadores','obtener_pikeadores','cargar_pikeadores','select_pikeadores'].includes(accion)) r = listarPikeadores_();
@@ -63,6 +64,7 @@ function doPost(e){
     else if(['eliminar','eliminar_movimiento','borrar_movimiento','eliminar_ubicacion','borrar_ubicacion'].includes(accion)) r = eliminarMovimiento_(b);
     else if(['reparar_pikeadores','reparar_pikeadores_pedidos','limpiar_pikeadores'].includes(accion)) r = repararPikeadoresPedidos_();
     else if(['listar_alertas','listar_alertas_pedidos','cargar_alertas','alertas_pedidos','ultimas_alertas'].includes(accion)) r = listarAlertas_(b);
+    else if(['seguimiento_pedido','consulta_cliente_pedido','consultar_pedido_cliente','estado_pedido_cliente'].includes(accion)) r = seguimientoPedido_(b);
     else if(['actualizar_estado_pedido','cambiar_estado_pedido','actualizar_estado','cambiar_estado'].includes(accion)) r = actualizarEstadoPedido_(b);
     else if(['preparar_pedido','enviar_preparacion','enviar_a_preparacion'].includes(accion)) r = alertaPedido_(b, 'PREPARACION', 'Pedido enviado a preparación', true);
     else if(['reenviar_alerta','reenviar_alerta_pedido','enviar_alerta','disparar_alerta_pedido'].includes(accion)) r = alertaPedido_(b, 'ALERTA', 'Pedido enviado a preparación', false);
@@ -234,6 +236,42 @@ function listarPedidos_(p){
   return {ok:true,sheet:sh.getName(),headers:v.headers,data:rows,rawHeaders:v.headers,rawData:v.data,pedidos:agrupar_(v.headers,rows),totalFilasHoja:v.data.length,serverTime:new Date().toISOString()};
 }
 
+
+function seguimientoPedido_(p){
+  const pedido = valorPedido_(p, p.order || p.nro_pedido || p.numero || p['número']);
+  const clienteFiltro = nh_(p.cliente || p.rut || p.codigo_cliente || '');
+  if(!pedido) return {ok:false,msg:'Ingresa el número de pedido'};
+  const sh = pedidosSheet_(false);
+  if(!sh) return {ok:false,msg:'No existe hoja PEDIDOS'};
+  const v = values_(sh), ix = idx_(v.headers), key = pedido_(pedido);
+  const rows = v.data.filter(r => pedido_(getCell_(r, ix.pedido)) === key);
+  if(!rows.length) return {ok:false,msg:'Pedido no encontrado',pedido:pedido};
+  const ped = agrupar_(v.headers, rows)[0];
+  if(clienteFiltro && nh_(ped.cliente).indexOf(clienteFiltro) === -1 && clienteFiltro.indexOf(nh_(ped.cliente)) === -1){
+    return {ok:false,msg:'El pedido no coincide con el cliente informado',pedido:pedido};
+  }
+  const min = minutosPreparacion_(ped.hora_inicio, ped.hora_termino, ped.tiempo_preparacion_min);
+  return {
+    ok:true,
+    pedido:ped.pedido,
+    cliente:ped.cliente,
+    vendedor:ped.vendedor,
+    pikeador:ped.pikeador,
+    status:ped.status,
+    estado:ped.status,
+    fecha:ped.fecha,
+    total_productos:ped.total_productos,
+    total_unidades:ped.total_unidades,
+    hora_inicio:ped.hora_inicio,
+    hora_termino:ped.hora_termino,
+    tiempo_preparacion_min:min,
+    tiempo_preparacion_texto:formatearMinutos_(min),
+    avance:avancePedido_(ped.status),
+    pasos:pasosPedido_(ped.status),
+    serverTime:new Date().toISOString()
+  };
+}
+
 function listarBD_(name){
   name = normName_(name);
   let sh = null;
@@ -305,7 +343,7 @@ function collectRawHeaders_(items){
 }
 function isCanonicalPedidoHeader_(h){
   const n = nh_(h);
-  const canonical = ['id','fecha','pedido','cliente','vendedor','pikeador','codigo','código','cod','sku','descripcion','descripción','detalle','ubicacion','ubicación','cantidad','unidades','status','estado','alerta_token','alerta_ts','alerta_tipo','alerta_mensaje','import_raw_json','import_headers_json'];
+  const canonical = ['id','fecha','pedido','cliente','vendedor','pikeador','codigo','código','cod','sku','descripcion','descripción','detalle','ubicacion','ubicación','cantidad','unidades','status','estado','alerta_token','alerta_ts','alerta_tipo','alerta_mensaje','hora_inicio','hora inicio','inicio_preparacion','fecha_asignacion','hora_termino','hora termino','hora término','termino_preparacion','fecha_termino','tiempo_preparacion_min','minutos_preparacion','import_raw_json','import_headers_json'];
   return canonical.some(x => nh_(x) === n);
 }
 function safeJson_(v){
@@ -337,7 +375,7 @@ function addRawExtrasToRow_(rowObj, item){
 
 function guardarPedido_(b){
   const sh = pedidosSheet_(true);
-  const baseCols = ['id','fecha','pedido','cliente','vendedor','pikeador','codigo','descripcion','ubicacion','cantidad','status','alerta_token','alerta_ts','alerta_tipo','alerta_mensaje','import_raw_json','import_headers_json'];
+  const baseCols = ['id','fecha','pedido','cliente','vendedor','pikeador','codigo','descripcion','ubicacion','cantidad','status','alerta_token','alerta_ts','alerta_tipo','alerta_mensaje','hora_inicio','hora_termino','tiempo_preparacion_min','import_raw_json','import_headers_json'];
   const items = parseItems_(b.items || b.productos || b.rows || b.detalle);
   // Preserva información importada tal como viene desde el XLSX/CSV: guarda JSON completo
   // y agrega columnas extra si el archivo trae campos que no existen en la BD.
@@ -381,6 +419,9 @@ function guardarPedido_(b){
       ubicacion:t_(it.ubicacion||it.UBICACION),
       cantidad:n_(it.cantidad||it.CANTIDAD||1)||1,
       status:estadoSeguro_(it.status||it.estado,base.status||'PENDIENTE'),
+      hora_inicio:t_(it.hora_inicio || it.horaInicio || it.inicio_preparacion || it.fecha_inicio || ''),
+      hora_termino:t_(it.hora_termino || it.horaTermino || it.termino_preparacion || it.fecha_termino || ''),
+      tiempo_preparacion_min:n_(it.tiempo_preparacion_min || it.tiempoPreparacionMin || it.minutos_preparacion || 0),
       import_raw_json:safeJson_(it.__raw || {}),
       import_headers_json:safeJson_(it.__rawHeaders || [])
     };
@@ -456,7 +497,10 @@ function rowToObj_(r, ix){
     descripcion:getCell_(r, ix.descripcion),
     ubicacion:getCell_(r, ix.ubicacion),
     cantidad:getNumCell_(r, ix.cantidad) || 1,
-    status:estadoSeguro_(getCell_(r, ix.status), 'PENDIENTE')
+    status:estadoSeguro_(getCell_(r, ix.status), 'PENDIENTE'),
+    hora_inicio:getCell_(r, ix.hora_inicio),
+    hora_termino:getCell_(r, ix.hora_termino),
+    tiempo_preparacion_min:getNumCell_(r, ix.tiempo_preparacion_min)
   };
 }
 function pedidoCodigoKey_(pedido, codigo){
@@ -633,7 +677,7 @@ function emitirAlertaStatus_(pedido, estado, cliente, vendedor, pikeador, origen
 
   if(actualizarPedidos){
     const sh = pedidosSheet_(true);
-    const cols = ['id','fecha','pedido','cliente','vendedor','pikeador','codigo','descripcion','ubicacion','cantidad','status','alerta_token','alerta_ts','alerta_tipo','alerta_mensaje'];
+    const cols = ['id','fecha','pedido','cliente','vendedor','pikeador','codigo','descripcion','ubicacion','cantidad','status','alerta_token','alerta_ts','alerta_tipo','alerta_mensaje','hora_inicio','hora_termino','tiempo_preparacion_min'];
     ensureCols_(sh, cols);
     const v = values_(sh), ix = idx_(v.headers);
     const key = pedido_(pedido);
@@ -644,6 +688,19 @@ function emitirAlertaStatus_(pedido, estado, cliente, vendedor, pikeador, origen
       if(ix.alerta_ts >= 0) sh.getRange(row, ix.alerta_ts + 1).setValue(ts);
       if(ix.alerta_tipo >= 0) sh.getRange(row, ix.alerta_tipo + 1).setValue(tipo);
       if(ix.alerta_mensaje >= 0) sh.getRange(row, ix.alerta_mensaje + 1).setValue(mensaje);
+      let inicioFinal = getCell_(r, ix.hora_inicio);
+      if(estado === 'PREPARACION' && ix.hora_inicio >= 0 && !inicioFinal){
+        sh.getRange(row, ix.hora_inicio + 1).setValue(ts);
+        inicioFinal = ts;
+      }
+      if(estado === 'TERMINADO'){
+        if(ix.hora_inicio >= 0 && !inicioFinal){
+          sh.getRange(row, ix.hora_inicio + 1).setValue(ts);
+          inicioFinal = ts;
+        }
+        if(ix.hora_termino >= 0) sh.getRange(row, ix.hora_termino + 1).setValue(ts);
+        if(ix.tiempo_preparacion_min >= 0) sh.getRange(row, ix.tiempo_preparacion_min + 1).setValue(minutosPreparacion_(inicioFinal, ts, 0));
+      }
       if(!cliente) cliente = getCell_(r, ix.cliente);
       if(!vendedor) vendedor = getCell_(r, ix.vendedor);
       if(!pikeador) pikeador = limpiarPikeador_(getCell_(r, ix.pikeador), getCell_(r, ix.cliente));
@@ -673,7 +730,7 @@ function actualizarEstadoPedido_(b){
   if(!estado) return {ok:false,msg:'Estado vacío'};
 
   const sh = pedidosSheet_(true);
-  const cols = ['id','fecha','pedido','cliente','vendedor','pikeador','codigo','descripcion','ubicacion','cantidad','status','alerta_token','alerta_ts','alerta_tipo','alerta_mensaje'];
+  const cols = ['id','fecha','pedido','cliente','vendedor','pikeador','codigo','descripcion','ubicacion','cantidad','status','alerta_token','alerta_ts','alerta_tipo','alerta_mensaje','hora_inicio','hora_termino','tiempo_preparacion_min'];
   ensureCols_(sh, cols);
   const v = values_(sh), ix = idx_(v.headers);
   const key = pedido_(pedido);
@@ -685,6 +742,19 @@ function actualizarEstadoPedido_(b){
     const row = i + 2;
     if(ix.status >= 0) sh.getRange(row, ix.status + 1).setValue(estado);
     if(pikeador && ix.pikeador >= 0) sh.getRange(row, ix.pikeador + 1).setValue(pikeador);
+    let inicioFinal = getCell_(r, ix.hora_inicio);
+    if((estado === 'PREPARACION' || pikeador) && ix.hora_inicio >= 0 && !inicioFinal){
+      sh.getRange(row, ix.hora_inicio + 1).setValue(ts);
+      inicioFinal = ts;
+    }
+    if(estado === 'TERMINADO'){
+      if(ix.hora_inicio >= 0 && !inicioFinal){
+        sh.getRange(row, ix.hora_inicio + 1).setValue(ts);
+        inicioFinal = ts;
+      }
+      if(ix.hora_termino >= 0) sh.getRange(row, ix.hora_termino + 1).setValue(ts);
+      if(ix.tiempo_preparacion_min >= 0) sh.getRange(row, ix.tiempo_preparacion_min + 1).setValue(minutosPreparacion_(inicioFinal, ts, 0));
+    }
     if(!cliente) cliente = getCell_(r, ix.cliente);
     if(!vendedor) vendedor = getCell_(r, ix.vendedor);
     if(!pikeadorFinal) pikeadorFinal = limpiarPikeador_(getCell_(r, ix.pikeador), getCell_(r, ix.cliente));
@@ -739,7 +809,7 @@ function alertaPedido_(b, tipo, mensaje, cambiarEstado){
   }
 
   const sh = pedidosSheet_(true);
-  const cols = ['id','fecha','pedido','cliente','vendedor','pikeador','codigo','descripcion','ubicacion','cantidad','status','alerta_token','alerta_ts','alerta_tipo','alerta_mensaje'];
+  const cols = ['id','fecha','pedido','cliente','vendedor','pikeador','codigo','descripcion','ubicacion','cantidad','status','alerta_token','alerta_ts','alerta_tipo','alerta_mensaje','hora_inicio','hora_termino','tiempo_preparacion_min'];
   ensureCols_(sh, cols);
   const v = values_(sh), ix = idx_(v.headers);
   const token = 'ALERTA-' + Date.now() + '-' + Utilities.getUuid().slice(0,8).toUpperCase();
@@ -755,6 +825,7 @@ function alertaPedido_(b, tipo, mensaje, cambiarEstado){
     if(ix.alerta_mensaje>=0) sh.getRange(row,ix.alerta_mensaje+1).setValue(mensaje);
     if(cambiarEstado && ix.status>=0) sh.getRange(row,ix.status+1).setValue('PREPARACION');
     if(pikeador && ix.pikeador>=0) sh.getRange(row,ix.pikeador+1).setValue(pikeador);
+    if((cambiarEstado || pikeador) && ix.hora_inicio>=0 && !getCell_(r, ix.hora_inicio)) sh.getRange(row,ix.hora_inicio+1).setValue(ts);
     if(!cliente) cliente = getCell_(r, ix.cliente);
     if(!pikeador) pikeador = getCell_(r, ix.pikeador);
     count++;
@@ -768,11 +839,24 @@ function alertaPedido_(b, tipo, mensaje, cambiarEstado){
 function asignarPikeador_(b){
   const pedido = t_(b.pedido || b.numero || b.nro_pedido || b.order), pikeador = t_(b.pikeador || b.nombre);
   if(!pedido || !pikeador) return {ok:false,msg:'Pedido o pikeador vacío'};
-  const sh = pedidosSheet_(true); ensureCols_(sh,['pedido','pikeador']);
-  const v = values_(sh), ix = idx_(v.headers); let count=0; const key=pedido_(pedido);
-  v.data.forEach((r,i)=>{ if(pedido_(getCell_(r, ix.pedido))===key){ sh.getRange(i+2,ix.pikeador+1).setValue(pikeador); count++; } });
+  const sh = pedidosSheet_(true);
+  ensureCols_(sh,['pedido','pikeador','hora_inicio','hora_termino','tiempo_preparacion_min']);
+  const v = values_(sh), ix = idx_(v.headers);
+  let count=0, inicioRegistrado=0;
+  const key=pedido_(pedido), ts = Utilities.formatDate(new Date(), TZ, 'yyyy-MM-dd HH:mm:ss');
+  v.data.forEach((r,i)=>{
+    if(pedido_(getCell_(r, ix.pedido))!==key) return;
+    const row=i+2;
+    if(ix.pikeador>=0) sh.getRange(row,ix.pikeador+1).setValue(pikeador);
+    if(ix.hora_inicio>=0 && !getCell_(r, ix.hora_inicio)){
+      sh.getRange(row,ix.hora_inicio+1).setValue(ts);
+      inicioRegistrado++;
+    }
+    count++;
+  });
   agregarPikeador_(pikeador);
-  return {ok:true,msg:'Pikeador asignado',pedido:pedido,pikeador:pikeador,actualizados:count};
+  SpreadsheetApp.flush();
+  return {ok:true,msg:'Pikeador asignado. Hora de inicio registrada',pedido:pedido,pikeador:pikeador,hora_inicio:ts,inicio_registrado:inicioRegistrado,actualizados:count};
 }
 
 function registrarAlerta_(pedido,cliente,pikeador,tipo,mensaje,token,ts,status,vendedor,origen){
@@ -813,14 +897,19 @@ function agrupar_(headers, rows){
         alerta_ts:getCell_(r, ix.alerta_ts),
         alerta_tipo:getCell_(r, ix.alerta_tipo),
         alerta_mensaje:getCell_(r, ix.alerta_mensaje),
+        hora_inicio:getCell_(r, ix.hora_inicio),
+        hora_termino:getCell_(r, ix.hora_termino),
+        tiempo_preparacion_min:getNumCell_(r, ix.tiempo_preparacion_min),
         total_unidades:0,total_productos:0,productos:[],rows:[]
       };
     }
     const p = map[key], cant = getNumCell_(r, ix.cantidad) || 1;
-    ['fecha','cliente','vendedor','alerta_token','alerta_ts','alerta_tipo','alerta_mensaje'].forEach(k=>{
+    ['fecha','cliente','vendedor','alerta_token','alerta_ts','alerta_tipo','alerta_mensaje','hora_inicio','hora_termino'].forEach(k=>{
       const val = getCell_(r, ix[k]);
       if(val) p[k]=val;
     });
+    const minutosPrep = getNumCell_(r, ix.tiempo_preparacion_min);
+    if(minutosPrep > 0) p.tiempo_preparacion_min = minutosPrep;
     const pkSeguro = limpiarPikeador_(getCell_(r, ix.pikeador), p.cliente || getCell_(r, ix.cliente));
     if(pkSeguro) p.pikeador = pkSeguro;
     const estadoLeido = estadoSeguro_(getCell_(r, ix.status), '');
@@ -832,8 +921,46 @@ function agrupar_(headers, rows){
   return Object.values(map).sort((a,b)=>numPedido_(b.pedido)-numPedido_(a.pedido));
 }
 
+
+function fechaHoraPedido_(v){
+  v = t_(v);
+  if(!v) return null;
+  let m = v.match(/^(\d{4})-(\d{1,2})-(\d{1,2})(?:[ T](\d{1,2}):(\d{2})(?::(\d{2}))?)?/);
+  if(m) return new Date(Number(m[1]), Number(m[2])-1, Number(m[3]), Number(m[4]||0), Number(m[5]||0), Number(m[6]||0));
+  m = v.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})(?:[ T](\d{1,2}):(\d{2})(?::(\d{2}))?)?/);
+  if(m) return new Date(Number(m[3]), Number(m[2])-1, Number(m[1]), Number(m[4]||0), Number(m[5]||0), Number(m[6]||0));
+  const d = new Date(v);
+  return isNaN(d.getTime()) ? null : d;
+}
+function minutosPreparacion_(inicio, termino, directo){
+  const d = n_(directo);
+  if(d > 0) return d;
+  const a = fechaHoraPedido_(inicio), b = fechaHoraPedido_(termino);
+  if(!a || !b) return 0;
+  return Math.max(0, Math.round((b.getTime() - a.getTime()) / 60000));
+}
+function formatearMinutos_(min){
+  min = Math.round(n_(min));
+  if(min <= 0) return '0 min';
+  const h = Math.floor(min/60), m = min % 60;
+  return h ? (h + 'h ' + String(m).padStart(2,'0') + 'm') : (m + ' min');
+}
+function avancePedido_(estado){
+  estado = estadoSeguro_(estado, 'PENDIENTE');
+  if(estado === 'CANCELADO') return 0;
+  const orden = ['PENDIENTE','PREPARACION','RECIBIDO','DESPACHADO','TERMINADO'];
+  const ix = Math.max(0, orden.indexOf(estado));
+  return Math.round((ix / (orden.length - 1)) * 100);
+}
+function pasosPedido_(estado){
+  const orden = ['PENDIENTE','PREPARACION','RECIBIDO','DESPACHADO','TERMINADO'];
+  const actual = estadoSeguro_(estado, 'PENDIENTE');
+  const ixActual = orden.indexOf(actual);
+  return orden.map((x,i)=>({estado:x,activo:x===actual,completado:ixActual>=0 && i<=ixActual}));
+}
+
 function ss_(){ try{ if(SPREADSHEET_ID) return SpreadsheetApp.openById(SPREADSHEET_ID); }catch(e){} const ss=SpreadsheetApp.getActiveSpreadsheet(); if(!ss) throw new Error('No se pudo abrir la planilla. Revisa SPREADSHEET_ID.'); return ss; }
-function pedidosSheet_(crear){ const ss=ss_(); let sh=ss.getSheetByName(SHEET_PEDIDOS)||ss.getSheetByName(SHEET_PEDIDO_ALT); if(!sh && crear) sh=getOrCreate_(SHEET_PEDIDOS,['id','fecha','pedido','cliente','vendedor','pikeador','codigo','descripcion','ubicacion','cantidad','status','alerta_token','alerta_ts','alerta_tipo','alerta_mensaje']); return sh; }
+function pedidosSheet_(crear){ const ss=ss_(); let sh=ss.getSheetByName(SHEET_PEDIDOS)||ss.getSheetByName(SHEET_PEDIDO_ALT); if(!sh && crear) sh=getOrCreate_(SHEET_PEDIDOS,['id','fecha','pedido','cliente','vendedor','pikeador','codigo','descripcion','ubicacion','cantidad','status','alerta_token','alerta_ts','alerta_tipo','alerta_mensaje','hora_inicio','hora_termino','tiempo_preparacion_min']); return sh; }
 function getOrCreate_(name, headers){ const ss=ss_(); let sh=ss.getSheetByName(name); if(!sh){ sh=ss.insertSheet(name); try{ if(sh.getMaxRows()>300) sh.deleteRows(301,sh.getMaxRows()-300); }catch(e){} try{ if(sh.getMaxColumns()>Math.max(headers.length,10)) sh.deleteColumns(Math.max(headers.length,10)+1,sh.getMaxColumns()-Math.max(headers.length,10)); }catch(e){} sh.getRange(1,1,1,headers.length).setValues([headers]); } else if(sh.getLastRow()===0){ sh.getRange(1,1,1,headers.length).setValues([headers]); } return sh; }
 function values_(sh){ const lr=sh.getLastRow(), lc=sh.getLastColumn(); if(lr<1||lc<1) return {headers:[],data:[]}; const v=sh.getRange(1,1,lr,lc).getDisplayValues(); return {headers:v[0].map(t_),data:v.slice(1).filter(r=>r.some(c=>t_(c)))}; }
 function ensureCols_(sh, req){ let lc=Math.max(1,sh.getLastColumn()); let h=sh.getRange(1,1,1,lc).getDisplayValues()[0].map(t_); if(h.every(x=>!x)){ sh.getRange(1,1,1,req.length).setValues([req]); return; } req.forEach(name=>{ if(find_(h,[name],-1)!==-1) return; let blank=h.findIndex(x=>!x); if(blank!==-1){sh.getRange(1,blank+1).setValue(name); h[blank]=name; return;} const max=sh.getMaxColumns(); if(max>lc){lc++; sh.getRange(1,lc).setValue(name); h.push(name); return;} const total=ss_().getSheets().reduce((s,x)=>s+x.getMaxRows()*x.getMaxColumns(),0); if(total+sh.getMaxRows()>9900000) throw new Error('No se puede agregar la columna '+name+' por límite de 10.000.000 de celdas. Elimina filas/columnas vacías.'); sh.insertColumnAfter(lc); lc++; sh.getRange(1,lc).setValue(name); h.push(name); }); }
@@ -856,7 +983,10 @@ function idx_(h){
     alerta_token:find_(h,['alerta_token','token_alerta','alert token','alerta token'],-1),
     alerta_ts:find_(h,['alerta_ts','fecha_alerta','alert_ts','alerta fecha'],-1),
     alerta_tipo:find_(h,['alerta_tipo','tipo_alerta','tipo alerta'],-1),
-    alerta_mensaje:find_(h,['alerta_mensaje','mensaje_alerta','mensaje alerta'],-1)
+    alerta_mensaje:find_(h,['alerta_mensaje','mensaje_alerta','mensaje alerta'],-1),
+    hora_inicio:find_(h,['hora_inicio','hora inicio','inicio_preparacion','inicio preparación','fecha_inicio','fecha inicio','fecha_asignacion','fecha asignacion','asignado_en','asignado en'],-1),
+    hora_termino:find_(h,['hora_termino','hora termino','hora término','termino_preparacion','término preparación','termino preparación','fecha_termino','fecha término','finalizado_en','finalizado en'],-1),
+    tiempo_preparacion_min:find_(h,['tiempo_preparacion_min','tiempo preparacion min','tiempo preparación min','minutos_preparacion','minutos preparación','duracion_min','duración min'],-1)
   };
 }
 function getCell_(r, idx){ return (idx == null || idx < 0 || !Array.isArray(r)) ? '' : t_(r[idx]); }

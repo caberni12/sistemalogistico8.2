@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Seguimiento de Pedido</title>
+  <style>
+    :root{--bg:#eef4fb;--card:#fff;--txt:#0f172a;--muted:#64748b;--line:#dbe3ef;--pri:#0f766e;--info:#2563eb;--ok:#16a34a;--warn:#d97706;--danger:#dc2626}
+    *{box-sizing:border-box}body{margin:0;font-family:Inter,Arial,sans-serif;background:linear-gradient(135deg,#e0f2fe,#f8fafc);color:var(--txt);min-height:100vh;padding:18px}
+    .shell{max-width:980px;margin:0 auto}.hero{background:#0f172a;color:#fff;border-radius:22px;padding:22px;box-shadow:0 18px 45px rgba(15,23,42,.18);margin-bottom:14px}.hero h1{margin:0;font-size:26px}.hero p{margin:8px 0 0;color:#cbd5e1;line-height:1.45}
+    .card{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:16px;box-shadow:0 10px 28px rgba(15,23,42,.08);margin-bottom:14px}.form{display:grid;grid-template-columns:2fr 2fr auto;gap:10px;align-items:end}.field{display:flex;flex-direction:column;gap:5px}.field label{font-size:12px;font-weight:800;color:#334155}input,button{font-family:inherit;border-radius:12px;font-size:14px}input{border:1px solid #cbd5e1;padding:12px;width:100%}button{border:0;background:var(--pri);color:#fff;font-weight:800;padding:12px 16px;cursor:pointer;min-height:44px}.secondary{background:#e2e8f0;color:#0f172a}.status-line{font-size:12px;color:var(--muted);margin-top:8px}.result{display:none}.result.show{display:block}.summary{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}.box{background:#f8fafc;border:1px solid #e2e8f0;border-radius:14px;padding:12px;min-width:0}.box .l{font-size:12px;color:#64748b;font-weight:800}.box .v{font-size:17px;font-weight:900;margin-top:5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.badge{display:inline-flex;align-items:center;justify-content:center;border-radius:999px;padding:6px 11px;font-size:12px;font-weight:900}.pendiente{background:#fef3c7;color:#92400e}.preparacion{background:#dbeafe;color:#1e40af}.recibido,.despachado{background:#e0f2fe;color:#075985}.terminado{background:#dcfce7;color:#166534}.cancelado{background:#fee2e2;color:#991b1b}.progress{height:14px;background:#e2e8f0;border-radius:999px;overflow:hidden;margin:16px 0}.progress>div{height:100%;background:var(--pri);width:0%;transition:.3s ease}.steps{display:grid;grid-template-columns:repeat(5,1fr);gap:8px}.step{border:1px solid #e2e8f0;background:#f8fafc;border-radius:14px;padding:12px;text-align:center;font-size:12px;color:#64748b;font-weight:800}.step.done{border-color:#86efac;background:#f0fdf4;color:#166534}.step.active{border-color:#93c5fd;background:#eff6ff;color:#1e40af}.error{display:none;background:#fef2f2;border:1px solid #fecaca;color:#991b1b;border-radius:14px;padding:12px;margin-top:12px;font-weight:800}.error.show{display:block}.auto{display:flex;align-items:center;gap:8px;margin-top:10px;color:#475569;font-size:13px}.auto input{width:auto}.small-note{font-size:12px;color:#64748b;line-height:1.45}
+    @media(max-width:760px){body{padding:10px}.hero{padding:18px;border-radius:18px}.form{grid-template-columns:1fr}.summary{grid-template-columns:1fr 1fr}.steps{grid-template-columns:1fr}.box .v{white-space:normal}button{width:100%}}
+    @media(max-width:420px){.summary{grid-template-columns:1fr}}
+  </style>
+</head>
+<body>
+  <main class="shell">
+    <section class="hero">
+      <h1>Seguimiento de Pedido</h1>
+      <p>Consulta el avance del pedido, estado actual y tiempo de preparación registrado por el sistema.</p>
+    </section>
+
+    <section class="card">
+      <div class="form">
+        <div class="field"><label>Número de pedido</label><input id="txtPedido" placeholder="Ej: P-1025 o 1025" autocomplete="off"></div>
+        <div class="field"><label>Cliente/RUT opcional</label><input id="txtCliente" placeholder="Opcional para validar cliente" autocomplete="off"></div>
+        <button id="btnBuscar">Buscar avance</button>
+      </div>
+      <label class="auto"><input id="chkAuto" type="checkbox"> Actualizar automáticamente cada 20 segundos</label>
+      <div id="statusLine" class="status-line">Ingresa el número de pedido para consultar.</div>
+      <div id="errorBox" class="error"></div>
+    </section>
+
+    <section id="result" class="card result">
+      <div style="display:flex;justify-content:space-between;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:10px">
+        <div><h2 id="titPedido" style="margin:0;font-size:22px">Pedido</h2><div id="subPedido" class="status-line"></div></div>
+        <div id="badgeEstado"></div>
+      </div>
+      <div class="progress"><div id="barAvance"></div></div>
+      <div id="steps" class="steps"></div>
+    </section>
+
+    <section id="summary" class="card result">
+      <div class="summary">
+        <div class="box"><div class="l">Cliente</div><div class="v" id="sCliente">-</div></div>
+        <div class="box"><div class="l">Productos</div><div class="v" id="sProductos">0</div></div>
+        <div class="box"><div class="l">Unidades</div><div class="v" id="sUnidades">0</div></div>
+        <div class="box"><div class="l">Avance</div><div class="v" id="sAvance">0%</div></div>
+        <div class="box"><div class="l">Inicio preparación</div><div class="v" id="sInicio">-</div></div>
+        <div class="box"><div class="l">Término preparación</div><div class="v" id="sTermino">-</div></div>
+        <div class="box"><div class="l">Tiempo preparación</div><div class="v" id="sTiempo">-</div></div>
+        <div class="box"><div class="l">Última consulta</div><div class="v" id="sConsulta">-</div></div>
+      </div>
+      <p class="small-note">El tiempo de preparación se calcula desde la asignación del pikeador o envío a preparación hasta que el pedido queda TERMINADO.</p>
+    </section>
+  </main>
+
+<script>
+const API_URL='https://script.google.com/macros/s/AKfycbw47SxU42yTG1yb8Tlc7H3fnhH77SZVEYSlqyTMI8xzsXEHDK0i7PDDFaj3-Y29vQo7Ng/exec';
+const $=id=>document.getElementById(id);
+let autoTimer=null;
+window.addEventListener('DOMContentLoaded',()=>{
+  $('btnBuscar').addEventListener('click',buscar);
+  $('txtPedido').addEventListener('keydown',e=>{if(e.key==='Enter')buscar();});
+  $('chkAuto').addEventListener('change',()=>{
+    if($('chkAuto').checked){ buscar(); autoTimer=setInterval(buscar,20000); }
+    else { clearInterval(autoTimer); autoTimer=null; }
+  });
+  const url=new URL(location.href); const pedido=url.searchParams.get('pedido')||''; if(pedido){$('txtPedido').value=pedido; buscar();}
+});
+function api(accion,params={}){
+  return new Promise((resolve,reject)=>{
+    const cb='cbSeg_'+Date.now()+'_'+Math.floor(Math.random()*99999);
+    const url=new URL(API_URL); url.searchParams.set('accion',accion); url.searchParams.set('callback',cb); url.searchParams.set('_',Date.now());
+    Object.entries(params).forEach(([k,v])=>{if(v!=null)url.searchParams.set(k,String(v));});
+    const s=document.createElement('script'); const to=setTimeout(()=>done(new Error('Tiempo agotado consultando Web App')),30000);
+    window[cb]=data=>done(null,data);
+    function done(err,data){clearTimeout(to); try{delete window[cb]}catch(e){} s.remove(); err?reject(err):resolve(data);}
+    s.onerror=()=>done(new Error('No se pudo conectar con Web App'));
+    s.src=url.toString(); document.body.appendChild(s);
+  });
+}
+async function buscar(){
+  const pedido=$('txtPedido').value.trim(), cliente=$('txtCliente').value.trim();
+  if(!pedido){ mostrarError('Ingresa el número de pedido.'); return; }
+  setStatus('Consultando avance del pedido...'); ocultarError();
+  try{
+    const r=await api('seguimiento_pedido',{pedido,cliente});
+    if(!r?.ok){ mostrarError(r?.msg||'No se pudo consultar el pedido.'); return; }
+    render(r); setStatus('Consulta actualizada correctamente.');
+  }catch(e){ mostrarError(e.message||String(e)); }
+}
+function render(p){
+  $('result').classList.add('show'); $('summary').classList.add('show');
+  $('titPedido').textContent='Pedido '+(p.pedido||'-'); $('subPedido').textContent='Estado actual y avance de preparación';
+  $('badgeEstado').innerHTML=badge(p.status||p.estado);
+  $('barAvance').style.width=(Number(p.avance)||0)+'%';
+  $('steps').innerHTML=(p.pasos||[]).map(x=>`<div class="step ${x.completado?'done':''} ${x.activo?'active':''}">${esc(x.estado)}</div>`).join('');
+  $('sCliente').textContent=p.cliente||'-'; $('sProductos').textContent=p.total_productos||0; $('sUnidades').textContent=p.total_unidades||0; $('sAvance').textContent=(p.avance||0)+'%';
+  $('sInicio').textContent=horaCorta(p.hora_inicio)||'-'; $('sTermino').textContent=horaCorta(p.hora_termino)||'-'; $('sTiempo').textContent=p.tiempo_preparacion_texto||'-'; $('sConsulta').textContent=new Date().toLocaleTimeString('es-CL');
+}
+function badge(s){s=String(s||'PENDIENTE').toUpperCase();let c='pendiente';if(s.includes('PREPAR'))c='preparacion';else if(s.includes('RECIB'))c='recibido';else if(s.includes('DESP'))c='despachado';else if(s.includes('TERMIN'))c='terminado';else if(s.includes('CANCEL'))c='cancelado';return `<span class="badge ${c}">${esc(s)}</span>`;}
+function horaCorta(v){return String(v||'').replace('T',' ').replace(/\.\d+Z?$/,'').slice(0,19);}
+function mostrarError(m){$('errorBox').textContent=m;$('errorBox').classList.add('show');setStatus('No se pudo completar la consulta.');}
+function ocultarError(){$('errorBox').classList.remove('show');$('errorBox').textContent='';}
+function setStatus(t){$('statusLine').textContent=t;}
+function esc(v){return String(v??'').replace(/[&<>'"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]));}
+</script>
+</body>
+</html>

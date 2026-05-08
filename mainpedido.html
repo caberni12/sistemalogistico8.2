@@ -365,7 +365,7 @@
       <div class="modal-header"><h2>Configuración de URL Apps Script</h2><button class="close-x" onclick="closeConfig()">×</button></div>
       <div class="modal-body">
         <label>URL del Apps Script</label>
-        <input id="apiUrlInput" placeholder="https://script.google.com/macros/s/AKfycbxUTnIFy_2gEByhDLx1TtrtSrblLPeoCpCtr8OmHip7xfwA6Sabp6U3ALGIhJfW0cHLAA/exec" />
+        <input id="apiUrlInput" placeholder="https://script.google.com/macros/s/AKfycbw47SxU42yTG1yb8Tlc7H3fnhH77SZVEYSlqyTMI8xzsXEHDK0i7PDDFaj3-Y29vQo7Ng/exec" />
         <p class="help">Esta URL queda guardada en memoria local y será usada por Pedidos y Ubicaciones Pro. También puedes descargar un <b>config.txt</b>.</p>
         <input type="file" id="txtConfigInput" accept=".txt,.json" hidden />
         <div class="status-box" id="configStatus">Sin cambios.</div>
@@ -380,7 +380,7 @@
   </div>
 
   <script>
-    const DEFAULT_API_URL = 'https://script.google.com/macros/s/AKfycbxUTnIFy_2gEByhDLx1TtrtSrblLPeoCpCtr8OmHip7xfwA6Sabp6U3ALGIhJfW0cHLAA/exec';
+    const DEFAULT_API_URL = 'https://script.google.com/macros/s/AKfycbw47SxU42yTG1yb8Tlc7H3fnhH77SZVEYSlqyTMI8xzsXEHDK0i7PDDFaj3-Y29vQo7Ng/exec';
     const API_URL_STORAGE_KEY = 'sistema_pedidos_api_url';
     try{ localStorage.removeItem(API_URL_STORAGE_KEY); localStorage.removeItem('API_URL_SGL'); localStorage.removeItem('API_URL_PEDIDOS'); localStorage.removeItem('API_URL_UBICACIONES'); }catch(e){}
     const UBICACIONES_CACHE_KEY = 'pedidos_ubicaciones_cache_v3_all_locations';
