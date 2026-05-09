@@ -1,0 +1,24 @@
+CAMBIO FILTRO ESTADOS ORDEN PEDIDO - 2026-05-09
+
+Se agregó un filtro Estado tipo select en la pantalla principal de Orden de Pedido.
+
+Opciones visibles:
+- Todos
+- PENDIENTE
+- PREPARACION
+- EN RUTA
+- RECIBIDO
+- DESPACHADO
+- ENTREGADO
+- TERMINADO
+- CANCELADO
+
+El selector también detecta estados adicionales existentes en la hoja PEDIDOS y los agrega automáticamente al filtro.
+
+Actualizado en:
+- proyecto/sistemaweb/.../orden_pedidos.html
+- proyecto/sistemaweb/.../orden_pedidos.js
+- assets Android orden_pedidos.html
+- assets Android orden_pedidos.js
+
+No se modificó la URL ni Apps Script.

@@ -197,12 +197,15 @@ async function cargarTodo(){
     let r=await api('listar_pedidos',{mostrarTodo:1});
     if(!r?.ok) throw new Error(r?.msg||'Respuesta inválida');
     state.pedidos=normPedidos(r);
+    llenarSelectEstadosOrden();
     if(!state.pedidos.length){
       const b=await api('listar_bd',{sheet:'PEDIDOS'}).catch(()=>null);
       if(b?.ok) state.pedidos=normPedidos(b);
+      llenarSelectEstadosOrden();
     }
     state.ubicacionesMap=await ubicacionesPromise;
     aplicarUbicacionesAPedidos();
+    llenarSelectEstadosOrden();
     filtrar();
     setStatus('Conectado. Pedidos cargados: '+state.pedidos.length+' | Productos con ubicaciones: '+Object.keys(state.ubicacionesMap||{}).length);
     marcarTokens();
@@ -264,6 +267,27 @@ function llenarSelectVendedores(){
     }
   });
 }
+
+function llenarSelectEstadosOrden(){
+  const s=$('selEstado');
+  if(!s) return;
+  const actual=s.value;
+  const base=['PENDIENTE','PREPARACION','EN RUTA','RECIBIDO','DESPACHADO','ENTREGADO','TERMINADO','CANCELADO'];
+  const desdePedidos=[...new Set((state.pedidos||[]).map(p=>String(p.status||p.estado||'').trim().toUpperCase()).filter(Boolean))];
+  const estados=[...new Set([...base,...desdePedidos])].sort((a,b)=>{
+    const ia=base.indexOf(a), ib=base.indexOf(b);
+    if(ia>=0 && ib>=0) return ia-ib;
+    if(ia>=0) return -1;
+    if(ib>=0) return 1;
+    return a.localeCompare(b);
+  });
+  s.innerHTML='<option value="">Todos</option>'+estados.map(e=>`<option value="${esc(e)}">${esc(e)}</option>`).join('');
+  if(actual){
+    if(!estados.includes(actual)) s.insertAdjacentHTML('beforeend',`<option value="${esc(actual)}">${esc(actual)}</option>`);
+    s.value=actual;
+  }
+}
+
 function opcionesVendedores(actual=''){
   const lista=[...new Set([...(state.vendedores||[]), actual].map(x=>String(x||'').trim()).filter(Boolean))].sort((a,b)=>a.localeCompare(b));
   return '<option value="">Sin vendedor</option>'+lista.map(n=>`<option value="${esc(n)}" ${String(n)===String(actual||'')?'selected':''}>${esc(n)}</option>`).join('');
