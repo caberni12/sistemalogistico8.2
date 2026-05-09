@@ -1,0 +1,33 @@
+CAMBIOS CLIENTES - VENDEDOR Y CLASE DE CLIENTE
+Fecha: 2026-05-09
+
+Cambios aplicados:
+
+1. Hoja CLIENTES actualizada con nuevos campos:
+   - vendedor
+   - clase_cliente
+
+2. Modal Clientes actualizado:
+   - Nuevo campo Vendedor.
+   - Nuevo campo Clase de cliente.
+   - Opciones de clase:
+     - CLIENTE NORMAL
+     - FRECUENTE
+     - PREMIUM
+     - SUPER PREMIUM
+
+3. Tabla de clientes actualizada:
+   - Ahora muestra Vendedor y Clase cliente.
+
+4. Crear Pedido:
+   - Al seleccionar un cliente registrado, si el cliente tiene vendedor asociado, se completa automáticamente el vendedor del pedido.
+   - Se muestra aviso con clase del cliente y vendedor asociado.
+
+5. Apps Script actualizado:
+   - listar_clientes devuelve vendedor y clase_cliente.
+   - agregar_cliente guarda vendedor y clase_cliente.
+   - editar_cliente actualiza vendedor y clase_cliente.
+   - eliminar_cliente se mantiene igual.
+
+IMPORTANTE:
+Copiar el Apps Script actualizado y volver a publicar como Web App para que la hoja CLIENTES agregue las nuevas columnas y funcione con los campos nuevos.

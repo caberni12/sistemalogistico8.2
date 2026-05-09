@@ -1,4 +1,4 @@
-const API_URL='https://script.google.com/macros/s/AKfycbyOR_9D7lshIw2sLwWSKvwiHwfhHMXaR9qV2he9gh5cxc3nKdIOjuq3FZgbtJWwrRR48g/exec';
+const API_URL='https://script.google.com/macros/s/AKfycbyHM9r8WQ9m6-Hacd63TVhTBMac23SD9jhz7Qu4ORdmSzrHd0SAC1H7_13ogKJAWu6z8g/exec';
 
 const state={
   pedidos:[],
@@ -64,8 +64,7 @@ function stopClickedLoader(e){
 window.addEventListener('DOMContentLoaded',()=>{
   inicializarPanelesOrden();
   bind();
-  cargarTodo();
-  setInterval(verificarAlertas,1000);
+  prepararCargaManualOrden();
 });
 
 
@@ -76,6 +75,36 @@ function inicializarPanelesOrden(){
   if(btn) btn.textContent='Mostrar KPI / Rendimiento';
   const btnPanel=$('btnTogglePanel');
   if(btnPanel) btnPanel.textContent='Ocultar filtros';
+}
+
+function prepararCargaManualOrden(){
+  setStatus('Carga automática desactivada. Presiona Sincronizar para consultar PEDIDOS.');
+  const tb=$('tbodyPedidos');
+  if(tb){
+    tb.innerHTML='<tr><td colspan="13" style="text-align:center;padding:30px;color:#64748b">Carga automática desactivada. Presiona <b>Sincronizar</b> para mostrar pedidos.</td></tr>';
+  }
+  const mob=$('mobileList');
+  if(mob){
+    mob.innerHTML='<div class="pedido-card">Carga automática desactivada. Presiona Sincronizar.</div>';
+  }
+  limpiarMetricasOrdenSinCarga();
+}
+
+function limpiarMetricasOrdenSinCarga(){
+  ['kPedidos','kProductos','kUnidades','kPendientes','kProcesados','kPromedioProductos','kPromedioUnidades','kUnidadesDia','kUnidadesMes','kUnidadesAnio'].forEach(id=>{
+    const el=$(id);
+    if(el) el.textContent='0';
+  });
+  const t=$('kTiempoPromedio');
+  if(t) t.textContent='0 min';
+  const rot=$('tbodyRotacionProductos');
+  if(rot) rot.innerHTML='<tr><td colspan="5" style="text-align:center;color:#64748b">Presiona Sincronizar para calcular.</td></tr>';
+  const pik=$('tbodyRendimientoPikeador');
+  if(pik) pik.innerHTML='<tr><td colspan="5" style="text-align:center;color:#64748b">Presiona Sincronizar para calcular.</td></tr>';
+  const ven=$('tbodyRendimientoVendedor');
+  if(ven) ven.innerHTML='<tr><td colspan="5" style="text-align:center;color:#64748b">Presiona Sincronizar para calcular.</td></tr>';
+  const cli=$('tbodyTopClientes');
+  if(cli) cli.innerHTML='<tr><td colspan="5" style="text-align:center;color:#64748b">Presiona Sincronizar para calcular.</td></tr>';
 }
 
 function bind(){
@@ -225,7 +254,7 @@ function normVendedores(r){
   return Array.isArray(a)?a.map(x=>typeof x==='string'?x:Array.isArray(x)?x[0]:(x.nombre||x.vendedor||x.ejecutivo||x.responsable||'')).filter(Boolean):[];
 }
 function llenarSelectVendedores(){
-  [$('selFiltroVendedor'),$('manVendedor'),$('editVendedorPedido')].filter(Boolean).forEach(s=>{
+  [$('selFiltroVendedor'),$('manVendedor'),$('editVendedorPedido'),$('cliVendedor')].filter(Boolean).forEach(s=>{
     const v=s.value;
     const first=s.id==='selFiltroVendedor'?'<option value="">Todos</option>':'<option value="">Sin vendedor</option>';
     s.innerHTML=first+state.vendedores.map(n=>`<option value="${esc(n)}">${esc(n)}</option>`).join('');
@@ -266,14 +295,14 @@ function normClientes(r){
   if(arr.length && Array.isArray(arr[0])){
     const headers=(r.headers||[]).map(norm);
     const idx=(names)=>{for(const n of names){const i=headers.indexOf(norm(n)); if(i>=0)return i;} return -1;};
-    const ix={id:idx(['id']),cliente:idx(['cliente','nombre','razon_social','razón social']),rut:idx(['rut','r.u.t']),direccion:idx(['direccion','dirección']),giro:idx(['giro']),medio_pago:idx(['medio_pago','medio pago','forma_pago','forma pago']),telefono:idx(['telefono','teléfono','fono']),correo:idx(['correo_electronico','correo electrónico','correo','email','mail']),responsable:idx(['responsable_empresa','responsable empresa','responsable']),fecha:idx(['fecha_creacion','fecha creación','fecha']),status:idx(['status','estado'])};
-    return arr.map((x,i)=>({rowNumber:(r.rowNumbers&&r.rowNumbers[i])||i+2,id:String(x[ix.id]||'').trim(),cliente:String(x[ix.cliente]||'').trim(),rut:String(x[ix.rut]||'').trim(),direccion:String(x[ix.direccion]||'').trim(),giro:String(x[ix.giro]||'').trim(),medio_pago:String(x[ix.medio_pago]||'').trim(),telefono:String(x[ix.telefono]||'').trim(),correo_electronico:String(x[ix.correo]||'').trim(),responsable_empresa:String(x[ix.responsable]||'').trim(),fecha_creacion:String(x[ix.fecha]||'').trim(),status:String(x[ix.status]||'ACTIVO').trim().toUpperCase()})).filter(x=>x.cliente);
+    const ix={id:idx(['id']),cliente:idx(['cliente','nombre','razon_social','razón social']),rut:idx(['rut','r.u.t']),vendedor:idx(['vendedor','ejecutivo','asesor','responsable_venta','responsable venta']),clase_cliente:idx(['clase_cliente','clase cliente','tipo_cliente','tipo cliente','categoria_cliente','categoría cliente','categoria']),direccion:idx(['direccion','dirección']),giro:idx(['giro']),medio_pago:idx(['medio_pago','medio pago','forma_pago','forma pago']),telefono:idx(['telefono','teléfono','fono']),correo:idx(['correo_electronico','correo electrónico','correo','email','mail']),responsable:idx(['responsable_empresa','responsable empresa','responsable']),fecha:idx(['fecha_creacion','fecha creación','fecha']),status:idx(['status','estado'])};
+    return arr.map((x,i)=>({rowNumber:(r.rowNumbers&&r.rowNumbers[i])||i+2,id:String(x[ix.id]||'').trim(),cliente:String(x[ix.cliente]||'').trim(),rut:String(x[ix.rut]||'').trim(),vendedor:String(x[ix.vendedor]||'').trim(),clase_cliente:String(x[ix.clase_cliente]||'CLIENTE NORMAL').trim().toUpperCase(),direccion:String(x[ix.direccion]||'').trim(),giro:String(x[ix.giro]||'').trim(),medio_pago:String(x[ix.medio_pago]||'').trim(),telefono:String(x[ix.telefono]||'').trim(),correo_electronico:String(x[ix.correo]||'').trim(),responsable_empresa:String(x[ix.responsable]||'').trim(),fecha_creacion:String(x[ix.fecha]||'').trim(),status:String(x[ix.status]||'ACTIVO').trim().toUpperCase()})).filter(x=>x.cliente);
   }
-  return arr.map(x=>({rowNumber:x.rowNumber||x.fila||x.row||'',id:String(x.id||x.ID||'').trim(),cliente:String(x.cliente||x.nombre||x.razon_social||x['razón social']||'').trim(),rut:String(x.rut||x.RUT||'').trim(),direccion:String(x.direccion||x['dirección']||'').trim(),giro:String(x.giro||'').trim(),medio_pago:String(x.medio_pago||x.medioPago||x.forma_pago||'').trim(),telefono:String(x.telefono||x.fono||'').trim(),correo_electronico:String(x.correo_electronico||x.correo||x.email||x.mail||'').trim(),responsable_empresa:String(x.responsable_empresa||x.responsable||'').trim(),fecha_creacion:String(x.fecha_creacion||x.fecha||'').trim(),status:String(x.status||x.estado||'ACTIVO').trim().toUpperCase()})).filter(x=>x.cliente);
+  return arr.map(x=>({rowNumber:x.rowNumber||x.fila||x.row||'',id:String(x.id||x.ID||'').trim(),cliente:String(x.cliente||x.nombre||x.razon_social||x['razón social']||'').trim(),rut:String(x.rut||x.RUT||'').trim(),vendedor:String(x.vendedor||x.ejecutivo||x.asesor||'').trim(),clase_cliente:String(x.clase_cliente||x.claseCliente||x.tipo_cliente||x.tipoCliente||x.categoria_cliente||x.categoria||'CLIENTE NORMAL').trim().toUpperCase(),direccion:String(x.direccion||x['dirección']||'').trim(),giro:String(x.giro||'').trim(),medio_pago:String(x.medio_pago||x.medioPago||x.forma_pago||'').trim(),telefono:String(x.telefono||x.fono||'').trim(),correo_electronico:String(x.correo_electronico||x.correo||x.email||x.mail||'').trim(),responsable_empresa:String(x.responsable_empresa||x.responsable||'').trim(),fecha_creacion:String(x.fecha_creacion||x.fecha||'').trim(),status:String(x.status||x.estado||'ACTIVO').trim().toUpperCase()})).filter(x=>x.cliente);
 }
 function llenarDatalistClientes(){
   const dl=$('dlClientes'); if(!dl) return;
-  dl.innerHTML=(state.clientes||[]).filter(c=>String(c.status||'ACTIVO').toUpperCase()!=='BLOQUEADO').map(c=>`<option value="${esc(c.cliente)}">${esc(c.rut||c.direccion||'')}</option>`).join('');
+  dl.innerHTML=(state.clientes||[]).filter(c=>String(c.status||'ACTIVO').toUpperCase()!=='BLOQUEADO').map(c=>`<option value="${esc(c.cliente)}">${esc([c.rut,c.vendedor,c.clase_cliente].filter(Boolean).join(' | ') || c.direccion || '')}</option>`).join('');
 }
 function abrirClientesModal(){
   $('modalClientes')?.classList.add('show');
@@ -283,6 +312,8 @@ function cerrarClientesModal(){ $('modalClientes')?.classList.remove('show'); }
 function limpiarClienteForm(){
   ['cliRowNumber','cliId','cliCliente','cliRut','cliDireccion','cliGiro','cliTelefono','cliCorreo','cliResponsable'].forEach(id=>{ if($(id)) $(id).value=''; });
   if($('cliMedioPago')) $('cliMedioPago').value='';
+  if($('cliVendedor')) $('cliVendedor').value='';
+  if($('cliClaseCliente')) $('cliClaseCliente').value='CLIENTE NORMAL';
   if($('cliStatus')) $('cliStatus').value='ACTIVO';
 }
 function clienteFormPayload(){
@@ -291,6 +322,8 @@ function clienteFormPayload(){
     id:($('cliId')?.value||'').trim(),
     cliente:($('cliCliente')?.value||'').trim(),
     rut:($('cliRut')?.value||'').trim(),
+    vendedor:($('cliVendedor')?.value||'').trim(),
+    clase_cliente:($('cliClaseCliente')?.value||'CLIENTE NORMAL').trim().toUpperCase(),
     direccion:($('cliDireccion')?.value||'').trim(),
     giro:($('cliGiro')?.value||'').trim(),
     medio_pago:($('cliMedioPago')?.value||'').trim(),
@@ -313,8 +346,8 @@ async function guardarCliente(){
 function renderClientesTabla(){
   const tb=$('tbodyClientes'); if(!tb) return;
   const lista=state.clientes||[];
-  if(!lista.length){ tb.innerHTML='<tr><td colspan="11" style="text-align:center;color:#64748b;padding:18px">Sin clientes registrados.</td></tr>'; return; }
-  tb.innerHTML=lista.map((c,i)=>`<tr><td>${esc(c.cliente)}</td><td>${esc(c.rut||'-')}</td><td>${esc(c.direccion||'-')}</td><td>${esc(c.giro||'-')}</td><td>${esc(c.medio_pago||'-')}</td><td>${esc(c.telefono||'-')}</td><td>${esc(c.correo_electronico||'-')}</td><td>${esc(c.responsable_empresa||'-')}</td><td>${esc(c.fecha_creacion||'-')}</td><td><span class="badge ${String(c.status).includes('BLOQUE')?'cancelado':String(c.status).includes('INACT')?'pendiente':'terminado'}">${esc(c.status||'ACTIVO')}</span></td><td class="actions-cell"><button class="secondary" data-edit-cliente="${i}">Editar</button><button class="warn" data-del-cliente="${i}">Eliminar</button></td></tr>`).join('');
+  if(!lista.length){ tb.innerHTML='<tr><td colspan="13" style="text-align:center;color:#64748b;padding:18px">Sin clientes registrados.</td></tr>'; return; }
+  tb.innerHTML=lista.map((c,i)=>`<tr><td>${esc(c.cliente)}</td><td>${esc(c.rut||'-')}</td><td>${esc(c.vendedor||'-')}</td><td>${esc(c.clase_cliente||'CLIENTE NORMAL')}</td><td>${esc(c.direccion||'-')}</td><td>${esc(c.giro||'-')}</td><td>${esc(c.medio_pago||'-')}</td><td>${esc(c.telefono||'-')}</td><td>${esc(c.correo_electronico||'-')}</td><td>${esc(c.responsable_empresa||'-')}</td><td>${esc(c.fecha_creacion||'-')}</td><td><span class="badge ${String(c.status).includes('BLOQUE')?'cancelado':String(c.status).includes('INACT')?'pendiente':'terminado'}">${esc(c.status||'ACTIVO')}</span></td><td class="actions-cell"><button class="secondary" data-edit-cliente="${i}">Editar</button><button class="warn" data-del-cliente="${i}">Eliminar</button></td></tr>`).join('');
 }
 function manejarClickClientes(e){
   const edit=e.target.closest('[data-edit-cliente]');
@@ -328,6 +361,8 @@ function cargarClienteEnForm(i){
   if($('cliId')) $('cliId').value=c.id||'';
   if($('cliCliente')) $('cliCliente').value=c.cliente||'';
   if($('cliRut')) $('cliRut').value=c.rut||'';
+  if($('cliVendedor')) { if(c.vendedor && ![...$('cliVendedor').options].some(o=>o.value===c.vendedor)) $('cliVendedor').insertAdjacentHTML('beforeend',`<option value="${esc(c.vendedor)}">${esc(c.vendedor)}</option>`); $('cliVendedor').value=c.vendedor||''; }
+  if($('cliClaseCliente')) $('cliClaseCliente').value=c.clase_cliente||'CLIENTE NORMAL';
   if($('cliDireccion')) $('cliDireccion').value=c.direccion||'';
   if($('cliGiro')) $('cliGiro').value=c.giro||'';
   if($('cliMedioPago')) $('cliMedioPago').value=c.medio_pago||'';
@@ -349,7 +384,14 @@ function aplicarClienteManual(){
   const nombre=($('manCliente')?.value||'').trim();
   if(!nombre) return;
   const c=(state.clientes||[]).find(x=>String(x.cliente||'').trim().toLowerCase()===nombre.toLowerCase());
-  if(c && String(c.status||'ACTIVO').toUpperCase()==='BLOQUEADO') toast('Cliente bloqueado. Revisa configuración antes de usarlo.');
+  if(c){
+    if(String(c.status||'ACTIVO').toUpperCase()==='BLOQUEADO') toast('Cliente bloqueado. Revisa configuración antes de usarlo.');
+    if(c.vendedor && $('manVendedor')){
+      if(![...$('manVendedor').options].some(o=>o.value===c.vendedor)) $('manVendedor').insertAdjacentHTML('beforeend',`<option value="${esc(c.vendedor)}">${esc(c.vendedor)}</option>`);
+      $('manVendedor').value=c.vendedor;
+    }
+    if(c.clase_cliente) toast('Cliente: '+c.clase_cliente+(c.vendedor?' | Vendedor: '+c.vendedor:''));
+  }
   renderManualPreview();
 }
 
@@ -836,7 +878,7 @@ function filtrar(){
 function render(){
   const tb=$('tbodyPedidos'), mob=$('mobileList');
   if(!state.filtrados.length){
-    tb.innerHTML='<tr><td colspan="13" style="text-align:center;padding:26px;color:#64748b">Sin registros para mostrar. Presiona Cargar lista o revisa la hoja PEDIDOS.</td></tr>';
+    tb.innerHTML='<tr><td colspan="13" style="text-align:center;padding:26px;color:#64748b">Sin registros para mostrar. Presiona Sincronizar o revisa la hoja PEDIDOS.</td></tr>';
     mob.innerHTML='<div class="pedido-card">Sin registros para mostrar.</div>';
     return;
   }
@@ -1202,10 +1244,17 @@ function marcarTokens(){ state.pedidos.forEach(p=>{if(p.alerta_token)state.token
 
 
 /* ================= PEDIDO MANUAL ================= */
+function cargarDatosConfiguracionPedidoManual(){
+  if(!state.pikeadores.length) cargarPikeadores().catch(console.warn);
+  if(!state.vendedores.length) cargarVendedores().catch(console.warn);
+  if(!state.bodegas.length) cargarBodegas().catch(console.warn);
+  if(!state.clientes.length) cargarClientes().catch(console.warn);
+  if(!state.maestraListaCargada) cargarMaestra(true).catch(console.warn);
+}
+
 function abrirManual(){
   llenarSelects();
-  if(!state.maestraListaCargada) cargarMaestra(true).catch(console.warn);
-  if(!state.clientes.length) cargarClientes().catch(console.warn);
+  cargarDatosConfiguracionPedidoManual();
   limpiarManual(false);
   const hoy=new Date();
   const yyyy=hoy.getFullYear(), mm=String(hoy.getMonth()+1).padStart(2,'0'), dd=String(hoy.getDate()).padStart(2,'0');
@@ -1292,6 +1341,7 @@ function datosManualBase(){
     fecha:$('manFecha')?.value||'',
     pedido:($('manPedido')?.value||'').trim(),
     cliente:($('manCliente')?.value||'').trim(),
+    clase_cliente:(()=>{ const n=($('manCliente')?.value||'').trim().toLowerCase(); const c=(state.clientes||[]).find(x=>String(x.cliente||'').trim().toLowerCase()===n); return c?.clase_cliente||''; })(),
     vendedor:($('manVendedor')?.value||'').trim(),
     pikeador:($('manPikeador')?.value||'').trim(),
     bodega_preparacion:($('manBodega')?.value||'').trim(),
@@ -1335,7 +1385,7 @@ function renderManualPreview(){
   const total=state.manualProductos.reduce((s,x)=>s+(Number(x.cantidad)||0),0);
   const parcial={codigo:$('manCodigo')?.value||'',descripcion:$('manDescripcion')?.value||'',ubicacion:$('manUbicacion')?.value||'',cantidad:$('manCantidad')?.value||''};
   const parcialTxt=(parcial.codigo||parcial.descripcion)?`<br><span style="color:#0f766e"><b>Producto en edición:</b> ${esc(parcial.codigo)} ${esc(parcial.descripcion)} | Ubicación: ${esc(parcial.ubicacion)} | Cantidad: ${esc(parcial.cantidad||1)}</span>`:'';
-  box.innerHTML=`<b>Pedido:</b> ${esc(base.pedido||'Sin número')} | <b>Cliente:</b> ${esc(base.cliente||'Sin cliente')} | <b>Pikeador:</b> ${esc(base.pikeador||'Sin asignar')} | <b>Bodega:</b> ${esc(base.bodega_preparacion||'Sin bodega')} | <b>Estado:</b> ${esc(base.status)} | <b>Productos agregados:</b> ${state.manualProductos.length} | <b>Total unidades:</b> ${total}${parcialTxt}`;
+  box.innerHTML=`<b>Pedido:</b> ${esc(base.pedido||'Sin número')} | <b>Cliente:</b> ${esc(base.cliente||'Sin cliente')}${base.clase_cliente?' ('+esc(base.clase_cliente)+')':''} | <b>Pikeador:</b> ${esc(base.pikeador||'Sin asignar')} | <b>Bodega:</b> ${esc(base.bodega_preparacion||'Sin bodega')} | <b>Estado:</b> ${esc(base.status)} | <b>Productos agregados:</b> ${state.manualProductos.length} | <b>Total unidades:</b> ${total}${parcialTxt}`;
 }
 async function guardarPedidoManual(){
   const base=datosManualBase();

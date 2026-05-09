@@ -1,0 +1,7 @@
+CAMBIO ORDEN DE PEDIDO - CARGA MANUAL 2026-05-09
+
+- Se eliminó la carga automática de PEDIDOS al iniciar orden_pedidos.html.
+- Se eliminó la consulta automática de alertas cada 1 segundo desde el inicio.
+- La TD queda vacía hasta presionar Cargar lista o Sincronizar.
+- Crear Pedido sigue cargando solo catálogos necesarios: pikeadores, vendedores, bodegas, clientes y maestra, sin recargar la TD completa.
+- Las acciones internas que guardan o actualizan pedidos pueden refrescar la tabla después de ejecutarse, porque son acciones iniciadas por el usuario.

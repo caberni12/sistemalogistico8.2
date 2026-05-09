@@ -30,10 +30,11 @@ function doGet(e){
   e = e || {parameter:{}};
   const p = e.parameter || {};
   const accion = t_(p.accion || p.action || 'diagnostico').toLowerCase();
-  const cb = t_(p.callback || '');
+  const cb = t_(p.callback || p.jsonp || p.cb || p.callback_jsonp || '');
   try{
     let r;
-    if(['diagnostico','test'].includes(accion)) r = diagnostico_();
+    if((['diagnostico','test',''].includes(accion)) && (p.sheet || p.bd || p.hoja)) r = listarBD_(p.sheet || p.bd || p.hoja || '');
+    else if(['diagnostico','test',''].includes(accion)) r = diagnostico_();
     else if(['reparar_estados','reparar_estados_pedidos','limpiar_estados'].includes(accion)) r = repararEstadosPedidos_();
     else if(['agregar','agregar_movimiento','guardar_movimiento','guardar_captura','agregar_ubicacion','guardar_ubicacion','guardar_ubicaciones','crear_ubicacion','crear_movimiento'].includes(accion)) r = agregarMovimiento_(p);
     else if(['editar','editar_movimiento','actualizar_movimiento','editar_ubicacion','actualizar_ubicacion','modificar_ubicacion','modificar_movimiento'].includes(accion)) r = editarMovimiento_(p);
@@ -69,7 +70,7 @@ function doGet(e){
     else if(['agregar_bodega','crear_bodega','guardar_bodega'].includes(accion)) r = agregarBodega_(p);
     else if(['editar_bodega','actualizar_bodega','modificar_bodega'].includes(accion)) r = editarBodega_(p);
     else if(['eliminar_bodega','borrar_bodega'].includes(accion)) r = eliminarBodega_(p);
-    else if(['listar_maestra_bd','maestra_listar','cargar_maestra'].includes(accion)) r = listarMaestraBD_();
+    else if(['listar_maestra_bd','maestra_listar','cargar_maestra','bd_maestra','maestra','obtener_maestra','ver_maestra'].includes(accion)) r = listarMaestraBD_(p);
     else if(['agregar_maestra','crear_maestra','guardar_maestra'].includes(accion)) r = agregarMaestra_(p);
     else if(['editar_maestra','actualizar_maestra','modificar_maestra'].includes(accion)) r = editarMaestra_(p);
     else if(['eliminar_maestra','borrar_maestra'].includes(accion)) r = eliminarMaestra_(p);
@@ -92,7 +93,8 @@ function doPost(e){
   const accion = t_(b.accion || b.action || b.operacion || '').toLowerCase();
   try{
     let r;
-    if(['reparar_estados','reparar_estados_pedidos','limpiar_estados'].includes(accion)) r = repararEstadosPedidos_();
+    if((['diagnostico','test',''].includes(accion)) && (b.sheet || b.bd || b.hoja)) r = listarBD_(b.sheet || b.bd || b.hoja || '');
+    else if(['reparar_estados','reparar_estados_pedidos','limpiar_estados'].includes(accion)) r = repararEstadosPedidos_();
     else if(['agregar','agregar_movimiento','guardar_movimiento','guardar_captura','agregar_ubicacion','guardar_ubicacion','guardar_ubicaciones','crear_ubicacion','crear_movimiento'].includes(accion)) r = agregarMovimiento_(b);
     else if(['editar','editar_movimiento','actualizar_movimiento','editar_ubicacion','actualizar_ubicacion','modificar_ubicacion','modificar_movimiento'].includes(accion)) r = editarMovimiento_(b);
     else if(['eliminar','eliminar_movimiento','borrar_movimiento','eliminar_ubicacion','borrar_ubicacion'].includes(accion)) r = eliminarMovimiento_(b);
@@ -130,7 +132,7 @@ function doPost(e){
     else if(['agregar_bodega','crear_bodega','guardar_bodega'].includes(accion)) r = agregarBodega_(b);
     else if(['editar_bodega','actualizar_bodega','modificar_bodega'].includes(accion)) r = editarBodega_(b);
     else if(['eliminar_bodega','borrar_bodega'].includes(accion)) r = eliminarBodega_(b);
-    else if(['listar_maestra_bd','maestra_listar','cargar_maestra'].includes(accion)) r = listarMaestraBD_();
+    else if(['listar_maestra_bd','maestra_listar','cargar_maestra','bd_maestra','maestra','obtener_maestra','ver_maestra'].includes(accion)) r = listarMaestraBD_(b);
     else if(['agregar_maestra','crear_maestra','guardar_maestra'].includes(accion)) r = agregarMaestra_(b);
     else if(['editar_maestra','actualizar_maestra','modificar_maestra'].includes(accion)) r = editarMaestra_(b);
     else if(['eliminar_maestra','borrar_maestra'].includes(accion)) r = eliminarMaestra_(b);
@@ -380,7 +382,7 @@ function listarBD_(name){
   else if(name === 'VENDEDORES' || name === 'BD-VENDEDORES' || name === 'BD_VENDEDORES') sh = ss_().getSheetByName(SHEET_VENDEDORES);
   else if(name === 'BODEGAS' || name === 'BD-BODEGAS' || name === 'BD_BODEGAS') sh = bodegaSheet_(true);
   else if(name === 'CLIENTES' || name === 'BD-CLIENTES' || name === 'BD_CLIENTES') sh = clienteSheet_(true);
-  else if(name === 'MAESTRA') sh = maestraSheet_(true);
+  else if(name === 'MAESTRA' || name === 'BD_MAESTRA' || name === 'BD-MAESTRA' || name === 'BDMAESTRA') sh = maestraSheet_(true);
   else if(name === 'ALERTAS_PEDIDOS') sh = ss_().getSheetByName(SHEET_ALERTAS);
   else if(name === 'MOVIMIENTO' || name === 'BD_MOVIMIENTO' || name === 'BD-MOVIMIENTO') sh = movimientoSheet_(true);
   else if(name === 'MOVIMIENTO_UBICACION' || name === 'BD_MOVIMIENTO_UBICACION' || name === 'BD-MOVIMIENTO-UBICACION' || name === 'MOVIMIENTOUBICACION') sh = gestionSheet_(SHEET_MOV_UBICACION, movimientoUbicacionHeaders_(), true);
@@ -440,15 +442,7 @@ function agregarVendedor_(nombre){
 }
 
 function listarMaestra_(){
-  const sh = ss_().getSheetByName(SHEET_MAESTRA);
-  if(!sh) return {ok:true,sheet:SHEET_MAESTRA,headers:[],data:[],productos:[]};
-  const v = values_(sh);
-  const iC = find_(v.headers, ['codigo','código','cod','sku','producto','item'],0);
-  const iD = find_(v.headers, ['descripcion','descripción','detalle','nombre'],1);
-  const iQ = find_(v.headers, ['cantidad','unidades','stock'],2);
-  const iU = find_(v.headers, ['ubicacion','ubicación','bodega','ubicacion sugerida','ubicación sugerida'], -1);
-  const data = v.data.map(r=>({codigo:code_(r[iC]),descripcion:t_(r[iD]),cantidad:n_(r[iQ]),ubicacion:iU>=0?t_(r[iU]):''})).filter(x=>x.codigo||x.descripcion);
-  return {ok:true,sheet:SHEET_MAESTRA,headers:v.headers,data:data,productos:data,total:data.length};
+  return listarMaestraBD_();
 }
 function buscarProducto_(codigo){
   codigo = code_(codigo);
@@ -541,28 +535,44 @@ function maestraIdx_(headers){
     fecha_actualizacion:find_(headers,['fecha_actualizacion','fecha actualización','fecha','actualizado'],8)
   };
 }
-function listarMaestraBD_(){
-  const sh = maestraSheet_(true);
-  const lastRow = Math.max(1, sh.getLastRow());
-  const lastCol = Math.max(sh.getLastColumn(), maestraHeaders_().length);
-  const raw = sh.getRange(1, 1, lastRow, lastCol).getDisplayValues();
-  let headers = (raw[0] || []).map(t_);
+function listarMaestraBD_(p){
+  p = p || {};
+  const ss = ss_();
+  let sh = ss.getSheetByName(SHEET_MAESTRA);
+  if(!sh) sh = getOrCreate_(SHEET_MAESTRA, maestraHeaders_());
+
+  const minHeaders = maestraHeaders_();
+  let lastRow = Math.max(1, sh.getLastRow());
+  let lastCol = Math.max(sh.getLastColumn(), minHeaders.length);
+  let headers = sh.getRange(1, 1, 1, lastCol).getDisplayValues()[0].map(t_);
   if(headers.every(h => !h)){
-    headers = maestraHeaders_();
-    sh.getRange(1, 1, 1, headers.length).setValues([headers]);
+    sh.getRange(1, 1, 1, minHeaders.length).setValues([minHeaders]);
+    headers = minHeaders.slice();
+    lastCol = minHeaders.length;
+    lastRow = Math.max(1, sh.getLastRow());
   }
-  ensureCols_(sh, maestraHeaders_());
-  headers = sh.getRange(1, 1, 1, Math.max(sh.getLastColumn(), maestraHeaders_().length)).getDisplayValues()[0].map(t_);
-  const full = sh.getRange(1, 1, Math.max(1, sh.getLastRow()), Math.max(sh.getLastColumn(), maestraHeaders_().length)).getDisplayValues();
+  try{ ensureCols_(sh, minHeaders); }catch(e){}
+
+  lastCol = Math.max(sh.getLastColumn(), minHeaders.length);
+  headers = sh.getRange(1, 1, 1, lastCol).getDisplayValues()[0].map(t_);
+  lastRow = Math.max(1, sh.getLastRow());
+
+  const totalDataRows = Math.max(0, lastRow - 1);
+  const limit = Math.max(1, Math.min(Number(p.limit || p.pageSize || p.tamano || 300) || 300, 500));
+  const offset = Math.max(0, Math.min(Number(p.offset || p.desde || p.start || 0) || 0, totalDataRows));
+  const rowsToRead = Math.max(0, Math.min(limit, totalDataRows - offset));
+  const full = rowsToRead > 0 ? sh.getRange(2 + offset, 1, rowsToRead, lastCol).getDisplayValues() : [];
+
   const data = [];
   const rowNumbers = [];
-  for(let i = 1; i < full.length; i++){
+  for(let i = 0; i < full.length; i++){
     const row = full[i];
     if(row.some(c => t_(c))){
       data.push(row);
-      rowNumbers.push(i + 1);
+      rowNumbers.push(2 + offset + i);
     }
   }
+
   const ix = maestraIdx_(headers);
   const items = data.map((r, i) => ({
     rowNumber: rowNumbers[i],
@@ -576,6 +586,7 @@ function listarMaestraBD_(){
     ubicacion: t_(getCell_(r, ix.ubicacion)),
     fecha_actualizacion: t_(getCell_(r, ix.fecha_actualizacion))
   })).filter(x => x.codigo || x.descripcion);
+
   return {
     ok:true,
     sheet:sh.getName(),
@@ -584,9 +595,16 @@ function listarMaestraBD_(){
     rows:data,
     values:data,
     items:items,
+    maestra:items,
     productos:items,
     rowNumbers:rowNumbers,
     total:items.length,
+    totalFilasMaestra:totalDataRows,
+    offset:offset,
+    limit:limit,
+    paged:true,
+    hasMore:(offset + rowsToRead) < totalDataRows,
+    msg:'MAESTRA cargada por página para evitar bloqueo por exceso de registros',
     serverTime:new Date().toISOString()
   };
 }
@@ -876,7 +894,7 @@ function importarMovimientoPedidosBD_(b){ return importarGestionBD_(SHEET_MOV_PE
    CLIENTES - REGISTRO MAESTRO PARA PEDIDOS
    Hoja: CLIENTES
 ========================================================= */
-function clienteHeaders_(){ return ['id','cliente','rut','direccion','giro','medio_pago','telefono','correo_electronico','responsable_empresa','fecha_creacion','status']; }
+function clienteHeaders_(){ return ['id','cliente','rut','vendedor','clase_cliente','direccion','giro','medio_pago','telefono','correo_electronico','responsable_empresa','fecha_creacion','status']; }
 function clienteSheet_(crear){
   const sh = getOrCreate_(SHEET_CLIENTES, clienteHeaders_());
   if(crear) ensureCols_(sh, clienteHeaders_());
@@ -887,14 +905,16 @@ function clienteIdx_(h){
     id:find_(h,['id'],0),
     cliente:find_(h,['cliente','nombre','razon_social','razón social'],1),
     rut:find_(h,['rut','r.u.t'],2),
-    direccion:find_(h,['direccion','dirección'],3),
-    giro:find_(h,['giro'],4),
-    medio_pago:find_(h,['medio_pago','medio pago','forma_pago','forma pago'],5),
-    telefono:find_(h,['telefono','teléfono','fono'],6),
-    correo_electronico:find_(h,['correo_electronico','correo electrónico','correo','email','mail'],7),
-    responsable_empresa:find_(h,['responsable_empresa','responsable empresa','responsable'],8),
-    fecha_creacion:find_(h,['fecha_creacion','fecha creación','fecha'],9),
-    status:find_(h,['status','estado'],10)
+    vendedor:find_(h,['vendedor','ejecutivo','asesor','responsable_venta','responsable venta'],3),
+    clase_cliente:find_(h,['clase_cliente','clase cliente','tipo_cliente','tipo cliente','categoria_cliente','categoría cliente','categoria'],4),
+    direccion:find_(h,['direccion','dirección'],5),
+    giro:find_(h,['giro'],6),
+    medio_pago:find_(h,['medio_pago','medio pago','forma_pago','forma pago'],7),
+    telefono:find_(h,['telefono','teléfono','fono'],8),
+    correo_electronico:find_(h,['correo_electronico','correo electrónico','correo','email','mail'],9),
+    responsable_empresa:find_(h,['responsable_empresa','responsable empresa','responsable'],10),
+    fecha_creacion:find_(h,['fecha_creacion','fecha creación','fecha'],11),
+    status:find_(h,['status','estado'],12)
   };
 }
 function listarClientes_(){
@@ -905,6 +925,8 @@ function listarClientes_(){
     id:getCell_(r,ix.id),
     cliente:getCell_(r,ix.cliente),
     rut:getCell_(r,ix.rut),
+    vendedor:getCell_(r,ix.vendedor),
+    clase_cliente:(getCell_(r,ix.clase_cliente)||'CLIENTE NORMAL').toUpperCase(),
     direccion:getCell_(r,ix.direccion),
     giro:getCell_(r,ix.giro),
     medio_pago:getCell_(r,ix.medio_pago),
@@ -924,6 +946,8 @@ function clientePayload_(b){
     rowNumber:Number(b.rowNumber || b.fila || b.row || 0),
     cliente:t_(b.cliente || b.nombre || b.razon_social || b['razón social'] || ''),
     rut:t_(b.rut || b.RUT || ''),
+    vendedor:t_(b.vendedor || b.ejecutivo || b.asesor || ''),
+    clase_cliente:(function(){ var c=nh_(b.clase_cliente || b.claseCliente || b.tipo_cliente || b.tipoCliente || b.categoria_cliente || b.categoria || 'CLIENTE NORMAL'); return c === 'FRECUENTE' ? 'FRECUENTE' : c === 'PREMIUM' ? 'PREMIUM' : c === 'SUPER PREMIUM' || c === 'SUPERPREMIUM' ? 'SUPER PREMIUM' : 'CLIENTE NORMAL'; })(),
     direccion:t_(b.direccion || b['dirección'] || ''),
     giro:t_(b.giro || ''),
     medio_pago:t_(b.medio_pago || b.medioPago || b.forma_pago || ''),
@@ -963,7 +987,7 @@ function editarCliente_(b){
   const row = filaCliente_(sh,h,item);
   if(!row) return {ok:false,msg:'Cliente no encontrado'};
   const set = (field,val)=>{ const col=ix[field]; if(col>=0) sh.getRange(row,col+1).setValue(val); };
-  set('cliente',item.cliente); set('rut',item.rut); set('direccion',item.direccion); set('giro',item.giro); set('medio_pago',item.medio_pago); set('telefono',item.telefono); set('correo_electronico',item.correo_electronico); set('responsable_empresa',item.responsable_empresa); set('status',item.status);
+  set('cliente',item.cliente); set('rut',item.rut); set('vendedor',item.vendedor); set('clase_cliente',item.clase_cliente); set('direccion',item.direccion); set('giro',item.giro); set('medio_pago',item.medio_pago); set('telefono',item.telefono); set('correo_electronico',item.correo_electronico); set('responsable_empresa',item.responsable_empresa); set('status',item.status);
   SpreadsheetApp.flush();
   return {ok:true,msg:'Cliente actualizado',cliente:item.cliente,rowNumber:row};
 }
