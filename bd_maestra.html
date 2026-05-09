@@ -11,19 +11,13 @@
 <section class="filters"><input id="searchInput" placeholder="Buscar en toda la BD..."><select id="filterA"><option value="">Todos: Estado</option></select><select id="filterB"><option value="">Todos: Categoría</option></select><select id="filterC"><option value="">Todos: Ubicación</option></select><button id="btnClear" class="secondary">Limpiar filtros</button></section>
 <section class="table-card"><div class="table-info"><span id="syncInfo">Preparando módulo...</span><strong id="counter">0 registro(s)</strong></div><div class="table-wrap"><table><thead id="tableHead"></thead><tbody id="tableBody"></tbody></table><div id="mobileCards" class="mobile-cards"></div></div></section>
 </div>
-<div id="formModal" class="modal"><div class="modal-card"><div class="modal-header"><h2 id="formTitle">Nuevo registro</h2><button id="btnCloseForm" class="close-x">×</button></div><div class="modal-body"><input type="hidden" id="f_id"><input type="hidden" id="f_rowNumber"><div class="form-grid">        <label><span>Código</span><input id="f_codigo" type="text" placeholder="Código / SKU"></label>
-        <label><span>Descripción</span><input id="f_descripcion" type="text" placeholder="Descripción del producto"></label>
-        <label><span>Cantidad</span><input id="f_cantidad" type="number" placeholder="0"></label>
-        <label><span>Categoría</span><input id="f_categoria" type="text" placeholder="Familia / Categoría"></label>
-        <label><span>Unidad</span><input id="f_unidad" type="text" placeholder="UN"></label>
-        <label><span>Estado</span><select id="f_status"><option>ACTIVO</option><option>VIGENTE</option><option>PENDIENTE</option><option>TERMINADO</option><option>ANULADO</option></select></label>
-        <label><span>Ubicación</span><input id="f_ubicacion" type="text" placeholder="Ubicación sugerida"></label></div></div><div class="modal-footer"><button id="btnCancelForm" class="secondary">Cancelar</button><button id="btnSave" class="primary">💾 Guardar</button></div></div></div>
+<div id="formModal" class="modal"><div class="modal-card"><div class="modal-header"><h2 id="formTitle">Nuevo registro</h2><button id="btnCloseForm" class="close-x">×</button></div><div class="modal-body"><input type="hidden" id="f_id"><input type="hidden" id="f_rowNumber"><div class="form-grid" id="formGrid"></div></div><div class="modal-footer"><button id="btnCancelForm" class="secondary">Cancelar</button><button id="btnSave" class="primary">💾 Guardar</button></div></div></div>
 <div id="importModal" class="modal"><div class="modal-card"><div class="modal-header"><h2>Importar archivo</h2><button id="btnCloseImport" class="close-x">×</button></div><div class="modal-body"><input id="fileInput" type="file" accept=".xlsx,.xls,.csv,.txt"><p id="importSummary" class="small-note">Selecciona un archivo para previsualizar antes de importar.</p><div class="preview-box"><table><thead id="previewHead"></thead><tbody id="previewBody"></tbody></table></div><p class="small-note"><label><input type="checkbox" id="upsertCheck" checked> Actualizar si el código ya existe; si no existe, agregar.</label></p></div><div class="modal-footer"><button id="btnCancelImport" class="secondary">Cancelar</button><button id="btnRunImport" class="primary" disabled>Importar a BD</button></div></div></div>
 <div id="toast" class="toast"></div>
 <iframe id="postFrame" name="postFrame" style="display:none"></iframe>
 <script>
 (function(){
-  const API_URL='https://script.google.com/macros/s/AKfycbwKJ0I0LL3J12cJg1sVuOuIe60v4Us3h9rnp4iev-3SuR5GHVEz3-Q1H-JJyjs96sOMPg/exec';
+  const API_URL='https://script.google.com/macros/s/AKfycbyOR_9D7lshIw2sLwWSKvwiHwfhHMXaR9qV2he9gh5cxc3nKdIOjuq3FZgbtJWwrRR48g/exec';
   const SHEET_NAME='MAESTRA';
   const TITLE='BD-MAESTRA';
   const SCHEMA=[["codigo", "Código", "text", "Código / SKU"], ["descripcion", "Descripción", "text", "Descripción del producto"], ["cantidad", "Cantidad", "number", "0"], ["categoria", "Categoría", "text", "Familia / Categoría"], ["unidad", "Unidad", "text", "UN"], ["status", "Estado", "select", "ACTIVO"], ["ubicacion", "Ubicación", "text", "Ubicación sugerida"]];
@@ -44,7 +38,21 @@
   function esc(v){return txt(v).replace(/[&<>'"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]));}
   function norm(v){return txt(v).toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/[\s_\-.\/]+/g,'');}
   function code(v){return txt(v).replace(/^['’`´]+/,'').replace(/\.0$/,'').replace(/\s+/g,'').toUpperCase();}
-  function label(k){const m={id:'ID',rowNumber:'Fila',codigo:'Código',descripcion:'Descripción',cantidad:'Cantidad',categoria:'Categoría',unidad:'Unidad',status:'Estado',ubicacion:'Ubicación',fecha_actualizacion:'Actualizado',fecha_registro:'Fecha registro',fecha_entrada:'Fecha entrada',fecha_salida:'Fecha salida',responsable:'Responsable',origen:'Origen'};return m[k]||k;}
+  function label(k){const m={id:'ID',rowNumber:'Fila',codigo:'Código',descripcion:'Descripción',cantidad:'Cantidad',categoria:'Categoría',unidad:'Unidad',status:'Estado',ubicacion:'Ubicación',fecha_actualizacion:'Actualizado',fecha_registro:'Fecha registro',fecha_entrada:'Fecha entrada',fecha_salida:'Fecha salida',responsable:'Responsable',origen:'Origen',fecha:'Fecha',pedido:'Pedido',cliente:'Cliente',vendedor:'Vendedor',pikeador:'Pikeador',cantidad_items:'Cantidad ítems',tipo_movimiento:'Tipo movimiento',observaciones:'Observaciones'};return m[k]||k;}
+  function buildFormFields(){
+    const grid=$('formGrid');
+    if(!grid)return;
+    grid.innerHTML=SCHEMA.map(([key,lab,type,placeholder])=>{
+      if(type === 'select'){
+        const opts=['ACTIVO','VIGENTE','PENDIENTE','EN PREPARACION','EN RUTA','RECIBIDO','TERMINADO','DESPACHADO','ANULADO'];
+        return `<label><span>${esc(lab)}</span><select id="f_${esc(key)}">${opts.map(o=>`<option>${esc(o)}</option>`).join('')}</select></label>`;
+      }
+      if(type === 'textarea') return `<label class="full"><span>${esc(lab)}</span><textarea id="f_${esc(key)}" placeholder="${esc(placeholder||'')}"></textarea></label>`;
+      const htmlType = type === 'datetime-local' ? 'datetime-local' : (type || 'text');
+      return `<label><span>${esc(lab)}</span><input id="f_${esc(key)}" type="${esc(htmlType)}" placeholder="${esc(placeholder||'')}"></label>`;
+    }).join('');
+  }
+
   function setBtn(btn,active,text){if(!btn)return;if(active){btn.dataset.txt=btn.textContent;btn.disabled=true;btn.innerHTML='<span class="mini-spinner"></span>'+esc(text||'Procesando...');}else{btn.disabled=false;btn.textContent=btn.dataset.txt||btn.textContent;}}
   function toast(msg,type='ok'){els.toast.textContent=msg;els.toast.className='toast show '+type;clearTimeout(toast._t);toast._t=setTimeout(()=>{els.toast.className='toast'},4500);}
   function serialize(params){const out={};Object.keys(params||{}).forEach(k=>{const v=params[k];if(v===undefined||v===null)return;out[k]=(Array.isArray(v)||typeof v==='object')?JSON.stringify(v):String(v);});return out;}
@@ -83,6 +91,7 @@
   async function runImport(){if(!importRows.length)return;const chunks=buildChunks(importRows);let total=0;setBtn($('btnRunImport'),true,'Importando...');try{for(let i=0;i<chunks.length;i++){$('importSummary').textContent=`Importando bloque ${i+1} de ${chunks.length}...`;await api({accion:IMPORT_ACTION,modo:$('upsertCheck').checked?'upsert':'append',rows:chunks[i]});total+=chunks[i].length;}toast(`Importación enviada: ${total} registro(s).`);closeImport();setTimeout(()=>load(true),1400);}catch(e){toast(e.message,'error');}finally{setBtn($('btnRunImport'),false);}}
   function exportXlsx(){const h=ROW_FIELDS;const data=filtered.map(o=>h.map(k=>o[k]||''));if(window.XLSX){const ws=XLSX.utils.aoa_to_sheet([h.map(label),...data]);const codeCol=h.indexOf('codigo');if(codeCol>=0){for(let r=1;r<=data.length;r++){const addr=XLSX.utils.encode_cell({r,c:codeCol});if(ws[addr]){ws[addr].t='s';ws[addr].z='@';}}}const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,SHEET_NAME.substring(0,31));XLSX.writeFile(wb,`${TITLE.replace(/[^A-Z0-9_-]/gi,'_')}_${new Date().toISOString().slice(0,10)}.xlsx`);return;}toast('No se pudo cargar la librería XLSX para exportar.','error');}
   function template(){const h=SCHEMA.map(x=>x[0]);const demo=SCHEMA.map(([k])=>k==='codigo'?'000123':k==='descripcion'?'Producto ejemplo':k==='cantidad'?'1':k==='status'?'ACTIVO':k==='origen'?'WEB':'');if(window.XLSX){const ws=XLSX.utils.aoa_to_sheet([h.map(label),demo]);const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,'PRE FORMATO');XLSX.writeFile(wb,`Preformato_Importar_${SHEET_NAME}.xlsx`);return;}const csv=[h.map(label).join(';'),demo.join(';')].join('\n');const blob=new Blob([csv],{type:'text/csv;charset=utf-8;'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=`Preformato_Importar_${SHEET_NAME}.csv`;a.click();URL.revokeObjectURL(a.href);}
+  buildFormFields();
   $('btnSync').addEventListener('click',()=>load(true));$('btnNew').addEventListener('click',()=>openForm(null));$('btnImport').addEventListener('click',openImport);$('btnExport').addEventListener('click',exportXlsx);$('btnTemplate').addEventListener('click',template);$('btnClear').addEventListener('click',()=>{els.search.value='';els.fa.value='';els.fb.value='';els.fc.value='';render();});$('btnCloseForm').addEventListener('click',closeForm);$('btnCancelForm').addEventListener('click',closeForm);$('btnSave').addEventListener('click',save);$('btnCloseImport').addEventListener('click',closeImport);$('btnCancelImport').addEventListener('click',closeImport);$('btnRunImport').addEventListener('click',runImport);$('fileInput').addEventListener('change',e=>{const f=e.target.files&&e.target.files[0];if(f)readFile(f);});[els.search,els.fa,els.fb,els.fc].forEach(el=>el.addEventListener(el.tagName==='INPUT'?'input':'change',render));$('tableBody').addEventListener('click',e=>{const edit=e.target.closest('.btn-edit'),delBtn=e.target.closest('.btn-delete');if(edit){const o=findByRow(edit.dataset.row);if(o)openForm(o);}if(delBtn)del(delBtn.dataset.row,delBtn);});$('mobileCards').addEventListener('click',e=>{const edit=e.target.closest('.btn-edit'),delBtn=e.target.closest('.btn-delete');if(edit){const o=findByRow(edit.dataset.row);if(o)openForm(o);}if(delBtn)del(delBtn.dataset.row,delBtn);});document.addEventListener('visibilitychange',()=>{if(!document.hidden)load(false);});load(true);setInterval(()=>{if(!document.hidden)load(false);},25000);
 })();
 </script>

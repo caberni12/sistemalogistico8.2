@@ -1,0 +1,25 @@
+CAMBIOS APLICADOS - PEDIDO AUTOGENERADO CONSECUTIVO
+Fecha: 2026-05-09
+
+1) Orden de Pedido Web
+- En el modal Crear pedido manual, el campo Pedido ahora se genera automáticamente.
+- El número parte desde 1.
+- Si el 1 ya existe, genera 2; si el 2 ya existe, genera 3, y así sucesivamente.
+- El campo queda en solo lectura para evitar números escritos manualmente por error.
+- Se agregó botón Regenerar N°.
+- Al guardar, el Apps Script vuelve a validar el número disponible para evitar duplicados.
+
+2) Apps Script
+- Nueva acción GET/POST: siguiente_numero_pedido.
+- Aliases soportados: generar_numero_pedido, proximo_pedido, next_pedido, next_order.
+- guardar_pedido ahora soporta autogenerar_pedido=1.
+- Se usa LockService al guardar con autogeneración para evitar que dos usuarios guarden el mismo número simultáneamente.
+- El campo PEDIDO se fuerza como texto para conservar el valor correctamente.
+
+3) Android
+- En Crear pedido manual, el número se sugiere automáticamente desde los pedidos cargados.
+- Al guardar, Android envía autogenerar_pedido=1 al Apps Script para validación final.
+- Se corrigió la acción de guardado manual Android a guardar_pedido.
+
+IMPORTANTE:
+Copiar el Apps Script actualizado y volver a publicar como Web App para que la validación de autogeneración funcione desde la BD real.

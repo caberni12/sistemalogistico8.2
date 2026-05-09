@@ -1,0 +1,22 @@
+CAMBIOS ORDEN DE PEDIDO - PANEL LIMPIO Y CONFIGURACION
+
+- El botón principal ahora se llama Crear Pedido.
+- Se dejó la pantalla principal con controles operativos mínimos:
+  - Crear Pedido
+  - PDF
+  - Buscar
+  - Fecha desde
+  - Fecha hasta
+  - Filtro Pikeador
+  - Filtro Vendedor
+- Se movió la creación de Pikeador a un modal de Configuración.
+- Se movió la creación de Vendedor a un modal de Configuración.
+- Se movieron acciones técnicas a Configuración:
+  - Cargar lista
+  - Sincronizar
+  - Sincronizar Maestra
+  - Sincronizar Ubicaciones
+  - Importar listado
+  - Vista cliente
+- Se agregó filtro real por vendedor en la TD y en KPI.
+- Se mantiene la URL actual del proyecto.

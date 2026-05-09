@@ -1,0 +1,55 @@
+CAMBIOS 2026-05-09
+
+Se deja el proyecto listo con accesos visibles y funcionales para:
+
+1) BD-MAESTRA
+- Ver hoja MAESTRA.
+- Agregar productos.
+- Editar productos.
+- Eliminar productos.
+- Importar XLSX / XLS / CSV con previsualización.
+- Descargar preformato desde el módulo.
+- Exportar XLSX.
+- Conserva códigos como texto para no perder ceros iniciales.
+
+2) MOVIMIENTO_UBICACION
+- Nuevo archivo web: bd_movimiento_ubicacion.html.
+- Visible desde el infra principal.
+- Ver registros.
+- Agregar movimientos.
+- Editar movimientos.
+- Eliminar movimientos.
+- Importar archivo con previsualización.
+- Exportar XLSX.
+
+3) MOVIMIENTO_PEDIDOS
+- Nuevo archivo web: bd_movimiento_pedidos.html.
+- Visible desde el infra principal.
+- Ver registros.
+- Agregar movimientos.
+- Editar movimientos.
+- Eliminar movimientos.
+- Importar archivo con previsualización.
+- Exportar XLSX.
+
+4) Apps Script
+- Nuevas acciones agregadas:
+  listar_movimiento_ubicacion
+  agregar_movimiento_ubicacion
+  editar_movimiento_ubicacion
+  eliminar_movimiento_ubicacion
+  importar_movimiento_ubicacion
+  listar_movimiento_pedidos
+  agregar_movimiento_pedidos
+  editar_movimiento_pedidos
+  eliminar_movimiento_pedidos
+  importar_movimiento_pedidos
+- listar_bd ahora reconoce MOVIMIENTO_UBICACION y MOVIMIENTO_PEDIDOS.
+
+5) Android
+- Se copian los HTML nuevos en assets.
+- Se agrega HtmlModuleActivity para abrir los módulos HTML desde Android.
+- En el slider Android se reactivan BD-MAESTRA, MOVIMIENTO_PEDIDOS y MOVIMIENTO_UBICACION para administración directa.
+
+IMPORTANTE:
+Para que funcione contra Google Sheets real, copiar APPS_SCRIPT_MOVIMIENTO_ALERTAS_LISTO.gs en Apps Script y volver a publicar como Web App.

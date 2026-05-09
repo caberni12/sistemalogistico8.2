@@ -3,7 +3,7 @@ let CARD_STATE = {}; // idFila => true (expandida) | false (colapsada)
    CONFIGURACIÓN
 ===================================================== */
 const DEFAULT_URL_GS =
-  'https://script.google.com/macros/s/AKfycbwKJ0I0LL3J12cJg1sVuOuIe60v4Us3h9rnp4iev-3SuR5GHVEz3-Q1H-JJyjs96sOMPg/exec';
+  'https://script.google.com/macros/s/AKfycbyOR_9D7lshIw2sLwWSKvwiHwfhHMXaR9qV2he9gh5cxc3nKdIOjuq3FZgbtJWwrRR48g/exec';
 
 function abrirDialogoImpresionPdf(doc,nombreArchivo){
   try{

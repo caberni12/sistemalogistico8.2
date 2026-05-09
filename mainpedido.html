@@ -63,7 +63,7 @@
     .home-view,.module-view{position:absolute;inset:16px;display:none}.home-view.active,.module-view.active{display:block}
     .home-scroll{height:100%;overflow:auto;padding:2px 4px 24px}.hero{border-radius:28px;padding:28px;background:linear-gradient(135deg,rgba(15,23,42,.96),rgba(30,64,175,.82) 52%,rgba(20,184,166,.86));color:white;box-shadow:var(--infra-shadow);position:relative;overflow:hidden}.hero:after{content:"";position:absolute;right:-80px;top:-90px;width:250px;height:250px;border-radius:999px;background:rgba(255,255,255,.12)}
     .hero h2{margin:0 0 8px;font-size:2rem;letter-spacing:-.04em}.hero p{margin:0;color:#dbeafe;max-width:760px;line-height:1.5}.hero-actions{margin-top:18px;display:flex;gap:10px;flex-wrap:wrap}
-    .quick-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px;margin-top:16px}.quick-card{border:none;background:var(--infra-panel2);box-shadow:0 15px 38px rgba(15,23,42,.09);border-radius:24px;padding:18px;text-align:left;cursor:pointer;transition:.18s ease;min-height:132px;display:flex;flex-direction:column;justify-content:space-between}.quick-card:hover{transform:translateY(-3px);box-shadow:0 22px 50px rgba(15,23,42,.13)}.quick-card .icon{width:42px;height:42px;border-radius:16px;display:grid;place-items:center;background:#ecfeff;color:#0f766e;font-size:1.35rem}.quick-card h3{margin:12px 0 4px;font-size:1rem;color:#0f172a}.quick-card p{margin:0;color:#64748b;font-size:.82rem;line-height:1.35}
+    .quick-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:14px;margin-top:16px}.quick-card{border:none;background:var(--infra-panel2);box-shadow:0 15px 38px rgba(15,23,42,.09);border-radius:24px;padding:18px;text-align:left;cursor:pointer;transition:.18s ease;min-height:132px;display:flex;flex-direction:column;justify-content:space-between}.quick-card:hover{transform:translateY(-3px);box-shadow:0 22px 50px rgba(15,23,42,.13)}.quick-card .icon{width:42px;height:42px;border-radius:16px;display:grid;place-items:center;background:#ecfeff;color:#0f766e;font-size:1.35rem}.quick-card h3{margin:12px 0 4px;font-size:1rem;color:#0f172a}.quick-card p{margin:0;color:#64748b;font-size:.82rem;line-height:1.35}
     .status-grid{display:grid;grid-template-columns:1.2fr .8fr;gap:14px;margin-top:16px}.panel{background:rgba(255,255,255,.86);border:1px solid rgba(148,163,184,.22);border-radius:24px;padding:18px;box-shadow:0 15px 36px rgba(15,23,42,.07)}.panel h3{margin:0 0 12px;font-size:1rem}.status-line{display:flex;align-items:center;justify-content:space-between;border-top:1px solid #e2e8f0;padding:10px 0;font-size:.9rem}.status-line:first-of-type{border-top:none}.pill{display:inline-flex;align-items:center;border-radius:999px;padding:5px 10px;font-size:.78rem;font-weight:900;background:#dcfce7;color:#166534}.pill.warn{background:#fef3c7;color:#92400e}.pill.error{background:#fee2e2;color:#991b1b}
     .module-frame-wrap{height:100%;border-radius:26px;overflow:hidden;background:white;box-shadow:var(--infra-shadow);border:1px solid rgba(148,163,184,.22)}iframe#moduleFrame{width:100%;height:100%;border:0;background:white}.loading-overlay{position:absolute;inset:16px;display:none;align-items:center;justify-content:center;background:rgba(248,250,252,.72);backdrop-filter:blur(6px);border-radius:26px;z-index:3}.loading-overlay.active{display:flex}.spinner{width:42px;height:42px;border-radius:999px;border:4px solid #cbd5e1;border-top-color:var(--infra-primary);animation:spin .8s linear infinite}@keyframes spin{to{transform:rotate(360deg)}}
     .modal{display:none;position:fixed;inset:0;z-index:99;background:rgba(2,6,23,.58);backdrop-filter:blur(10px);align-items:center;justify-content:center;padding:18px}.modal.active{display:flex}.modal-card{width:min(760px,96vw);max-height:88vh;overflow:auto;background:white;border-radius:28px;box-shadow:0 30px 90px rgba(2,6,23,.34);border:1px solid rgba(255,255,255,.6)}.modal-header{padding:18px 20px;background:linear-gradient(135deg,var(--infra-primary),var(--infra-primary2));color:white;display:flex;align-items:center;justify-content:space-between}.modal-header h2{margin:0;font-size:1.05rem}.modal-body{padding:20px}.modal-body label{display:block;font-weight:900;margin:12px 0 6px;color:#0f172a}.modal-body input{width:100%;border:1px solid #cbd5e1;border-radius:14px;padding:12px;font-size:.95rem}.modal-footer{padding:14px 20px;border-top:1px solid #e2e8f0;display:flex;justify-content:flex-end;gap:10px;flex-wrap:wrap}.close-x{border:none;background:rgba(255,255,255,.16);color:white;border-radius:12px;width:34px;height:34px;cursor:pointer;font-size:1.1rem}.help{font-size:.82rem;color:#64748b;line-height:1.45}.status-box{margin-top:12px;border-radius:16px;background:#f8fafc;border:1px solid #e2e8f0;padding:12px;color:#334155;font-size:.86rem;min-height:42px;white-space:pre-wrap}
@@ -227,7 +227,7 @@
         font-size:.95rem !important;
       }
       .quick-grid{
-        grid-template-columns:repeat(4,minmax(0,1fr)) !important;
+        grid-template-columns:repeat(auto-fit,minmax(190px,1fr)) !important;
         gap:12px !important;
       }
       .quick-card{
@@ -285,6 +285,9 @@
         <button class="nav-btn" data-module="pantalla_cliente_tv.html" data-title="Pantalla Cliente TV" data-subtitle="Tarjetas de pedidos, aviso emergente y voz para pedidos terminados"><span class="nav-icon">📺</span><span>Pantalla Cliente TV</span></button>
         <button class="nav-btn" data-module="dashboard_pikeadores_abc.html" data-title="Dashboard KPI Pikeadores" data-subtitle="KPI por pikeador, tiempo de preparación, rotación y ABC bodega"><span class="nav-icon">📊</span><span>Dashboard KPI</span></button>
         <button class="nav-btn" data-module="ubicaciones.html" data-title="Ubicaciones" data-subtitle="Movimientos, scanner, códigos y descripción rápida"><span class="nav-icon">📍</span><span>Ubicaciones</span></button>
+        <button class="nav-btn" data-module="bd_maestra.html" data-title="BD-MAESTRA" data-subtitle="Productos maestros: ver, agregar, editar, eliminar, importar y exportar"><span class="nav-icon">📘</span><span>BD-MAESTRA</span></button>
+        <button class="nav-btn" data-module="bd_movimiento_ubicacion.html" data-title="MOVIMIENTO_UBICACION" data-subtitle="Historial de movimientos por ubicación"><span class="nav-icon">📌</span><span>MOVIMIENTO_UBICACION</span></button>
+        <button class="nav-btn" data-module="bd_movimiento_pedidos.html" data-title="MOVIMIENTO_PEDIDOS" data-subtitle="Historial de estados y avances de pedidos"><span class="nav-icon">🧾</span><span>MOVIMIENTO_PEDIDOS</span></button>
         <button class="nav-btn" id="btnOpenConfig"><span class="nav-icon">⚙️</span><span>Configuración URL</span></button>
         <button class="nav-btn" id="btnSyncLocations"><span class="nav-icon">🔄</span><span>Sincronizar ubicaciones</span></button>
         <button class="nav-btn" id="btnSyncMaestra"><span class="nav-icon">⚡</span><span>Sincronizar MAESTRA</span></button>
@@ -313,12 +316,16 @@
           <div class="home-scroll">
             <section class="hero">
               <h2>Sistema de Gestión Servicios AS</h2>
-              <p>Desde este menú puedes entrar a Orden de Pedidos, Ubicaciones, Pantalla Cliente TV, Dashboard KPI y cambiar la URL del Apps Script sin modificar el proyecto.</p>
+              <p>Desde este menú puedes entrar a Orden de Pedidos, Ubicaciones, Pantalla Cliente TV, Dashboard KPI, BD-MAESTRA, MOVIMIENTO_UBICACION, MOVIMIENTO_PEDIDOS y cambiar la URL del Apps Script sin modificar el proyecto.</p>
               <div class="hero-actions">
                 <button class="infra-btn" onclick="openModule('orden_pedidos.html','Orden de Pedidos','Carga, importación, ubicaciones y PDF de pedidos')">Abrir Orden de Pedidos</button>
                 <button class="infra-btn secondary" onclick="openModule('ubicaciones.html','Ubicaciones','Scanner y movimientos de productos')">Abrir Ubicaciones</button>
                 <button class="infra-btn secondary" onclick="openModule('pantalla_cliente_tv.html','Pantalla Cliente TV','Tarjetas de avance, alerta emergente y voz')">Pantalla Cliente TV</button>
                 <button class="infra-btn secondary" onclick="openModule('dashboard_pikeadores_abc.html','Dashboard KPI Pikeadores','KPI por pikeador, tiempos, rotación y ABC bodega')">Dashboard KPI</button>
+
+                <button class="infra-btn secondary" onclick="openModule('bd_maestra.html','BD-MAESTRA','Productos maestros: ver, agregar, editar, eliminar, importar y exportar')">BD-MAESTRA</button>
+                <button class="infra-btn secondary" onclick="openModule('bd_movimiento_ubicacion.html','MOVIMIENTO_UBICACION','Historial de movimientos por ubicación')">MOVIMIENTO_UBICACION</button>
+                <button class="infra-btn secondary" onclick="openModule('bd_movimiento_pedidos.html','MOVIMIENTO_PEDIDOS','Historial de estados y avances de pedidos')">MOVIMIENTO_PEDIDOS</button>
                 <button class="infra-btn secondary" onclick="openConfig()">Configurar URL</button>
               </div>
             </section>
@@ -328,6 +335,9 @@
               <button class="quick-card" onclick="openModule('ubicaciones.html','Ubicaciones','Scanner, MAESTRA y movimientos')"><div><div class="icon">📍</div><h3>Ubicaciones</h3><p>Scanner, ingreso de códigos y descripción rápida desde MAESTRA.</p></div></button>
               <button class="quick-card" onclick="openModule('pantalla_cliente_tv.html','Pantalla Cliente TV','Tarjetas de avance, alerta emergente y voz')"><div><div class="icon">📺</div><h3>Pantalla Cliente TV</h3><p>Vista tipo televisor con tarjetas grandes, aviso emergente y voz al terminar pedidos.</p></div></button>
               <button class="quick-card" onclick="openModule('dashboard_pikeadores_abc.html','Dashboard KPI Pikeadores','KPI por pikeador, tiempos, rotación y ABC bodega')"><div><div class="icon">📊</div><h3>Dashboard KPI</h3><p>Rendimiento de pikeadores, tiempo promedio de preparación, productos con más rotación y ABC de bodega.</p></div></button>
+              <button class="quick-card" onclick="openModule('bd_maestra.html','BD-MAESTRA','Productos maestros: ver, agregar, editar, eliminar, importar y exportar')"><div><div class="icon">📘</div><h3>BD-MAESTRA</h3><p>Carga la MAESTRA, agrega, edita, elimina, importa archivo con previsualización y exporta XLSX.</p></div></button>
+              <button class="quick-card" onclick="openModule('bd_movimiento_ubicacion.html','MOVIMIENTO_UBICACION','Historial de movimientos por ubicación')"><div><div class="icon">📌</div><h3>MOVIMIENTO_UBICACION</h3><p>Consulta y administra movimientos de ubicación con agregar, editar, eliminar e importar.</p></div></button>
+              <button class="quick-card" onclick="openModule('bd_movimiento_pedidos.html','MOVIMIENTO_PEDIDOS','Historial de estados y avances de pedidos')"><div><div class="icon">🧾</div><h3>MOVIMIENTO_PEDIDOS</h3><p>Consulta y administra el historial de pedidos, estados, pikeadores, clientes y vendedores.</p></div></button>
             </section>
 
             <section class="status-grid">
@@ -363,7 +373,7 @@
       <div class="modal-header"><h2>Configuración de URL Apps Script</h2><button class="close-x" onclick="closeConfig()">×</button></div>
       <div class="modal-body">
         <label>URL del Apps Script</label>
-        <input id="apiUrlInput" placeholder="https://script.google.com/macros/s/AKfycbwKJ0I0LL3J12cJg1sVuOuIe60v4Us3h9rnp4iev-3SuR5GHVEz3-Q1H-JJyjs96sOMPg/exec" />
+        <input id="apiUrlInput" placeholder="https://script.google.com/macros/s/AKfycbyOR_9D7lshIw2sLwWSKvwiHwfhHMXaR9qV2he9gh5cxc3nKdIOjuq3FZgbtJWwrRR48g/exec" />
         <p class="help">Esta URL queda guardada en memoria local y será usada por Pedidos y Ubicaciones Pro. También puedes descargar un <b>config.txt</b>.</p>
         <input type="file" id="txtConfigInput" accept=".txt,.json" hidden />
         <div class="status-box" id="configStatus">Sin cambios.</div>
@@ -378,7 +388,7 @@
   </div>
 
   <script>
-    const DEFAULT_API_URL = 'https://script.google.com/macros/s/AKfycbwKJ0I0LL3J12cJg1sVuOuIe60v4Us3h9rnp4iev-3SuR5GHVEz3-Q1H-JJyjs96sOMPg/exec';
+    const DEFAULT_API_URL = 'https://script.google.com/macros/s/AKfycbyOR_9D7lshIw2sLwWSKvwiHwfhHMXaR9qV2he9gh5cxc3nKdIOjuq3FZgbtJWwrRR48g/exec';
     const API_URL_STORAGE_KEY = 'sistema_pedidos_api_url';
     try{ localStorage.removeItem(API_URL_STORAGE_KEY); localStorage.removeItem('API_URL_SGL'); localStorage.removeItem('API_URL_PEDIDOS'); localStorage.removeItem('API_URL_UBICACIONES'); }catch(e){}
     const UBICACIONES_CACHE_KEY = 'pedidos_ubicaciones_cache_v3_all_locations';

@@ -1,4 +1,4 @@
-const API_URL='https://script.google.com/macros/s/AKfycbwKJ0I0LL3J12cJg1sVuOuIe60v4Us3h9rnp4iev-3SuR5GHVEz3-Q1H-JJyjs96sOMPg/exec';
+const API_URL='https://script.google.com/macros/s/AKfycbyOR_9D7lshIw2sLwWSKvwiHwfhHMXaR9qV2he9gh5cxc3nKdIOjuq3FZgbtJWwrRR48g/exec';
 
 const state={
   pedidos:[],
@@ -7,9 +7,16 @@ const state={
   maestra:[],
   maestraMap:{},
   ubicacionesMap:{},
+  vendedores:[],
+  bodegas:[],
+  clientes:[],
+  bodegaMapa:null,
+  bodegaMarker:null,
+  bodegaCircle:null,
   maestraListaCargada:false,
   sel:null,
   selectedKey:null,
+  editandoPedido:false,
   importados:[],
   importStats:{nuevos:0,cambios:0,iguales:0,errores:0},
   importHeaders:[],
@@ -72,25 +79,49 @@ function inicializarPanelesOrden(){
 }
 
 function bind(){
+  instalarEdicionPedidoUI();
   $('btnCargar')?.addEventListener('click',withLoaderEvent(()=>cargarTodo()));
   $('btnSync')?.addEventListener('click',withLoaderEvent(()=>cargarTodo()));
   $('btnSyncMaestra')?.addEventListener('click',withLoaderEvent(()=>cargarMaestra(false)));
   $('btnSyncUbicaciones')?.addEventListener('click',withLoaderEvent(()=>sincronizarUbicacionesManual(false)));
   $('btnPDF')?.addEventListener('click',withLoaderEvent(()=>pdfGeneral()));
   $('btnImportar')?.addEventListener('click',e=>{abrirImportar();stopClickedLoader(e);});
+  $('btnAbrirClientes')?.addEventListener('click',e=>{abrirClientesModal();stopClickedLoader(e);});
+  $('btnCerrarClientes')?.addEventListener('click',e=>{cerrarClientesModal();stopClickedLoader(e);});
+  $('modalClientes')?.addEventListener('click',e=>{if(e.target.id==='modalClientes')cerrarClientesModal();});
+  $('btnGuardarCliente')?.addEventListener('click',withLoaderEvent(()=>guardarCliente()));
+  $('btnNuevoCliente')?.addEventListener('click',e=>{limpiarClienteForm();stopClickedLoader(e);});
+  $('btnRecargarClientes')?.addEventListener('click',withLoaderEvent(()=>cargarClientes()));
+  $('tbodyClientes')?.addEventListener('click',manejarClickClientes);
   $('btnManual')?.addEventListener('click',e=>{abrirManual();stopClickedLoader(e);});
+  $('btnConfigOrden')?.addEventListener('click',e=>{abrirConfigOrden();stopClickedLoader(e);});
+  $('btnCerrarConfigOrden')?.addEventListener('click',e=>{cerrarConfigOrden();stopClickedLoader(e);});
+  $('modalConfigOrden')?.addEventListener('click',e=>{if(e.target.id==='modalConfigOrden')cerrarConfigOrden();});
+  $('btnGenerarPedidoManual')?.addEventListener('click',withLoaderEvent(()=>generarNumeroPedidoManual(true)));
   $('txtBuscar')?.addEventListener('input',filtrar);
   $('selEstado')?.addEventListener('change',filtrar);
   $('selFiltroPikeador')?.addEventListener('change',filtrar);
+  $('selFiltroVendedor')?.addEventListener('change',filtrar);
+  ['selPeriodoKpi','fechaDesdeKpi','fechaHastaKpi'].forEach(id=>$(id)?.addEventListener('change',filtrar));
   $('tbodyPedidos')?.addEventListener('click',abrirModalDesdeTabla);
   $('tbodyPedidos')?.addEventListener('keydown',manejarTeclasFilaPedido);
   $('mobileList')?.addEventListener('click',abrirModalDesdeTarjetaMovil);
   document.addEventListener('keydown',manejarFlechasPedidos);
   $('btnAgregarPikeador')?.addEventListener('click',withLoaderEvent(()=>agregarPikeador()));
+  $('btnAgregarVendedor')?.addEventListener('click',withLoaderEvent(()=>agregarVendedor()));
+  $('btnBuscarBodegaMapa')?.addEventListener('click',withLoaderEvent(()=>buscarBodegaEnMapa()));
+  $('btnGuardarBodega')?.addEventListener('click',withLoaderEvent(()=>agregarBodega()));
+  $('txtBodegaDireccion')?.addEventListener('change',()=>buscarBodegaEnMapa(false));
+  $('txtBodegaRadio')?.addEventListener('input',()=>actualizarRadioBodegaMapa());
   $('btnTogglePanel')?.addEventListener('click',e=>{togglePanel();stopClickedLoader(e);});
   $('btnToggleMetricas')?.addEventListener('click',e=>{toggleMetricas();stopClickedLoader(e);});
   $('btnCerrarModal')?.addEventListener('click',e=>{cerrarModal();stopClickedLoader(e);});
   $('modalPedido')?.addEventListener('click',e=>{if(e.target.id==='modalPedido')cerrarModal();});
+  $('btnEditarPedido')?.addEventListener('click',e=>{activarEdicionPedido(true);stopClickedLoader(e);});
+  $('btnCancelarEdicionPedido')?.addEventListener('click',e=>{activarEdicionPedido(false);stopClickedLoader(e);});
+  $('btnGuardarEdicionPedido')?.addEventListener('click',withLoaderEvent(()=>guardarEdicionPedidoActual()));
+  $('editPedidoBox')?.addEventListener('click',manejarClickEdicionPedido);
+  $('editPedidoBox')?.addEventListener('change',manejarCambioEdicionPedido);
   $('btnAsignarPikeador')?.addEventListener('click',withLoaderEvent(()=>asignarPikeadorActual()));
   $('btnActualizarEstado')?.addEventListener('click',withLoaderEvent(()=>actualizarEstadoActual()));
   $('btnActualizarUbicacionesModal')?.addEventListener('click',withLoaderEvent(()=>sincronizarUbicacionesManual(true)));
@@ -105,12 +136,13 @@ function bind(){
   $('btnBuscarCodigoManual')?.addEventListener('click',withLoaderEvent(()=>buscarProductoManualPorCodigo(true)));
   $('btnGuardarManual')?.addEventListener('click',withLoaderEvent(()=>guardarPedidoManual()));
   $('btnLimpiarManual')?.addEventListener('click',e=>{limpiarManual();stopClickedLoader(e);});
-  ['manFecha','manPedido','manCliente','manVendedor','manPikeador','manStatus','manDescripcion','manUbicacion','manCantidad'].forEach(id=>$(id)?.addEventListener('input',renderManualPreview));
+  ['manFecha','manPedido','manCliente','manDescripcion','manUbicacion','manCantidad'].forEach(id=>$(id)?.addEventListener('input',renderManualPreview));
+  $('manCliente')?.addEventListener('change',aplicarClienteManual);
+  ['manVendedor','manPikeador','manBodega','manStatus'].forEach(id=>$(id)?.addEventListener('change',renderManualPreview));
   $('manCodigo')?.addEventListener('input',()=>{ renderManualPreview(); debounceBuscarCodigoManual(); });
   $('manCodigo')?.addEventListener('change',()=>buscarProductoManualPorCodigo(false));
   $('manCodigo')?.addEventListener('blur',()=>buscarProductoManualPorCodigo(false));
-  $('manPikeador')?.addEventListener('change',renderManualPreview);
-  $('manStatus')?.addEventListener('change',renderManualPreview);
+
 
   $('btnCerrarImportar')?.addEventListener('click',e=>{cerrarImportar();stopClickedLoader(e);});
   $('modalImportar')?.addEventListener('click',e=>{if(e.target.id==='modalImportar')cerrarImportar();});
@@ -151,6 +183,9 @@ async function cargarTodo(){
     errorTabla('No se pudo cargar PEDIDOS. Verifica doGet/listar_pedidos en Apps Script.');
   }
   cargarPikeadores().catch(console.warn);
+  cargarVendedores().catch(console.warn);
+  cargarBodegas().catch(console.warn);
+  cargarClientes().catch(console.warn);
   cargarMaestra(true).catch(console.warn);
 }
 
@@ -174,7 +209,254 @@ function llenarSelects(){
     s.innerHTML=first+state.pikeadores.map(n=>`<option value="${esc(n)}">${esc(n)}</option>`).join('');
     if(v)s.value=v;
   });
+  llenarSelectVendedores();
+  llenarSelectBodegas();
 }
+async function cargarVendedores(){
+  const r=await api('listar_vendedores',{});
+  let l=[];
+  if(r?.ok) l=normVendedores(r);
+  const desdePedidos=[...new Set((state.pedidos||[]).map(p=>String(p.vendedor||'').trim()).filter(Boolean))];
+  state.vendedores=[...new Set([...l,...desdePedidos].map(x=>String(x||'').trim()).filter(Boolean))].sort((a,b)=>a.localeCompare(b));
+  llenarSelectVendedores();
+}
+function normVendedores(r){
+  const a=r.vendedores||r.data||r.rows||r.values||[];
+  return Array.isArray(a)?a.map(x=>typeof x==='string'?x:Array.isArray(x)?x[0]:(x.nombre||x.vendedor||x.ejecutivo||x.responsable||'')).filter(Boolean):[];
+}
+function llenarSelectVendedores(){
+  [$('selFiltroVendedor'),$('manVendedor'),$('editVendedorPedido')].filter(Boolean).forEach(s=>{
+    const v=s.value;
+    const first=s.id==='selFiltroVendedor'?'<option value="">Todos</option>':'<option value="">Sin vendedor</option>';
+    s.innerHTML=first+state.vendedores.map(n=>`<option value="${esc(n)}">${esc(n)}</option>`).join('');
+    if(v){
+      if(!state.vendedores.some(x=>String(x)===String(v))) s.insertAdjacentHTML('beforeend',`<option value="${esc(v)}">${esc(v)}</option>`);
+      s.value=v;
+    }
+  });
+}
+function opcionesVendedores(actual=''){
+  const lista=[...new Set([...(state.vendedores||[]), actual].map(x=>String(x||'').trim()).filter(Boolean))].sort((a,b)=>a.localeCompare(b));
+  return '<option value="">Sin vendedor</option>'+lista.map(n=>`<option value="${esc(n)}" ${String(n)===String(actual||'')?'selected':''}>${esc(n)}</option>`).join('');
+}
+async function agregarVendedor(){
+  const nombre=($('txtNuevoVendedor')?.value||'').trim();
+  if(!nombre)return toast('Ingresa el nombre del vendedor');
+  const r=await api('agregar_vendedor',{nombre});
+  if(!r?.ok)return toast(r?.msg||'No se pudo agregar vendedor');
+  $('txtNuevoVendedor').value='';
+  await cargarVendedores();
+  toast('Vendedor guardado');
+}
+
+
+/* ================= CLIENTES ================= */
+async function cargarClientes(){
+  const r=await api('listar_clientes',{});
+  if(r?.ok){
+    state.clientes=normClientes(r).sort((a,b)=>String(a.cliente||'').localeCompare(String(b.cliente||'')));
+    llenarDatalistClientes();
+    renderClientesTabla();
+  }
+  return state.clientes;
+}
+function normClientes(r){
+  const arr=r.clientes||r.items||r.data||r.rows||r.values||[];
+  if(!Array.isArray(arr)) return [];
+  if(arr.length && Array.isArray(arr[0])){
+    const headers=(r.headers||[]).map(norm);
+    const idx=(names)=>{for(const n of names){const i=headers.indexOf(norm(n)); if(i>=0)return i;} return -1;};
+    const ix={id:idx(['id']),cliente:idx(['cliente','nombre','razon_social','razón social']),rut:idx(['rut','r.u.t']),direccion:idx(['direccion','dirección']),giro:idx(['giro']),medio_pago:idx(['medio_pago','medio pago','forma_pago','forma pago']),telefono:idx(['telefono','teléfono','fono']),correo:idx(['correo_electronico','correo electrónico','correo','email','mail']),responsable:idx(['responsable_empresa','responsable empresa','responsable']),fecha:idx(['fecha_creacion','fecha creación','fecha']),status:idx(['status','estado'])};
+    return arr.map((x,i)=>({rowNumber:(r.rowNumbers&&r.rowNumbers[i])||i+2,id:String(x[ix.id]||'').trim(),cliente:String(x[ix.cliente]||'').trim(),rut:String(x[ix.rut]||'').trim(),direccion:String(x[ix.direccion]||'').trim(),giro:String(x[ix.giro]||'').trim(),medio_pago:String(x[ix.medio_pago]||'').trim(),telefono:String(x[ix.telefono]||'').trim(),correo_electronico:String(x[ix.correo]||'').trim(),responsable_empresa:String(x[ix.responsable]||'').trim(),fecha_creacion:String(x[ix.fecha]||'').trim(),status:String(x[ix.status]||'ACTIVO').trim().toUpperCase()})).filter(x=>x.cliente);
+  }
+  return arr.map(x=>({rowNumber:x.rowNumber||x.fila||x.row||'',id:String(x.id||x.ID||'').trim(),cliente:String(x.cliente||x.nombre||x.razon_social||x['razón social']||'').trim(),rut:String(x.rut||x.RUT||'').trim(),direccion:String(x.direccion||x['dirección']||'').trim(),giro:String(x.giro||'').trim(),medio_pago:String(x.medio_pago||x.medioPago||x.forma_pago||'').trim(),telefono:String(x.telefono||x.fono||'').trim(),correo_electronico:String(x.correo_electronico||x.correo||x.email||x.mail||'').trim(),responsable_empresa:String(x.responsable_empresa||x.responsable||'').trim(),fecha_creacion:String(x.fecha_creacion||x.fecha||'').trim(),status:String(x.status||x.estado||'ACTIVO').trim().toUpperCase()})).filter(x=>x.cliente);
+}
+function llenarDatalistClientes(){
+  const dl=$('dlClientes'); if(!dl) return;
+  dl.innerHTML=(state.clientes||[]).filter(c=>String(c.status||'ACTIVO').toUpperCase()!=='BLOQUEADO').map(c=>`<option value="${esc(c.cliente)}">${esc(c.rut||c.direccion||'')}</option>`).join('');
+}
+function abrirClientesModal(){
+  $('modalClientes')?.classList.add('show');
+  cargarClientes().catch(err=>{console.warn(err);toast('No se pudo cargar CLIENTES');});
+}
+function cerrarClientesModal(){ $('modalClientes')?.classList.remove('show'); }
+function limpiarClienteForm(){
+  ['cliRowNumber','cliId','cliCliente','cliRut','cliDireccion','cliGiro','cliTelefono','cliCorreo','cliResponsable'].forEach(id=>{ if($(id)) $(id).value=''; });
+  if($('cliMedioPago')) $('cliMedioPago').value='';
+  if($('cliStatus')) $('cliStatus').value='ACTIVO';
+}
+function clienteFormPayload(){
+  return {
+    rowNumber:($('cliRowNumber')?.value||'').trim(),
+    id:($('cliId')?.value||'').trim(),
+    cliente:($('cliCliente')?.value||'').trim(),
+    rut:($('cliRut')?.value||'').trim(),
+    direccion:($('cliDireccion')?.value||'').trim(),
+    giro:($('cliGiro')?.value||'').trim(),
+    medio_pago:($('cliMedioPago')?.value||'').trim(),
+    telefono:($('cliTelefono')?.value||'').trim(),
+    correo_electronico:($('cliCorreo')?.value||'').trim(),
+    responsable_empresa:($('cliResponsable')?.value||'').trim(),
+    status:($('cliStatus')?.value||'ACTIVO').trim().toUpperCase()
+  };
+}
+async function guardarCliente(){
+  const data=clienteFormPayload();
+  if(!data.cliente) return toast('Ingresa el nombre del cliente');
+  const accion=data.rowNumber||data.id?'editar_cliente':'agregar_cliente';
+  const r=await api(accion,data);
+  if(!r?.ok) return toast(r?.msg||'No se pudo guardar cliente');
+  limpiarClienteForm();
+  await cargarClientes();
+  toast('Cliente guardado en hoja CLIENTES');
+}
+function renderClientesTabla(){
+  const tb=$('tbodyClientes'); if(!tb) return;
+  const lista=state.clientes||[];
+  if(!lista.length){ tb.innerHTML='<tr><td colspan="11" style="text-align:center;color:#64748b;padding:18px">Sin clientes registrados.</td></tr>'; return; }
+  tb.innerHTML=lista.map((c,i)=>`<tr><td>${esc(c.cliente)}</td><td>${esc(c.rut||'-')}</td><td>${esc(c.direccion||'-')}</td><td>${esc(c.giro||'-')}</td><td>${esc(c.medio_pago||'-')}</td><td>${esc(c.telefono||'-')}</td><td>${esc(c.correo_electronico||'-')}</td><td>${esc(c.responsable_empresa||'-')}</td><td>${esc(c.fecha_creacion||'-')}</td><td><span class="badge ${String(c.status).includes('BLOQUE')?'cancelado':String(c.status).includes('INACT')?'pendiente':'terminado'}">${esc(c.status||'ACTIVO')}</span></td><td class="actions-cell"><button class="secondary" data-edit-cliente="${i}">Editar</button><button class="warn" data-del-cliente="${i}">Eliminar</button></td></tr>`).join('');
+}
+function manejarClickClientes(e){
+  const edit=e.target.closest('[data-edit-cliente]');
+  const del=e.target.closest('[data-del-cliente]');
+  if(edit){ cargarClienteEnForm(Number(edit.dataset.editCliente)); return; }
+  if(del){ eliminarCliente(Number(del.dataset.delCliente)); return; }
+}
+function cargarClienteEnForm(i){
+  const c=(state.clientes||[])[i]; if(!c) return;
+  if($('cliRowNumber')) $('cliRowNumber').value=c.rowNumber||'';
+  if($('cliId')) $('cliId').value=c.id||'';
+  if($('cliCliente')) $('cliCliente').value=c.cliente||'';
+  if($('cliRut')) $('cliRut').value=c.rut||'';
+  if($('cliDireccion')) $('cliDireccion').value=c.direccion||'';
+  if($('cliGiro')) $('cliGiro').value=c.giro||'';
+  if($('cliMedioPago')) $('cliMedioPago').value=c.medio_pago||'';
+  if($('cliTelefono')) $('cliTelefono').value=c.telefono||'';
+  if($('cliCorreo')) $('cliCorreo').value=c.correo_electronico||'';
+  if($('cliResponsable')) $('cliResponsable').value=c.responsable_empresa||'';
+  if($('cliStatus')) $('cliStatus').value=c.status||'ACTIVO';
+  toast('Cliente cargado para edición');
+}
+async function eliminarCliente(i){
+  const c=(state.clientes||[])[i]; if(!c) return;
+  if(!confirm('¿Eliminar cliente '+c.cliente+'?')) return;
+  const r=await api('eliminar_cliente',{rowNumber:c.rowNumber,id:c.id,cliente:c.cliente});
+  if(!r?.ok) return toast(r?.msg||'No se pudo eliminar cliente');
+  await cargarClientes();
+  toast('Cliente eliminado');
+}
+function aplicarClienteManual(){
+  const nombre=($('manCliente')?.value||'').trim();
+  if(!nombre) return;
+  const c=(state.clientes||[]).find(x=>String(x.cliente||'').trim().toLowerCase()===nombre.toLowerCase());
+  if(c && String(c.status||'ACTIVO').toUpperCase()==='BLOQUEADO') toast('Cliente bloqueado. Revisa configuración antes de usarlo.');
+  renderManualPreview();
+}
+
+async function cargarBodegas(){
+  const r=await api('listar_bodegas',{});
+  let lista=[];
+  if(r?.ok) lista=normBodegas(r);
+  const desdePedidos=[...new Set((state.pedidos||[]).map(p=>String(p.bodega_preparacion||'').trim()).filter(Boolean))].map(nombre=>({nombre,status:'ACTIVA'}));
+  const map={};
+  [...lista,...desdePedidos].forEach(b=>{ const n=String(b.nombre||'').trim(); if(n && !map[n]) map[n]=b; });
+  state.bodegas=Object.values(map).sort((a,b)=>String(a.nombre).localeCompare(String(b.nombre)));
+  llenarSelectBodegas();
+}
+function normBodegas(r){
+  const arr=r.bodegas||r.items||r.data||r.rows||r.values||[];
+  if(!Array.isArray(arr)) return [];
+  if(arr.length && Array.isArray(arr[0])){
+    const headers=(r.headers||[]).map(norm);
+    const idx=(names)=>{for(const n of names){const i=headers.indexOf(norm(n)); if(i>=0)return i;} return -1;};
+    const ix={nombre:idx(['nombre_bodega','nombre bodega','bodega','nombre']),direccion:idx(['direccion','dirección']),fecha:idx(['fecha_creacion','fecha creación','fecha']),status:idx(['status','estado']),radio:idx(['radio_metros','radio','radio metros']),lat:idx(['latitud','lat']),lng:idx(['longitud','lng','lon'])};
+    return arr.map(x=>({nombre:String(x[ix.nombre]||'').trim(),direccion:String(x[ix.direccion]||'').trim(),fecha_creacion:String(x[ix.fecha]||'').trim(),status:String(x[ix.status]||'ACTIVA').trim().toUpperCase(),radio_metros:Number(x[ix.radio]||200)||200,latitud:String(x[ix.lat]||'').trim(),longitud:String(x[ix.lng]||'').trim()})).filter(x=>x.nombre);
+  }
+  return arr.map(x=>({nombre:String(x.nombre||x.nombre_bodega||x.bodega||'').trim(),direccion:String(x.direccion||x.dirección||'').trim(),fecha_creacion:String(x.fecha_creacion||x.fecha||'').trim(),status:String(x.status||x.estado||'ACTIVA').trim().toUpperCase(),radio_metros:Number(x.radio_metros||x.radio||200)||200,latitud:String(x.latitud||x.lat||'').trim(),longitud:String(x.longitud||x.lng||x.lon||'').trim()})).filter(x=>x.nombre);
+}
+function llenarSelectBodegas(){
+  [$('manBodega'),$('editBodegaPedido')].filter(Boolean).forEach(s=>{
+    const v=s.value;
+    const activas=(state.bodegas||[]).filter(b=>String(b.status||'ACTIVA').toUpperCase()==='ACTIVA');
+    s.innerHTML='<option value="">Sin bodega</option>'+activas.map(b=>`<option value="${esc(b.nombre)}">${esc(b.nombre)}${b.direccion?' — '+esc(b.direccion):''}</option>`).join('');
+    if(v){
+      if(!activas.some(b=>String(b.nombre)===String(v))) s.insertAdjacentHTML('beforeend',`<option value="${esc(v)}">${esc(v)}</option>`);
+      s.value=v;
+    }
+  });
+}
+function opcionesBodegas(actual=''){
+  const activas=(state.bodegas||[]).filter(b=>String(b.status||'ACTIVA').toUpperCase()==='ACTIVA').map(b=>b.nombre);
+  const lista=[...new Set([...activas, String(actual||'').trim()].filter(Boolean))];
+  return '<option value="">Sin bodega</option>'+lista.map(n=>`<option value="${esc(n)}" ${String(n)===String(actual||'')?'selected':''}>${esc(n)}</option>`).join('');
+}
+function iniciarMapaBodega(){
+  const el=$('bodegaMap');
+  if(!el || !window.L) return null;
+  if(state.bodegaMapa) return state.bodegaMapa;
+  el.innerHTML='';
+  state.bodegaMapa=L.map(el).setView([-33.45,-70.66],11);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:'© OpenStreetMap'}).addTo(state.bodegaMapa);
+  setTimeout(()=>state.bodegaMapa.invalidateSize(),250);
+  return state.bodegaMapa;
+}
+function pintarBodegaMapa(lat,lng,radio){
+  lat=Number(lat); lng=Number(lng); radio=Number(radio)||200;
+  if(!Number.isFinite(lat)||!Number.isFinite(lng)) return;
+  const map=iniciarMapaBodega(); if(!map) return;
+  if(state.bodegaMarker) state.bodegaMarker.remove();
+  if(state.bodegaCircle) state.bodegaCircle.remove();
+  state.bodegaMarker=L.marker([lat,lng]).addTo(map);
+  state.bodegaCircle=L.circle([lat,lng],{radius:radio}).addTo(map);
+  map.setView([lat,lng],16);
+  if($('txtBodegaLat')) $('txtBodegaLat').value=String(lat.toFixed(7));
+  if($('txtBodegaLng')) $('txtBodegaLng').value=String(lng.toFixed(7));
+  setTimeout(()=>map.invalidateSize(),250);
+}
+function actualizarRadioBodegaMapa(){
+  const lat=Number($('txtBodegaLat')?.value||'');
+  const lng=Number($('txtBodegaLng')?.value||'');
+  if(Number.isFinite(lat)&&Number.isFinite(lng)) pintarBodegaMapa(lat,lng,Number($('txtBodegaRadio')?.value||200)||200);
+}
+async function buscarBodegaEnMapa(mostrarToast=true){
+  const dir=($('txtBodegaDireccion')?.value||'').trim();
+  const status=$('bodegaMapStatus');
+  if(!dir){ if(mostrarToast) toast('Ingresa la dirección de la bodega'); return null; }
+  if(status) status.textContent='Buscando dirección en mapa...';
+  try{
+    const q=encodeURIComponent(dir+', Chile');
+    const res=await fetch('https://nominatim.openstreetmap.org/search?format=json&limit=1&q='+q,{headers:{'Accept':'application/json'}});
+    const data=await res.json();
+    if(!Array.isArray(data)||!data.length) throw new Error('Dirección no encontrada');
+    const lat=Number(data[0].lat), lng=Number(data[0].lon);
+    pintarBodegaMapa(lat,lng,Number($('txtBodegaRadio')?.value||200)||200);
+    if(status) status.textContent='Ubicación encontrada. Revisa el marcador y el radio antes de guardar.';
+    return {lat,lng};
+  }catch(e){
+    if(status) status.textContent='No se pudo geolocalizar automáticamente. Puedes revisar la dirección o guardar sin coordenadas.';
+    if(mostrarToast) toast('No se pudo ubicar la dirección en el mapa.');
+    return null;
+  }
+}
+async function agregarBodega(){
+  const nombre=($('txtBodegaNombre')?.value||'').trim();
+  const direccion=($('txtBodegaDireccion')?.value||'').trim();
+  const status=($('selBodegaStatus')?.value||'ACTIVA').trim().toUpperCase();
+  const radio=Number($('txtBodegaRadio')?.value||200)||200;
+  let lat=($('txtBodegaLat')?.value||'').trim();
+  let lng=($('txtBodegaLng')?.value||'').trim();
+  if(!nombre) return toast('Ingresa el nombre de la bodega');
+  if(!direccion) return toast('Ingresa la dirección de la bodega');
+  if(!lat || !lng){ const geo=await buscarBodegaEnMapa(false); if(geo){ lat=String(geo.lat); lng=String(geo.lng); } }
+  const r=await api('agregar_bodega',{nombre_bodega:nombre,direccion,status,radio_metros:radio,latitud:lat,longitud:lng});
+  if(!r?.ok) return toast(r?.msg||'No se pudo guardar la bodega');
+  ['txtBodegaNombre','txtBodegaDireccion','txtBodegaLat','txtBodegaLng'].forEach(id=>{ if($(id)) $(id).value=''; });
+  if($('txtBodegaRadio')) $('txtBodegaRadio').value='200';
+  if($('selBodegaStatus')) $('selBodegaStatus').value='ACTIVA';
+  await cargarBodegas();
+  toast('Bodega guardada en hoja BODEGAS');
+}
+
 
 
 /* ================= MAESTRA DE PRODUCTOS =================
@@ -228,10 +510,10 @@ function setMaestra(lista){
   llenarDatalistMaestra();
 }
 function llenarDatalistMaestra(){
+  // Se deja vacío intencionalmente: cargar miles de opciones en un datalist
+  // relentece la digitación del código. Ahora se usa búsqueda exacta/debounced.
   const dl=$('dlProductosMaestra');
-  if(!dl) return;
-  const top=state.maestra.slice(0,2000);
-  dl.innerHTML=top.map(p=>`<option value="${esc(p.codigo)}">${esc(p.descripcion)}</option>`).join('');
+  if(dl) dl.innerHTML='';
 }
 async function cargarMaestra(silencioso=true){
   if(silencioso && !state.maestra.length) cargarCacheMaestra();
@@ -360,7 +642,20 @@ async function sincronizarUbicacionesManual(desdeModal=false){
 function productoMaestraPorCodigo(codigo){
   const k=normCodigo(codigo);
   if(!k) return null;
-  return state.maestraMap[k] || null;
+  const base=state.maestraMap[k] || null;
+  return enriquecerProductoConUbicacionMovimiento(base,codigo);
+}
+function ubicacionMovimientoPorCodigo(codigo){
+  const k=normCodigo(codigo);
+  if(!k) return '';
+  return (state.ubicacionesMap && state.ubicacionesMap[k]) ? String(state.ubicacionesMap[k]).trim() : '';
+}
+function enriquecerProductoConUbicacionMovimiento(prod,codigo){
+  const ubiMov=ubicacionMovimientoPorCodigo(codigo || prod?.codigo || '');
+  if(prod){
+    return {...prod, ubicacion: ubiMov || prod.ubicacion || ''};
+  }
+  return ubiMov ? {codigo:String(codigo||'').trim(), descripcion:'', cantidad:0, ubicacion:ubiMov} : null;
 }
 let timerBuscarManual=null;
 function debounceBuscarCodigoManual(){
@@ -374,32 +669,43 @@ async function buscarProductoManualPorCodigo(forzar=false){
   const msg=$('manualMaestraMsg');
   const codigo=(input?.value||'').trim();
   if(!codigo) return;
+  // Flujo optimizado: no cargar listas dinámicas completas al digitar.
+  // Solo busca exacto localmente y consulta al servidor cuando el código tiene largo suficiente
+  // o cuando el usuario presiona explícitamente Buscar en Maestra.
+  if(!forzar && codigo.length < 3){
+    const loc=ubicacionMovimientoPorCodigo(codigo);
+    if(loc && ubi && !ubi.value.trim()) ubi.value=loc;
+    if(msg) msg.textContent='Escribe al menos 3 caracteres o presiona Buscar para consultar MAESTRA.';
+    return null;
+  }
 
   if(!state.maestraListaCargada){
     cargarCacheMaestra();
-    if(!state.maestra.length){
+    if(!state.maestra.length && forzar){
       try{ await cargarMaestra(true); }catch(e){ console.warn(e); }
     }
   }
 
   let prod=productoMaestraPorCodigo(codigo);
-  if(!prod){
+  if(!prod && forzar){
     try{
       const r=await api('buscar_producto',{codigo});
-      if(r?.ok) prod={codigo:r.codigo||codigo, descripcion:r.descripcion||'', cantidad:r.cantidad||0, ubicacion:r.ubicacion||''};
+      if(r?.ok) prod=enriquecerProductoConUbicacionMovimiento({codigo:r.codigo||codigo, descripcion:r.descripcion||'', cantidad:r.cantidad||0, ubicacion:r.ubicacion||''},codigo);
     }catch(e){ console.warn(e); }
   }
 
-  if(prod){
-    if(desc && (forzar || !desc.value.trim())) desc.value=prod.descripcion||desc.value;
-    if(ubi && (forzar || !ubi.value.trim()) && prod.ubicacion) ubi.value=prod.ubicacion;
-    if(msg) msg.textContent='Producto encontrado en MAESTRA: '+(prod.descripcion||prod.codigo);
+  const loc=ubicacionMovimientoPorCodigo(codigo);
+  if(prod || loc){
+    if(desc && prod && (forzar || !desc.value.trim())) desc.value=prod.descripcion||desc.value;
+    if(ubi && (forzar || !ubi.value.trim())) ubi.value=(prod?.ubicacion||loc||ubi.value);
+    if(msg) msg.textContent=(prod?.descripcion?'Producto encontrado: '+prod.descripcion:'Ubicación encontrada en MOVIMIENTO')+(ubi?.value?' | Ubicación: '+ubi.value:'');
     renderManualPreview();
-    return prod;
+    return prod || {codigo,descripcion:'',ubicacion:loc,cantidad:0};
   }
-  if(msg) msg.textContent='Código no encontrado en MAESTRA. Puedes ingresar la descripción manualmente.';
+  if(msg) msg.textContent='Código no encontrado en MAESTRA/MOVIMIENTO. Puedes ingresar la descripción y ubicación manualmente.';
   return null;
 }
+
 
 
 
@@ -430,6 +736,7 @@ function normPedidos(r){
       cliente:String(p.cliente||'').trim(),
       vendedor:String(p.vendedor||'').trim(),
       pikeador:limpiarPikeador(p.pikeador, p.cliente),
+      bodega_preparacion:String(p.bodega_preparacion||p.bodegaPreparacion||p.bodega_pedido||p.bodega||'').trim(),
       status:estadoSeguroImport(p.status||p.estado,'PENDIENTE'),
       alerta_token:String(p.alerta_token||'').trim(),
       alerta_ts:String(p.alerta_ts||'').trim(),
@@ -452,9 +759,9 @@ function agrupar(h,rows){
     if(!Array.isArray(r))return;
     const ped=pick(r,ix.pedido,'SIN_PEDIDO_'+(i+1));
     const key=String(ped).replace(/\s+/g,'').toUpperCase();
-    if(!m.has(key))m.set(key,{key,pedido:ped,fecha:pick(r,ix.fecha,''),cliente:pick(r,ix.cliente,''),vendedor:pick(r,ix.vendedor,''),pikeador:limpiarPikeador(pick(r,ix.pikeador,''), pick(r,ix.cliente,'')),status:estadoSeguroImport(pick(r,ix.status,''),'PENDIENTE'),alerta_token:pick(r,ix.alerta_token,''),alerta_ts:pick(r,ix.alerta_ts,''),alerta_tipo:pick(r,ix.alerta_tipo,''),alerta_mensaje:pick(r,ix.alerta_mensaje,''),hora_inicio:pick(r,ix.hora_inicio,''),hora_termino:pick(r,ix.hora_termino,''),tiempo_preparacion_min:Number(String(pick(r,ix.tiempo_preparacion_min,0)).replace(',','.'))||0,total_productos:0,total_unidades:0,productos:[],rows:[]});
+    if(!m.has(key))m.set(key,{key,pedido:ped,fecha:pick(r,ix.fecha,''),cliente:pick(r,ix.cliente,''),vendedor:pick(r,ix.vendedor,''),pikeador:limpiarPikeador(pick(r,ix.pikeador,''), pick(r,ix.cliente,'')),bodega_preparacion:pick(r,ix.bodega_preparacion,''),status:estadoSeguroImport(pick(r,ix.status,''),'PENDIENTE'),alerta_token:pick(r,ix.alerta_token,''),alerta_ts:pick(r,ix.alerta_ts,''),alerta_tipo:pick(r,ix.alerta_tipo,''),alerta_mensaje:pick(r,ix.alerta_mensaje,''),hora_inicio:pick(r,ix.hora_inicio,''),hora_termino:pick(r,ix.hora_termino,''),tiempo_preparacion_min:Number(String(pick(r,ix.tiempo_preparacion_min,0)).replace(',','.'))||0,total_productos:0,total_unidades:0,productos:[],rows:[]});
     const p=m.get(key);
-    ['fecha','cliente','vendedor','alerta_token','alerta_ts','alerta_tipo','alerta_mensaje','hora_inicio','hora_termino'].forEach(k=>{if(ix[k]>=0&&pick(r,ix[k],''))p[k]=pick(r,ix[k],'')});
+    ['fecha','cliente','vendedor','bodega_preparacion','alerta_token','alerta_ts','alerta_tipo','alerta_mensaje','hora_inicio','hora_termino'].forEach(k=>{if(ix[k]>=0&&pick(r,ix[k],''))p[k]=pick(r,ix[k],'')});
     if(ix.tiempo_preparacion_min>=0){ const tm=Number(String(pick(r,ix.tiempo_preparacion_min,0)).replace(',','.'))||0; if(tm>0)p.tiempo_preparacion_min=tm; }
     if(ix.pikeador>=0){ const pk=limpiarPikeador(pick(r,ix.pikeador,''), p.cliente||pick(r,ix.cliente,'')); if(pk) p.pikeador=pk; }
     if(ix.status>=0 && normalizarEstadoPermitido(pick(r,ix.status,''))) p.status=normalizarEstadoPermitido(pick(r,ix.status,''));
@@ -490,6 +797,7 @@ function mapH(h){
     cliente:i(['cliente','nombre cliente','razon social','razón social']),
     vendedor:i(['vendedor','responsable','ejecutivo']),
     pikeador:i(['pikeador','picker','preparador','asignado','asignado a']),
+    bodega_preparacion:i(['bodega_preparacion','bodega preparación','bodega preparacion','bodega pedido','bodega_origen','bodega preparación pedido','bodega de preparacion','bodega de preparación','nombre_bodega','nombre bodega']),
     codigo:i(['codigo','código','cod','sku','codigo producto','código producto']),
     descripcion:i(['descripcion','descripción','detalle','nombre','producto','nombre producto','descripcion producto','descripción producto']),
     ubicacion:i(['ubicacion','ubicación','bodega','ubicacion producto','ubicación producto']),
@@ -507,12 +815,20 @@ function mapH(h){
 
 /* ================= FILTRO / RENDER ================= */
 function filtrar(){
-  const q=($('txtBuscar')?.value||'').toLowerCase().trim(), e=($('selEstado')?.value||'').toUpperCase().trim(), pk=($('selFiltroPikeador')?.value||'').toLowerCase().trim();
+  const q=($('txtBuscar')?.value||'').toLowerCase().trim();
+  const e=($('selEstado')?.value||'').toUpperCase().trim();
+  const pk=($('selFiltroPikeador')?.value||'').toLowerCase().trim();
+  const vend=($('selFiltroVendedor')?.value||'').toLowerCase().trim();
+  const rango=obtenerRangoFechaOrden();
   state.filtrados=state.pedidos.filter(p=>{
-    const txt=[p.pedido,p.cliente,p.vendedor,p.pikeador,p.status,...p.productos.map(x=>`${x.codigo} ${x.descripcion} ${x.ubicacion}`)].join(' ').toLowerCase();
+    const txt=[p.pedido,p.cliente,p.vendedor,p.pikeador,p.bodega_preparacion,p.status,...p.productos.map(x=>`${x.codigo} ${x.descripcion} ${x.ubicacion}`)].join(' ').toLowerCase();
     if(q&&!txt.includes(q))return false;
     if(e&&String(p.status||'').toUpperCase()!==e)return false;
     if(pk&&String(p.pikeador||'').toLowerCase()!==pk)return false;
+    if(vend&&String(p.vendedor||'').toLowerCase()!==vend)return false;
+    const f=fechaPedidoOrden(p);
+    if(rango.desde && (!f || f<rango.desde)) return false;
+    if(rango.hasta && (!f || f>rango.hasta)) return false;
     return true;
   });
   render(); kpis();
@@ -528,23 +844,28 @@ function render(){
   mob.innerHTML=state.filtrados.map(p=>`<div class="pedido-card ${state.selectedKey===p.key?'row-selected':''}" data-pedido-key="${esc(p.key)}" tabindex="0"><div class="top"><span>${esc(p.pedido)}</span>${badgeEstado(p.status)}</div><p><b>Cliente:</b> ${esc(p.cliente||'-')}</p><p><b>Pikeador:</b> ${esc(pikeadorVisible(p.pikeador))}</p><p><b>Productos:</b> ${p.total_productos} | <b>Unidades:</b> ${p.total_unidades}</p><p><b>Inicio:</b> ${esc(horaCorta(p.hora_inicio)||'-')} | <b>Término:</b> ${esc(horaCorta(p.hora_termino)||'-')}</p><p><b>Tiempo preparación:</b> ${esc(tiempoPreparacionTexto(p))}</p><p>${badgeAlerta(p)}</p><button data-ver-pedido="${esc(p.key)}">Ver opciones</button></div>`).join('');
 }
 function kpis(){
-  const a=state.filtrados;
+  const a=state.filtrados||[];
   const procesados=a.filter(esPedidoProcesado);
+  const productos=a.reduce((s,p)=>s+Number(p.total_productos||0),0);
+  const unidades=a.reduce((s,p)=>s+Number(p.total_unidades||0),0);
+  const pendientes=a.filter(p=>estadoPedido(p)==='PENDIENTE').length;
   const tiempos=procesados.map(minutosPreparacionPedido).filter(x=>x>0);
-  const setTxt=(id,val)=>{ const el=$(id); if(el) el.textContent=val; };
-  setTxt('kPedidos',a.length);
-  setTxt('kProductos',a.reduce((s,p)=>s+p.total_productos,0));
-  setTxt('kUnidades',a.reduce((s,p)=>s+p.total_unidades,0));
-  setTxt('kPendientes',a.filter(p=>String(p.status||'').toUpperCase()!=='TERMINADO').length);
-  setTxt('kProcesados',procesados.length);
-  setTxt('kPromedioProductos',procesados.length?(procesados.reduce((s,p)=>s+p.total_productos,0)/procesados.length).toFixed(1):'0');
-  setTxt('kPromedioUnidades',procesados.length?(procesados.reduce((s,p)=>s+p.total_unidades,0)/procesados.length).toFixed(1):'0');
-  setTxt('kTiempoPromedio',tiempos.length?formatearMinutos(tiempos.reduce((s,x)=>s+x,0)/tiempos.length):'0 min');
+  const set=(id,v)=>{const el=$(id); if(el) el.textContent=v;};
+  set('kPedidos',a.length);
+  set('kProductos',productos);
+  set('kUnidades',unidades);
+  set('kPendientes',pendientes);
+  set('kProcesados',procesados.length);
+  set('kPromedioProductos',procesados.length?dec(productos/procesados.length,1):'0');
+  set('kPromedioUnidades',procesados.length?dec(unidades/procesados.length,1):'0');
+  set('kTiempoPromedio',tiempos.length?formatearMinutos(tiempos.reduce((s,x)=>s+x,0)/tiempos.length):'0 min');
+  const hoy=new Date();
+  set('kUnidadesDia', unidadesPorPeriodoOrden(a,'DIA',hoy));
+  set('kUnidadesMes', unidadesPorPeriodoOrden(a,'MES',hoy));
+  set('kUnidadesAnio', unidadesPorPeriodoOrden(a,'ANIO',hoy));
   renderRotacionYRendimiento(a);
 }
-
-
-/* ================= SELECCION TD / FLECHAS PEDIDO ================= */
+function dec(n,d=1){n=Number(n)||0;return n.toFixed(d).replace(/\.0$/,'');}
 function abrirModalDesdeTabla(e){
   if(e.target.closest('button,a,input,select,textarea,label')) return;
   const tr=e.target.closest('tr[data-pedido-key]');
@@ -615,14 +936,197 @@ function abrirModal(key){
   marcarFilaSeleccionada(p.key);
   $('modalTitle').textContent='Pedido '+p.pedido;
   $('modalSub').textContent=(p.cliente||'')+' | Total unidades: '+(p.total_unidades||0);
-  $('detallePedido').innerHTML=[['Fecha',p.fecha],['Pedido',p.pedido],['Cliente',p.cliente],['Vendedor',p.vendedor],['Pikeador',pikeadorVisible(p.pikeador)],['Estado',p.status],['Hora inicio',horaCorta(p.hora_inicio)||'-'],['Hora término',horaCorta(p.hora_termino)||'-'],['Tiempo preparación',tiempoPreparacionTexto(p)],['Productos',p.total_productos],['Total unidades',p.total_unidades],['Avance cliente',porcentajeAvancePedido(p)+'%']].map(([l,v])=>`<div class="detail-item"><div class="l">${l}</div><div class="v">${esc(v)}</div></div>`).join('');
+  $('detallePedido').innerHTML=[['Fecha',p.fecha],['Pedido',p.pedido],['Cliente',p.cliente],['Vendedor',p.vendedor],['Pikeador',pikeadorVisible(p.pikeador)],['Bodega preparación',p.bodega_preparacion||'-'],['Estado',p.status],['Hora inicio',horaCorta(p.hora_inicio)||'-'],['Hora término',horaCorta(p.hora_termino)||'-'],['Tiempo preparación',tiempoPreparacionTexto(p)],['Productos',p.total_productos],['Total unidades',p.total_unidades],['Avance cliente',porcentajeAvancePedido(p)+'%']].map(([l,v])=>`<div class="detail-item"><div class="l">${l}</div><div class="v">${esc(v)}</div></div>`).join('');
   $('tbodyProductos').innerHTML=p.productos.length?p.productos.map(x=>`<tr><td>${esc(x.codigo)}</td><td>${esc(x.descripcion)}</td><td>${esc(x.ubicacion)}</td><td><b>${x.cantidad}</b></td></tr>`).join(''):'<tr><td colspan="4" style="text-align:center;color:#64748b">Este pedido no tiene productos detallados.</td></tr>';
   llenarSelects();
+  renderEdicionPedido(p);
+  activarEdicionPedido(false);
   $('selModalPikeador').value=p.pikeador||'';
   if($('selModalEstado')) $('selModalEstado').value=(p.status||'PENDIENTE').toUpperCase();
   $('modalPedido').classList.add('show');
 }
-function cerrarModal(){ $('modalPedido').classList.remove('show'); }
+function cerrarModal(){ activarEdicionPedido(false); $('modalPedido').classList.remove('show'); }
+
+
+/* ================= EDICIÓN COMPLETA PEDIDO ================= */
+function instalarEdicionPedidoUI(){
+  if($('btnEditarPedido')) return;
+  const actions=document.querySelector('#modalPedido .modal-actions-top');
+  const body=document.querySelector('#modalPedido .modal-body');
+  if(!actions||!body) return;
+  const editBtns=document.createElement('span');
+  editBtns.className='edit-actions-inline';
+  editBtns.innerHTML=`
+    <button id="btnEditarPedido" class="ok" type="button">✏️ Editar Pedido</button>
+    <button id="btnGuardarEdicionPedido" class="ok hidden" type="button">💾 Guardar Edición</button>
+    <button id="btnCancelarEdicionPedido" class="secondary hidden" type="button">Cancelar Edición</button>
+  `;
+  actions.insertBefore(editBtns, $('btnPdfPedido') || null);
+  const box=document.createElement('div');
+  box.id='editPedidoBox';
+  box.className='edit-pedido-box hidden';
+  const detalle=$('detallePedido');
+  if(detalle && detalle.parentNode) detalle.parentNode.insertBefore(box, detalle.nextSibling);
+  else body.insertBefore(box, body.firstChild);
+  if(!document.getElementById('cssEdicionPedido')){
+    const st=document.createElement('style');
+    st.id='cssEdicionPedido';
+    st.textContent=`
+      .hidden{display:none!important}
+      .edit-actions-inline{display:contents}
+      .edit-pedido-box{border:1px solid #bfdbfe;background:#eff6ff;border-radius:18px;padding:14px;margin:12px 0;box-shadow:0 8px 24px rgba(15,23,42,.08)}
+      .edit-grid{display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:10px;margin-bottom:12px}
+      .edit-field{display:flex;flex-direction:column;gap:5px;grid-column:span 3;min-width:0}
+      .edit-field.span-2{grid-column:span 2}.edit-field.span-4{grid-column:span 4}.edit-field.span-6{grid-column:span 6}
+      .edit-field label{font-size:12px;font-weight:800;color:#1e3a8a;text-transform:uppercase;letter-spacing:.03em}
+      .edit-field input,.edit-field select{width:100%;box-sizing:border-box;border:1px solid #cbd5e1;border-radius:12px;padding:10px 11px;background:#fff;color:#0f172a;font-size:14px;outline:none}
+      .edit-field input:focus,.edit-field select:focus{border-color:#2563eb;box-shadow:0 0 0 3px rgba(37,99,235,.14)}
+      .edit-products-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:10px 0;flex-wrap:wrap}
+      .edit-products-wrap{overflow:auto;border:1px solid #dbeafe;border-radius:14px;background:#fff;max-height:42vh}
+      .edit-products-wrap table{min-width:820px;width:100%;border-collapse:collapse}
+      .edit-products-wrap th,.edit-products-wrap td{padding:8px;border-bottom:1px solid #e5e7eb;vertical-align:middle}
+      .edit-products-wrap input{width:100%;box-sizing:border-box;border:1px solid #cbd5e1;border-radius:10px;padding:8px;background:#fff;color:#0f172a}
+      .edit-products-wrap .cantidad{max-width:96px}
+      .btn-mini{padding:8px 10px;border-radius:10px;border:0;font-weight:800;cursor:pointer}
+      .btn-mini.danger{background:#fee2e2;color:#991b1b}.btn-mini.info{background:#dbeafe;color:#1d4ed8}
+      @media(max-width:900px){.edit-grid{grid-template-columns:1fr}.edit-field,.edit-field.span-2,.edit-field.span-4,.edit-field.span-6{grid-column:span 1}.edit-pedido-box{padding:10px}.edit-products-wrap{max-height:50vh}}
+    `;
+    document.head.appendChild(st);
+  }
+}
+function renderEdicionPedido(p){
+  const box=$('editPedidoBox');
+  if(!box||!p) return;
+  const productos=(Array.isArray(p.productos)&&p.productos.length?p.productos:[{codigo:'',descripcion:'',ubicacion:'',cantidad:1}]);
+  const pikeadorOptions=opcionesPikeadorEdicion(p.pikeador);
+  box.innerHTML=`
+    <div class="edit-grid">
+      <div class="edit-field span-2"><label>Fecha</label><input id="editFechaPedido" value="${esc(p.fecha||'')}"></div>
+      <div class="edit-field span-2"><label>Pedido</label><input id="editNumeroPedido" value="${esc(p.pedido||'')}"></div>
+      <div class="edit-field span-4"><label>Cliente</label><input id="editClientePedido" value="${esc(p.cliente||'')}"></div>
+      <div class="edit-field span-2"><label>Vendedor</label><select id="editVendedorPedido">${opcionesVendedores(p.vendedor||'')}</select></div>
+      <div class="edit-field span-2"><label>Estado</label><select id="editEstadoPedido">${opcionesEstadoEdicion(p.status)}</select></div>
+      <div class="edit-field span-4"><label>Pikeador</label><select id="editPikeadorPedido">${pikeadorOptions}</select></div>
+      <div class="edit-field span-4"><label>Bodega preparación</label><select id="editBodegaPedido">${opcionesBodegas(p.bodega_preparacion||'')}</select></div>
+      <div class="edit-field span-4"><label>Hora inicio</label><input id="editHoraInicioPedido" value="${esc(p.hora_inicio||'')}" readonly></div>
+      <div class="edit-field span-4"><label>Hora término</label><input id="editHoraTerminoPedido" value="${esc(p.hora_termino||'')}" readonly></div>
+    </div>
+    <div class="edit-products-head">
+      <h3 style="margin:0">Editar productos del pedido</h3>
+      <button id="btnAddProductoEdit" class="info" type="button">➕ Agregar producto</button>
+    </div>
+    <div class="edit-products-wrap">
+      <table>
+        <thead><tr><th style="width:52px">#</th><th>Código</th><th>Descripción</th><th>Ubicación</th><th style="width:110px">Cantidad</th><th style="width:160px">Acción</th></tr></thead>
+        <tbody id="tbodyEditProductos">${productos.map((x,i)=>filaProductoEdicion(x,i)).join('')}</tbody>
+      </table>
+    </div>
+    <div class="hint" style="margin-top:10px">Al guardar, se actualizan los datos del pedido y sus productos en la hoja PEDIDOS. Los ceros iniciales del código se conservan como texto.</div>
+  `;
+}
+function opcionesEstadoEdicion(actual){
+  const estados=['PENDIENTE','PREPARACION','RECIBIDO','DESPACHADO','TERMINADO','CANCELADO'];
+  actual=estadoSeguroImport(actual,'PENDIENTE');
+  return estados.map(e=>`<option value="${e}" ${e===actual?'selected':''}>${e}</option>`).join('');
+}
+function opcionesPikeadorEdicion(actual){
+  const lista=[...new Set([String(actual||'').trim(),...state.pikeadores].filter(Boolean))];
+  return '<option value="">Sin asignar</option>'+lista.map(n=>`<option value="${esc(n)}" ${String(n)===String(actual||'')?'selected':''}>${esc(n)}</option>`).join('');
+}
+function filaProductoEdicion(x,i){
+  return `<tr data-edit-row="${i}">
+    <td><b>${i+1}</b></td>
+    <td><input class="editCodigo" value="${esc(x.codigo||'')}" placeholder="Código/SKU"></td>
+    <td><input class="editDescripcion" value="${esc(x.descripcion||'')}" placeholder="Descripción"></td>
+    <td><input class="editUbicacion" value="${esc(x.ubicacion||'')}" placeholder="Ubicación"></td>
+    <td><input class="editCantidad cantidad" type="number" min="0" step="1" value="${esc(x.cantidad||1)}"></td>
+    <td><button class="btn-mini info" type="button" data-edit-buscar="1">Buscar</button> <button class="btn-mini danger" type="button" data-edit-del="1">Eliminar</button></td>
+  </tr>`;
+}
+function activarEdicionPedido(on){
+  state.editandoPedido=!!on;
+  const box=$('editPedidoBox');
+  if(box) box.classList.toggle('hidden',!on);
+  const det=$('detallePedido');
+  if(det) det.style.display=on?'none':'';
+  const wrap=document.querySelector('#modalPedido .products-wrap');
+  if(wrap) wrap.style.display=on?'none':'';
+  const h3=[...document.querySelectorAll('#modalPedido .modal-body h3')].find(x=>(x.textContent||'').includes('Productos preagregados'));
+  if(h3) h3.style.display=on?'none':'';
+  $('btnEditarPedido')?.classList.toggle('hidden',on);
+  $('btnGuardarEdicionPedido')?.classList.toggle('hidden',!on);
+  $('btnCancelarEdicionPedido')?.classList.toggle('hidden',!on);
+}
+function manejarClickEdicionPedido(e){
+  const add=e.target.closest('#btnAddProductoEdit');
+  if(add){ agregarFilaProductoEdicion(); return; }
+  const del=e.target.closest('[data-edit-del]');
+  if(del){
+    const tr=del.closest('tr');
+    const tb=$('tbodyEditProductos');
+    if(tb && tb.querySelectorAll('tr').length<=1) return toast('El pedido debe mantener al menos un producto');
+    tr?.remove(); renumerarFilasEdicion(); return;
+  }
+  const buscar=e.target.closest('[data-edit-buscar]');
+  if(buscar){ buscarProductoFilaEdicion(buscar.closest('tr')); }
+}
+function manejarCambioEdicionPedido(e){
+  if(e.target?.classList?.contains('editCodigo')) buscarProductoFilaEdicion(e.target.closest('tr'),false);
+}
+function agregarFilaProductoEdicion(){
+  const tb=$('tbodyEditProductos'); if(!tb) return;
+  tb.insertAdjacentHTML('beforeend',filaProductoEdicion({codigo:'',descripcion:'',ubicacion:'',cantidad:1},tb.querySelectorAll('tr').length));
+}
+function renumerarFilasEdicion(){
+  document.querySelectorAll('#tbodyEditProductos tr').forEach((tr,i)=>{tr.dataset.editRow=i; const c=tr.querySelector('td b'); if(c)c.textContent=i+1;});
+}
+async function buscarProductoFilaEdicion(tr,forzar=true){
+  if(!tr) return;
+  const codigo=(tr.querySelector('.editCodigo')?.value||'').trim();
+  if(!codigo) return;
+  if(!forzar && codigo.length < 3) return;
+  let prod=productoMaestraPorCodigo(codigo);
+  if(!prod && forzar){ try{ const r=await api('buscar_producto',{codigo}); if(r?.ok) prod=enriquecerProductoConUbicacionMovimiento(r,codigo); }catch(e){} }
+  const loc=ubicacionMovimientoPorCodigo(codigo);
+  if(!prod && !loc){ if(forzar) toast('Código no encontrado en MAESTRA/MOVIMIENTO'); return; }
+  const desc=tr.querySelector('.editDescripcion'), ubi=tr.querySelector('.editUbicacion');
+  if(desc && prod && (forzar || !desc.value.trim())) desc.value=prod.descripcion||desc.value;
+  if(ubi && (forzar || !ubi.value.trim())) ubi.value=(prod?.ubicacion||loc||ubi.value);
+}
+function productosDesdeEdicion(){
+  return [...document.querySelectorAll('#tbodyEditProductos tr')].map(tr=>({
+    codigo:String(tr.querySelector('.editCodigo')?.value||'').replace(/^'+/,''),
+    descripcion:(tr.querySelector('.editDescripcion')?.value||'').trim(),
+    ubicacion:(tr.querySelector('.editUbicacion')?.value||'').trim(),
+    cantidad:Number(String(tr.querySelector('.editCantidad')?.value||'1').replace(',','.'))||0
+  })).filter(x=>x.codigo||x.descripcion||x.ubicacion||x.cantidad>0);
+}
+async function guardarEdicionPedidoActual(){
+  const p=state.sel;
+  if(!p) return toast('No hay pedido seleccionado');
+  const items=productosDesdeEdicion();
+  if(!items.length) return toast('Agrega al menos un producto al pedido');
+  const pedidoNuevo=($('editNumeroPedido')?.value||'').trim();
+  if(!pedidoNuevo) return toast('El número de pedido no puede quedar vacío');
+  const payload={
+    pedido_original:p.pedido,
+    pedido:pedidoNuevo,
+    fecha:($('editFechaPedido')?.value||'').trim(),
+    cliente:($('editClientePedido')?.value||'').trim(),
+    vendedor:($('editVendedorPedido')?.value||'').trim(),
+    pikeador:($('editPikeadorPedido')?.value||'').trim(),
+    bodega_preparacion:($('editBodegaPedido')?.value||'').trim(),
+    status:($('editEstadoPedido')?.value||'PENDIENTE').trim().toUpperCase(),
+    items:JSON.stringify(items)
+  };
+  const r=await api('editar_pedido_completo',payload);
+  if(!r?.ok) return toast('No se pudo editar el pedido: '+(r?.msg||'error'));
+  toast('Pedido editado correctamente. Filas actualizadas: '+(r.actualizados||0)+'. Nuevas: '+(r.insertados||0)+'. Eliminadas: '+(r.eliminados||0));
+  if(r.voice) voz(r.voice);
+  await cargarTodo();
+  const key=String(r.pedido||pedidoNuevo).replace(/\s+/g,'').toUpperCase();
+  abrirModal(key);
+}
 async function agregarPikeador(){
   const nombre=($('txtNuevoPikeador')?.value||'').trim();
   if(!nombre)return toast('Ingresa el nombre del pikeador');
@@ -701,19 +1205,24 @@ function marcarTokens(){ state.pedidos.forEach(p=>{if(p.alerta_token)state.token
 function abrirManual(){
   llenarSelects();
   if(!state.maestraListaCargada) cargarMaestra(true).catch(console.warn);
+  if(!state.clientes.length) cargarClientes().catch(console.warn);
   limpiarManual(false);
   const hoy=new Date();
   const yyyy=hoy.getFullYear(), mm=String(hoy.getMonth()+1).padStart(2,'0'), dd=String(hoy.getDate()).padStart(2,'0');
   if($('manFecha')&&!$('manFecha').value) $('manFecha').value=`${yyyy}-${mm}-${dd}`;
+  prepararPedidoAutogeneradoLocal();
+  generarNumeroPedidoManual(false).catch(()=>{});
   $('modalManual')?.classList.add('show');
-  setTimeout(()=>$('manPedido')?.focus(),80);
+  setTimeout(()=>$('manCliente')?.focus(),80);
   renderManualPreview();
 }
 function cerrarManual(){ $('modalManual')?.classList.remove('show'); }
 function limpiarManual(clearHeader=true){
   state.manualProductos=[];
   if(clearHeader){
-    ['manPedido','manCliente','manVendedor','manCodigo','manDescripcion','manUbicacion'].forEach(id=>{ if($(id)) $(id).value=''; });
+    ['manCliente','manVendedor','manBodega','manCodigo','manDescripcion','manUbicacion'].forEach(id=>{ if($(id)) $(id).value=''; });
+    prepararPedidoAutogeneradoLocal();
+    generarNumeroPedidoManual(false).catch(()=>{});
     if($('manCantidad')) $('manCantidad').value='1';
     if($('manStatus')) $('manStatus').value='PENDIENTE';
     if($('manPikeador')) $('manPikeador').value='';
@@ -724,6 +1233,60 @@ function limpiarManual(clearHeader=true){
   renderManualProductos();
   renderManualPreview();
 }
+
+function numeroPedidoConsecutivoJS(v){
+  const raw=String(v||'').trim();
+  if(!raw || /^SIN_PEDIDO/i.test(raw)) return 0;
+  const m=raw.match(/\d+/g);
+  if(!m) return 0;
+  const n=Number(m.join(''));
+  return Number.isFinite(n)&&n>0?Math.floor(n):0;
+}
+function calcularSiguientePedidoLocal(){
+  const usados=new Set();
+  (state.pedidos||[]).forEach(p=>{
+    const n=numeroPedidoConsecutivoJS(p.pedido||p.key||'');
+    if(n>0) usados.add(n);
+  });
+  let n=1;
+  while(usados.has(n)) n++;
+  return String(n);
+}
+function prepararPedidoAutogeneradoLocal(){
+  const input=$('manPedido');
+  if(!input) return;
+  input.value=calcularSiguientePedidoLocal();
+  input.readOnly=true;
+  input.classList.add('input-readonly');
+  input.title='Número generado automáticamente desde la hoja PEDIDOS';
+  const msg=$('manualNumeroMsg');
+  if(msg) msg.textContent='Número sugerido automáticamente. Se validará nuevamente al guardar para evitar duplicados.';
+}
+async function generarNumeroPedidoManual(mostrarToast=false){
+  const input=$('manPedido');
+  if(!input) return;
+  const fallback=calcularSiguientePedidoLocal();
+  if(!input.value) input.value=fallback;
+  const msg=$('manualNumeroMsg');
+  if(msg) msg.textContent='Generando número consecutivo desde la BD...';
+  try{
+    const r=await api('siguiente_numero_pedido',{});
+    const numero=String(r?.numero||r?.pedido||'').trim();
+    if(r?.ok && numero){
+      input.value=numero;
+      if(msg) msg.textContent='Pedido N° '+numero+' reservado visualmente. Al guardar, Apps Script confirmará el siguiente disponible.';
+      if(mostrarToast) toast('Número de pedido generado: '+numero);
+    }else{
+      input.value=fallback;
+      if(msg) msg.textContent='Usando número local sugerido. Al guardar, Apps Script validará que no exista.';
+    }
+  }catch(e){
+    input.value=fallback;
+    if(msg) msg.textContent='Sin respuesta del generador remoto. Se usará '+fallback+' y se validará al guardar.';
+  }
+  renderManualPreview();
+}
+
 function datosManualBase(){
   return {
     fecha:$('manFecha')?.value||'',
@@ -731,6 +1294,7 @@ function datosManualBase(){
     cliente:($('manCliente')?.value||'').trim(),
     vendedor:($('manVendedor')?.value||'').trim(),
     pikeador:($('manPikeador')?.value||'').trim(),
+    bodega_preparacion:($('manBodega')?.value||'').trim(),
     status:estadoSeguroImport($('manStatus')?.value||'PENDIENTE','PENDIENTE')
   };
 }
@@ -738,7 +1302,8 @@ function agregarProductoManual(){
   const base=datosManualBase();
   const codigo=($('manCodigo')?.value||'').trim();
   const descripcion=($('manDescripcion')?.value||'').trim();
-  const ubicacion=($('manUbicacion')?.value||'').trim();
+  let ubicacion=($('manUbicacion')?.value||'').trim();
+  if(!ubicacion && codigo) ubicacion=ubicacionMovimientoPorCodigo(codigo);
   const cantidad=Number(String($('manCantidad')?.value||'1').replace(',','.'))||1;
   if(!base.pedido) return toast('Ingresa el número de pedido antes de agregar productos.');
   if(!codigo && !descripcion) return toast('Ingresa código o descripción del producto.');
@@ -770,7 +1335,7 @@ function renderManualPreview(){
   const total=state.manualProductos.reduce((s,x)=>s+(Number(x.cantidad)||0),0);
   const parcial={codigo:$('manCodigo')?.value||'',descripcion:$('manDescripcion')?.value||'',ubicacion:$('manUbicacion')?.value||'',cantidad:$('manCantidad')?.value||''};
   const parcialTxt=(parcial.codigo||parcial.descripcion)?`<br><span style="color:#0f766e"><b>Producto en edición:</b> ${esc(parcial.codigo)} ${esc(parcial.descripcion)} | Ubicación: ${esc(parcial.ubicacion)} | Cantidad: ${esc(parcial.cantidad||1)}</span>`:'';
-  box.innerHTML=`<b>Pedido:</b> ${esc(base.pedido||'Sin número')} | <b>Cliente:</b> ${esc(base.cliente||'Sin cliente')} | <b>Pikeador:</b> ${esc(base.pikeador||'Sin asignar')} | <b>Estado:</b> ${esc(base.status)} | <b>Productos agregados:</b> ${state.manualProductos.length} | <b>Total unidades:</b> ${total}${parcialTxt}`;
+  box.innerHTML=`<b>Pedido:</b> ${esc(base.pedido||'Sin número')} | <b>Cliente:</b> ${esc(base.cliente||'Sin cliente')} | <b>Pikeador:</b> ${esc(base.pikeador||'Sin asignar')} | <b>Bodega:</b> ${esc(base.bodega_preparacion||'Sin bodega')} | <b>Estado:</b> ${esc(base.status)} | <b>Productos agregados:</b> ${state.manualProductos.length} | <b>Total unidades:</b> ${total}${parcialTxt}`;
 }
 async function guardarPedidoManual(){
   const base=datosManualBase();
@@ -783,17 +1348,19 @@ async function guardarPedidoManual(){
     cliente:base.cliente,
     vendedor:base.vendedor,
     pikeador:base.pikeador,
+    bodega_preparacion:base.bodega_preparacion,
     status:base.status,
     codigo:p.codigo,
     descripcion:p.descripcion,
     ubicacion:p.ubicacion,
     cantidad:p.cantidad,
-    __raw:{fecha:base.fecha,pedido:base.pedido,cliente:base.cliente,vendedor:base.vendedor,pikeador:base.pikeador,status:base.status,codigo:p.codigo,descripcion:p.descripcion,ubicacion:p.ubicacion,cantidad:p.cantidad,origen:'MANUAL'},
-    __rawHeaders:['fecha','pedido','cliente','vendedor','pikeador','status','codigo','descripcion','ubicacion','cantidad','origen']
+    __raw:{fecha:base.fecha,pedido:base.pedido,cliente:base.cliente,vendedor:base.vendedor,pikeador:base.pikeador,bodega_preparacion:base.bodega_preparacion,status:base.status,codigo:p.codigo,descripcion:p.descripcion,ubicacion:p.ubicacion,cantidad:p.cantidad,origen:'MANUAL'},
+    __rawHeaders:['fecha','pedido','cliente','vendedor','pikeador','bodega_preparacion','status','codigo','descripcion','ubicacion','cantidad','origen']
   }));
-  const r=await api('guardar_pedido',{pedido:base.pedido,cliente:base.cliente,vendedor:base.vendedor,pikeador:base.pikeador,status:base.status,fecha:base.fecha,items:JSON.stringify(items)});
+  const r=await api('guardar_pedido',{autogenerar_pedido:1,pedido:base.pedido,cliente:base.cliente,vendedor:base.vendedor,pikeador:base.pikeador,bodega_preparacion:base.bodega_preparacion,status:base.status,fecha:base.fecha,items:JSON.stringify(items)});
   if(!r?.ok) return toast('No se pudo guardar: '+(r?.msg||'error'));
-  toast(`Pedido guardado. Insertados: ${r.insertados||0}. Actualizados: ${r.actualizados||0}. Sin cambio: ${r.sin_cambios||0}.`);
+  const pedidoFinal=String(r.pedido||base.pedido||'').trim();
+  toast(`Pedido ${pedidoFinal} guardado. Insertados: ${r.insertados||0}. Actualizados: ${r.actualizados||0}. Sin cambio: ${r.sin_cambios||0}.`);
   cerrarManual();
   await cargarTodo();
 }
@@ -1241,15 +1808,17 @@ function pdfPedidoA4(){
   const p=state.sel; if(!p)return;
   const {jsPDF}=window.jspdf||{}; if(!jsPDF)return toast('No cargó jsPDF');
   const d=new jsPDF('p','mm','a4');
-  d.setFont('helvetica','bold'); d.setFontSize(16); d.text('Orden de Pedido',14,14);
-  d.setFont('helvetica','normal'); d.setFontSize(9); d.text('Generado: '+new Date().toLocaleString('es-CL'),14,20);
-  d.setDrawColor(210); d.roundedRect(14,25,182,34,2,2);
+  d.setFont('helvetica','bold'); d.setFontSize(16); d.text('Orden de Pedido',105,14,{align:'center'});
+  d.setFont('helvetica','bold'); d.setFontSize(24); d.text('N° PEDIDO '+String(p.pedido||'-'),105,26,{align:'center'});
+  d.setFont('helvetica','normal'); d.setFontSize(9); d.text('Generado: '+new Date().toLocaleString('es-CL'),105,33,{align:'center'});
+  d.setDrawColor(210); d.roundedRect(14,38,182,42,2,2);
   d.setFontSize(9);
-  infoLine(d,18,33,'Pedido',p.pedido); infoLine(d,75,33,'Fecha',p.fecha||'-'); infoLine(d,132,33,'Estado',p.status||'-');
-  infoLine(d,18,42,'Cliente',p.cliente||'-'); infoLine(d,105,42,'Vendedor',p.vendedor||'-');
-  infoLine(d,18,51,'Pikeador',pikeadorVisible(p.pikeador)); infoLine(d,105,51,'Total unidades',String(p.total_unidades||0));
+  infoLine(d,18,46,'Pedido',p.pedido); infoLine(d,75,46,'Fecha',p.fecha||'-'); infoLine(d,132,46,'Estado',p.status||'-');
+  infoLine(d,18,55,'Cliente',p.cliente||'-'); infoLine(d,105,55,'Vendedor',p.vendedor||'-');
+  infoLine(d,18,64,'Pikeador',pikeadorVisible(p.pikeador)); infoLine(d,105,64,'Bodega',p.bodega_preparacion||'-');
+  infoLine(d,18,73,'Total unidades',String(p.total_unidades||0));
   d.autoTable({
-    startY:66,
+    startY:88,
     head:[['Código','Descripción','Ubicación','Cantidad']],
     body:(p.productos.length?p.productos:[{codigo:'-',descripcion:'Sin productos detallados',ubicacion:'-',cantidad:0}]).map(x=>[x.codigo,x.descripcion,x.ubicacion,x.cantidad]),
     theme:'grid',
@@ -1270,14 +1839,15 @@ function pdfPedido80(){
   const p=state.sel; if(!p)return;
   const {jsPDF}=window.jspdf||{}; if(!jsPDF)return toast('No cargó jsPDF');
   const filas=Math.max(1,p.productos.length);
-  const alto=Math.max(140,70+(filas*12));
+  const alto=Math.max(160,86+(filas*12));
   const d=new jsPDF({orientation:'p',unit:'mm',format:[80,alto]});
   let y=6;
   d.setFont('helvetica','bold'); d.setFontSize(11); d.text('ORDEN DE PEDIDO',40,y,{align:'center'}); y+=6;
+  d.setFont('helvetica','bold'); d.setFontSize(15); d.text('N° '+String(p.pedido||'-'),40,y,{align:'center'}); y+=7;
   d.setFont('helvetica','normal'); d.setFontSize(7); d.text(new Date().toLocaleString('es-CL'),40,y,{align:'center'}); y+=5;
   line80(d,y); y+=4;
   d.setFontSize(8);
-  y=ticketText(d,'Pedido',p.pedido,y); y=ticketText(d,'Cliente',p.cliente||'-',y); y=ticketText(d,'Pikeador',pikeadorVisible(p.pikeador),y); y=ticketText(d,'Estado',p.status||'-',y); y=ticketText(d,'Total unidades',String(p.total_unidades||0),y); y+=2;
+  y=ticketText(d,'Pedido',p.pedido,y); y=ticketText(d,'Cliente',p.cliente||'-',y); y=ticketText(d,'Vendedor',p.vendedor||'-',y); y=ticketText(d,'Pikeador',pikeadorVisible(p.pikeador),y); y=ticketText(d,'Bodega',p.bodega_preparacion||'-',y); y=ticketText(d,'Estado',p.status||'-',y); y=ticketText(d,'Total unidades',String(p.total_unidades||0),y); y+=2;
   line80(d,y); y+=4;
   d.setFont('helvetica','bold'); d.text('DETALLE PRODUCTOS',4,y); y+=5;
   d.setFont('helvetica','normal');
@@ -1350,6 +1920,8 @@ function porcentajeAvancePedido(p){
 function renderRotacionYRendimiento(lista){
   const tbodyRot=$('tbodyRotacionProductos');
   const tbodyPik=$('tbodyRendimientoPikeador');
+  const tbodyVen=$('tbodyRendimientoVendedor');
+  const tbodyCli=$('tbodyTopClientes');
   if(tbodyRot){
     const map={};
     (lista||[]).forEach(p=>{
@@ -1360,26 +1932,81 @@ function renderRotacionYRendimiento(lista){
         map[k].pedidos.add(p.pedido);
       });
     });
-    const top=Object.values(map).sort((a,b)=>b.unidades-a.unidades).slice(0,8);
+    const top=Object.values(map).sort((a,b)=>b.unidades-a.unidades || b.pedidos.size-a.pedidos.size).slice(0,10);
     tbodyRot.innerHTML=top.length?top.map((x,i)=>`<tr><td>${i+1}</td><td><b>${esc(x.codigo)}</b></td><td>${esc(short(x.descripcion,42))}</td><td><b>${x.unidades}</b></td><td>${x.pedidos.size}</td></tr>`).join(''):'<tr><td colspan="5" style="text-align:center;color:#64748b">Sin productos para calcular rotación.</td></tr>';
   }
   if(tbodyPik){
+    const rows=resumenRendimientoPorCampoOrden(lista,'pikeador',p=>pikeadorVisible(p.pikeador), 'Sin asignar').slice(0,10);
+    tbodyPik.innerHTML=rows.length?rows.map(x=>`<tr><td><b>${esc(x.nombre)}</b></td><td>${x.pedidos}</td><td>${x.procesados}</td><td>${x.unidades}</td><td><b>${x.tiempos.length?formatearMinutos(x.tiempos.reduce((s,t)=>s+t,0)/x.tiempos.length):'-'}</b></td></tr>`).join(''):'<tr><td colspan="5" style="text-align:center;color:#64748b">Sin pikeadores asignados.</td></tr>';
+  }
+  if(tbodyVen){
+    const rows=resumenRendimientoPorCampoOrden(lista,'vendedor',p=>String(p.vendedor||'').trim()||'Sin vendedor', 'Sin vendedor').slice(0,10);
+    tbodyVen.innerHTML=rows.length?rows.map(x=>`<tr><td><b>${esc(x.nombre)}</b></td><td>${x.pedidos}</td><td>${x.procesados}</td><td>${x.unidades}</td><td><b>${x.tiempos.length?formatearMinutos(x.tiempos.reduce((s,t)=>s+t,0)/x.tiempos.length):'-'}</b></td></tr>`).join(''):'<tr><td colspan="5" style="text-align:center;color:#64748b">Sin vendedores registrados.</td></tr>';
+  }
+  if(tbodyCli){
     const map={};
     (lista||[]).forEach(p=>{
-      const pk=pikeadorVisible(p.pikeador);
-      if(pk==='Sin asignar') return;
-      if(!map[pk]) map[pk]={pikeador:pk,pedidos:0,procesados:0,unidades:0,tiempos:[]};
-      map[pk].pedidos++;
-      map[pk].unidades+=Number(p.total_unidades||0)||0;
-      if(esPedidoProcesado(p)) map[pk].procesados++;
-      const min=minutosPreparacionPedido(p); if(min>0) map[pk].tiempos.push(min);
+      const c=String(p.cliente||'').trim()||'Sin cliente';
+      if(!map[c]) map[c]={cliente:c,unidades:0,pedidos:0,procesados:0};
+      map[c].pedidos++;
+      if(esPedidoProcesado(p)){
+        map[c].procesados++;
+        map[c].unidades += Number(p.total_unidades||0)||0;
+      }
     });
-    const rows=Object.values(map).sort((a,b)=>b.procesados-a.procesados || b.unidades-a.unidades).slice(0,8);
-    tbodyPik.innerHTML=rows.length?rows.map(x=>`<tr><td><b>${esc(x.pikeador)}</b></td><td>${x.pedidos}</td><td>${x.procesados}</td><td>${x.unidades}</td><td><b>${x.tiempos.length?formatearMinutos(x.tiempos.reduce((s,t)=>s+t,0)/x.tiempos.length):'-'}</b></td></tr>`).join(''):'<tr><td colspan="5" style="text-align:center;color:#64748b">Sin pikeadores asignados.</td></tr>';
+    const rows=Object.values(map).sort((a,b)=>b.unidades-a.unidades || b.procesados-a.procesados || b.pedidos-a.pedidos).slice(0,10);
+    tbodyCli.innerHTML=rows.length?rows.map((x,i)=>`<tr><td>${i+1}</td><td><b>${esc(short(x.cliente,42))}</b></td><td>${x.unidades}</td><td>${x.pedidos}</td><td>${x.procesados}</td></tr>`).join(''):'<tr><td colspan="5" style="text-align:center;color:#64748b">Sin clientes para calcular ranking.</td></tr>';
   }
 }
+function resumenRendimientoPorCampoOrden(lista,campo,getNombre,omitir){
+  const map={};
+  (lista||[]).forEach(p=>{
+    const nombre=getNombre(p);
+    if(!nombre || nombre===omitir) return;
+    if(!map[nombre]) map[nombre]={nombre,pedidos:0,procesados:0,unidades:0,tiempos:[]};
+    map[nombre].pedidos++;
+    map[nombre].unidades+=Number(p.total_unidades||0)||0;
+    if(esPedidoProcesado(p)) map[nombre].procesados++;
+    const min=minutosPreparacionPedido(p); if(min>0) map[nombre].tiempos.push(min);
+  });
+  return Object.values(map).sort((a,b)=>b.procesados-a.procesados || b.unidades-a.unidades || b.pedidos-a.pedidos);
+}
+function fechaPedidoOrden(p){
+  return fechaHoraValida(p?.fecha) || fechaHoraValida(p?.hora_inicio) || fechaHoraValida(p?.hora_termino);
+}
+function inicioDia(d){return new Date(d.getFullYear(),d.getMonth(),d.getDate(),0,0,0,0);}
+function finDia(d){return new Date(d.getFullYear(),d.getMonth(),d.getDate(),23,59,59,999);}
+function obtenerRangoFechaOrden(){
+  const periodo=String($('selPeriodoKpi')?.value||'').toUpperCase();
+  const hoy=new Date();
+  let desde=null,hasta=null;
+  if(periodo==='HOY'){desde=inicioDia(hoy); hasta=finDia(hoy);}
+  else if(periodo==='MES'){desde=new Date(hoy.getFullYear(),hoy.getMonth(),1,0,0,0,0); hasta=new Date(hoy.getFullYear(),hoy.getMonth()+1,0,23,59,59,999);}
+  else if(periodo==='ANIO'){desde=new Date(hoy.getFullYear(),0,1,0,0,0,0); hasta=new Date(hoy.getFullYear(),11,31,23,59,59,999);}
+  const d1=$('fechaDesdeKpi')?.value, d2=$('fechaHastaKpi')?.value;
+  if(periodo==='RANGO' || d1 || d2){
+    desde=d1?new Date(d1+'T00:00:00'):null;
+    hasta=d2?new Date(d2+'T23:59:59'):null;
+  }
+  return {desde,hasta};
+}
+function unidadesPorPeriodoOrden(lista,periodo,base=new Date()){
+  const rango = periodo==='DIA' ? {desde:inicioDia(base), hasta:finDia(base)} : periodo==='MES' ? {desde:new Date(base.getFullYear(),base.getMonth(),1,0,0,0,0), hasta:new Date(base.getFullYear(),base.getMonth()+1,0,23,59,59,999)} : {desde:new Date(base.getFullYear(),0,1,0,0,0,0), hasta:new Date(base.getFullYear(),11,31,23,59,59,999)};
+  return (lista||[]).filter(p=>{const f=fechaPedidoOrden(p); return f && f>=rango.desde && f<=rango.hasta;}).reduce((s,p)=>s+(Number(p.total_unidades||0)||0),0);
+}
+
 
 /* ================= UTILIDADES ================= */
+
+function abrirConfigOrden(){
+  const m=$('modalConfigOrden');
+  if(m) m.classList.add('show');
+  setTimeout(()=>{ iniciarMapaBodega(); if(state.bodegaMapa) state.bodegaMapa.invalidateSize(); },250);
+}
+function cerrarConfigOrden(){
+  const m=$('modalConfigOrden');
+  if(m) m.classList.remove('show');
+}
 function togglePanel(){
   const panel=$('panelControl');
   if(!panel) return;

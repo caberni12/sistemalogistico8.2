@@ -15,5 +15,5 @@ Fecha: 2026-05-08
 10. El iframe principal ahora permite fullscreen.
 
 URL Apps Script activa:
-https://script.google.com/macros/s/AKfycbwKJ0I0LL3J12cJg1sVuOuIe60v4Us3h9rnp4iev-3SuR5GHVEz3-Q1H-JJyjs96sOMPg/exec
+https://script.google.com/macros/s/AKfycbyOR_9D7lshIw2sLwWSKvwiHwfhHMXaR9qV2he9gh5cxc3nKdIOjuq3FZgbtJWwrRR48g/exec
 11. Se ajustó el Apps Script para que la voz de estado TERMINADO también incluya vendedor asociado cuando el dato esté disponible.

@@ -16,8 +16,13 @@ const SPREADSHEET_ID = '1Pwlf0YYZrGYTU5rAZbGQc3PpS_v7Bus-2V9owIN78-o';
 const SHEET_PEDIDOS = 'PEDIDOS';
 const SHEET_PEDIDO_ALT = 'PEDIDO';
 const SHEET_PIKEADORES = 'PIKEADORES';
+const SHEET_VENDEDORES = 'VENDEDORES';
+const SHEET_BODEGAS = 'BODEGAS';
+const SHEET_CLIENTES = 'CLIENTES';
 const SHEET_MAESTRA = 'MAESTRA';
 const SHEET_MOV = 'MOVIMIENTO';
+const SHEET_MOV_UBICACION = 'MOVIMIENTO_UBICACION';
+const SHEET_MOV_PEDIDOS = 'MOVIMIENTO_PEDIDOS';
 const SHEET_ALERTAS = 'ALERTAS_PEDIDOS';
 const TZ = 'America/Santiago';
 
@@ -37,11 +42,33 @@ function doGet(e){
     else if(['listar','listar_movimiento','listar_movimientos','cargar_movimiento','cargar_movimientos','listar_ubicaciones','cargar_ubicaciones','listar_movimiento_ubicaciones'].includes(accion)) r = listarMovimiento_(p);
     else if(['importar_movimiento','importar_movimientos','cargar_archivo_movimiento'].includes(accion)) r = importarMovimiento_(p);
     else if(['listar_pedidos','listar_pedidos_rapido','cargar_pedidos'].includes(accion)) r = listarPedidos_(p);
+    else if(['siguiente_numero_pedido','generar_numero_pedido','proximo_pedido','next_pedido','next_order'].includes(accion)) r = siguienteNumeroPedido_(p);
     else if(['seguimiento_pedido','consulta_cliente_pedido','consultar_pedido_cliente','estado_pedido_cliente'].includes(accion)) r = seguimientoPedido_(p);
     else if(['listar_alertas','listar_alertas_pedidos','cargar_alertas','alertas_pedidos','ultimas_alertas'].includes(accion)) r = listarAlertas_(p);
+
+    else if(['listar_movimiento_ubicacion','listar_movimientos_ubicacion','listar_bd_movimiento_ubicacion'].includes(accion)) r = listarMovimientoUbicacionBD_();
+    else if(['agregar_movimiento_ubicacion','crear_movimiento_ubicacion','guardar_movimiento_ubicacion'].includes(accion)) r = agregarMovimientoUbicacionBD_(p);
+    else if(['editar_movimiento_ubicacion','actualizar_movimiento_ubicacion','modificar_movimiento_ubicacion'].includes(accion)) r = editarMovimientoUbicacionBD_(p);
+    else if(['eliminar_movimiento_ubicacion','borrar_movimiento_ubicacion'].includes(accion)) r = eliminarMovimientoUbicacionBD_(p);
+    else if(['importar_movimiento_ubicacion','importar_movimientos_ubicacion'].includes(accion)) r = importarMovimientoUbicacionBD_(p);
+    else if(['listar_movimiento_pedidos','listar_movimientos_pedidos','listar_bd_movimiento_pedidos'].includes(accion)) r = listarMovimientoPedidosBD_();
+    else if(['agregar_movimiento_pedidos','crear_movimiento_pedidos','guardar_movimiento_pedidos'].includes(accion)) r = agregarMovimientoPedidosBD_(p);
+    else if(['editar_movimiento_pedidos','actualizar_movimiento_pedidos','modificar_movimiento_pedidos'].includes(accion)) r = editarMovimientoPedidosBD_(p);
+    else if(['eliminar_movimiento_pedidos','borrar_movimiento_pedidos'].includes(accion)) r = eliminarMovimientoPedidosBD_(p);
+    else if(['importar_movimiento_pedidos','importar_movimientos_pedidos'].includes(accion)) r = importarMovimientoPedidosBD_(p);
     else if(accion === 'listar_bd') r = listarBD_(p.sheet || p.bd || p.hoja || '');
     else if(['listar_pikeadores','obtener_pikeadores','cargar_pikeadores','select_pikeadores'].includes(accion)) r = listarPikeadores_();
     else if(['agregar_pikeador','crear_pikeador'].includes(accion)) r = agregarPikeador_(p.nombre || p.pikeador || '');
+    else if(['listar_vendedores','obtener_vendedores','cargar_vendedores','select_vendedores'].includes(accion)) r = listarVendedores_();
+    else if(['agregar_vendedor','crear_vendedor','guardar_vendedor'].includes(accion)) r = agregarVendedor_(p.nombre || p.vendedor || '');
+    else if(['listar_clientes','obtener_clientes','cargar_clientes','select_clientes'].includes(accion)) r = listarClientes_();
+    else if(['agregar_cliente','crear_cliente','guardar_cliente'].includes(accion)) r = agregarCliente_(p);
+    else if(['editar_cliente','actualizar_cliente','modificar_cliente'].includes(accion)) r = editarCliente_(p);
+    else if(['eliminar_cliente','borrar_cliente'].includes(accion)) r = eliminarCliente_(p);
+    else if(['listar_bodegas','obtener_bodegas','cargar_bodegas','select_bodegas'].includes(accion)) r = listarBodegas_();
+    else if(['agregar_bodega','crear_bodega','guardar_bodega'].includes(accion)) r = agregarBodega_(p);
+    else if(['editar_bodega','actualizar_bodega','modificar_bodega'].includes(accion)) r = editarBodega_(p);
+    else if(['eliminar_bodega','borrar_bodega'].includes(accion)) r = eliminarBodega_(p);
     else if(['listar_maestra_bd','maestra_listar','cargar_maestra'].includes(accion)) r = listarMaestraBD_();
     else if(['agregar_maestra','crear_maestra','guardar_maestra'].includes(accion)) r = agregarMaestra_(p);
     else if(['editar_maestra','actualizar_maestra','modificar_maestra'].includes(accion)) r = editarMaestra_(p);
@@ -50,6 +77,7 @@ function doGet(e){
     else if(['listar_maestra'].includes(accion)) r = listarMaestra_();
     else if(['buscar','buscar_producto','buscar_maestra'].includes(accion)) r = buscarProducto_(p.codigo || p.cod || '');
     else if(['actualizar_estado_pedido','cambiar_estado_pedido','actualizar_estado','cambiar_estado'].includes(accion)) r = actualizarEstadoPedido_(p);
+    else if(['editar_pedido_completo','editar_pedido','actualizar_pedido','modificar_pedido'].includes(accion)) r = editarPedidoCompleto_(p);
     else if(['preparar_pedido','enviar_preparacion','enviar_a_preparacion'].includes(accion)) r = alertaPedido_(p, 'PREPARACION', 'Pedido enviado a preparación', true);
     else if(['reenviar_alerta','reenviar_alerta_pedido','enviar_alerta','disparar_alerta_pedido'].includes(accion)) r = alertaPedido_(p, 'ALERTA', 'Pedido enviado a preparación', false);
     else if(['asignar_pikeador','asignar_pikeador_pedido'].includes(accion)) r = asignarPikeador_(p);
@@ -71,14 +99,37 @@ function doPost(e){
     else if(['reparar_pikeadores','reparar_pikeadores_pedidos','limpiar_pikeadores'].includes(accion)) r = repararPikeadoresPedidos_();
     else if(['listar_alertas','listar_alertas_pedidos','cargar_alertas','alertas_pedidos','ultimas_alertas'].includes(accion)) r = listarAlertas_(b);
     else if(['listar','listar_movimiento','listar_movimientos','cargar_movimiento','cargar_movimientos','listar_ubicaciones','cargar_ubicaciones','listar_movimiento_ubicaciones'].includes(accion)) r = listarMovimiento_(b);
+
+    else if(['listar_movimiento_ubicacion','listar_movimientos_ubicacion','listar_bd_movimiento_ubicacion'].includes(accion)) r = listarMovimientoUbicacionBD_();
+    else if(['agregar_movimiento_ubicacion','crear_movimiento_ubicacion','guardar_movimiento_ubicacion'].includes(accion)) r = agregarMovimientoUbicacionBD_(b);
+    else if(['editar_movimiento_ubicacion','actualizar_movimiento_ubicacion','modificar_movimiento_ubicacion'].includes(accion)) r = editarMovimientoUbicacionBD_(b);
+    else if(['eliminar_movimiento_ubicacion','borrar_movimiento_ubicacion'].includes(accion)) r = eliminarMovimientoUbicacionBD_(b);
+    else if(['importar_movimiento_ubicacion','importar_movimientos_ubicacion'].includes(accion)) r = importarMovimientoUbicacionBD_(b);
+    else if(['listar_movimiento_pedidos','listar_movimientos_pedidos','listar_bd_movimiento_pedidos'].includes(accion)) r = listarMovimientoPedidosBD_();
+    else if(['agregar_movimiento_pedidos','crear_movimiento_pedidos','guardar_movimiento_pedidos'].includes(accion)) r = agregarMovimientoPedidosBD_(b);
+    else if(['editar_movimiento_pedidos','actualizar_movimiento_pedidos','modificar_movimiento_pedidos'].includes(accion)) r = editarMovimientoPedidosBD_(b);
+    else if(['eliminar_movimiento_pedidos','borrar_movimiento_pedidos'].includes(accion)) r = eliminarMovimientoPedidosBD_(b);
+    else if(['importar_movimiento_pedidos','importar_movimientos_pedidos'].includes(accion)) r = importarMovimientoPedidosBD_(b);
     else if(accion === 'listar_bd') r = listarBD_(b.sheet || b.bd || b.hoja || '');
     else if(['importar_movimiento','importar_movimientos','cargar_archivo_movimiento'].includes(accion)) r = importarMovimiento_(b);
     else if(['seguimiento_pedido','consulta_cliente_pedido','consultar_pedido_cliente','estado_pedido_cliente'].includes(accion)) r = seguimientoPedido_(b);
+    else if(['siguiente_numero_pedido','generar_numero_pedido','proximo_pedido','next_pedido','next_order'].includes(accion)) r = siguienteNumeroPedido_(b);
     else if(['actualizar_estado_pedido','cambiar_estado_pedido','actualizar_estado','cambiar_estado'].includes(accion)) r = actualizarEstadoPedido_(b);
+    else if(['editar_pedido_completo','editar_pedido','actualizar_pedido','modificar_pedido'].includes(accion)) r = editarPedidoCompleto_(b);
     else if(['preparar_pedido','enviar_preparacion','enviar_a_preparacion'].includes(accion)) r = alertaPedido_(b, 'PREPARACION', 'Pedido enviado a preparación', true);
     else if(['reenviar_alerta','reenviar_alerta_pedido','enviar_alerta','disparar_alerta_pedido'].includes(accion)) r = alertaPedido_(b, 'ALERTA', 'Pedido enviado a preparación', false);
     else if(['asignar_pikeador','asignar_pikeador_pedido'].includes(accion)) r = asignarPikeador_(b);
     else if(['agregar_pikeador','crear_pikeador'].includes(accion)) r = agregarPikeador_(b.nombre || b.pikeador || '');
+    else if(['listar_vendedores','obtener_vendedores','cargar_vendedores','select_vendedores'].includes(accion)) r = listarVendedores_();
+    else if(['agregar_vendedor','crear_vendedor','guardar_vendedor'].includes(accion)) r = agregarVendedor_(b.nombre || b.vendedor || '');
+    else if(['listar_clientes','obtener_clientes','cargar_clientes','select_clientes'].includes(accion)) r = listarClientes_();
+    else if(['agregar_cliente','crear_cliente','guardar_cliente'].includes(accion)) r = agregarCliente_(b);
+    else if(['editar_cliente','actualizar_cliente','modificar_cliente'].includes(accion)) r = editarCliente_(b);
+    else if(['eliminar_cliente','borrar_cliente'].includes(accion)) r = eliminarCliente_(b);
+    else if(['listar_bodegas','obtener_bodegas','cargar_bodegas','select_bodegas'].includes(accion)) r = listarBodegas_();
+    else if(['agregar_bodega','crear_bodega','guardar_bodega'].includes(accion)) r = agregarBodega_(b);
+    else if(['editar_bodega','actualizar_bodega','modificar_bodega'].includes(accion)) r = editarBodega_(b);
+    else if(['eliminar_bodega','borrar_bodega'].includes(accion)) r = eliminarBodega_(b);
     else if(['listar_maestra_bd','maestra_listar','cargar_maestra'].includes(accion)) r = listarMaestraBD_();
     else if(['agregar_maestra','crear_maestra','guardar_maestra'].includes(accion)) r = agregarMaestra_(b);
     else if(['editar_maestra','actualizar_maestra','modificar_maestra'].includes(accion)) r = editarMaestra_(b);
@@ -305,6 +356,7 @@ function seguimientoPedido_(p){
     cliente:ped.cliente,
     vendedor:ped.vendedor,
     pikeador:ped.pikeador,
+    bodega_preparacion:ped.bodega_preparacion,
     status:ped.status,
     estado:ped.status,
     fecha:ped.fecha,
@@ -325,9 +377,14 @@ function listarBD_(name){
   let sh = null;
   if(name === 'PEDIDOS' || name === 'PEDIDO') sh = pedidosSheet_(false);
   else if(name === 'PIKEADORES') sh = ss_().getSheetByName(SHEET_PIKEADORES);
+  else if(name === 'VENDEDORES' || name === 'BD-VENDEDORES' || name === 'BD_VENDEDORES') sh = ss_().getSheetByName(SHEET_VENDEDORES);
+  else if(name === 'BODEGAS' || name === 'BD-BODEGAS' || name === 'BD_BODEGAS') sh = bodegaSheet_(true);
+  else if(name === 'CLIENTES' || name === 'BD-CLIENTES' || name === 'BD_CLIENTES') sh = clienteSheet_(true);
   else if(name === 'MAESTRA') sh = maestraSheet_(true);
   else if(name === 'ALERTAS_PEDIDOS') sh = ss_().getSheetByName(SHEET_ALERTAS);
   else if(name === 'MOVIMIENTO' || name === 'BD_MOVIMIENTO' || name === 'BD-MOVIMIENTO') sh = movimientoSheet_(true);
+  else if(name === 'MOVIMIENTO_UBICACION' || name === 'BD_MOVIMIENTO_UBICACION' || name === 'BD-MOVIMIENTO-UBICACION' || name === 'MOVIMIENTOUBICACION') sh = gestionSheet_(SHEET_MOV_UBICACION, movimientoUbicacionHeaders_(), true);
+  else if(name === 'MOVIMIENTO_PEDIDOS' || name === 'BD_MOVIMIENTO_PEDIDOS' || name === 'BD-MOVIMIENTO-PEDIDOS' || name === 'MOVIMIENTOPEDIDOS') sh = gestionSheet_(SHEET_MOV_PEDIDOS, movimientoPedidosHeaders_(), true);
   else sh = ss_().getSheetByName(name);
   if(!sh) return {ok:true,sheet:name,headers:[],data:[],rows:[],values:[]};
   const v = values_(sh);
@@ -358,6 +415,30 @@ function agregarPikeador_(nombre){
   return {ok:true,msg:existe?'Pikeador ya existía':'Pikeador creado',nombre:nombre,data:listarPikeadores_().data};
 }
 
+function listarVendedores_(){
+  const sh = getOrCreate_(SHEET_VENDEDORES, ['nombre','fecha_creacion']);
+  ensureCols_(sh, ['nombre','fecha_creacion']);
+  const v = values_(sh);
+  const iN = find_(v.headers, ['nombre','vendedor','ejecutivo','responsable','usuario'], 0);
+  const iF = find_(v.headers, ['fecha_creacion','fecha'], 1);
+  const seen = {}, data = [];
+  v.data.forEach(r=>{ const n=t_(r[iN]); if(!n || seen[n.toUpperCase()]) return; seen[n.toUpperCase()]=1; data.push({nombre:n,fecha_creacion:t_(r[iF])}); });
+  data.sort((a,b)=>a.nombre.localeCompare(b.nombre));
+  return {ok:true,sheet:SHEET_VENDEDORES,headers:v.headers,data:data,vendedores:data,total:data.length};
+}
+
+function agregarVendedor_(nombre){
+  nombre = t_(nombre);
+  if(!nombre) return {ok:false,msg:'Nombre de vendedor vacío'};
+  const sh = getOrCreate_(SHEET_VENDEDORES, ['nombre','fecha_creacion']);
+  ensureCols_(sh, ['nombre','fecha_creacion']);
+  const v = values_(sh);
+  const iN = find_(v.headers, ['nombre','vendedor','ejecutivo','responsable','usuario'],0);
+  const existe = v.data.some(r=>t_(r[iN]).toUpperCase() === nombre.toUpperCase());
+  if(!existe) sh.appendRow([nombre, Utilities.formatDate(new Date(), TZ, 'yyyy-MM-dd HH:mm:ss')]);
+  return {ok:true,msg:existe?'Vendedor ya existía':'Vendedor creado',nombre:nombre,data:listarVendedores_().data};
+}
+
 function listarMaestra_(){
   const sh = ss_().getSheetByName(SHEET_MAESTRA);
   if(!sh) return {ok:true,sheet:SHEET_MAESTRA,headers:[],data:[],productos:[]};
@@ -365,16 +446,63 @@ function listarMaestra_(){
   const iC = find_(v.headers, ['codigo','código','cod','sku','producto','item'],0);
   const iD = find_(v.headers, ['descripcion','descripción','detalle','nombre'],1);
   const iQ = find_(v.headers, ['cantidad','unidades','stock'],2);
-  const data = v.data.map(r=>({codigo:code_(r[iC]),descripcion:t_(r[iD]),cantidad:n_(r[iQ])})).filter(x=>x.codigo||x.descripcion);
+  const iU = find_(v.headers, ['ubicacion','ubicación','bodega','ubicacion sugerida','ubicación sugerida'], -1);
+  const data = v.data.map(r=>({codigo:code_(r[iC]),descripcion:t_(r[iD]),cantidad:n_(r[iQ]),ubicacion:iU>=0?t_(r[iU]):''})).filter(x=>x.codigo||x.descripcion);
   return {ok:true,sheet:SHEET_MAESTRA,headers:v.headers,data:data,productos:data,total:data.length};
 }
 function buscarProducto_(codigo){
   codigo = code_(codigo);
   if(!codigo) return {ok:false,msg:'Código vacío'};
   const p = (listarMaestra_().productos || []).find(x=>code_(x.codigo)===codigo);
-  return p ? Object.assign({ok:true},p) : {ok:false,msg:'Código no encontrado',codigo:codigo};
+  const ubicacion = ubicacionPorCodigo_(codigo);
+  if(p) return Object.assign({ok:true},p,{ubicacion:ubicacion || p.ubicacion || ''});
+  return ubicacion ? {ok:true,codigo:codigo,descripcion:'',cantidad:0,ubicacion:ubicacion,fuente:'MOVIMIENTO'} : {ok:false,msg:'Código no encontrado',codigo:codigo};
 }
 
+
+function textoUbicacionCantidad_(ubicacion,cantidad){
+  const u=t_(ubicacion);
+  const c=t_(cantidad);
+  if(!u) return '';
+  return c && c !== '0' ? u + ' (' + c + ')' : u;
+}
+function unirUbicacionTexto_(actual,nuevo){
+  nuevo=t_(nuevo);
+  if(!nuevo) return t_(actual);
+  const partes=t_(actual).split('|').map(function(x){return t_(x);}).filter(Boolean);
+  const baseNuevo=nh_(nuevo.replace(/\s*\([^)]*\)\s*$/,''));
+  const existe=partes.some(function(p){ return nh_(p.replace(/\s*\([^)]*\)\s*$/,'')) === baseNuevo; });
+  if(!existe) partes.push(nuevo);
+  return partes.join(' | ');
+}
+function ubicacionesMovimientoMap_(){
+  const out={};
+  [SHEET_MOV, SHEET_MOV_UBICACION].forEach(function(name){
+    const sh=ss_().getSheetByName(name);
+    if(!sh) return;
+    const v=values_(sh);
+    const h=v.headers||[];
+    const iC=find_(h,['codigo','código','cod','sku','producto','codigo producto','código producto'], -1);
+    const iU=find_(h,['ubicacion','ubicación','ubicaciones','bodega','ubic'], -1);
+    const iQ=find_(h,['cantidad','stock','existencia','unidades','qty','cant'], -1);
+    const iS=find_(h,['status','estado','vigencia'], -1);
+    if(iC<0 || iU<0) return;
+    v.data.forEach(function(r){
+      const estado=iS>=0 ? nh_(getCell_(r,iS)) : '';
+      if(['RETIRADO','ELIMINADO','ANULADO','INACTIVO'].indexOf(estado)>=0) return;
+      const codigo=code_(getCell_(r,iC));
+      const ubic=textoUbicacionCantidad_(getCell_(r,iU), iQ>=0?getCell_(r,iQ):'');
+      if(codigo && ubic) out[codigo]=unirUbicacionTexto_(out[codigo]||'', ubic);
+    });
+  });
+  return out;
+}
+function ubicacionPorCodigo_(codigo){
+  codigo=code_(codigo);
+  if(!codigo) return '';
+  const map=ubicacionesMovimientoMap_();
+  return map[codigo] || '';
+}
 
 /* =========================================================
    BD-MAESTRA - CARGA, CRUD E IMPORTACIÓN XLSX/CSV
@@ -584,6 +712,368 @@ function importarMaestra_(b){
 }
 
 
+/* =========================================================
+   MOVIMIENTO_UBICACION / MOVIMIENTO_PEDIDOS - CRUD COMPLETO
+   Acciones soportadas:
+   - listar_movimiento_ubicacion / agregar / editar / eliminar / importar
+   - listar_movimiento_pedidos / agregar / editar / eliminar / importar
+========================================================= */
+function movimientoUbicacionHeaders_(){
+  return ['id','fecha_registro','codigo','descripcion','ubicacion','tipo_movimiento','cantidad','pedido','responsable','status','observaciones','origen'];
+}
+function movimientoPedidosHeaders_(){
+  return ['id','fecha','pedido','status','cliente','vendedor','pikeador','cantidad_items','origen','observaciones'];
+}
+function gestionSheet_(name, headers, crear){
+  const ss = ss_();
+  let sh = ss.getSheetByName(name);
+  if(!sh && crear) sh = getOrCreate_(name, headers);
+  if(sh && crear){
+    ensureCols_(sh, headers);
+    try{
+      const h = values_(sh).headers;
+      const ixCodigo = find_(h, ['codigo','código','cod','sku'], -1);
+      const ixPedido = find_(h, ['pedido','nro pedido','numero pedido','número pedido'], -1);
+      if(ixCodigo >= 0) sh.getRange(1, ixCodigo + 1, sh.getMaxRows(), 1).setNumberFormat('@');
+      if(ixPedido >= 0) sh.getRange(1, ixPedido + 1, sh.getMaxRows(), 1).setNumberFormat('@');
+    }catch(e){}
+  }
+  return sh;
+}
+function listarGestionBD_(sheetName, headers){
+  const sh = gestionSheet_(sheetName, headers, true);
+  const lastRow = Math.max(1, sh.getLastRow());
+  const lastCol = Math.max(sh.getLastColumn(), headers.length);
+  const raw = sh.getRange(1, 1, lastRow, lastCol).getDisplayValues();
+  let h = (raw[0] || []).map(t_);
+  if(h.every(x => !x)){ h = headers; sh.getRange(1, 1, 1, h.length).setValues([h]); }
+  ensureCols_(sh, headers);
+  h = sh.getRange(1, 1, 1, Math.max(sh.getLastColumn(), headers.length)).getDisplayValues()[0].map(t_);
+  const full = sh.getRange(1, 1, Math.max(1, sh.getLastRow()), Math.max(sh.getLastColumn(), headers.length)).getDisplayValues();
+  const data = [];
+  const items = [];
+  const rowNumbers = [];
+  for(let i=1; i<full.length; i++){
+    const row = full[i];
+    if(!row.some(c => t_(c))) continue;
+    data.push(row);
+    rowNumbers.push(i + 1);
+    const obj = {rowNumber:i + 1};
+    h.forEach((col, idx) => { if(col) obj[col] = t_(row[idx]); });
+    items.push(obj);
+  }
+  return {ok:true,sheet:sh.getName(),headers:h,data:data,rows:data,values:data,items:items,rowNumbers:rowNumbers,total:data.length,serverTime:new Date().toISOString()};
+}
+function valorGestion_(b, header){
+  b = b || {};
+  const keys = Object.keys(b);
+  const aliases = [header];
+  const n = nh_(header);
+  if(n === 'CODIGO') aliases.push('código','cod','sku');
+  if(n === 'DESCRIPCION') aliases.push('descripción','detalle','nombre');
+  if(n === 'UBICACION') aliases.push('ubicación','bodega');
+  if(n === 'FECHAREGISTRO') aliases.push('fecha registro','fecha','registro');
+  if(n === 'TIPOMOVIMIENTO') aliases.push('tipo movimiento','tipo','movimiento');
+  if(n === 'CANTIDADITEMS') aliases.push('cantidad items','items','total_items');
+  if(n === 'STATUS') aliases.push('estado','status');
+  const k = keys.find(key => aliases.some(a => nh_(a) === nh_(key)));
+  return k ? t_(b[k]) : '';
+}
+function filaGestion_(sh, headers, b){
+  const rowNumber = Number(b.rowNumber || b.fila || b.row || 0);
+  if(rowNumber >= 2 && rowNumber <= sh.getLastRow()) return rowNumber;
+  const id = t_(b.id || b.ID || '');
+  if(!id) return 0;
+  const v = values_(sh);
+  const ix = find_(headers, ['id'], 0);
+  if(ix < 0) return 0;
+  for(let i=0; i<v.data.length; i++) if(t_(getCell_(v.data[i], ix)) === id) return i + 2;
+  return 0;
+}
+function objetoGestion_(b, headers, prefix){
+  const obj = {};
+  const now = Utilities.formatDate(new Date(), TZ, 'yyyy-MM-dd HH:mm:ss');
+  headers.forEach(h => {
+    const n = nh_(h);
+    let value = valorGestion_(b, h);
+    if(n === 'ID') value = t_(b.id || b.ID || '') || id_(prefix);
+    if((n === 'FECHAREGISTRO' || n === 'FECHA') && !value) value = now;
+    if(n === 'CODIGO') value = code_(value);
+    if(n === 'PEDIDO') value = pedido_(value);
+    if(n === 'CANTIDAD' || n === 'CANTIDADITEMS') value = value === '' ? '' : n_(value);
+    if(n === 'STATUS' && !value) value = 'VIGENTE';
+    if(n === 'ORIGEN' && !value) value = 'WEB';
+    obj[h] = value;
+  });
+  return obj;
+}
+function agregarGestionBD_(sheetName, headers, b, prefix){
+  const sh = gestionSheet_(sheetName, headers, true);
+  const h = values_(sh).headers.length ? values_(sh).headers : headers;
+  const obj = objetoGestion_(b, h, prefix);
+  appendObjects_(sh, h, [obj]);
+  SpreadsheetApp.flush();
+  return {ok:true,msg:'Registro agregado en '+sheetName,accion:'agregar_'+sheetName.toLowerCase(),id:obj.id || obj.ID || '',total:listarGestionBD_(sheetName, headers).total};
+}
+function editarGestionBD_(sheetName, headers, b, prefix){
+  const sh = gestionSheet_(sheetName, headers, true);
+  const h = values_(sh).headers.length ? values_(sh).headers : headers;
+  const row = filaGestion_(sh, h, b);
+  if(!row) return {ok:false,msg:'Registro no encontrado en '+sheetName};
+  const obj = objetoGestion_(b, h, prefix);
+  h.forEach((col, idx) => {
+    if(nh_(col) === 'ID' && !t_(valorGestion_(b, col))) return;
+    sh.getRange(row, idx + 1).setValue(obj[col]);
+  });
+  SpreadsheetApp.flush();
+  return {ok:true,msg:'Registro editado en '+sheetName,rowNumber:row};
+}
+function eliminarGestionBD_(sheetName, headers, b){
+  const sh = gestionSheet_(sheetName, headers, true);
+  const h = values_(sh).headers.length ? values_(sh).headers : headers;
+  const row = filaGestion_(sh, h, b);
+  if(!row) return {ok:false,msg:'Registro no encontrado para eliminar en '+sheetName};
+  sh.deleteRow(row);
+  SpreadsheetApp.flush();
+  return {ok:true,msg:'Registro eliminado en '+sheetName,rowNumber:row};
+}
+function importarGestionBD_(sheetName, headers, b, prefix){
+  let items = [];
+  if(Array.isArray(b.rows)) items = b.rows;
+  else if(Array.isArray(b.data)) items = b.data;
+  else items = parseItems_(b.rows || b.data || b.items || b.detalle);
+  const modo = t_(b.modo || 'append').toLowerCase();
+  let insertados = 0, actualizados = 0, omitidos = 0;
+  items.forEach(raw => {
+    raw = raw || {};
+    if(!Object.keys(raw).length){ omitidos++; return; }
+    if(modo !== 'append' && (raw.id || raw.ID || raw.rowNumber || raw.fila || raw.row)){
+      const r = editarGestionBD_(sheetName, headers, raw, prefix);
+      if(r && r.ok) actualizados++; else { agregarGestionBD_(sheetName, headers, raw, prefix); insertados++; }
+    }else{
+      agregarGestionBD_(sheetName, headers, raw, prefix);
+      insertados++;
+    }
+  });
+  SpreadsheetApp.flush();
+  return {ok:true,msg:'Importación finalizada en '+sheetName,insertados:insertados,actualizados:actualizados,omitidos:omitidos,total:listarGestionBD_(sheetName, headers).total};
+}
+function listarMovimientoUbicacionBD_(){ return listarGestionBD_(SHEET_MOV_UBICACION, movimientoUbicacionHeaders_()); }
+function agregarMovimientoUbicacionBD_(b){ return agregarGestionBD_(SHEET_MOV_UBICACION, movimientoUbicacionHeaders_(), b, 'MVU'); }
+function editarMovimientoUbicacionBD_(b){ return editarGestionBD_(SHEET_MOV_UBICACION, movimientoUbicacionHeaders_(), b, 'MVU'); }
+function eliminarMovimientoUbicacionBD_(b){ return eliminarGestionBD_(SHEET_MOV_UBICACION, movimientoUbicacionHeaders_(), b); }
+function importarMovimientoUbicacionBD_(b){ return importarGestionBD_(SHEET_MOV_UBICACION, movimientoUbicacionHeaders_(), b, 'MVU'); }
+function listarMovimientoPedidosBD_(){ return listarGestionBD_(SHEET_MOV_PEDIDOS, movimientoPedidosHeaders_()); }
+function agregarMovimientoPedidosBD_(b){ return agregarGestionBD_(SHEET_MOV_PEDIDOS, movimientoPedidosHeaders_(), b, 'MVP'); }
+function editarMovimientoPedidosBD_(b){ return editarGestionBD_(SHEET_MOV_PEDIDOS, movimientoPedidosHeaders_(), b, 'MVP'); }
+function eliminarMovimientoPedidosBD_(b){ return eliminarGestionBD_(SHEET_MOV_PEDIDOS, movimientoPedidosHeaders_(), b); }
+function importarMovimientoPedidosBD_(b){ return importarGestionBD_(SHEET_MOV_PEDIDOS, movimientoPedidosHeaders_(), b, 'MVP'); }
+
+
+
+
+/* =========================================================
+   CLIENTES - REGISTRO MAESTRO PARA PEDIDOS
+   Hoja: CLIENTES
+========================================================= */
+function clienteHeaders_(){ return ['id','cliente','rut','direccion','giro','medio_pago','telefono','correo_electronico','responsable_empresa','fecha_creacion','status']; }
+function clienteSheet_(crear){
+  const sh = getOrCreate_(SHEET_CLIENTES, clienteHeaders_());
+  if(crear) ensureCols_(sh, clienteHeaders_());
+  return sh;
+}
+function clienteIdx_(h){
+  return {
+    id:find_(h,['id'],0),
+    cliente:find_(h,['cliente','nombre','razon_social','razón social'],1),
+    rut:find_(h,['rut','r.u.t'],2),
+    direccion:find_(h,['direccion','dirección'],3),
+    giro:find_(h,['giro'],4),
+    medio_pago:find_(h,['medio_pago','medio pago','forma_pago','forma pago'],5),
+    telefono:find_(h,['telefono','teléfono','fono'],6),
+    correo_electronico:find_(h,['correo_electronico','correo electrónico','correo','email','mail'],7),
+    responsable_empresa:find_(h,['responsable_empresa','responsable empresa','responsable'],8),
+    fecha_creacion:find_(h,['fecha_creacion','fecha creación','fecha'],9),
+    status:find_(h,['status','estado'],10)
+  };
+}
+function listarClientes_(){
+  const sh = clienteSheet_(true);
+  const v = values_(sh), h = v.headers.length ? v.headers : clienteHeaders_(), ix = clienteIdx_(h);
+  const items = v.data.map((r,i)=>({
+    rowNumber:i+2,
+    id:getCell_(r,ix.id),
+    cliente:getCell_(r,ix.cliente),
+    rut:getCell_(r,ix.rut),
+    direccion:getCell_(r,ix.direccion),
+    giro:getCell_(r,ix.giro),
+    medio_pago:getCell_(r,ix.medio_pago),
+    telefono:getCell_(r,ix.telefono),
+    correo_electronico:getCell_(r,ix.correo_electronico),
+    responsable_empresa:getCell_(r,ix.responsable_empresa),
+    fecha_creacion:getCell_(r,ix.fecha_creacion),
+    status:(getCell_(r,ix.status)||'ACTIVO').toUpperCase()
+  })).filter(x=>x.cliente);
+  return {ok:true,sheet:sh.getName(),headers:h,data:v.data,rows:v.data,values:v.data,items:items,clientes:items,total:items.length,serverTime:new Date().toISOString()};
+}
+function clientePayload_(b){
+  const st = nh_(b.status || b.estado || 'ACTIVO');
+  const status = st === 'INACTIVO' ? 'INACTIVO' : st === 'BLOQUEADO' ? 'BLOQUEADO' : 'ACTIVO';
+  return {
+    id:t_(b.id || b.ID || ''),
+    rowNumber:Number(b.rowNumber || b.fila || b.row || 0),
+    cliente:t_(b.cliente || b.nombre || b.razon_social || b['razón social'] || ''),
+    rut:t_(b.rut || b.RUT || ''),
+    direccion:t_(b.direccion || b['dirección'] || ''),
+    giro:t_(b.giro || ''),
+    medio_pago:t_(b.medio_pago || b.medioPago || b.forma_pago || ''),
+    telefono:t_(b.telefono || b.fono || ''),
+    correo_electronico:t_(b.correo_electronico || b.correo || b.email || b.mail || ''),
+    responsable_empresa:t_(b.responsable_empresa || b.responsable || ''),
+    status:status
+  };
+}
+function filaCliente_(sh,h,item){
+  const row = Number(item.rowNumber || 0);
+  if(row >= 2 && row <= sh.getLastRow()) return row;
+  const v = values_(sh), ix = clienteIdx_(h);
+  if(item.id && ix.id >= 0){ for(let i=0;i<v.data.length;i++) if(t_(getCell_(v.data[i],ix.id)) === item.id) return i+2; }
+  const rut = nh_(item.rut);
+  if(rut && ix.rut >= 0){ for(let i=0;i<v.data.length;i++) if(nh_(getCell_(v.data[i],ix.rut)) === rut) return i+2; }
+  const cliente = nh_(item.cliente);
+  if(cliente && ix.cliente >= 0){ for(let i=0;i<v.data.length;i++) if(nh_(getCell_(v.data[i],ix.cliente)) === cliente) return i+2; }
+  return 0;
+}
+function agregarCliente_(b){
+  const sh = clienteSheet_(true);
+  const h = values_(sh).headers.length ? values_(sh).headers : clienteHeaders_();
+  const item = clientePayload_(b);
+  if(!item.cliente) return {ok:false,msg:'Nombre de cliente vacío'};
+  const existe = filaCliente_(sh,h,item);
+  if(existe) return editarCliente_(Object.assign({}, b, {rowNumber:existe}));
+  const obj = Object.assign({}, item, {id:id_('CLI'),fecha_creacion:Utilities.formatDate(new Date(), TZ, 'yyyy-MM-dd HH:mm:ss')});
+  appendObjects_(sh,h,[obj]);
+  SpreadsheetApp.flush();
+  return {ok:true,msg:'Cliente creado correctamente',cliente:item.cliente,total:listarClientes_().total};
+}
+function editarCliente_(b){
+  const sh = clienteSheet_(true);
+  const h = values_(sh).headers.length ? values_(sh).headers : clienteHeaders_();
+  const ix = clienteIdx_(h), item = clientePayload_(b);
+  const row = filaCliente_(sh,h,item);
+  if(!row) return {ok:false,msg:'Cliente no encontrado'};
+  const set = (field,val)=>{ const col=ix[field]; if(col>=0) sh.getRange(row,col+1).setValue(val); };
+  set('cliente',item.cliente); set('rut',item.rut); set('direccion',item.direccion); set('giro',item.giro); set('medio_pago',item.medio_pago); set('telefono',item.telefono); set('correo_electronico',item.correo_electronico); set('responsable_empresa',item.responsable_empresa); set('status',item.status);
+  SpreadsheetApp.flush();
+  return {ok:true,msg:'Cliente actualizado',cliente:item.cliente,rowNumber:row};
+}
+function eliminarCliente_(b){
+  const sh = clienteSheet_(true);
+  const h = values_(sh).headers.length ? values_(sh).headers : clienteHeaders_();
+  const row = filaCliente_(sh,h,clientePayload_(b));
+  if(!row) return {ok:false,msg:'Cliente no encontrado para eliminar'};
+  sh.deleteRow(row);
+  SpreadsheetApp.flush();
+  return {ok:true,msg:'Cliente eliminado',rowNumber:row,total:listarClientes_().total};
+}
+
+/* =========================================================
+   BODEGAS - CONFIGURACIÓN DE BODEGAS DE PREPARACIÓN
+   Hoja: BODEGAS
+   Campos: nombre_bodega, direccion, fecha_creacion, status, radio_metros, latitud, longitud
+========================================================= */
+function bodegaHeaders_(){ return ['id','nombre_bodega','direccion','fecha_creacion','status','radio_metros','latitud','longitud']; }
+function bodegaSheet_(crear){
+  const sh = getOrCreate_(SHEET_BODEGAS, bodegaHeaders_());
+  if(crear) ensureCols_(sh, bodegaHeaders_());
+  return sh;
+}
+function bodegaIdx_(h){
+  return {
+    id:find_(h,['id'],0),
+    nombre_bodega:find_(h,['nombre_bodega','nombre bodega','bodega','nombre'],1),
+    direccion:find_(h,['direccion','dirección'],2),
+    fecha_creacion:find_(h,['fecha_creacion','fecha creación','fecha'],3),
+    status:find_(h,['status','estado'],4),
+    radio_metros:find_(h,['radio_metros','radio metros','radio'],5),
+    latitud:find_(h,['latitud','lat'],6),
+    longitud:find_(h,['longitud','lng','lon'],7)
+  };
+}
+function listarBodegas_(){
+  const sh = bodegaSheet_(true);
+  const v = values_(sh), h = v.headers.length ? v.headers : bodegaHeaders_(), ix = bodegaIdx_(h);
+  const items = v.data.map((r,i)=>({
+    rowNumber:i+2,
+    id:getCell_(r,ix.id),
+    nombre:getCell_(r,ix.nombre_bodega),
+    nombre_bodega:getCell_(r,ix.nombre_bodega),
+    direccion:getCell_(r,ix.direccion),
+    fecha_creacion:getCell_(r,ix.fecha_creacion),
+    status:(getCell_(r,ix.status)||'ACTIVA').toUpperCase(),
+    radio_metros:getCell_(r,ix.radio_metros)||'200',
+    latitud:getCell_(r,ix.latitud),
+    longitud:getCell_(r,ix.longitud)
+  })).filter(x=>x.nombre_bodega);
+  return {ok:true,sheet:sh.getName(),headers:h,data:v.data,rows:v.data,values:v.data,items:items,bodegas:items,total:items.length,serverTime:new Date().toISOString()};
+}
+function bodegaPayload_(b){
+  const status = nh_(b.status || b.estado || 'ACTIVA');
+  const st = status === 'INACTIVA' ? 'INACTIVA' : status === 'BLOQUEADA' ? 'BLOQUEADA' : 'ACTIVA';
+  return {
+    id:t_(b.id || b.ID || ''),
+    rowNumber:Number(b.rowNumber || b.fila || b.row || 0),
+    nombre_bodega:t_(b.nombre_bodega || b.nombreBodega || b.bodega || b.nombre || ''),
+    direccion:t_(b.direccion || b['dirección'] || ''),
+    status:st,
+    radio_metros:n_(b.radio_metros || b.radio || 200) || 200,
+    latitud:t_(b.latitud || b.lat || ''),
+    longitud:t_(b.longitud || b.lng || b.lon || '')
+  };
+}
+function filaBodega_(sh, h, item){
+  const row = Number(item.rowNumber || 0);
+  if(row >= 2 && row <= sh.getLastRow()) return row;
+  const v = values_(sh), ix = bodegaIdx_(h);
+  if(item.id && ix.id >= 0){ for(let i=0;i<v.data.length;i++) if(t_(getCell_(v.data[i],ix.id)) === item.id) return i+2; }
+  const nombre = nh_(item.nombre_bodega);
+  if(nombre && ix.nombre_bodega >= 0){ for(let i=0;i<v.data.length;i++) if(nh_(getCell_(v.data[i],ix.nombre_bodega)) === nombre) return i+2; }
+  return 0;
+}
+function agregarBodega_(b){
+  const sh = bodegaSheet_(true);
+  const h = values_(sh).headers.length ? values_(sh).headers : bodegaHeaders_();
+  const item = bodegaPayload_(b);
+  if(!item.nombre_bodega) return {ok:false,msg:'Nombre de bodega vacío'};
+  if(!item.direccion) return {ok:false,msg:'Dirección de bodega vacía'};
+  const existe = filaBodega_(sh,h,item);
+  if(existe) return editarBodega_(Object.assign({}, b, {rowNumber:existe}));
+  const obj = {id:id_('BDG'),nombre_bodega:item.nombre_bodega,direccion:item.direccion,fecha_creacion:Utilities.formatDate(new Date(), TZ, 'yyyy-MM-dd HH:mm:ss'),status:item.status,radio_metros:item.radio_metros,latitud:item.latitud,longitud:item.longitud};
+  appendObjects_(sh,h,[obj]);
+  SpreadsheetApp.flush();
+  return {ok:true,msg:'Bodega creada correctamente',bodega:item.nombre_bodega,total:listarBodegas_().total};
+}
+function editarBodega_(b){
+  const sh = bodegaSheet_(true);
+  const h = values_(sh).headers.length ? values_(sh).headers : bodegaHeaders_();
+  const ix = bodegaIdx_(h), item = bodegaPayload_(b);
+  const row = filaBodega_(sh,h,item);
+  if(!row) return {ok:false,msg:'Bodega no encontrada'};
+  const set = (field,val)=>{ const col=ix[field]; if(col>=0) sh.getRange(row,col+1).setValue(val); };
+  set('nombre_bodega',item.nombre_bodega); set('direccion',item.direccion); set('status',item.status); set('radio_metros',item.radio_metros); set('latitud',item.latitud); set('longitud',item.longitud);
+  SpreadsheetApp.flush();
+  return {ok:true,msg:'Bodega actualizada',bodega:item.nombre_bodega,rowNumber:row};
+}
+function eliminarBodega_(b){
+  const sh = bodegaSheet_(true);
+  const h = values_(sh).headers.length ? values_(sh).headers : bodegaHeaders_();
+  const row = filaBodega_(sh,h,bodegaPayload_(b));
+  if(!row) return {ok:false,msg:'Bodega no encontrada para eliminar'};
+  sh.deleteRow(row);
+  SpreadsheetApp.flush();
+  return {ok:true,msg:'Bodega eliminada',rowNumber:row};
+}
+
 function collectRawHeaders_(items){
   const out = [];
   (items || []).forEach(it => {
@@ -599,7 +1089,7 @@ function collectRawHeaders_(items){
 }
 function isCanonicalPedidoHeader_(h){
   const n = nh_(h);
-  const canonical = ['id','fecha','pedido','cliente','vendedor','pikeador','codigo','código','cod','sku','descripcion','descripción','detalle','ubicacion','ubicación','cantidad','unidades','status','estado','alerta_token','alerta_ts','alerta_tipo','alerta_mensaje','hora_inicio','hora inicio','inicio_preparacion','fecha_asignacion','hora_termino','hora termino','hora término','termino_preparacion','fecha_termino','tiempo_preparacion_min','minutos_preparacion','import_raw_json','import_headers_json'];
+  const canonical = ['id','fecha','pedido','cliente','vendedor','pikeador','bodega_preparacion','bodega preparación','bodega preparacion','bodega pedido','codigo','código','cod','sku','descripcion','descripción','detalle','ubicacion','ubicación','cantidad','unidades','status','estado','alerta_token','alerta_ts','alerta_tipo','alerta_mensaje','hora_inicio','hora inicio','inicio_preparacion','fecha_asignacion','hora_termino','hora termino','hora término','termino_preparacion','fecha_termino','tiempo_preparacion_min','minutos_preparacion','import_raw_json','import_headers_json'];
   return canonical.some(x => nh_(x) === n);
 }
 function safeJson_(v){
@@ -630,8 +1120,19 @@ function addRawExtrasToRow_(rowObj, item){
 }
 
 function guardarPedido_(b){
+  const usarAuto = bool_(b && (b.autogenerar_pedido || b.auto_pedido || b.autoPedido || b.generar_pedido || b.generarPedido));
+  const lock = usarAuto ? LockService.getScriptLock() : null;
+  if(lock) lock.waitLock(25000);
+  try{
+    return guardarPedidoImpl_(b || {}, usarAuto);
+  }finally{
+    if(lock){ try{ lock.releaseLock(); }catch(e){} }
+  }
+}
+
+function guardarPedidoImpl_(b, usarAuto){
   const sh = pedidosSheet_(true);
-  const baseCols = ['id','fecha','pedido','cliente','vendedor','pikeador','codigo','descripcion','ubicacion','cantidad','status','alerta_token','alerta_ts','alerta_tipo','alerta_mensaje','hora_inicio','hora_termino','tiempo_preparacion_min','import_raw_json','import_headers_json'];
+  const baseCols = ['id','fecha','pedido','cliente','vendedor','pikeador','bodega_preparacion','codigo','descripcion','ubicacion','cantidad','status','alerta_token','alerta_ts','alerta_tipo','alerta_mensaje','hora_inicio','hora_termino','tiempo_preparacion_min','import_raw_json','import_headers_json'];
   const items = parseItems_(b.items || b.productos || b.rows || b.detalle);
   // Preserva información importada tal como viene desde el XLSX/CSV: guarda JSON completo
   // y agrega columnas extra si el archivo trae campos que no existen en la BD.
@@ -640,7 +1141,15 @@ function guardarPedido_(b){
   const before = values_(sh);
   const headers = before.headers;
   const ix = idx_(headers);
-  const pedido = valorPedido_(b, b.order || b.nro_pedido);
+  const ubicacionesPorCodigo = ubicacionesMovimientoMap_();
+  if(ix.pedido >= 0){
+    try{ sh.getRange(1, ix.pedido + 1, Math.max(sh.getMaxRows(), 2), 1).setNumberFormat('@'); }catch(e){}
+  }
+  let pedido = valorPedido_(b, b.order || b.nro_pedido);
+  if(usarAuto){
+    const next = siguienteNumeroPedidoDesdeValues_(before, ix);
+    pedido = next.numero;
+  }
   if(!pedido && !items.length) return {ok:false,msg:'Pedido vacío'};
 
   const base = {
@@ -649,6 +1158,7 @@ function guardarPedido_(b){
     cliente:t_(b.cliente),
     vendedor:t_(b.vendedor),
     pikeador:limpiarPikeador_(b.pikeador, b.cliente),
+    bodega_preparacion:t_(b.bodega_preparacion || b.bodegaPreparacion || b.bodega || ''),
     status:estadoSeguro_(b.status||b.estado,'PENDIENTE')
   };
 
@@ -666,13 +1176,14 @@ function guardarPedido_(b){
     const row = {
       id:id_('PD'),
       fecha:t_(it.fecha || base.fecha) || base.fecha,
-      pedido:valorPedido_(Object.assign({}, it.__raw || {}, it), pedido),
+      pedido:usarAuto ? pedido : valorPedido_(Object.assign({}, it.__raw || {}, it), pedido),
       cliente:t_(it.cliente||base.cliente),
       vendedor:t_(it.vendedor||base.vendedor),
       pikeador:limpiarPikeador_(it.pikeador || base.pikeador, it.cliente || base.cliente),
+      bodega_preparacion:t_(it.bodega_preparacion || it.bodegaPreparacion || it.bodega || base.bodega_preparacion),
       codigo:code_(it.codigo||it.CODIGO||it.producto||it.sku),
       descripcion:t_(it.descripcion||it.DESCRIPCION||it.detalle||it.nombre),
-      ubicacion:t_(it.ubicacion||it.UBICACION),
+      ubicacion:t_(it.ubicacion||it.UBICACION) || ubicacionesPorCodigo[code_(it.codigo||it.CODIGO||it.producto||it.sku)] || '',
       cantidad:n_(it.cantidad||it.CANTIDAD||1)||1,
       status:estadoSeguro_(it.status||it.estado,base.status||'PENDIENTE'),
       hora_inicio:t_(it.hora_inicio || it.horaInicio || it.inicio_preparacion || it.fecha_inicio || ''),
@@ -720,8 +1231,9 @@ function guardarPedido_(b){
 
   appendObjects_(sh, headers, nuevos);
   if(base.pikeador) agregarPikeador_(base.pikeador);
-  nuevos.forEach(x=>{ if(x.pikeador) agregarPikeador_(x.pikeador); });
-  rows.forEach(x=>{ if(x.pikeador) agregarPikeador_(x.pikeador); });
+  if(base.vendedor) agregarVendedor_(base.vendedor);
+  nuevos.forEach(x=>{ if(x.pikeador) agregarPikeador_(x.pikeador); if(x.vendedor) agregarVendedor_(x.vendedor); });
+  rows.forEach(x=>{ if(x.pikeador) agregarPikeador_(x.pikeador); if(x.vendedor) agregarVendedor_(x.vendedor); });
 
   const alertas_emitidas = Object.keys(statusAlertas).map(k => {
     const a = statusAlertas[k];
@@ -742,6 +1254,126 @@ function guardarPedido_(b){
   };
 }
 
+
+function editarPedidoCompleto_(b){
+  const sh = pedidosSheet_(true);
+  const cols = ['id','fecha','pedido','cliente','vendedor','pikeador','bodega_preparacion','codigo','descripcion','ubicacion','cantidad','status','alerta_token','alerta_ts','alerta_tipo','alerta_mensaje','hora_inicio','hora_termino','tiempo_preparacion_min','import_raw_json','import_headers_json'];
+  ensureCols_(sh, cols);
+  const v = values_(sh), headers = v.headers, ix = idx_(headers);
+  const pedidoOriginal = t_(b.pedido_original || b.pedidoOriginal || b.original || b.pedido_anterior || b.pedidoAnterior) || valorPedido_(b, b.pedido);
+  const pedidoNuevo = valorPedido_(b, b.pedido || pedidoOriginal);
+  if(!pedidoOriginal) return {ok:false,msg:'Pedido original vacío'};
+  if(!pedidoNuevo) return {ok:false,msg:'Pedido nuevo vacío'};
+
+  const ubicacionesPorCodigo = ubicacionesMovimientoMap_();
+  const items = parseItems_(b.items || b.productos || b.detalle || b.rows || '[]').map(it => {
+    const codigo = code_(it.codigo || it.CODIGO || it.cod || it.sku || it.producto);
+    return {
+      codigo:codigo,
+      descripcion:t_(it.descripcion || it.DESCRIPCION || it.detalle || it.nombre || it.producto),
+      ubicacion:t_(it.ubicacion || it.UBICACION || it.bodega) || ubicacionesPorCodigo[codigo] || '',
+      cantidad:n_(it.cantidad || it.CANTIDAD || it.unidades || it.qty || 1) || 1
+    };
+  }).filter(x => x.codigo || x.descripcion || x.ubicacion || x.cantidad > 0);
+  if(!items.length) return {ok:false,msg:'El pedido debe tener al menos un producto'};
+
+  const keyOriginal = pedido_(pedidoOriginal);
+  const filas = [];
+  v.data.forEach((r,i)=>{ if(pedido_(getCell_(r, ix.pedido)) === keyOriginal) filas.push({row:i+2, data:r}); });
+
+  if(!filas.length){
+    return guardarPedido_(Object.assign({}, b, {pedido:pedidoNuevo, items:JSON.stringify(items)}));
+  }
+
+  const primera = filas[0].data;
+  const estadoAnterior = estadoSeguro_(getCell_(primera, ix.status), 'PENDIENTE');
+  const fecha = t_(b.fecha) || getCell_(primera, ix.fecha) || Utilities.formatDate(new Date(), TZ, 'yyyy-MM-dd HH:mm:ss');
+  const cliente = t_(b.cliente) || getCell_(primera, ix.cliente);
+  const vendedor = t_(b.vendedor) || getCell_(primera, ix.vendedor);
+  const pikeador = limpiarPikeador_(b.pikeador || getCell_(primera, ix.pikeador), cliente);
+  const status = estadoSeguro_(b.status || b.estado || getCell_(primera, ix.status), 'PENDIENTE');
+
+  function setField(row, field, value){
+    const col = ix[field];
+    if(col >= 0) sh.getRange(row, col + 1).setValue(value);
+  }
+
+  let actualizados = 0, insertados = 0, eliminados = 0;
+  items.forEach((it, i)=>{
+    if(i < filas.length){
+      const row = filas[i].row;
+      setField(row,'fecha',fecha);
+      setField(row,'pedido',pedidoNuevo);
+      setField(row,'cliente',cliente);
+      setField(row,'vendedor',vendedor);
+      setField(row,'pikeador',pikeador);
+      setField(row,'bodega_preparacion',t_(b.bodega_preparacion || b.bodegaPreparacion || b.bodega || getCell_(primera, ix.bodega_preparacion)));
+      setField(row,'codigo',it.codigo);
+      setField(row,'descripcion',it.descripcion);
+      setField(row,'ubicacion',it.ubicacion);
+      setField(row,'cantidad',it.cantidad);
+      setField(row,'status',status);
+      actualizados++;
+    }else{
+      const obj = {
+        id:id_('PD'),
+        fecha:fecha,
+        pedido:pedidoNuevo,
+        cliente:cliente,
+        vendedor:vendedor,
+        pikeador:pikeador,
+        bodega_preparacion:t_(b.bodega_preparacion || b.bodegaPreparacion || b.bodega || getCell_(primera, ix.bodega_preparacion)),
+        codigo:it.codigo,
+        descripcion:it.descripcion,
+        ubicacion:it.ubicacion,
+        cantidad:it.cantidad,
+        status:status,
+        alerta_token:'',
+        alerta_ts:'',
+        alerta_tipo:'',
+        alerta_mensaje:'',
+        hora_inicio:'',
+        hora_termino:'',
+        tiempo_preparacion_min:0,
+        import_raw_json:'',
+        import_headers_json:''
+      };
+      appendObjects_(sh, headers, [obj]);
+      insertados++;
+    }
+  });
+
+  if(filas.length > items.length){
+    filas.slice(items.length).sort((a,b)=>b.row-a.row).forEach(x=>{ sh.deleteRow(x.row); eliminados++; });
+  }
+
+  if(pikeador) agregarPikeador_(pikeador);
+  if(vendedor) agregarVendedor_(vendedor);
+
+  let alerta = null;
+  if(estadoAnterior !== status){
+    alerta = emitirAlertaStatus_(pedidoNuevo, status, cliente, vendedor, pikeador, 'EDITAR_PEDIDO', true);
+  }else{
+    SpreadsheetApp.flush();
+  }
+
+  return {
+    ok:true,
+    msg:'Pedido editado correctamente',
+    pedido:pedidoNuevo,
+    pedido_original:pedidoOriginal,
+    actualizados:actualizados,
+    insertados:insertados,
+    eliminados:eliminados,
+    status:status,
+    pikeador:pikeador,
+    alerta_token:alerta ? alerta.alerta_token : '',
+    alerta_mensaje:alerta ? alerta.alerta_mensaje : '',
+    voice:alerta ? alerta.voice : '',
+    serverTime:new Date().toISOString()
+  };
+}
+
 function rowToObj_(r, ix){
   return {
     fecha:getCell_(r, ix.fecha),
@@ -749,6 +1381,7 @@ function rowToObj_(r, ix){
     cliente:getCell_(r, ix.cliente),
     vendedor:getCell_(r, ix.vendedor),
     pikeador:limpiarPikeador_(getCell_(r, ix.pikeador), getCell_(r, ix.cliente)),
+    bodega_preparacion:getCell_(r, ix.bodega_preparacion),
     codigo:code_(getCell_(r, ix.codigo)),
     descripcion:getCell_(r, ix.descripcion),
     ubicacion:getCell_(r, ix.ubicacion),
@@ -764,7 +1397,7 @@ function pedidoCodigoKey_(pedido, codigo){
   return p && c ? p + '|' + c : '';
 }
 function diffImportRow_(oldObj, newObj){
-  const fields = ['fecha','cliente','vendedor','pikeador','descripcion','ubicacion','cantidad','status'];
+  const fields = ['fecha','cliente','vendedor','pikeador','bodega_preparacion','descripcion','ubicacion','cantidad','status'];
   const changes = [];
   fields.forEach(f=>{
     const oldVal = f === 'cantidad' ? n_(oldObj[f]) : nh_(oldObj[f]);
@@ -935,7 +1568,7 @@ function emitirAlertaStatus_(pedido, estado, cliente, vendedor, pikeador, origen
 
   if(actualizarPedidos){
     const sh = pedidosSheet_(true);
-    const cols = ['id','fecha','pedido','cliente','vendedor','pikeador','codigo','descripcion','ubicacion','cantidad','status','alerta_token','alerta_ts','alerta_tipo','alerta_mensaje','hora_inicio','hora_termino','tiempo_preparacion_min'];
+    const cols = ['id','fecha','pedido','cliente','vendedor','pikeador','bodega_preparacion','codigo','descripcion','ubicacion','cantidad','status','alerta_token','alerta_ts','alerta_tipo','alerta_mensaje','hora_inicio','hora_termino','tiempo_preparacion_min'];
     ensureCols_(sh, cols);
     const v = values_(sh), ix = idx_(v.headers);
     const key = pedido_(pedido);
@@ -988,7 +1621,7 @@ function actualizarEstadoPedido_(b){
   if(!estado) return {ok:false,msg:'Estado vacío'};
 
   const sh = pedidosSheet_(true);
-  const cols = ['id','fecha','pedido','cliente','vendedor','pikeador','codigo','descripcion','ubicacion','cantidad','status','alerta_token','alerta_ts','alerta_tipo','alerta_mensaje','hora_inicio','hora_termino','tiempo_preparacion_min'];
+  const cols = ['id','fecha','pedido','cliente','vendedor','pikeador','bodega_preparacion','codigo','descripcion','ubicacion','cantidad','status','alerta_token','alerta_ts','alerta_tipo','alerta_mensaje','hora_inicio','hora_termino','tiempo_preparacion_min'];
   ensureCols_(sh, cols);
   const v = values_(sh), ix = idx_(v.headers);
   const key = pedido_(pedido);
@@ -1067,7 +1700,7 @@ function alertaPedido_(b, tipo, mensaje, cambiarEstado){
   }
 
   const sh = pedidosSheet_(true);
-  const cols = ['id','fecha','pedido','cliente','vendedor','pikeador','codigo','descripcion','ubicacion','cantidad','status','alerta_token','alerta_ts','alerta_tipo','alerta_mensaje','hora_inicio','hora_termino','tiempo_preparacion_min'];
+  const cols = ['id','fecha','pedido','cliente','vendedor','pikeador','bodega_preparacion','codigo','descripcion','ubicacion','cantidad','status','alerta_token','alerta_ts','alerta_tipo','alerta_mensaje','hora_inicio','hora_termino','tiempo_preparacion_min'];
   ensureCols_(sh, cols);
   const v = values_(sh), ix = idx_(v.headers);
   const token = 'ALERTA-' + Date.now() + '-' + Utilities.getUuid().slice(0,8).toUpperCase();
@@ -1090,6 +1723,7 @@ function alertaPedido_(b, tipo, mensaje, cambiarEstado){
   });
   if(!count){ guardarPedido_(Object.assign({},b,{pedido:pedido,status:cambiarEstado?'PREPARACION':'PENDIENTE'})); return alertaPedido_(b,tipo,mensaje,cambiarEstado); }
   if(pikeador) agregarPikeador_(pikeador);
+  if(vendedor) agregarVendedor_(vendedor);
   registrarAlerta_(pedido,cliente,pikeador,tipo,mensaje,token,ts);
   return {ok:true,msg:mensaje,pedido:pedido,actualizados:count,alerta_token:token,alerta_ts:ts,alerta_tipo:tipo,alerta_mensaje:mensaje,voice:mensaje};
 }
@@ -1150,6 +1784,7 @@ function agrupar_(headers, rows){
         cliente:getCell_(r, ix.cliente),
         vendedor:getCell_(r, ix.vendedor),
         pikeador:limpiarPikeador_(getCell_(r, ix.pikeador), getCell_(r, ix.cliente)),
+        bodega_preparacion:getCell_(r, ix.bodega_preparacion),
         status:estadoSeguro_(getCell_(r, ix.status), 'PENDIENTE'),
         alerta_token:getCell_(r, ix.alerta_token),
         alerta_ts:getCell_(r, ix.alerta_ts),
@@ -1162,7 +1797,7 @@ function agrupar_(headers, rows){
       };
     }
     const p = map[key], cant = getNumCell_(r, ix.cantidad) || 1;
-    ['fecha','cliente','vendedor','alerta_token','alerta_ts','alerta_tipo','alerta_mensaje','hora_inicio','hora_termino'].forEach(k=>{
+    ['fecha','cliente','vendedor','bodega_preparacion','alerta_token','alerta_ts','alerta_tipo','alerta_mensaje','hora_inicio','hora_termino'].forEach(k=>{
       const val = getCell_(r, ix[k]);
       if(val) p[k]=val;
     });
@@ -1210,6 +1845,40 @@ function avancePedido_(estado){
   const ix = Math.max(0, orden.indexOf(estado));
   return Math.round((ix / (orden.length - 1)) * 100);
 }
+
+function siguienteNumeroPedido_(b){
+  const sh = pedidosSheet_(true);
+  ensureCols_(sh, ['pedido']);
+  const v = values_(sh);
+  const ix = idx_(v.headers);
+  if(ix.pedido >= 0){
+    try{ sh.getRange(1, ix.pedido + 1, Math.max(sh.getMaxRows(), 2), 1).setNumberFormat('@'); }catch(e){}
+  }
+  const next = siguienteNumeroPedidoDesdeValues_(v, ix);
+  return {ok:true, pedido:next.numero, numero:next.numero, usados:next.usados, msg:'Número de pedido generado automáticamente'};
+}
+
+function siguienteNumeroPedidoDesdeValues_(v, ix){
+  const usados = {};
+  (v.data || []).forEach(r => {
+    const raw = getCell_(r, ix.pedido);
+    const n = numeroPedidoConsecutivo_(raw);
+    if(n > 0) usados[n] = true;
+  });
+  let n = 1;
+  while(usados[n]) n++;
+  return {numero:String(n), usados:Object.keys(usados).length};
+}
+
+function numeroPedidoConsecutivo_(v){
+  const raw = t_(v);
+  if(!raw || /^SIN_PEDIDO/i.test(raw)) return 0;
+  const m = raw.match(/\d+/g);
+  if(!m) return 0;
+  const n = Number(m.join(''));
+  return Number.isFinite(n) && n > 0 ? Math.floor(n) : 0;
+}
+
 function pasosPedido_(estado){
   const orden = ['PENDIENTE','PREPARACION','RECIBIDO','DESPACHADO','TERMINADO'];
   const actual = estadoSeguro_(estado, 'PENDIENTE');
@@ -1218,7 +1887,7 @@ function pasosPedido_(estado){
 }
 
 function ss_(){ try{ if(SPREADSHEET_ID) return SpreadsheetApp.openById(SPREADSHEET_ID); }catch(e){} const ss=SpreadsheetApp.getActiveSpreadsheet(); if(!ss) throw new Error('No se pudo abrir la planilla. Revisa SPREADSHEET_ID.'); return ss; }
-function pedidosSheet_(crear){ const ss=ss_(); let sh=ss.getSheetByName(SHEET_PEDIDOS)||ss.getSheetByName(SHEET_PEDIDO_ALT); if(!sh && crear) sh=getOrCreate_(SHEET_PEDIDOS,['id','fecha','pedido','cliente','vendedor','pikeador','codigo','descripcion','ubicacion','cantidad','status','alerta_token','alerta_ts','alerta_tipo','alerta_mensaje','hora_inicio','hora_termino','tiempo_preparacion_min']); return sh; }
+function pedidosSheet_(crear){ const ss=ss_(); let sh=ss.getSheetByName(SHEET_PEDIDOS)||ss.getSheetByName(SHEET_PEDIDO_ALT); if(!sh && crear) sh=getOrCreate_(SHEET_PEDIDOS,['id','fecha','pedido','cliente','vendedor','pikeador','bodega_preparacion','codigo','descripcion','ubicacion','cantidad','status','alerta_token','alerta_ts','alerta_tipo','alerta_mensaje','hora_inicio','hora_termino','tiempo_preparacion_min']); return sh; }
 function getOrCreate_(name, headers){ const ss=ss_(); let sh=ss.getSheetByName(name); if(!sh){ sh=ss.insertSheet(name); try{ if(sh.getMaxRows()>300) sh.deleteRows(301,sh.getMaxRows()-300); }catch(e){} try{ if(sh.getMaxColumns()>Math.max(headers.length,10)) sh.deleteColumns(Math.max(headers.length,10)+1,sh.getMaxColumns()-Math.max(headers.length,10)); }catch(e){} sh.getRange(1,1,1,headers.length).setValues([headers]); } else if(sh.getLastRow()===0){ sh.getRange(1,1,1,headers.length).setValues([headers]); } return sh; }
 function values_(sh){ const lr=sh.getLastRow(), lc=sh.getLastColumn(); if(lr<1||lc<1) return {headers:[],data:[]}; const v=sh.getRange(1,1,lr,lc).getDisplayValues(); return {headers:v[0].map(t_),data:v.slice(1).filter(r=>r.some(c=>t_(c)))}; }
 function ensureCols_(sh, req){ let lc=Math.max(1,sh.getLastColumn()); let h=sh.getRange(1,1,1,lc).getDisplayValues()[0].map(t_); if(h.every(x=>!x)){ sh.getRange(1,1,1,req.length).setValues([req]); return; } req.forEach(name=>{ if(find_(h,[name],-1)!==-1) return; let blank=h.findIndex(x=>!x); if(blank!==-1){sh.getRange(1,blank+1).setValue(name); h[blank]=name; return;} const max=sh.getMaxColumns(); if(max>lc){lc++; sh.getRange(1,lc).setValue(name); h.push(name); return;} const total=ss_().getSheets().reduce((s,x)=>s+x.getMaxRows()*x.getMaxColumns(),0); if(total+sh.getMaxRows()>9900000) throw new Error('No se puede agregar la columna '+name+' por límite de 10.000.000 de celdas. Elimina filas/columnas vacías.'); sh.insertColumnAfter(lc); lc++; sh.getRange(1,lc).setValue(name); h.push(name); }); }
@@ -1233,6 +1902,7 @@ function idx_(h){
     cliente:find_(h,['cliente','nombre cliente','razon social','razón social'],-1),
     vendedor:find_(h,['vendedor','responsable','ejecutivo'],-1),
     pikeador:find_(h,['pikeador','picker','preparador','asignado','asignado a'],-1),
+    bodega_preparacion:find_(h,['bodega_preparacion','bodega preparación','bodega preparacion','bodega pedido','bodega_origen','bodega de preparacion','bodega de preparación','nombre_bodega','nombre bodega'],-1),
     codigo:find_(h,['codigo','código','cod','sku','codigo producto','código producto'],-1),
     descripcion:find_(h,['descripcion','descripción','detalle','nombre','producto','nombre producto','descripcion producto','descripción producto'],-1),
     ubicacion:find_(h,['ubicacion','ubicación','bodega','ubicacion producto','ubicación producto'],-1),
@@ -1262,6 +1932,7 @@ function limpiarPikeador_(pk, cliente){
   if(estadoSeguro_(pk, '')) return '';
   return pk;
 }
+function bool_(v){ if(v === true) return true; const x = nh_(v); return ['1','TRUE','SI','SÍ','YES','ON','AUTO','AUTOGENERAR'].includes(x); }
 function t_(v){ return String(v==null?'':v).trim(); }
 function n_(v){ const x=Number(String(v==null?'':v).replace(',','.')); return Number.isFinite(x)?x:0; }
 function nh_(v){ return t_(v).toUpperCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[\s_\-.]+/g,''); }

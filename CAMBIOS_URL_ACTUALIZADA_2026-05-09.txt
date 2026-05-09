@@ -1,0 +1,13 @@
+URL ACTUALIZADA - 2026-05-09
+
+Nueva URL oficial aplicada en el proyecto:
+https://script.google.com/macros/s/AKfycbyOR_9D7lshIw2sLwWSKvwiHwfhHMXaR9qV2he9gh5cxc3nKdIOjuq3FZgbtJWwrRR48g/exec
+
+Se reemplazaron las URLs anteriores de Google Apps Script en archivos web, Android, assets y Apps Script cuando correspondía.
+
+Módulos conservados:
+- Orden de Pedido con edición, autonúmero y KPI.
+- Dashboard KPI con vendedores, clientes, unidades y XLSX.
+- Pantalla Cliente TV.
+- Ubicaciones.
+- BD-MAESTRA, MOVIMIENTO_UBICACION y MOVIMIENTO_PEDIDOS.

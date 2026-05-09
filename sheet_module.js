@@ -1,5 +1,5 @@
 (function(){
-  const DEFAULT_API_URL = 'https://script.google.com/macros/s/AKfycbwKJ0I0LL3J12cJg1sVuOuIe60v4Us3h9rnp4iev-3SuR5GHVEz3-Q1H-JJyjs96sOMPg/exec';
+  const DEFAULT_API_URL = 'https://script.google.com/macros/s/AKfycbyOR_9D7lshIw2sLwWSKvwiHwfhHMXaR9qV2he9gh5cxc3nKdIOjuq3FZgbtJWwrRR48g/exec';
   const AUTO_REFRESH_MS = 2000;
   const DEVICE_ID = (() => {
     const key = 'sgsa_device_id';

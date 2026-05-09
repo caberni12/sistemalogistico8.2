@@ -1,0 +1,21 @@
+CAMBIOS 2026-05-09
+
+1. PDF de Orden de Pedido
+- El número de pedido ahora aparece centrado, grande y destacado debajo del título Orden de Pedido.
+- Aplica para PDF A4 y ticket 80mm.
+
+2. Hoja CLIENTES
+- Se agregó soporte Apps Script para crear la hoja CLIENTES.
+- Campos incluidos: id, cliente, rut, direccion, giro, medio_pago, telefono, correo_electronico, responsable_empresa, fecha_creacion, status.
+- Acciones disponibles: listar_clientes, agregar_cliente, editar_cliente, eliminar_cliente.
+
+3. Modal Clientes en Orden de Pedido
+- Desde Configuración se agregó el botón Clientes.
+- Permite registrar, editar, eliminar y recargar clientes.
+- El campo Cliente en Crear Pedido ahora permite consultar/autocompletar desde la hoja CLIENTES.
+
+4. Android/assets
+- Se copiaron los mismos cambios a los assets Android.
+
+IMPORTANTE
+- Copiar APPS_SCRIPT_MOVIMIENTO_ALERTAS_LISTO.gs actualizado en Apps Script y volver a publicar como Web App para activar la hoja CLIENTES.

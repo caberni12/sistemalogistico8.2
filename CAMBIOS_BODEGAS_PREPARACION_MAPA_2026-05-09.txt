@@ -1,0 +1,21 @@
+CAMBIOS BODEGAS 2026-05-09
+
+Se agregó hoja BODEGAS al Apps Script con campos:
+- id
+- nombre_bodega
+- direccion
+- fecha_creacion
+- status: ACTIVA, INACTIVA, BLOQUEADA
+- radio_metros
+- latitud
+- longitud
+
+Orden de Pedido:
+- Modal de Configuración ahora permite crear Bodega de Preparación.
+- La dirección se busca en mapa con marcador y radio.
+- Crear Pedido incluye selector de Bodega preparación.
+- Editar Pedido incluye selector de Bodega preparación.
+- PDF A4 y PDF 80mm muestran la bodega del pedido.
+- El backend guarda bodega_preparacion en PEDIDOS.
+
+Importante: copiar APPS_SCRIPT_MOVIMIENTO_ALERTAS_LISTO.gs en Apps Script y publicar nuevamente como Web App.

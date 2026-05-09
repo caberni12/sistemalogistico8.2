@@ -154,7 +154,9 @@
       <div class="field"><label>Desde</label><input id="dtDesde" type="date" /></div>
       <div class="field"><label>Hasta</label><input id="dtHasta" type="date" /></div>
       <div class="field"><label>Pikeador</label><select id="selPikeador"><option value="">Todos</option></select></div>
+      <div class="field"><label>Vendedor</label><select id="selVendedor"><option value="">Todos</option></select></div>
       <div class="field"><label>Estado</label><select id="selEstado"><option value="">Todos</option><option>PENDIENTE</option><option>PREPARACION</option><option>RECIBIDO</option><option>DESPACHADO</option><option>EN RUTA</option><option>TERMINADO</option><option>CANCELADO</option></select></div>
+      <div class="field"><label>Periodo</label><select id="selPeriodo"><option value="">Rango manual / Todos</option><option value="HOY">Día actual</option><option value="MES">Mes actual</option><option value="ANIO">Año actual</option></select></div>
       <div class="field"><label>Informe</label><select id="selInforme"><option value="pikeador">Rendimiento pikeador</option><option value="rotacion">Rotación productos</option><option value="abc">ABC bodega</option><option value="cliente">Clientes</option><option value="vendedor">Vendedores</option></select></div>
       <button class="secondary" id="btnLimpiar"><span class="loader"></span><span>Limpiar</span></button>
     </section>
@@ -170,11 +172,24 @@
           <div class="kpi"><div class="label">Producto mayor rotación</div><div class="value" id="kTopProd" style="font-size:1.35rem">-</div><div class="hint" id="hTopProd">0 unidades</div></div>
           <div class="kpi"><div class="label">Eficiencia promedio</div><div class="value" id="kEficiencia">0</div><div class="hint">Unidades por hora preparada</div></div>
           <div class="kpi"><div class="label">Última sync</div><div class="value" id="kSync">--:--</div><div class="hint" id="hSync">Esperando datos</div></div>
+          <div class="kpi"><div class="label">Unidades día</div><div class="value" id="kUniDia">0</div><div class="hint">Procesadas hoy</div></div>
+          <div class="kpi"><div class="label">Unidades mes</div><div class="value" id="kUniMes">0</div><div class="hint">Procesadas este mes</div></div>
+          <div class="kpi"><div class="label">Unidades año</div><div class="value" id="kUniAnio">0</div><div class="hint">Procesadas este año</div></div>
         </section>
 
         <section class="content-card">
           <div class="section-head"><h2 class="section-title">KPI por pikeador</h2><span class="pill" id="pillPikeadores">0 registros</span></div>
           <div class="table-wrap"><table id="tblPikeadores"><thead></thead><tbody></tbody></table></div>
+        </section>
+
+        <section class="content-card">
+          <div class="section-head"><h2 class="section-title">Rendimiento por vendedores</h2><span class="pill" id="pillVendedores">0 registros</span></div>
+          <div class="table-wrap"><table id="tblVendedores"><thead></thead><tbody></tbody></table></div>
+        </section>
+
+        <section class="content-card">
+          <div class="section-head"><h2 class="section-title">Top 10 clientes por unidades</h2><span class="pill" id="pillClientes">0 clientes</span></div>
+          <div class="table-wrap"><table id="tblTopClientes"><thead></thead><tbody></tbody></table></div>
         </section>
 
         <section class="content-card">
@@ -210,7 +225,7 @@
   <div class="toast" id="toast"></div>
 
 <script>
-const DEFAULT_API_URL = 'https://script.google.com/macros/s/AKfycbwKJ0I0LL3J12cJg1sVuOuIe60v4Us3h9rnp4iev-3SuR5GHVEz3-Q1H-JJyjs96sOMPg/exec';
+const DEFAULT_API_URL = 'https://script.google.com/macros/s/AKfycbyOR_9D7lshIw2sLwWSKvwiHwfhHMXaR9qV2he9gh5cxc3nKdIOjuq3FZgbtJWwrRR48g/exec';
 const API_URL = DEFAULT_API_URL;
 const $ = id => document.getElementById(id);
 let pedidos = [];
@@ -236,7 +251,7 @@ function bind(){
   $('btnCsvCustom').addEventListener('click', () => withLoader($('btnCsvCustom'), () => exportXlsx(rowsInforme, 'informe_personalizado.xlsx', 'Informe Personalizado')));
   $('btnGenerar').addEventListener('click', () => generarInforme($('btnGenerar')));
   $('btnLimpiar').addEventListener('click', limpiarFiltros);
-  ['txtFiltro','dtDesde','dtHasta','selPikeador','selEstado','selInforme','selGrupo','selMetrica'].forEach(id => {
+  ['txtFiltro','dtDesde','dtHasta','selPikeador','selVendedor','selEstado','selPeriodo','selInforme','selGrupo','selMetrica'].forEach(id => {
     $(id).addEventListener('input', aplicarFiltros);
     $(id).addEventListener('change', aplicarFiltros);
   });
@@ -341,21 +356,28 @@ function cargarSelectPikeadores(lista){
   const names = Array.from(new Set(lista.map(p => p.pikeador || 'Sin asignar'))).sort((a,b)=>a.localeCompare(b));
   $('selPikeador').innerHTML = '<option value="">Todos</option>' + names.map(n => `<option value="${esc(n)}">${esc(n)}</option>`).join('');
   if(names.includes(actual)) $('selPikeador').value = actual;
+  const actualVen = $('selVendedor')?.value || '';
+  const vendedores = Array.from(new Set(lista.map(p => p.vendedor || 'Sin vendedor'))).sort((a,b)=>a.localeCompare(b));
+  if($('selVendedor')){
+    $('selVendedor').innerHTML = '<option value="">Todos</option>' + vendedores.map(n => `<option value="${esc(n)}">${esc(n)}</option>`).join('');
+    if(vendedores.includes(actualVen)) $('selVendedor').value = actualVen;
+  }
 }
 
 function aplicarFiltros(){
   const filtro = normalText($('txtFiltro').value);
-  const desde = $('dtDesde').value ? new Date($('dtDesde').value + 'T00:00:00') : null;
-  const hasta = $('dtHasta').value ? new Date($('dtHasta').value + 'T23:59:59') : null;
+  const rango = rangoDashboard();
   const pikeador = $('selPikeador').value;
+  const vendedor = $('selVendedor')?.value || '';
   const estado = $('selEstado').value;
   pedidosFiltrados = pedidos.filter(p => {
-    const fecha = parseFecha(p.fecha) || parseFecha(p.hora_inicio) || parseFecha(p.hora_termino);
+    const fecha = fechaPedidoDashboard(p);
     const blob = normalText([p.pedido,p.cliente,p.vendedor,p.pikeador,p.status,...p.productos.map(x => `${x.codigo} ${x.descripcion} ${x.ubicacion}`)].join(' '));
     if(filtro && !blob.includes(filtro)) return false;
-    if(desde && fecha && fecha < desde) return false;
-    if(hasta && fecha && fecha > hasta) return false;
+    if(rango.desde && (!fecha || fecha < rango.desde)) return false;
+    if(rango.hasta && (!fecha || fecha > rango.hasta)) return false;
     if(pikeador && (p.pikeador || 'Sin asignar') !== pikeador) return false;
+    if(vendedor && (p.vendedor || 'Sin vendedor') !== vendedor) return false;
     if(estado && p.status !== estado) return false;
     return true;
   });
@@ -364,10 +386,14 @@ function aplicarFiltros(){
 
 function render(){
   const pikeadores = tablaPikeadores();
+  const vendedores = tablaVendedores();
+  const clientes = tablaTopClientes();
   const rotacion = tablaRotacion();
   const abc = calcularABC(rotacion);
   renderKpis(pikeadores, rotacion);
   renderTablaPikeadores(pikeadores);
+  renderTablaVendedores(vendedores);
+  renderTablaTopClientes(clientes);
   renderTablaRotacion(abc);
   renderAbcCards(abc);
   renderMiniChart(abc.slice(0,8));
@@ -395,6 +421,45 @@ function tablaPikeadores(){
     x.cumplimiento = x.pedidos ? Math.round((x.terminados / x.pedidos) * 100) : 0;
     return x;
   }).sort((a,b)=>b.terminados-a.terminados || b.unidades-a.unidades || a.promedio_min-b.promedio_min);
+}
+
+function tablaVendedores(){
+  const map = {};
+  pedidosFiltrados.forEach(p => {
+    const ven = p.vendedor || 'Sin vendedor';
+    if(!map[ven]) map[ven] = {vendedor:ven,pedidos:0,terminados:0,en_preparacion:0,pendientes:0,cancelados:0,productos:0,unidades:0,tiempo_total_min:0,pedidos_con_tiempo:0,promedio_min:0,eficiencia_hora:0,cumplimiento:0};
+    const x = map[ven];
+    x.pedidos++;
+    if(p.status === 'TERMINADO') x.terminados++;
+    else if(p.status === 'PREPARACION') x.en_preparacion++;
+    else if(p.status === 'CANCELADO') x.cancelados++;
+    else x.pendientes++;
+    x.productos += Number(p.total_productos || 0);
+    x.unidades += Number(p.total_unidades || 0);
+    if(Number(p.tiempo_preparacion_min || 0) > 0){ x.tiempo_total_min += Number(p.tiempo_preparacion_min); x.pedidos_con_tiempo++; }
+  });
+  return Object.values(map).map(x => {
+    x.promedio_min = x.pedidos_con_tiempo ? Math.round(x.tiempo_total_min / x.pedidos_con_tiempo) : 0;
+    x.eficiencia_hora = x.tiempo_total_min > 0 ? Math.round((x.unidades / (x.tiempo_total_min / 60)) * 10) / 10 : 0;
+    x.cumplimiento = x.pedidos ? Math.round((x.terminados / x.pedidos) * 100) : 0;
+    return x;
+  }).sort((a,b)=>b.terminados-a.terminados || b.unidades-a.unidades || a.promedio_min-b.promedio_min);
+}
+
+function tablaTopClientes(){
+  const map = {};
+  pedidosFiltrados.forEach(p => {
+    const cli = p.cliente || 'Sin cliente';
+    if(!map[cli]) map[cli] = {cliente:cli,pedidos:0,procesados:0,unidades:0,productos:0};
+    const x = map[cli];
+    x.pedidos++;
+    if(['TERMINADO','DESPACHADO','RECIBIDO','ENTREGADO'].includes(p.status)){
+      x.procesados++;
+      x.productos += Number(p.total_productos || 0);
+      x.unidades += Number(p.total_unidades || 0);
+    }
+  });
+  return Object.values(map).sort((a,b)=>b.unidades-a.unidades || b.procesados-a.procesados || b.pedidos-a.pedidos).slice(0,10);
 }
 
 function tablaRotacion(){
@@ -443,12 +508,29 @@ function renderKpis(pikeadores, rotacion){
   $('kTopProd').textContent = top ? (top.codigo !== '-' ? top.codigo : corte(top.descripcion, 16)) : '-';
   $('hTopProd').textContent = top ? `${top.unidades} unidades · ${corte(top.descripcion, 34)}` : '0 unidades';
   $('kEficiencia').textContent = totalMin > 0 ? dec(totalUnidades / (totalMin / 60), 1) : '0';
+  $('kUniDia').textContent = unidadesPeriodoDashboard(pedidosFiltrados, 'DIA');
+  $('kUniMes').textContent = unidadesPeriodoDashboard(pedidosFiltrados, 'MES');
+  $('kUniAnio').textContent = unidadesPeriodoDashboard(pedidosFiltrados, 'ANIO');
 }
 
 function renderTablaPikeadores(rows){
   $('pillPikeadores').textContent = `${rows.length} pikeadores`;
   setTable('tblPikeadores', ['Pikeador','Pedidos','Terminados','Prep.','Pend.','Productos','Unidades','Promedio','Total','Efic./h','Cumpl.'], rows.map(x => [
     esc(x.pikeador), numCell(x.pedidos), numCell(x.terminados), numCell(x.en_preparacion), numCell(x.pendientes), numCell(x.productos), numCell(x.unidades), esc(formatearMinutos(x.promedio_min)), esc(formatearMinutos(x.tiempo_total_min)), numCell(x.eficiencia_hora), progressCell(x.cumplimiento)
+  ]));
+}
+
+function renderTablaVendedores(rows){
+  $('pillVendedores').textContent = `${rows.length} vendedores`;
+  setTable('tblVendedores', ['Vendedor','Pedidos','Terminados','Prep.','Pend.','Productos','Unidades','Promedio','Total','Efic./h','Cumpl.'], rows.map(x => [
+    esc(x.vendedor), numCell(x.pedidos), numCell(x.terminados), numCell(x.en_preparacion), numCell(x.pendientes), numCell(x.productos), numCell(x.unidades), esc(formatearMinutos(x.promedio_min)), esc(formatearMinutos(x.tiempo_total_min)), numCell(x.eficiencia_hora), progressCell(x.cumplimiento)
+  ]));
+}
+
+function renderTablaTopClientes(rows){
+  $('pillClientes').textContent = `${rows.length} clientes`;
+  setTable('tblTopClientes', ['#','Cliente','Unidades vendidas','Pedidos','Pedidos procesados','Productos'], rows.map((x,i) => [
+    numCell(i+1), esc(x.cliente), numCell(x.unidades), numCell(x.pedidos), numCell(x.procesados), numCell(x.productos)
   ]));
 }
 
@@ -535,11 +617,34 @@ function valorGrupo(p, grupo){
   return 'General';
 }
 
+function fechaPedidoDashboard(p){
+  return parseFecha(p.fecha) || parseFecha(p.hora_inicio) || parseFecha(p.hora_termino);
+}
+function iniDiaDash(d){return new Date(d.getFullYear(),d.getMonth(),d.getDate(),0,0,0,0);}
+function finDiaDash(d){return new Date(d.getFullYear(),d.getMonth(),d.getDate(),23,59,59,999);}
+function rangoDashboard(){
+  const periodo = String($('selPeriodo')?.value || '').toUpperCase();
+  const hoy = new Date();
+  let desde = $('dtDesde').value ? new Date($('dtDesde').value + 'T00:00:00') : null;
+  let hasta = $('dtHasta').value ? new Date($('dtHasta').value + 'T23:59:59') : null;
+  if(periodo === 'HOY'){ desde = iniDiaDash(hoy); hasta = finDiaDash(hoy); }
+  else if(periodo === 'MES'){ desde = new Date(hoy.getFullYear(), hoy.getMonth(), 1, 0,0,0,0); hasta = new Date(hoy.getFullYear(), hoy.getMonth()+1, 0, 23,59,59,999); }
+  else if(periodo === 'ANIO'){ desde = new Date(hoy.getFullYear(), 0, 1, 0,0,0,0); hasta = new Date(hoy.getFullYear(), 11, 31, 23,59,59,999); }
+  return {desde,hasta};
+}
+function unidadesPeriodoDashboard(lista, periodo){
+  const hoy = new Date();
+  const rango = periodo === 'DIA' ? {desde:iniDiaDash(hoy), hasta:finDiaDash(hoy)} : periodo === 'MES' ? {desde:new Date(hoy.getFullYear(),hoy.getMonth(),1,0,0,0,0), hasta:new Date(hoy.getFullYear(),hoy.getMonth()+1,0,23,59,59,999)} : {desde:new Date(hoy.getFullYear(),0,1,0,0,0,0), hasta:new Date(hoy.getFullYear(),11,31,23,59,59,999)};
+  return (lista || []).filter(p => { const f = fechaPedidoDashboard(p); return f && f >= rango.desde && f <= rango.hasta; }).reduce((s,p) => s + Number(p.total_unidades || 0), 0);
+}
+
 function limpiarFiltros(){
   withLoader($('btnLimpiar'), () => {
     ['txtFiltro','dtDesde','dtHasta'].forEach(id => $(id).value = '');
     $('selPikeador').value = '';
+    if($('selVendedor')) $('selVendedor').value = '';
     $('selEstado').value = '';
+    if($('selPeriodo')) $('selPeriodo').value = '';
     $('selInforme').value = 'pikeador';
     $('selGrupo').value = 'pikeador';
     $('selMetrica').value = 'unidades';
