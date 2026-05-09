@@ -1,0 +1,29 @@
+CORRECCIÓN BD-MAESTRA Y BD-MOVIMIENTO - 2026-05-08
+
+Se reemplazaron los módulos que no estaban mostrando datos por versiones independientes:
+
+1) bd_maestra.html
+- Carga MAESTRA por JSONP para evitar bloqueo CORS.
+- Agregar, editar, eliminar.
+- Importar XLSX/XLS/CSV con previsualización.
+- Descargar preformato.
+- Exportar XLSX.
+- Conserva ceros iniciales en códigos.
+- Vista tabla y tarjetas móviles sin montarse.
+
+2) bd_movimiento.html
+- Carga MOVIMIENTO por JSONP para evitar bloqueo CORS.
+- Agregar, editar, eliminar.
+- Importar XLSX/XLS/CSV con previsualización.
+- Descargar preformato.
+- Exportar XLSX.
+- Edita/elimina por ID o por número de fila si el ID no existe.
+
+3) Apps Script
+- Se reforzó editarMovimiento_ y eliminarMovimiento_ para aceptar rowNumber/fila.
+- Se agregó importarMovimiento_.
+- Se agregó compatibilidad de listar_bd por POST y JSONP en GET.
+
+IMPORTANTE:
+Después de copiar APPS_SCRIPT_MOVIMIENTO_ALERTAS_LISTO.gs en Apps Script, publicar nuevamente como Web App:
+Implementar > Nueva implementación > Aplicación web > Acceso: Cualquier usuario.

@@ -1,5 +1,5 @@
 (function(){
-  const DEFAULT_API_URL = 'https://script.google.com/macros/s/AKfycbw47SxU42yTG1yb8Tlc7H3fnhH77SZVEYSlqyTMI8xzsXEHDK0i7PDDFaj3-Y29vQo7Ng/exec';
+  const DEFAULT_API_URL = 'https://script.google.com/macros/s/AKfycbwKJ0I0LL3J12cJg1sVuOuIe60v4Us3h9rnp4iev-3SuR5GHVEz3-Q1H-JJyjs96sOMPg/exec';
   const AUTO_REFRESH_MS = 2000;
   const DEVICE_ID = (() => {
     const key = 'sgsa_device_id';
@@ -52,6 +52,19 @@
 
   function normalizeHeader(value){
     return txt(value).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
+  }
+
+  function jsonpListData(url){
+    return new Promise((resolve,reject)=>{
+      const cb='cb_sheet_'+Date.now()+'_'+Math.random().toString(36).slice(2);
+      const script=document.createElement('script');
+      const clean=()=>{try{delete window[cb];}catch(e){window[cb]=undefined;} if(script.parentNode)script.parentNode.removeChild(script); clearTimeout(timer);};
+      const timer=setTimeout(()=>{clean(); reject(new Error('Sin respuesta del Apps Script'));},30000);
+      window[cb]=(data)=>{clean(); resolve(data);};
+      script.onerror=()=>{clean(); reject(new Error('No se pudo cargar Apps Script'));};
+      script.src=url+'&callback='+encodeURIComponent(cb);
+      document.head.appendChild(script);
+    });
   }
 
   function updateInfo(message){
@@ -179,11 +192,7 @@
     if(manual) setButtonLoading(btnSync, true, 'Sincronizando...');
     try{
       const url = `${API_URL}?accion=listar_bd&sheet=${encodeURIComponent(SHEET_NAME)}&device=${encodeURIComponent(DEVICE_ID)}&rt=${Date.now()}&nocache=${Math.random().toString(36).slice(2)}`;
-      const res = await fetch(url, {
-        cache:'no-store',
-        headers:{'Cache-Control':'no-cache, no-store, max-age=0','Pragma':'no-cache'}
-      });
-      const data = await res.json();
+      const data = await jsonpListData(url);
       if(!data || !data.ok){
         throw new Error((data && data.msg) || 'No se pudo leer la BD');
       }

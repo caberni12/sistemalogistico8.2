@@ -1,0 +1,15 @@
+CAMBIO INFRA SIN BD-MAESTRA NI BD-MOVIMIENTO - 2026-05-08
+
+Se ocultaron los accesos visibles de BD-MAESTRA y BD-MOVIMIENTO del infra principal.
+
+Aplicado en web:
+- index.html: menú lateral, botones rápidos del hero y tarjetas de inicio.
+
+Aplicado en Android:
+- MainActivity.kt: botones del slider forzados a oculto.
+- activity_main.xml: sección Bases de datos y botones BD ocultos por defecto.
+- AdminPanelActivity.kt: se retiraron BD-MAESTRA y BD-MOVIMIENTO del listado local de módulos visibles.
+
+Importante:
+- Los archivos bd_maestra.html y bd_movimiento.html permanecen dentro del proyecto para respaldo técnico, pero ya no aparecen en el infra.
+- No se cambió la URL ni la lógica de pedidos, ubicaciones, dashboard, pantalla cliente TV ni sincronización de MAESTRA.

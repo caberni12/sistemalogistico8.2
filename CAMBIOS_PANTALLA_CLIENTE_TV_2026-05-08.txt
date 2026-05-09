@@ -1,0 +1,19 @@
+CAMBIOS APLICADOS - PANTALLA CLIENTE TV
+Fecha: 2026-05-08
+
+1. Se agregó el archivo pantalla_cliente_tv.html.
+2. La pantalla muestra pedidos en modo TV con tarjetas grandes.
+3. La pantalla consulta la acción listar_pedidos del Apps Script actual.
+4. Incluye filtros por cliente, pedido, vendedor, pikeador y estado.
+5. Incluye sincronización automática cada 8 segundos y botón de sincronizar manual.
+6. Incluye botón de pantalla completa.
+7. Incluye botón para activar/apagar voz.
+8. Cuando detecta que un pedido cambió a TERMINADO:
+   - Muestra una tarjeta emergente por unos segundos.
+   - Activa voz indicando: pedido terminado, número de pedido, cliente y vendedor asociado.
+9. Se agregó acceso directo desde index.html en el menú lateral, hero y tarjetas rápidas.
+10. El iframe principal ahora permite fullscreen.
+
+URL Apps Script activa:
+https://script.google.com/macros/s/AKfycbwKJ0I0LL3J12cJg1sVuOuIe60v4Us3h9rnp4iev-3SuR5GHVEz3-Q1H-JJyjs96sOMPg/exec
+11. Se ajustó el Apps Script para que la voz de estado TERMINADO también incluya vendedor asociado cuando el dato esté disponible.

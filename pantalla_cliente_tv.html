@@ -1,0 +1,408 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Pantalla TV Cliente | Pedidos</title>
+  <style>
+    :root{
+      --bg:#f4f7fb;--panel:#ffffff;--panel2:#f8fafc;--card:#ffffff;--text:#0f172a;--muted:#475569;--line:rgba(15,23,42,.12);
+      --pri:#14b8a6;--blue:#2563eb;--ok:#22c55e;--warn:#f59e0b;--danger:#ef4444;--purple:#8b5cf6;
+      --shadow:0 18px 48px rgba(15,23,42,.12);
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{
+      margin:0;background:
+        radial-gradient(circle at 12% 8%,rgba(20,184,166,.14),transparent 28%),
+        radial-gradient(circle at 88% 12%,rgba(37,99,235,.13),transparent 30%),
+        linear-gradient(135deg,#f8fafc 0%,#eef5ff 54%,#f1f5f9 100%);
+      color:var(--text);font-family:Inter,Arial,system-ui,sans-serif;overflow:hidden;
+    }
+    .tv-shell{height:100%;display:grid;grid-template-rows:auto auto 1fr;gap:12px;padding:18px;min-width:0}
+    .topbar{display:flex;align-items:center;justify-content:space-between;gap:14px;background:rgba(255,255,255,.92);border:1px solid var(--line);border-radius:26px;padding:16px 18px;box-shadow:var(--shadow);backdrop-filter:blur(16px)}
+    .brand{display:flex;align-items:center;gap:14px;min-width:0}.logo{width:58px;height:58px;border-radius:22px;background:linear-gradient(135deg,var(--pri),var(--blue));display:grid;place-items:center;font-weight:1000;color:white;box-shadow:0 16px 34px rgba(20,184,166,.20);font-size:20px;flex:none}
+    h1{margin:0;font-size:clamp(24px,3vw,44px);line-height:1;font-weight:1000;letter-spacing:-.04em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.sub{margin-top:6px;color:var(--muted);font-size:clamp(13px,1.15vw,18px);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.clock{font-size:clamp(22px,2.7vw,42px);font-weight:1000;text-align:right;letter-spacing:-.03em;color:#0f172a}.date{font-size:13px;color:#64748b;text-align:right;margin-top:2px}
+    .controls{display:grid;grid-template-columns:1.6fr 1.2fr auto auto auto;gap:10px;align-items:center;background:rgba(255,255,255,.84);border:1px solid var(--line);border-radius:22px;padding:12px;box-shadow:0 12px 34px rgba(15,23,42,.08);backdrop-filter:blur(12px)}
+    .controls input,.controls select,.controls button{height:46px;border-radius:15px;border:1px solid rgba(15,23,42,.14);background:#ffffff;color:#0f172a;font:inherit;font-weight:800;padding:0 13px;outline:none}.controls input::placeholder{color:#94a3b8}.controls input:focus,.controls select:focus{border-color:rgba(37,99,235,.45);box-shadow:0 0 0 4px rgba(37,99,235,.10)}
+    .controls button{position:relative;display:inline-flex;align-items:center;justify-content:center;gap:8px;background:linear-gradient(135deg,var(--pri),var(--blue));border:0;cursor:pointer;white-space:nowrap;color:#fff;box-shadow:0 10px 24px rgba(37,99,235,.18);transition:transform .15s ease,filter .15s ease,box-shadow .15s ease}.controls button:hover{filter:brightness(1.04);transform:translateY(-1px)}.controls button:active{transform:translateY(0)}.controls button.secondary{background:#e2e8f0;color:#0f172a;box-shadow:0 8px 20px rgba(15,23,42,.08)}.controls button.voice-on{background:linear-gradient(135deg,#22c55e,#14b8a6);color:#fff}.controls button.voice-off{background:#cbd5e1;color:#0f172a}.controls button.is-loading{pointer-events:none;color:transparent!important;filter:saturate(.85)}.controls button.is-loading::after{content:"";position:absolute;width:20px;height:20px;border:3px solid rgba(255,255,255,.55);border-top-color:#fff;border-radius:50%;animation:spin .75s linear infinite}.controls button.secondary.is-loading::after,.controls button.voice-off.is-loading::after{border-color:rgba(15,23,42,.20);border-top-color:#0f172a}.controls button:disabled{opacity:.82;cursor:wait}
+    .stats{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px}.stat{background:rgba(255,255,255,.90);border:1px solid var(--line);border-radius:20px;padding:12px 14px;min-width:0;box-shadow:0 10px 28px rgba(15,23,42,.07)}.stat .l{font-size:12px;color:#64748b;font-weight:900;text-transform:uppercase;letter-spacing:.06em}.stat .v{font-size:clamp(22px,2.2vw,36px);font-weight:1000;margin-top:4px;line-height:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:#0f172a}
+    .board{min-height:0;overflow:auto;padding:2px 3px 24px;scrollbar-width:thin;scrollbar-color:#cbd5e1 transparent}.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:14px}.pedido-card{position:relative;overflow:hidden;background:linear-gradient(180deg,#ffffff 0%,#f8fafc 100%);color:#0f172a;border:1px solid rgba(203,213,225,.95);border-radius:28px;padding:18px;box-shadow:0 18px 42px rgba(15,23,42,.12);min-height:252px;display:flex;flex-direction:column;justify-content:space-between}.pedido-card:before{content:"";position:absolute;left:0;top:0;bottom:0;width:9px;background:var(--warn)}.pedido-card.preparacion:before{background:var(--blue)}.pedido-card.recibido:before,.pedido-card.despachado:before,.pedido-card.en-ruta:before{background:var(--purple)}.pedido-card.terminado:before{background:var(--ok)}.pedido-card.cancelado:before{background:var(--danger)}
+    .card-head{display:flex;justify-content:space-between;gap:10px;align-items:flex-start}.pedido{font-size:clamp(26px,2.5vw,42px);font-weight:1000;letter-spacing:-.05em;line-height:.95}.badge{border-radius:999px;padding:8px 12px;font-size:13px;font-weight:1000;color:white;background:#92400e;white-space:nowrap}.badge.preparacion{background:#1d4ed8}.badge.recibido,.badge.despachado,.badge.en-ruta{background:#7c3aed}.badge.terminado{background:#16a34a}.badge.cancelado{background:#dc2626}.cliente{font-size:clamp(17px,1.45vw,24px);font-weight:1000;margin-top:12px;line-height:1.1}.meta{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:14px}.box{background:#eef4fb;border:1px solid #dbe4ef;border-radius:16px;padding:10px;min-width:0}.box .l{font-size:11px;color:#64748b;font-weight:1000;text-transform:uppercase;letter-spacing:.04em}.box .v{font-size:15px;font-weight:1000;margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.progress{height:15px;background:#e2e8f0;border-radius:999px;overflow:hidden;margin-top:15px}.bar{height:100%;background:linear-gradient(90deg,var(--pri),var(--blue));width:0%;transition:width .25s ease}.foot{display:flex;justify-content:space-between;gap:10px;align-items:center;margin-top:14px;color:#475569;font-weight:900;font-size:13px}.empty{height:50vh;display:grid;place-items:center;text-align:center;color:#334155}.empty h2{font-size:38px;margin:0 0 10px}.empty p{margin:0;color:#64748b}
+    .popup{position:fixed;inset:0;background:rgba(15,23,42,.45);display:none;align-items:center;justify-content:center;z-index:50;padding:24px;backdrop-filter:blur(8px)}.popup.show{display:flex}.popup-card{width:min(920px,96vw);background:linear-gradient(135deg,#dcfce7 0%,#ffffff 52%,#e0f2fe 100%);color:#064e3b;border-radius:42px;padding:36px;text-align:center;box-shadow:0 35px 110px rgba(15,23,42,.30);border:3px solid rgba(34,197,94,.38);animation:pop .22s ease-out}.popup-icon{width:96px;height:96px;border-radius:36px;background:linear-gradient(135deg,#22c55e,#14b8a6);color:white;display:grid;place-items:center;margin:0 auto 16px;font-size:48px;font-weight:1000}.popup-title{font-size:clamp(36px,5vw,76px);font-weight:1000;line-height:.95;letter-spacing:-.06em}.popup-info{margin-top:20px;display:grid;grid-template-columns:repeat(3,1fr);gap:12px}.popup-info .box{background:rgba(255,255,255,.72);border-color:#bbf7d0}.popup-info .box .v{font-size:clamp(20px,2vw,32px);color:#0f172a}.toast{position:fixed;right:18px;bottom:18px;background:#ffffff;color:#0f172a;border:1px solid var(--line);border-radius:16px;padding:12px 14px;box-shadow:var(--shadow);display:none;z-index:70;font-weight:800}.toast.show{display:block}@keyframes pop{from{transform:scale(.92);opacity:.2}to{transform:scale(1);opacity:1}}@keyframes spin{to{transform:rotate(360deg)}}
+    @media (min-width:1500px){.grid{grid-template-columns:repeat(4,minmax(0,1fr));gap:18px}.pedido-card{min-height:286px}.meta{gap:10px}.box{padding:12px}.box .v{font-size:17px}}
+    @media (max-width:920px){body{overflow:auto}.tv-shell{height:auto;min-height:100%;padding:10px}.topbar{border-radius:20px;align-items:flex-start}.clock,.date{display:none}.controls{grid-template-columns:1fr 1fr}.controls button{width:100%}.stats{grid-template-columns:repeat(2,1fr)}.board{overflow:visible}.grid{grid-template-columns:1fr}.popup-info{grid-template-columns:1fr}.pedido-card{min-height:0}.meta{grid-template-columns:1fr}}
+    @media (max-width:520px){.controls{grid-template-columns:1fr}.stats{grid-template-columns:1fr}.topbar{padding:13px}.logo{width:46px;height:46px;border-radius:17px}.popup-card{border-radius:28px;padding:24px}.popup-icon{width:74px;height:74px;border-radius:26px;font-size:36px}}
+
+
+    /* CORRECCION ANTISUPERPOSICION 2026-05-08
+       Evita que las tarjetas se monten en modo TV, tablet y movil. */
+    body{overflow:auto;}
+    .tv-shell{min-height:100dvh;height:auto;max-width:100%;overflow:visible;}
+    .topbar,.brand,.controls,.stats,.board,.grid,.pedido-card,.stat,.box,.popup-card{min-width:0;max-width:100%;}
+    .topbar{flex-wrap:wrap;align-items:center;}
+    .controls{grid-template-columns:minmax(220px,1.6fr) minmax(180px,1.1fr) repeat(3,minmax(150px,auto));}
+    .stats{grid-template-columns:repeat(auto-fit,minmax(160px,1fr));}
+    .board{min-height:0;overflow:auto;max-height:none;}
+    .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,320px),1fr));grid-auto-rows:auto;align-items:start;gap:16px;}
+    .pedido-card{height:auto;min-height:unset;align-self:start;overflow:hidden;contain:layout paint;}
+    .pedido-card *{min-width:0;}
+    .card-head{min-width:0;align-items:flex-start;}
+    h1,.sub,.pedido,.cliente,.box .v,.stat .v,.foot,.badge{overflow-wrap:anywhere;word-break:break-word;}
+    h1,.sub,.box .v,.stat .v{white-space:normal;}
+    .pedido{line-height:1.02;}
+    .badge{max-width:48%;overflow:hidden;text-overflow:ellipsis;white-space:normal;text-align:center;line-height:1.15;}
+    .cliente{line-height:1.18;}
+    .meta{grid-template-columns:repeat(2,minmax(0,1fr));}
+    .box{overflow:hidden;}
+    .foot{flex-wrap:wrap;line-height:1.25;}
+    @media (min-width:1500px){.grid{grid-template-columns:repeat(auto-fit,minmax(340px,1fr));}.pedido-card{min-height:unset;}}
+    @media (max-width:1180px){.controls{grid-template-columns:repeat(2,minmax(0,1fr));}.controls input,.controls select,.controls button{width:100%;}.grid{grid-template-columns:repeat(auto-fit,minmax(min(100%,280px),1fr));}}
+    @media (max-width:640px){.tv-shell{padding:10px;}.topbar{align-items:flex-start;}.controls{grid-template-columns:1fr;}.stats{grid-template-columns:1fr;}.card-head{flex-direction:column;gap:8px;}.badge{max-width:100%;}.meta{grid-template-columns:1fr;}.popup-info{grid-template-columns:1fr;}}
+  </style>
+</head>
+<body>
+  <main class="tv-shell">
+    <header class="topbar">
+      <div class="brand">
+        <div class="logo">AS</div>
+        <div style="min-width:0">
+          <h1>Avance de Pedidos</h1>
+          <div class="sub" id="subtitle">Pantalla cliente modo TV · actualización automática</div>
+        </div>
+      </div>
+      <div>
+        <div class="clock" id="clock">--:--</div>
+        <div class="date" id="dateLine">--</div>
+      </div>
+    </header>
+
+    <section class="controls">
+      <input id="txtFiltro" placeholder="Filtrar por cliente, pedido, vendedor o pikeador" autocomplete="off" />
+      <select id="selEstado">
+        <option value="">Todos los estados</option>
+        <option value="PENDIENTE">Pendiente</option>
+        <option value="PREPARACION">Preparación</option>
+        <option value="RECIBIDO">Recibido</option>
+        <option value="DESPACHADO">Despachado</option>
+        <option value="EN RUTA">En ruta</option>
+        <option value="TERMINADO">Terminado</option>
+      </select>
+      <button id="btnActualizar">Sincronizar</button>
+      <button id="btnVoz" class="voice-on">Voz activa</button>
+      <button id="btnPantalla" class="secondary">Pantalla completa</button>
+    </section>
+
+    <section class="stats">
+      <div class="stat"><div class="l">Pedidos visibles</div><div class="v" id="stTotal">0</div></div>
+      <div class="stat"><div class="l">En preparación</div><div class="v" id="stPrep">0</div></div>
+      <div class="stat"><div class="l">Terminados</div><div class="v" id="stTerm">0</div></div>
+      <div class="stat"><div class="l">Unidades</div><div class="v" id="stUnidades">0</div></div>
+      <div class="stat"><div class="l">Última sync</div><div class="v" id="stSync">--:--</div></div>
+    </section>
+
+    <section class="board">
+      <div class="grid" id="gridPedidos"></div>
+      <div class="empty" id="emptyBox" style="display:none"><div><h2>Sin pedidos visibles</h2><p>Revisa el filtro, estado o conexión del Apps Script.</p></div></div>
+    </section>
+  </main>
+
+  <div class="popup" id="popupTerminado">
+    <div class="popup-card">
+      <div class="popup-icon">✓</div>
+      <div class="popup-title">PEDIDO TERMINADO</div>
+      <div class="popup-info">
+        <div class="box"><div class="l">Pedido</div><div class="v" id="popPedido">-</div></div>
+        <div class="box"><div class="l">Cliente</div><div class="v" id="popCliente">-</div></div>
+        <div class="box"><div class="l">Vendedor</div><div class="v" id="popVendedor">-</div></div>
+      </div>
+    </div>
+  </div>
+  <div class="toast" id="toast"></div>
+
+<script>
+const API_URL = 'https://script.google.com/macros/s/AKfycbwKJ0I0LL3J12cJg1sVuOuIe60v4Us3h9rnp4iev-3SuR5GHVEz3-Q1H-JJyjs96sOMPg/exec';
+const STORAGE_STATUS = 'pantalla_tv_cliente_estado_pedidos_v1';
+const STORAGE_VOICE = 'pantalla_tv_cliente_voz_activa_v1';
+const $ = id => document.getElementById(id);
+const qs = new URLSearchParams(location.search);
+const intervalo = Math.max(5000, Number(qs.get('intervalo') || qs.get('refresh') || 8000));
+let pedidos = [];
+let lastStatus = loadStatusMap();
+let initialized = false;
+let vozActiva = localStorage.getItem(STORAGE_VOICE) !== '0';
+let timer = null;
+let popupTimer = null;
+let sincronizando = false;
+
+window.addEventListener('DOMContentLoaded', () => {
+  const clienteParam = qs.get('cliente') || qs.get('rut') || '';
+  const pedidoParam = qs.get('pedido') || '';
+  if(clienteParam) $('txtFiltro').value = clienteParam;
+  if(pedidoParam) $('txtFiltro').value = pedidoParam;
+  updateVoiceButton();
+  $('btnActualizar').addEventListener('click', () => cargarPedidos($('btnActualizar')));
+  $('btnVoz').addEventListener('click', toggleVoz);
+  $('btnPantalla').addEventListener('click', pantallaCompleta);
+  $('txtFiltro').addEventListener('input', render);
+  $('selEstado').addEventListener('change', render);
+  setInterval(reloj, 1000);
+  reloj();
+  cargarPedidos();
+  timer = setInterval(cargarPedidos, intervalo);
+});
+
+function jsonp(accion, params = {}){
+  return new Promise((resolve, reject) => {
+    const cb = 'cbTV_' + Date.now() + '_' + Math.floor(Math.random() * 999999);
+    const url = new URL(API_URL);
+    url.searchParams.set('accion', accion);
+    url.searchParams.set('callback', cb);
+    url.searchParams.set('_', Date.now());
+    Object.entries(params).forEach(([k,v]) => { if(v !== undefined && v !== null && v !== '') url.searchParams.set(k, String(v)); });
+    const s = document.createElement('script');
+    const timeout = setTimeout(() => finish(new Error('Tiempo agotado consultando Apps Script')), 30000);
+    window[cb] = data => finish(null, data);
+    function finish(err, data){
+      clearTimeout(timeout);
+      try{ delete window[cb]; }catch(e){}
+      try{ s.remove(); }catch(e){}
+      err ? reject(err) : resolve(data);
+    }
+    s.onerror = () => finish(new Error('No se pudo conectar con Apps Script'));
+    s.src = url.toString();
+    document.body.appendChild(s);
+  });
+}
+
+async function cargarPedidos(btn){
+  if(sincronizando) return;
+  sincronizando = true;
+  setButtonLoading(btn, true);
+  try{
+    const r = await jsonp('listar_pedidos', {mostrarTodo:1});
+    if(!r || !r.ok) throw new Error((r && r.msg) || 'Respuesta inválida');
+    const nuevos = Array.isArray(r.pedidos) ? r.pedidos : agruparDesdeTabla(r.headers || [], r.data || []);
+    pedidos = nuevos.map(normalizarPedido).filter(p => p.pedido);
+    detectarTerminados(pedidos);
+    render();
+    $('stSync').textContent = new Date().toLocaleTimeString('es-CL', {hour:'2-digit',minute:'2-digit'});
+  }catch(err){
+    toast('Error de sincronización: ' + (err.message || err));
+  }finally{
+    sincronizando = false;
+    setButtonLoading(btn, false);
+  }
+}
+
+function normalizarPedido(p){
+  const status = estadoSeguro(p.status || p.estado || 'PENDIENTE');
+  const totalProductos = Number(p.total_productos || (Array.isArray(p.productos) ? p.productos.length : 0) || 0);
+  const totalUnidades = Number(p.total_unidades || sumarProductos(p.productos) || 0);
+  const avance = Number(p.avance || avancePorEstado(status));
+  const min = Number(p.tiempo_preparacion_min || p.tiempoPreparacionMin || 0);
+  return {
+    pedido:String(p.pedido || p.numero || '').trim(),
+    cliente:String(p.cliente || '').trim(),
+    vendedor:String(p.vendedor || p.responsable || '').trim(),
+    pikeador:String(p.pikeador || p.picker || '').trim(),
+    status,
+    fecha:String(p.fecha || '').trim(),
+    hora_inicio:String(p.hora_inicio || p.inicio_preparacion || '').trim(),
+    hora_termino:String(p.hora_termino || p.termino_preparacion || '').trim(),
+    total_productos:totalProductos,
+    total_unidades:totalUnidades,
+    avance,
+    tiempo_preparacion_texto:String(p.tiempo_preparacion_texto || formatearMinutos(min) || '').trim()
+  };
+}
+
+function detectarTerminados(lista){
+  const next = {...lastStatus};
+  lista.forEach(p => {
+    const key = normalKey(p.pedido);
+    const prev = lastStatus[key];
+    const now = p.status;
+    if(initialized && prev && prev !== 'TERMINADO' && now === 'TERMINADO') avisarTerminado(p);
+    next[key] = now;
+  });
+  lastStatus = next;
+  saveStatusMap(lastStatus);
+  initialized = true;
+}
+
+function avisarTerminado(p){
+  $('popPedido').textContent = p.pedido || '-';
+  $('popCliente').textContent = p.cliente || '-';
+  $('popVendedor').textContent = p.vendedor || '-';
+  $('popupTerminado').classList.add('show');
+  clearTimeout(popupTimer);
+  popupTimer = setTimeout(() => $('popupTerminado').classList.remove('show'), 9000);
+  const texto = `Pedido terminado, número de pedido ${p.pedido || 'sin número'}, cliente ${p.cliente || 'sin cliente'}, vendedor asociado ${p.vendedor || 'sin vendedor asignado'}.`;
+  hablar(texto);
+}
+
+function render(){
+  const filtro = normalText($('txtFiltro').value);
+  const estado = $('selEstado').value;
+  let visibles = pedidos.filter(p => {
+    const blob = normalText([p.pedido,p.cliente,p.vendedor,p.pikeador,p.status].join(' '));
+    return (!filtro || blob.includes(filtro)) && (!estado || p.status === estado);
+  });
+  visibles.sort((a,b) => prioridadEstado(a.status) - prioridadEstado(b.status) || numeroPedido(b.pedido) - numeroPedido(a.pedido));
+  $('gridPedidos').innerHTML = visibles.map(cardPedido).join('');
+  $('emptyBox').style.display = visibles.length ? 'none' : 'grid';
+  const prep = visibles.filter(p => p.status === 'PREPARACION').length;
+  const term = visibles.filter(p => p.status === 'TERMINADO').length;
+  const unidades = visibles.reduce((a,p) => a + Number(p.total_unidades || 0), 0);
+  $('stTotal').textContent = visibles.length;
+  $('stPrep').textContent = prep;
+  $('stTerm').textContent = term;
+  $('stUnidades').textContent = unidades;
+  const sub = qs.get('cliente') ? `Pantalla cliente modo TV · filtro cliente: ${qs.get('cliente')}` : 'Pantalla cliente modo TV · actualización automática';
+  $('subtitle').textContent = sub;
+}
+
+function cardPedido(p){
+  const cls = claseEstado(p.status);
+  const avance = Math.max(0, Math.min(100, Number(p.avance || avancePorEstado(p.status))));
+  return `<article class="pedido-card ${cls}">
+    <div>
+      <div class="card-head">
+        <div class="pedido">${esc(p.pedido)}</div>
+        <div class="badge ${cls}">${esc(p.status)}</div>
+      </div>
+      <div class="cliente">${esc(p.cliente || 'Cliente no informado')}</div>
+      <div class="meta">
+        <div class="box"><div class="l">Vendedor</div><div class="v">${esc(p.vendedor || '-')}</div></div>
+        <div class="box"><div class="l">Pikeador</div><div class="v">${esc(p.pikeador || '-')}</div></div>
+        <div class="box"><div class="l">Productos</div><div class="v">${esc(p.total_productos || 0)}</div></div>
+        <div class="box"><div class="l">Unidades</div><div class="v">${esc(p.total_unidades || 0)}</div></div>
+      </div>
+      <div class="progress"><div class="bar" style="width:${avance}%"></div></div>
+    </div>
+    <div class="foot">
+      <span>Avance ${avance}%</span>
+      <span>${esc(p.tiempo_preparacion_texto || 'Preparación: -')}</span>
+    </div>
+  </article>`;
+}
+
+function hablar(texto){
+  if(!vozActiva || !('speechSynthesis' in window)) return;
+  try{
+    window.speechSynthesis.cancel();
+    const u = new SpeechSynthesisUtterance(texto);
+    u.lang = 'es-CL';
+    u.rate = 0.92;
+    u.pitch = 1;
+    u.volume = 1;
+    window.speechSynthesis.speak(u);
+  }catch(e){ toast('El navegador bloqueó la voz. Presiona “Voz activa”.'); }
+}
+function toggleVoz(){
+  const btn = $('btnVoz');
+  vozActiva = !vozActiva;
+  localStorage.setItem(STORAGE_VOICE, vozActiva ? '1' : '0');
+  updateVoiceButton();
+  setButtonLoading(btn, true);
+  setTimeout(() => setButtonLoading(btn, false), 520);
+  if(vozActiva) hablar('Voz activada para avisos de pedidos terminados.');
+}
+function updateVoiceButton(){
+  const btn = $('btnVoz');
+  btn.textContent = vozActiva ? 'Voz activa' : 'Voz apagada';
+  btn.className = vozActiva ? 'voice-on' : 'voice-off';
+}
+function pantallaCompleta(){
+  const btn = $('btnPantalla');
+  setButtonLoading(btn, true);
+  try{
+    const el = document.documentElement;
+    if(!document.fullscreenElement && el.requestFullscreen) el.requestFullscreen();
+    else if(document.exitFullscreen) document.exitFullscreen();
+  }finally{
+    setTimeout(() => setButtonLoading(btn, false), 700);
+  }
+}
+function setButtonLoading(btn, loading){
+  if(!btn) return;
+  if(loading){
+    btn.classList.add('is-loading');
+    btn.disabled = true;
+    btn.setAttribute('aria-busy','true');
+  }else{
+    btn.classList.remove('is-loading');
+    btn.disabled = false;
+    btn.removeAttribute('aria-busy');
+  }
+}
+function reloj(){
+  const d = new Date();
+  $('clock').textContent = d.toLocaleTimeString('es-CL', {hour:'2-digit',minute:'2-digit'});
+  $('dateLine').textContent = d.toLocaleDateString('es-CL', {weekday:'long',day:'2-digit',month:'long',year:'numeric'});
+}
+function toast(msg){
+  $('toast').textContent = msg;
+  $('toast').classList.add('show');
+  setTimeout(() => $('toast').classList.remove('show'), 4500);
+}
+function loadStatusMap(){ try{return JSON.parse(localStorage.getItem(STORAGE_STATUS) || '{}') || {};}catch(e){return {};} }
+function saveStatusMap(map){ try{localStorage.setItem(STORAGE_STATUS, JSON.stringify(map || {}));}catch(e){} }
+function estadoSeguro(s){
+  s = String(s || '').trim().toUpperCase();
+  if(!s) return 'PENDIENTE';
+  if(s.includes('PREPAR')) return 'PREPARACION';
+  if(s.includes('TERMIN')) return 'TERMINADO';
+  if(s.includes('RECIB')) return 'RECIBIDO';
+  if(s.includes('RECEP')) return 'RECEPCIONADO';
+  if(s.includes('DESP')) return 'DESPACHADO';
+  if(s.includes('RUTA')) return 'EN RUTA';
+  if(s.includes('ENTREG')) return 'ENTREGADO';
+  if(s.includes('CANCEL')) return 'CANCELADO';
+  if(s.includes('PEND')) return 'PENDIENTE';
+  return s;
+}
+function avancePorEstado(s){
+  const e = estadoSeguro(s);
+  const map = {PENDIENTE:0,PREPARACION:25,RECIBIDO:50,RECEPCIONADO:50,DESPACHADO:75,'EN RUTA':85,ENTREGADO:95,TERMINADO:100,CANCELADO:0};
+  return map[e] ?? 0;
+}
+function claseEstado(s){return estadoSeguro(s).toLowerCase().replace(/\s+/g,'-').replace(/[^a-z0-9-]/g,'');}
+function prioridadEstado(s){
+  const order = {PREPARACION:1,RECIBIDO:2,RECEPCIONADO:2,DESPACHADO:3,'EN RUTA':4,PENDIENTE:5,TERMINADO:6,ENTREGADO:7,CANCELADO:8};
+  return order[estadoSeguro(s)] || 9;
+}
+function numeroPedido(p){const m=String(p||'').match(/\d+/g);return m?Number(m.join('')):0;}
+function normalKey(v){return String(v||'').toUpperCase().replace(/[^A-Z0-9]/g,'');}
+function normalText(v){return String(v||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').trim();}
+function esc(v){return String(v ?? '').replace(/[&<>'"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]));}
+function sumarProductos(arr){return Array.isArray(arr) ? arr.reduce((a,x)=>a+Number(x.cantidad||0),0) : 0;}
+function formatearMinutos(min){min=Math.round(Number(min||0));if(min<=0)return '';const h=Math.floor(min/60),m=min%60;return h?`${h}h ${String(m).padStart(2,'0')}m`:`${m} min`;}
+function agruparDesdeTabla(headers, rows){
+  const norm = h => normalText(h).replace(/\s+/g,'_');
+  const H = (headers || []).map(norm);
+  const idx = names => names.map(norm).map(n => H.indexOf(n)).find(i => i >= 0) ?? -1;
+  const iPedido=idx(['pedido','numero','número','nro']), iCliente=idx(['cliente']), iVendedor=idx(['vendedor','responsable','ejecutivo']), iPikeador=idx(['pikeador','picker','preparador']), iStatus=idx(['status','estado']), iCant=idx(['cantidad','unidades']), iFecha=idx(['fecha']), iIni=idx(['hora_inicio','inicio_preparacion']), iTer=idx(['hora_termino','termino_preparacion']), iMin=idx(['tiempo_preparacion_min']);
+  const map = {};
+  (rows || []).forEach((r,pos)=>{
+    const pedido = String((r && r[iPedido]) || ('SIN_PEDIDO_' + pos)).trim();
+    const key = normalKey(pedido);
+    if(!map[key]) map[key] = {pedido,cliente:'',vendedor:'',pikeador:'',status:'PENDIENTE',fecha:'',hora_inicio:'',hora_termino:'',tiempo_preparacion_min:0,total_productos:0,total_unidades:0,productos:[]};
+    const p = map[key];
+    if(iCliente>=0 && r[iCliente]) p.cliente = r[iCliente];
+    if(iVendedor>=0 && r[iVendedor]) p.vendedor = r[iVendedor];
+    if(iPikeador>=0 && r[iPikeador]) p.pikeador = r[iPikeador];
+    if(iStatus>=0 && r[iStatus]) p.status = estadoSeguro(r[iStatus]);
+    if(iFecha>=0 && r[iFecha]) p.fecha = r[iFecha];
+    if(iIni>=0 && r[iIni]) p.hora_inicio = r[iIni];
+    if(iTer>=0 && r[iTer]) p.hora_termino = r[iTer];
+    if(iMin>=0 && Number(r[iMin])) p.tiempo_preparacion_min = Number(r[iMin]);
+    const cant = iCant >= 0 ? Number(r[iCant] || 1) : 1;
+    p.total_productos += 1; p.total_unidades += cant || 1;
+  });
+  return Object.values(map);
+}
+</script>
+</body>
+</html>

@@ -35,12 +35,18 @@ function doGet(e){
     else if(['eliminar','eliminar_movimiento','borrar_movimiento','eliminar_ubicacion','borrar_ubicacion'].includes(accion)) r = eliminarMovimiento_(p);
     else if(['reparar_pikeadores','reparar_pikeadores_pedidos','limpiar_pikeadores'].includes(accion)) r = repararPikeadoresPedidos_();
     else if(['listar','listar_movimiento','listar_movimientos','cargar_movimiento','cargar_movimientos','listar_ubicaciones','cargar_ubicaciones','listar_movimiento_ubicaciones'].includes(accion)) r = listarMovimiento_(p);
+    else if(['importar_movimiento','importar_movimientos','cargar_archivo_movimiento'].includes(accion)) r = importarMovimiento_(p);
     else if(['listar_pedidos','listar_pedidos_rapido','cargar_pedidos'].includes(accion)) r = listarPedidos_(p);
     else if(['seguimiento_pedido','consulta_cliente_pedido','consultar_pedido_cliente','estado_pedido_cliente'].includes(accion)) r = seguimientoPedido_(p);
     else if(['listar_alertas','listar_alertas_pedidos','cargar_alertas','alertas_pedidos','ultimas_alertas'].includes(accion)) r = listarAlertas_(p);
     else if(accion === 'listar_bd') r = listarBD_(p.sheet || p.bd || p.hoja || '');
     else if(['listar_pikeadores','obtener_pikeadores','cargar_pikeadores','select_pikeadores'].includes(accion)) r = listarPikeadores_();
     else if(['agregar_pikeador','crear_pikeador'].includes(accion)) r = agregarPikeador_(p.nombre || p.pikeador || '');
+    else if(['listar_maestra_bd','maestra_listar','cargar_maestra'].includes(accion)) r = listarMaestraBD_();
+    else if(['agregar_maestra','crear_maestra','guardar_maestra'].includes(accion)) r = agregarMaestra_(p);
+    else if(['editar_maestra','actualizar_maestra','modificar_maestra'].includes(accion)) r = editarMaestra_(p);
+    else if(['eliminar_maestra','borrar_maestra'].includes(accion)) r = eliminarMaestra_(p);
+    else if(['importar_maestra','importar_maestra_xlsx','cargar_archivo_maestra'].includes(accion)) r = importarMaestra_(p);
     else if(['listar_maestra'].includes(accion)) r = listarMaestra_();
     else if(['buscar','buscar_producto','buscar_maestra'].includes(accion)) r = buscarProducto_(p.codigo || p.cod || '');
     else if(['actualizar_estado_pedido','cambiar_estado_pedido','actualizar_estado','cambiar_estado'].includes(accion)) r = actualizarEstadoPedido_(p);
@@ -64,12 +70,21 @@ function doPost(e){
     else if(['eliminar','eliminar_movimiento','borrar_movimiento','eliminar_ubicacion','borrar_ubicacion'].includes(accion)) r = eliminarMovimiento_(b);
     else if(['reparar_pikeadores','reparar_pikeadores_pedidos','limpiar_pikeadores'].includes(accion)) r = repararPikeadoresPedidos_();
     else if(['listar_alertas','listar_alertas_pedidos','cargar_alertas','alertas_pedidos','ultimas_alertas'].includes(accion)) r = listarAlertas_(b);
+    else if(['listar','listar_movimiento','listar_movimientos','cargar_movimiento','cargar_movimientos','listar_ubicaciones','cargar_ubicaciones','listar_movimiento_ubicaciones'].includes(accion)) r = listarMovimiento_(b);
+    else if(accion === 'listar_bd') r = listarBD_(b.sheet || b.bd || b.hoja || '');
+    else if(['importar_movimiento','importar_movimientos','cargar_archivo_movimiento'].includes(accion)) r = importarMovimiento_(b);
     else if(['seguimiento_pedido','consulta_cliente_pedido','consultar_pedido_cliente','estado_pedido_cliente'].includes(accion)) r = seguimientoPedido_(b);
     else if(['actualizar_estado_pedido','cambiar_estado_pedido','actualizar_estado','cambiar_estado'].includes(accion)) r = actualizarEstadoPedido_(b);
     else if(['preparar_pedido','enviar_preparacion','enviar_a_preparacion'].includes(accion)) r = alertaPedido_(b, 'PREPARACION', 'Pedido enviado a preparación', true);
     else if(['reenviar_alerta','reenviar_alerta_pedido','enviar_alerta','disparar_alerta_pedido'].includes(accion)) r = alertaPedido_(b, 'ALERTA', 'Pedido enviado a preparación', false);
     else if(['asignar_pikeador','asignar_pikeador_pedido'].includes(accion)) r = asignarPikeador_(b);
     else if(['agregar_pikeador','crear_pikeador'].includes(accion)) r = agregarPikeador_(b.nombre || b.pikeador || '');
+    else if(['listar_maestra_bd','maestra_listar','cargar_maestra'].includes(accion)) r = listarMaestraBD_();
+    else if(['agregar_maestra','crear_maestra','guardar_maestra'].includes(accion)) r = agregarMaestra_(b);
+    else if(['editar_maestra','actualizar_maestra','modificar_maestra'].includes(accion)) r = editarMaestra_(b);
+    else if(['eliminar_maestra','borrar_maestra'].includes(accion)) r = eliminarMaestra_(b);
+    else if(['importar_maestra','importar_maestra_xlsx','cargar_archivo_maestra'].includes(accion)) r = importarMaestra_(b);
+    else if(['listar_maestra'].includes(accion)) r = listarMaestra_();
     else if(['guardar_pedido','guardar_pedido_rapido','importar_pedidos','importar_pedidos_rapido','importar_listado','enviar_base_datos','enviar_bd'].includes(accion)) r = guardarPedido_(b);
     else r = {ok:false,msg:'Acción POST no válida: '+accion};
     return out_(r, '');
@@ -163,23 +178,25 @@ function agregarMovimiento_(b){
 function editarMovimiento_(b){
   const sh = movimientoSheet_(true);
   const v = values_(sh);
-  const headers = v.headers;
+  const headers = v.headers.length ? v.headers : movimientoHeaders_();
   const ix = movimientoIdx_(headers);
   const idBuscado = t_(b.id || b.ID || '');
-  if(!idBuscado) return {ok:false,msg:'ID vacío'};
-
+  const rowParam = Number(b.rowNumber || b.fila || b.row || 0);
   let rowNumber = 0;
-  for(let i=0; i<v.data.length; i++){
-    if(t_(getCell_(v.data[i], ix.id)) === idBuscado){ rowNumber = i + 2; break; }
+  if(rowParam >= 2 && rowParam <= sh.getLastRow()) rowNumber = rowParam;
+  if(!rowNumber && idBuscado && ix.id >= 0){
+    for(let i=0; i<v.data.length; i++){
+      if(t_(getCell_(v.data[i], ix.id)) === idBuscado){ rowNumber = i + 2; break; }
+    }
   }
-  if(!rowNumber) return {ok:false,msg:'ID no encontrado'};
+  if(!rowNumber) return {ok:false,msg:'Movimiento no encontrado para editar'};
 
   const updates = {
     fecha_entrada:t_(b.fecha_entrada || b.fechaEntrada || ''),
     fecha_salida:t_(b.fecha_salida || b.fechaSalida || ''),
-    ubicacion:t_(b.ubicacion || b.ubicación || ''),
+    ubicacion:t_(b.ubicacion || b['ubicación'] || ''),
     codigo:code_(b.codigo || b.cod || b.sku || ''),
-    descripcion:t_(b.descripcion || b.descripción || b.detalle || ''),
+    descripcion:t_(b.descripcion || b['descripción'] || b.detalle || ''),
     cantidad:n_(b.cantidad || b.stock || b.unidades || 0),
     responsable:t_(b.responsable || b.operador || b.usuario || ''),
     status:t_(b.status || b.estado || 'VIGENTE') || 'VIGENTE',
@@ -195,7 +212,7 @@ function editarMovimiento_(b){
   ];
   map.forEach(([field, col])=>{ if(col >= 0) sh.getRange(rowNumber, col + 1).setValue(updates[field]); });
   SpreadsheetApp.flush();
-  return {ok:true,msg:'Movimiento editado correctamente',accion:'editar',id:idBuscado,serverTime:new Date().toISOString()};
+  return {ok:true,msg:'Movimiento editado correctamente',accion:'editar',id:idBuscado,rowNumber:rowNumber,serverTime:new Date().toISOString()};
 }
 
 function eliminarMovimiento_(b){
@@ -203,7 +220,13 @@ function eliminarMovimiento_(b){
   const v = values_(sh);
   const ix = movimientoIdx_(v.headers);
   const idBuscado = t_(b.id || b.ID || '');
-  if(!idBuscado) return {ok:false,msg:'ID vacío'};
+  const rowParam = Number(b.rowNumber || b.fila || b.row || 0);
+  if(rowParam >= 2 && rowParam <= sh.getLastRow()){
+    sh.deleteRow(rowParam);
+    SpreadsheetApp.flush();
+    return {ok:true,msg:'Movimiento eliminado correctamente',accion:'eliminar',id:idBuscado,rowNumber:rowParam,serverTime:new Date().toISOString()};
+  }
+  if(!idBuscado) return {ok:false,msg:'ID o fila vacía'};
   for(let i=0; i<v.data.length; i++){
     if(t_(getCell_(v.data[i], ix.id)) === idBuscado){
       sh.deleteRow(i + 2);
@@ -211,7 +234,32 @@ function eliminarMovimiento_(b){
       return {ok:true,msg:'Movimiento eliminado correctamente',accion:'eliminar',id:idBuscado,serverTime:new Date().toISOString()};
     }
   }
-  return {ok:false,msg:'ID no encontrado'};
+  return {ok:false,msg:'Movimiento no encontrado'};
+}
+
+function importarMovimiento_(b){
+  let items = [];
+  if(Array.isArray(b.rows)) items = b.rows;
+  else if(Array.isArray(b.data)) items = b.data;
+  else items = parseItems_(b.rows || b.data || b.items || b.movimientos || b.detalle);
+  const modo = t_(b.modo || 'append').toLowerCase();
+  let insertados = 0, actualizados = 0, omitidos = 0;
+  items.forEach(raw => {
+    raw = raw || {};
+    const id = t_(raw.id || raw.ID || '');
+    const rowNumber = Number(raw.rowNumber || raw.fila || raw.row || 0);
+    const codigo = code_(raw.codigo || raw['código'] || raw.cod || raw.sku || '');
+    if(!codigo){ omitidos++; return; }
+    if((id || rowNumber) && modo !== 'append'){
+      const r = editarMovimiento_(Object.assign({}, raw, {id:id,rowNumber:rowNumber,codigo:codigo}));
+      if(r && r.ok) actualizados++; else { agregarMovimiento_(raw); insertados++; }
+    }else{
+      agregarMovimiento_(raw);
+      insertados++;
+    }
+  });
+  SpreadsheetApp.flush();
+  return {ok:true,msg:'Importación de BD-MOVIMIENTO finalizada',accion:'importar_movimiento',insertados:insertados,actualizados:actualizados,omitidos:omitidos,total:listarMovimiento_({}).total};
 }
 
 function diagnostico_(){
@@ -277,7 +325,7 @@ function listarBD_(name){
   let sh = null;
   if(name === 'PEDIDOS' || name === 'PEDIDO') sh = pedidosSheet_(false);
   else if(name === 'PIKEADORES') sh = ss_().getSheetByName(SHEET_PIKEADORES);
-  else if(name === 'MAESTRA') sh = ss_().getSheetByName(SHEET_MAESTRA);
+  else if(name === 'MAESTRA') sh = maestraSheet_(true);
   else if(name === 'ALERTAS_PEDIDOS') sh = ss_().getSheetByName(SHEET_ALERTAS);
   else if(name === 'MOVIMIENTO' || name === 'BD_MOVIMIENTO' || name === 'BD-MOVIMIENTO') sh = movimientoSheet_(true);
   else sh = ss_().getSheetByName(name);
@@ -325,6 +373,214 @@ function buscarProducto_(codigo){
   if(!codigo) return {ok:false,msg:'Código vacío'};
   const p = (listarMaestra_().productos || []).find(x=>code_(x.codigo)===codigo);
   return p ? Object.assign({ok:true},p) : {ok:false,msg:'Código no encontrado',codigo:codigo};
+}
+
+
+/* =========================================================
+   BD-MAESTRA - CARGA, CRUD E IMPORTACIÓN XLSX/CSV
+   Acciones:
+   - listar_maestra_bd / cargar_maestra
+   - agregar_maestra / editar_maestra / eliminar_maestra
+   - importar_maestra
+========================================================= */
+function maestraHeaders_(){
+  return ['id','codigo','descripcion','cantidad','categoria','unidad','status','ubicacion','fecha_actualizacion'];
+}
+function maestraSheet_(crear){
+  const ss = ss_();
+  let sh = ss.getSheetByName(SHEET_MAESTRA);
+  if(!sh && crear) sh = getOrCreate_(SHEET_MAESTRA, maestraHeaders_());
+  if(sh && crear){
+    ensureCols_(sh, maestraHeaders_());
+    try{
+      const h = values_(sh).headers;
+      const ix = maestraIdx_(h);
+      if(ix.codigo >= 0) sh.getRange(1, ix.codigo + 1, sh.getMaxRows(), 1).setNumberFormat('@');
+    }catch(e){}
+  }
+  return sh;
+}
+function maestraIdx_(headers){
+  return {
+    id:find_(headers,['id'],0),
+    codigo:find_(headers,['codigo','código','cod','sku','producto','item','codigo producto','código producto'],1),
+    descripcion:find_(headers,['descripcion','descripción','detalle','nombre','nombre producto','descripcion producto','descripción producto'],2),
+    cantidad:find_(headers,['cantidad','stock','unidades','existencia'],3),
+    categoria:find_(headers,['categoria','categoría','familia','grupo','linea','línea'],4),
+    unidad:find_(headers,['unidad','um','u/m','medida'],5),
+    status:find_(headers,['status','estado','vigencia'],6),
+    ubicacion:find_(headers,['ubicacion','ubicación','bodega','ubicacion sugerida','ubicación sugerida'],7),
+    fecha_actualizacion:find_(headers,['fecha_actualizacion','fecha actualización','fecha','actualizado'],8)
+  };
+}
+function listarMaestraBD_(){
+  const sh = maestraSheet_(true);
+  const lastRow = Math.max(1, sh.getLastRow());
+  const lastCol = Math.max(sh.getLastColumn(), maestraHeaders_().length);
+  const raw = sh.getRange(1, 1, lastRow, lastCol).getDisplayValues();
+  let headers = (raw[0] || []).map(t_);
+  if(headers.every(h => !h)){
+    headers = maestraHeaders_();
+    sh.getRange(1, 1, 1, headers.length).setValues([headers]);
+  }
+  ensureCols_(sh, maestraHeaders_());
+  headers = sh.getRange(1, 1, 1, Math.max(sh.getLastColumn(), maestraHeaders_().length)).getDisplayValues()[0].map(t_);
+  const full = sh.getRange(1, 1, Math.max(1, sh.getLastRow()), Math.max(sh.getLastColumn(), maestraHeaders_().length)).getDisplayValues();
+  const data = [];
+  const rowNumbers = [];
+  for(let i = 1; i < full.length; i++){
+    const row = full[i];
+    if(row.some(c => t_(c))){
+      data.push(row);
+      rowNumbers.push(i + 1);
+    }
+  }
+  const ix = maestraIdx_(headers);
+  const items = data.map((r, i) => ({
+    rowNumber: rowNumbers[i],
+    id: getCell_(r, ix.id),
+    codigo: code_(getCell_(r, ix.codigo)),
+    descripcion: t_(getCell_(r, ix.descripcion)),
+    cantidad: t_(getCell_(r, ix.cantidad)),
+    categoria: t_(getCell_(r, ix.categoria)),
+    unidad: t_(getCell_(r, ix.unidad)),
+    status: t_(getCell_(r, ix.status) || 'ACTIVO').toUpperCase(),
+    ubicacion: t_(getCell_(r, ix.ubicacion)),
+    fecha_actualizacion: t_(getCell_(r, ix.fecha_actualizacion))
+  })).filter(x => x.codigo || x.descripcion);
+  return {
+    ok:true,
+    sheet:sh.getName(),
+    headers:headers,
+    data:data,
+    rows:data,
+    values:data,
+    items:items,
+    productos:items,
+    rowNumbers:rowNumbers,
+    total:items.length,
+    serverTime:new Date().toISOString()
+  };
+}
+function valorMaestra_(b, names, fallback){
+  b = b || {};
+  const keys = Object.keys(b);
+  for(const n of names){
+    const k = keys.find(x => nh_(x) === nh_(n));
+    if(k && t_(b[k])) return t_(b[k]);
+  }
+  return t_(fallback || '');
+}
+function maestraPayload_(b){
+  return {
+    id:t_(b.id || b.ID || ''),
+    rowNumber:Number(b.rowNumber || b.fila || b.row || 0),
+    originalCode:code_(b.originalCode || b.codigo_original || b.codigoAnterior || ''),
+    codigo:code_(valorMaestra_(b,['codigo','código','cod','sku','producto','item','codigo producto','código producto'], b.codigo || b.cod || b.sku || '')),
+    descripcion:t_(valorMaestra_(b,['descripcion','descripción','detalle','nombre','nombre producto','descripcion producto','descripción producto'], b.descripcion || b.detalle || b.nombre || '')),
+    cantidad:n_(valorMaestra_(b,['cantidad','stock','unidades','existencia'], b.cantidad || b.stock || 0)),
+    categoria:t_(valorMaestra_(b,['categoria','categoría','familia','grupo','linea','línea'], b.categoria || b.familia || '')),
+    unidad:t_(valorMaestra_(b,['unidad','um','u/m','medida'], b.unidad || b.um || '')),
+    status:t_(valorMaestra_(b,['status','estado','vigencia'], b.status || b.estado || 'ACTIVO') || 'ACTIVO').toUpperCase(),
+    ubicacion:t_(valorMaestra_(b,['ubicacion','ubicación','bodega','ubicacion sugerida','ubicación sugerida'], b.ubicacion || b.bodega || ''))
+  };
+}
+function encontrarFilaMaestra_(sh, headers, item){
+  const v = values_(sh);
+  const ix = maestraIdx_(headers || v.headers);
+  const id = t_(item.id || '');
+  const code = code_(item.originalCode || item.codigo || '');
+  const rowNumber = Number(item.rowNumber || 0);
+  if(rowNumber >= 2 && rowNumber <= sh.getLastRow()) return rowNumber;
+  if(id && ix.id >= 0){
+    for(let i=0;i<v.data.length;i++) if(t_(getCell_(v.data[i], ix.id)) === id) return i+2;
+  }
+  if(code && ix.codigo >= 0){
+    for(let i=0;i<v.data.length;i++) if(code_(getCell_(v.data[i], ix.codigo)) === code) return i+2;
+  }
+  return 0;
+}
+function escribirMaestraEnFila_(sh, headers, rowNumber, item, mantenerId){
+  const ix = maestraIdx_(headers);
+  const ts = Utilities.formatDate(new Date(), TZ, 'yyyy-MM-dd HH:mm:ss');
+  const valuesMap = {
+    id: mantenerId ? '' : (item.id || id_('MA')),
+    codigo:item.codigo,
+    descripcion:item.descripcion,
+    cantidad:item.cantidad,
+    categoria:item.categoria,
+    unidad:item.unidad,
+    status:item.status || 'ACTIVO',
+    ubicacion:item.ubicacion,
+    fecha_actualizacion:ts
+  };
+  Object.keys(valuesMap).forEach(field => {
+    const col = ix[field];
+    if(col < 0) return;
+    if(field === 'id' && mantenerId) return;
+    sh.getRange(rowNumber, col + 1).setValue(valuesMap[field]);
+  });
+  return ts;
+}
+function agregarMaestra_(b){
+  const sh = maestraSheet_(true);
+  const v = values_(sh), headers = v.headers.length ? v.headers : maestraHeaders_();
+  const item = maestraPayload_(b);
+  if(!item.codigo) return {ok:false,msg:'Código vacío'};
+  if(!item.descripcion) return {ok:false,msg:'Descripción vacía'};
+  const existe = encontrarFilaMaestra_(sh, headers, {codigo:item.codigo});
+  if(existe) return editarMaestra_(Object.assign({}, b, {rowNumber:existe, originalCode:item.codigo}));
+  const obj = {id:id_('MA'), codigo:item.codigo, descripcion:item.descripcion, cantidad:item.cantidad, categoria:item.categoria, unidad:item.unidad, status:item.status || 'ACTIVO', ubicacion:item.ubicacion, fecha_actualizacion:Utilities.formatDate(new Date(), TZ, 'yyyy-MM-dd HH:mm:ss')};
+  appendObjects_(sh, headers, [obj]);
+  SpreadsheetApp.flush();
+  return {ok:true,msg:'Producto agregado a BD-MAESTRA',accion:'agregar_maestra',codigo:item.codigo,total:listarMaestraBD_().total};
+}
+function editarMaestra_(b){
+  const sh = maestraSheet_(true);
+  const v = values_(sh), headers = v.headers.length ? v.headers : maestraHeaders_();
+  const item = maestraPayload_(b);
+  if(!item.codigo) return {ok:false,msg:'Código vacío'};
+  if(!item.descripcion) return {ok:false,msg:'Descripción vacía'};
+  const rowNumber = encontrarFilaMaestra_(sh, headers, item);
+  if(!rowNumber) return {ok:false,msg:'Producto no encontrado en BD-MAESTRA'};
+  escribirMaestraEnFila_(sh, headers, rowNumber, item, true);
+  SpreadsheetApp.flush();
+  return {ok:true,msg:'Producto editado correctamente',accion:'editar_maestra',codigo:item.codigo,rowNumber:rowNumber};
+}
+function eliminarMaestra_(b){
+  const sh = maestraSheet_(true);
+  const v = values_(sh), headers = v.headers.length ? v.headers : maestraHeaders_();
+  const item = maestraPayload_(b);
+  const rowNumber = encontrarFilaMaestra_(sh, headers, item);
+  if(!rowNumber) return {ok:false,msg:'Producto no encontrado para eliminar'};
+  sh.deleteRow(rowNumber);
+  SpreadsheetApp.flush();
+  return {ok:true,msg:'Producto eliminado de BD-MAESTRA',accion:'eliminar_maestra',codigo:item.codigo,rowNumber:rowNumber};
+}
+function importarMaestra_(b){
+  const sh = maestraSheet_(true);
+  const v = values_(sh), headers = v.headers.length ? v.headers : maestraHeaders_();
+  let items = [];
+  if(Array.isArray(b.rows)) items = b.rows;
+  else if(Array.isArray(b.data)) items = b.data;
+  else items = parseItems_(b.rows || b.data || b.items || b.productos || b.detalle);
+  const modo = t_(b.modo || 'upsert').toLowerCase();
+  let insertados = 0, actualizados = 0, omitidos = 0;
+  items.forEach(raw => {
+    const item = maestraPayload_(raw || {});
+    if(!item.codigo || !item.descripcion){ omitidos++; return; }
+    const existe = encontrarFilaMaestra_(sh, headers, {codigo:item.codigo});
+    if(existe && modo !== 'append'){
+      escribirMaestraEnFila_(sh, headers, existe, item, true);
+      actualizados++;
+    }else{
+      const obj = {id:id_('MA'), codigo:item.codigo, descripcion:item.descripcion, cantidad:item.cantidad, categoria:item.categoria, unidad:item.unidad, status:item.status || 'ACTIVO', ubicacion:item.ubicacion, fecha_actualizacion:Utilities.formatDate(new Date(), TZ, 'yyyy-MM-dd HH:mm:ss')};
+      appendObjects_(sh, headers, [obj]);
+      insertados++;
+    }
+  });
+  SpreadsheetApp.flush();
+  return {ok:true,msg:'Importación de BD-MAESTRA finalizada',accion:'importar_maestra',insertados:insertados,actualizados:actualizados,omitidos:omitidos,total:listarMaestraBD_().total};
 }
 
 
@@ -644,13 +900,15 @@ function clientePedido_(pedido){
   return '';
 }
 
-function mensajeVozEstado_(pedido, estado, pikeador, cliente){
+function mensajeVozEstado_(pedido, estado, pikeador, cliente, vendedor){
   pedido = t_(pedido);
   estado = estadoSeguro_(estado, 'PENDIENTE');
   cliente = t_(cliente) || clientePedido_(pedido);
+  vendedor = t_(vendedor);
   const quien = t_(pikeador) ? ' Pikeador asignado: ' + t_(pikeador) + '.' : '';
   const pedidoTxt = pedido ? 'pedido ' + pedido : 'pedido sin número';
   const clienteTxt = cliente ? ', cliente ' + cliente : '';
+  const vendedorTxt = vendedor ? ', vendedor asociado ' + vendedor : '';
   const mensajes = {
     'PENDIENTE':'Pedido ' + pedido + ' quedó pendiente.' + quien,
     'PREPARACION':'Pedido ' + pedido + ' enviado a preparación.' + quien,
@@ -659,7 +917,7 @@ function mensajeVozEstado_(pedido, estado, pikeador, cliente){
     'DESPACHADO':'Pedido ' + pedido + ' fue despachado.' + quien,
     'EN RUTA':'Pedido ' + pedido + ' está en ruta.' + quien,
     'ENTREGADO':'Pedido ' + pedido + ' fue entregado.' + quien,
-    'TERMINADO':'Pedido terminado, ' + pedidoTxt + clienteTxt,
+    'TERMINADO':'Pedido terminado, ' + pedidoTxt + clienteTxt + vendedorTxt,
     'CANCELADO':'Pedido ' + pedido + ' fue cancelado.' + quien
   };
   return mensajes[estado] || ('Pedido ' + pedido + ' cambió a estado ' + estado + '.' + quien);
@@ -670,7 +928,7 @@ function emitirAlertaStatus_(pedido, estado, cliente, vendedor, pikeador, origen
   estado = estadoSeguro_(estado, '');
   if(!pedido || !estado) return {ok:false,msg:'Pedido o estado vacío'};
   const tipo = alertaTipoEstado_(estado);
-  const mensaje = mensajeVozEstado_(pedido, estado, pikeador, cliente);
+  const mensaje = mensajeVozEstado_(pedido, estado, pikeador, cliente, vendedor);
   const token = 'ALERTA-' + nh_(estado) + '-' + Date.now() + '-' + Utilities.getUuid().slice(0,8).toUpperCase();
   const ts = Utilities.formatDate(new Date(), TZ, 'yyyy-MM-dd HH:mm:ss');
   let count = 0;

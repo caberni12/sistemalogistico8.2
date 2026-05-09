@@ -1,0 +1,14 @@
+CAMBIOS APLICADOS - PANTALLA CLIENTE TV
+
+1. Se cambió el diseño a tema claro por defecto.
+2. Se ajustó fondo, tarjetas, barra superior, filtros, métricas y aviso emergente para mejor lectura en TV.
+3. Se agregaron loaders a los botones principales:
+   - Sincronizar
+   - Voz activa / Voz apagada
+   - Pantalla completa
+4. El botón Sincronizar queda bloqueado mientras consulta Apps Script para evitar doble carga.
+5. Se mantiene la alerta emergente al pasar a TERMINADO.
+6. Se mantiene el comando de voz con número de pedido, cliente y vendedor asociado.
+
+Archivo principal modificado:
+- pantalla_cliente_tv.html

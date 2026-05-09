@@ -1,4 +1,4 @@
-const API_URL='https://script.google.com/macros/s/AKfycbw47SxU42yTG1yb8Tlc7H3fnhH77SZVEYSlqyTMI8xzsXEHDK0i7PDDFaj3-Y29vQo7Ng/exec';
+const API_URL='https://script.google.com/macros/s/AKfycbwKJ0I0LL3J12cJg1sVuOuIe60v4Us3h9rnp4iev-3SuR5GHVEz3-Q1H-JJyjs96sOMPg/exec';
 
 const state={
   pedidos:[],
@@ -9,6 +9,7 @@ const state={
   ubicacionesMap:{},
   maestraListaCargada:false,
   sel:null,
+  selectedKey:null,
   importados:[],
   importStats:{nuevos:0,cambios:0,iguales:0,errores:0},
   importHeaders:[],
@@ -54,10 +55,21 @@ function stopClickedLoader(e){
 }
 
 window.addEventListener('DOMContentLoaded',()=>{
+  inicializarPanelesOrden();
   bind();
   cargarTodo();
   setInterval(verificarAlertas,1000);
 });
+
+
+function inicializarPanelesOrden(){
+  document.body.classList.add('metricas-ocultas');
+  [$('panelKpis'),$('panelAnalitica')].filter(Boolean).forEach(x=>x.classList.add('hidden'));
+  const btn=$('btnToggleMetricas');
+  if(btn) btn.textContent='Mostrar KPI / Rendimiento';
+  const btnPanel=$('btnTogglePanel');
+  if(btnPanel) btnPanel.textContent='Ocultar filtros';
+}
 
 function bind(){
   $('btnCargar')?.addEventListener('click',withLoaderEvent(()=>cargarTodo()));
@@ -70,8 +82,13 @@ function bind(){
   $('txtBuscar')?.addEventListener('input',filtrar);
   $('selEstado')?.addEventListener('change',filtrar);
   $('selFiltroPikeador')?.addEventListener('change',filtrar);
+  $('tbodyPedidos')?.addEventListener('click',abrirModalDesdeTabla);
+  $('tbodyPedidos')?.addEventListener('keydown',manejarTeclasFilaPedido);
+  $('mobileList')?.addEventListener('click',abrirModalDesdeTarjetaMovil);
+  document.addEventListener('keydown',manejarFlechasPedidos);
   $('btnAgregarPikeador')?.addEventListener('click',withLoaderEvent(()=>agregarPikeador()));
   $('btnTogglePanel')?.addEventListener('click',e=>{togglePanel();stopClickedLoader(e);});
+  $('btnToggleMetricas')?.addEventListener('click',e=>{toggleMetricas();stopClickedLoader(e);});
   $('btnCerrarModal')?.addEventListener('click',e=>{cerrarModal();stopClickedLoader(e);});
   $('modalPedido')?.addEventListener('click',e=>{if(e.target.id==='modalPedido')cerrarModal();});
   $('btnAsignarPikeador')?.addEventListener('click',withLoaderEvent(()=>asignarPikeadorActual()));
@@ -507,8 +524,8 @@ function render(){
     mob.innerHTML='<div class="pedido-card">Sin registros para mostrar.</div>';
     return;
   }
-  tb.innerHTML=state.filtrados.map(p=>`<tr><td>${esc(p.fecha)}</td><td><b>${esc(p.pedido)}</b></td><td>${esc(p.cliente)}</td><td>${esc(p.vendedor)}</td><td>${esc(pikeadorVisible(p.pikeador))}</td><td>${p.total_productos}</td><td><b>${p.total_unidades}</b></td><td>${badgeEstado(p.status)}</td><td>${esc(horaCorta(p.hora_inicio)||'-')}</td><td>${esc(horaCorta(p.hora_termino)||'-')}</td><td><b>${esc(tiempoPreparacionTexto(p))}</b></td><td>${badgeAlerta(p)}</td><td class="actions-cell"><button data-ver-pedido="${esc(p.key)}">Ver</button></td></tr>`).join('');
-  mob.innerHTML=state.filtrados.map(p=>`<div class="pedido-card"><div class="top"><span>${esc(p.pedido)}</span>${badgeEstado(p.status)}</div><p><b>Cliente:</b> ${esc(p.cliente||'-')}</p><p><b>Pikeador:</b> ${esc(pikeadorVisible(p.pikeador))}</p><p><b>Productos:</b> ${p.total_productos} | <b>Unidades:</b> ${p.total_unidades}</p><p><b>Inicio:</b> ${esc(horaCorta(p.hora_inicio)||'-')} | <b>Término:</b> ${esc(horaCorta(p.hora_termino)||'-')}</p><p><b>Tiempo preparación:</b> ${esc(tiempoPreparacionTexto(p))}</p><p>${badgeAlerta(p)}</p><button data-ver-pedido="${esc(p.key)}">Ver opciones</button></div>`).join('');
+  tb.innerHTML=state.filtrados.map(p=>`<tr class="pedido-row ${state.selectedKey===p.key?'row-selected':''}" data-pedido-key="${esc(p.key)}" tabindex="0" title="Seleccionar para abrir pedido"><td>${esc(p.fecha)}</td><td><b>${esc(p.pedido)}</b></td><td>${esc(p.cliente)}</td><td>${esc(p.vendedor)}</td><td>${esc(pikeadorVisible(p.pikeador))}</td><td>${p.total_productos}</td><td><b>${p.total_unidades}</b></td><td>${badgeEstado(p.status)}</td><td>${esc(horaCorta(p.hora_inicio)||'-')}</td><td>${esc(horaCorta(p.hora_termino)||'-')}</td><td><b>${esc(tiempoPreparacionTexto(p))}</b></td><td>${badgeAlerta(p)}</td><td class="actions-cell"><button data-ver-pedido="${esc(p.key)}">Ver</button></td></tr>`).join('');
+  mob.innerHTML=state.filtrados.map(p=>`<div class="pedido-card ${state.selectedKey===p.key?'row-selected':''}" data-pedido-key="${esc(p.key)}" tabindex="0"><div class="top"><span>${esc(p.pedido)}</span>${badgeEstado(p.status)}</div><p><b>Cliente:</b> ${esc(p.cliente||'-')}</p><p><b>Pikeador:</b> ${esc(pikeadorVisible(p.pikeador))}</p><p><b>Productos:</b> ${p.total_productos} | <b>Unidades:</b> ${p.total_unidades}</p><p><b>Inicio:</b> ${esc(horaCorta(p.hora_inicio)||'-')} | <b>Término:</b> ${esc(horaCorta(p.hora_termino)||'-')}</p><p><b>Tiempo preparación:</b> ${esc(tiempoPreparacionTexto(p))}</p><p>${badgeAlerta(p)}</p><button data-ver-pedido="${esc(p.key)}">Ver opciones</button></div>`).join('');
 }
 function kpis(){
   const a=state.filtrados;
@@ -526,11 +543,76 @@ function kpis(){
   renderRotacionYRendimiento(a);
 }
 
+
+/* ================= SELECCION TD / FLECHAS PEDIDO ================= */
+function abrirModalDesdeTabla(e){
+  if(e.target.closest('button,a,input,select,textarea,label')) return;
+  const tr=e.target.closest('tr[data-pedido-key]');
+  if(!tr) return;
+  seleccionarFilaPedido(tr.dataset.pedidoKey,true);
+}
+function abrirModalDesdeTarjetaMovil(e){
+  if(e.target.closest('button,a,input,select,textarea,label')) return;
+  const card=e.target.closest('[data-pedido-key]');
+  if(!card) return;
+  seleccionarFilaPedido(card.dataset.pedidoKey,true);
+}
+function manejarTeclasFilaPedido(e){
+  const tr=e.target.closest('tr[data-pedido-key]');
+  if(!tr) return;
+  if(e.key==='Enter' || e.key===' '){
+    e.preventDefault();
+    seleccionarFilaPedido(tr.dataset.pedidoKey,true);
+  }
+}
+function manejarFlechasPedidos(e){
+  if(e.key!=='ArrowDown' && e.key!=='ArrowUp') return;
+  const tag=(document.activeElement?.tagName||'').toLowerCase();
+  if(['input','select','textarea'].includes(tag)) return;
+  const modalAbierto=$('modalPedido')?.classList.contains('show');
+  const dentroOtroModal=document.activeElement?.closest?.('#modalImportar,#modalManual');
+  if(dentroOtroModal) return;
+  e.preventDefault();
+  moverSeleccionPedido(e.key==='ArrowDown'?1:-1,modalAbierto || !!state.selectedKey);
+}
+function seleccionarFilaPedido(key,abrir){
+  const p=state.filtrados.find(x=>x.key===key||x.pedido===key) || state.pedidos.find(x=>x.key===key||x.pedido===key);
+  if(!p) return;
+  state.selectedKey=p.key;
+  marcarFilaSeleccionada(p.key);
+  if(abrir) abrirModal(p.key);
+}
+function marcarFilaSeleccionada(key){
+  document.querySelectorAll('[data-pedido-key].row-selected').forEach(x=>x.classList.remove('row-selected'));
+  document.querySelectorAll(`[data-pedido-key="${cssEscapeSafe(key)}"]`).forEach(x=>x.classList.add('row-selected'));
+  const row=document.querySelector(`#tbodyPedidos [data-pedido-key="${cssEscapeSafe(key)}"]`);
+  if(row){
+    row.focus({preventScroll:true});
+    row.scrollIntoView({block:'nearest',inline:'nearest'});
+  }
+}
+function moverSeleccionPedido(delta,abrir){
+  const lista=state.filtrados.length?state.filtrados:state.pedidos;
+  if(!lista.length) return;
+  const actual=state.selectedKey || state.sel?.key || lista[0].key;
+  let idx=lista.findIndex(x=>x.key===actual || x.pedido===actual);
+  if(idx<0) idx=delta>0?-1:0;
+  const next=(idx+delta+lista.length)%lista.length;
+  seleccionarFilaPedido(lista[next].key,abrir);
+}
+function cssEscapeSafe(v){
+  v=String(v??'');
+  if(window.CSS && typeof CSS.escape==='function') return CSS.escape(v);
+  return v.replace(/\\/g,'\\\\').replace(/"/g,'\\"');
+}
+
 /* ================= MODAL PEDIDO ================= */
 function abrirModal(key){
   const p=state.pedidos.find(x=>x.key===key||x.pedido===key);
   if(!p)return toast('No se encontró el pedido');
   state.sel=p;
+  state.selectedKey=p.key;
+  marcarFilaSeleccionada(p.key);
   $('modalTitle').textContent='Pedido '+p.pedido;
   $('modalSub').textContent=(p.cliente||'')+' | Total unidades: '+(p.total_unidades||0);
   $('detallePedido').innerHTML=[['Fecha',p.fecha],['Pedido',p.pedido],['Cliente',p.cliente],['Vendedor',p.vendedor],['Pikeador',pikeadorVisible(p.pikeador)],['Estado',p.status],['Hora inicio',horaCorta(p.hora_inicio)||'-'],['Hora término',horaCorta(p.hora_termino)||'-'],['Tiempo preparación',tiempoPreparacionTexto(p)],['Productos',p.total_productos],['Total unidades',p.total_unidades],['Avance cliente',porcentajeAvancePedido(p)+'%']].map(([l,v])=>`<div class="detail-item"><div class="l">${l}</div><div class="v">${esc(v)}</div></div>`).join('');
@@ -1299,10 +1381,19 @@ function renderRotacionYRendimiento(lista){
 
 /* ================= UTILIDADES ================= */
 function togglePanel(){
-  const b=[$('panelControl'),$('panelKpis'),$('panelAnalitica'),$('panelTabla')].filter(Boolean);
-  const h=b[0].classList.toggle('hidden');
-  b.slice(1).forEach(x=>x.classList.toggle('hidden',h));
-  $('btnTogglePanel').textContent=h?'Mostrar panel y tabla':'Ocultar panel';
+  const panel=$('panelControl');
+  if(!panel) return;
+  const h=panel.classList.toggle('hidden');
+  document.body.classList.toggle('control-oculto',h);
+  const btn=$('btnTogglePanel');
+  if(btn) btn.textContent=h?'Mostrar filtros':'Ocultar filtros';
+}
+function toggleMetricas(){
+  const ocultar=!document.body.classList.contains('metricas-ocultas');
+  document.body.classList.toggle('metricas-ocultas',ocultar);
+  [$('panelKpis'),$('panelAnalitica')].filter(Boolean).forEach(x=>x.classList.toggle('hidden',ocultar));
+  const btn=$('btnToggleMetricas');
+  if(btn) btn.textContent=ocultar?'Mostrar KPI / Rendimiento':'Ocultar KPI / Rendimiento';
 }
 function api(accion,params={}){
   return new Promise((resolve,reject)=>{

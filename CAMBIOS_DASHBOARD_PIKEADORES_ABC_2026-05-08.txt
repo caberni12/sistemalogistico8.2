@@ -1,0 +1,51 @@
+CAMBIOS APLICADOS - DASHBOARD KPI PIKEADORES Y ABC BODEGA
+Fecha: 2026-05-08
+
+Se agregó el archivo dashboard_pikeadores_abc.html con las siguientes funciones:
+
+1. KPI generales del sistema de pedidos:
+   - Pedidos procesados / terminados.
+   - Promedio de productos por pedido.
+   - Promedio de unidades por pedido.
+   - Tiempo promedio de preparación.
+   - Pikeadores activos.
+   - Producto con más rotación.
+   - Eficiencia promedio en unidades por hora.
+
+2. KPI por pikeador:
+   - Pedidos asignados.
+   - Pedidos terminados.
+   - Pedidos en preparación.
+   - Pedidos pendientes.
+   - Productos procesados.
+   - Unidades procesadas.
+   - Tiempo promedio de preparación.
+   - Tiempo total de preparación.
+   - Eficiencia por hora.
+   - Porcentaje de cumplimiento.
+
+3. Productos con más rotación:
+   - Código.
+   - Descripción.
+   - Ubicación.
+   - Unidades procesadas.
+   - Cantidad de pedidos donde aparece.
+   - Porcentaje de participación.
+   - Porcentaje acumulado.
+
+4. Forma ABC para bodega:
+   - Clase A: productos de mayor rotación hasta 80% acumulado.
+   - Clase B: productos de rotación media hasta 95% acumulado.
+   - Clase C: productos de baja rotación sobre 95% acumulado.
+   - Recomendaciones operativas por clase.
+
+5. Informes personalizados:
+   - Agrupación por pikeador, producto, cliente, vendedor o estado.
+   - Métricas por unidades, pedidos, productos o tiempo de preparación.
+   - Exportación CSV.
+   - Botón Imprimir/PDF usando el navegador.
+
+6. Integración:
+   - Se agregó acceso directo en index.html.
+   - Se copió también a assets Android para que pueda ser usado dentro del proyecto móvil si se requiere.
+   - Usa la misma URL nueva del Apps Script ya configurada.

@@ -1,0 +1,697 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Dashboard KPI Pikeadores y ABC Bodega</title>
+  <style>
+    :root{
+      --bg:#f3f6fb;
+      --card:#ffffff;
+      --card-2:#f8fafc;
+      --text:#172033;
+      --muted:#64748b;
+      --line:#d9e2ef;
+      --brand:#2563eb;
+      --brand-2:#1d4ed8;
+      --ok:#16a34a;
+      --warn:#f59e0b;
+      --bad:#dc2626;
+      --violet:#7c3aed;
+      --shadow:0 18px 45px rgba(15,23,42,.10);
+      --radius:24px;
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{
+      margin:0;
+      font-family:Inter,Segoe UI,Roboto,Arial,sans-serif;
+      background:linear-gradient(180deg,#eef4ff 0%,var(--bg) 42%,#edf2f9 100%);
+      color:var(--text);
+      overflow:hidden;
+    }
+    .shell{height:100vh;display:grid;grid-template-rows:auto auto 1fr;gap:14px;padding:16px;}
+    .topbar,.filters,.content-card{background:rgba(255,255,255,.94);border:1px solid var(--line);box-shadow:var(--shadow);border-radius:var(--radius);}
+    .topbar{display:flex;align-items:center;justify-content:space-between;padding:14px 18px;gap:12px;}
+    .brand{display:flex;align-items:center;gap:14px;min-width:0;}
+    .logo{width:50px;height:50px;border-radius:18px;background:linear-gradient(135deg,var(--brand),#60a5fa);display:grid;place-items:center;color:#fff;font-weight:900;box-shadow:0 14px 30px rgba(37,99,235,.22);}
+    h1{font-size:clamp(1.2rem,2vw,2.1rem);margin:0;letter-spacing:-.04em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+    .subtitle{color:var(--muted);font-size:.92rem;margin-top:2px;}
+    .top-actions{display:flex;align-items:center;gap:10px;flex-wrap:wrap;justify-content:flex-end;}
+    .clock{text-align:right;font-weight:900;font-size:1.35rem;}
+    .date{font-size:.78rem;color:var(--muted);text-align:right;}
+    .filters{padding:12px;display:grid;grid-template-columns:1.2fr repeat(5,minmax(118px,.6fr)) auto;gap:10px;align-items:end;}
+    .field{display:flex;flex-direction:column;gap:5px;min-width:0;}
+    label{font-size:.72rem;font-weight:900;color:#334155;text-transform:uppercase;letter-spacing:.04em;}
+    input,select{width:100%;height:40px;border:1px solid var(--line);border-radius:14px;background:#fff;color:var(--text);padding:0 12px;font-weight:700;outline:none;}
+    input:focus,select:focus{border-color:#93c5fd;box-shadow:0 0 0 3px rgba(37,99,235,.12);}
+    button{height:40px;border:0;border-radius:14px;background:var(--brand);color:#fff;font-weight:900;padding:0 14px;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:8px;box-shadow:0 10px 22px rgba(37,99,235,.18);white-space:nowrap;}
+    button.secondary{background:#e8eef8;color:#1e293b;box-shadow:none;border:1px solid var(--line);}
+    button.ok{background:var(--ok);box-shadow:0 10px 22px rgba(22,163,74,.18);}
+    button.warn{background:var(--warn);box-shadow:0 10px 22px rgba(245,158,11,.18);}
+    button:disabled{opacity:.75;cursor:not-allowed;}
+    .loader{width:15px;height:15px;border-radius:999px;border:2px solid rgba(255,255,255,.45);border-top-color:#fff;animation:spin .75s linear infinite;display:none;}
+    .secondary .loader{border-color:rgba(30,41,59,.22);border-top-color:#1e293b;}
+    .loading .loader{display:inline-block}
+    @keyframes spin{to{transform:rotate(360deg)}}
+    .main{min-height:0;display:grid;grid-template-columns:1.2fr .8fr;gap:14px;}
+    .left,.right{min-height:0;display:flex;flex-direction:column;gap:14px;}
+    .scroll{min-height:0;overflow:auto;padding-right:3px;}
+    .scroll::-webkit-scrollbar{width:10px;height:10px}.scroll::-webkit-scrollbar-thumb{background:#cbd5e1;border-radius:999px}.scroll::-webkit-scrollbar-track{background:transparent}
+    .kpi-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;}
+    .kpi{background:var(--card);border:1px solid var(--line);border-radius:22px;padding:14px;box-shadow:0 12px 28px rgba(15,23,42,.07);min-height:104px;display:flex;flex-direction:column;justify-content:space-between;}
+    .kpi .label{color:var(--muted);font-size:.75rem;font-weight:900;text-transform:uppercase;letter-spacing:.05em;}
+    .kpi .value{font-weight:1000;font-size:clamp(1.45rem,2vw,2.45rem);letter-spacing:-.06em;line-height:1;}
+    .kpi .hint{font-size:.78rem;color:var(--muted);font-weight:700;}
+    .content-card{padding:14px;min-height:0;}
+    .section-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px;}
+    .section-title{font-size:1.05rem;font-weight:1000;letter-spacing:-.03em;margin:0;}
+    .pill{display:inline-flex;align-items:center;gap:6px;border-radius:999px;padding:6px 10px;background:#eef2ff;color:#1e40af;font-weight:900;font-size:.75rem;}
+    .table-wrap{overflow:auto;border:1px solid var(--line);border-radius:18px;background:#fff;max-height:430px;}
+    table{width:100%;border-collapse:separate;border-spacing:0;font-size:.85rem;}
+    th,td{padding:10px 12px;border-bottom:1px solid #edf2f7;text-align:left;vertical-align:middle;white-space:nowrap;}
+    th{position:sticky;top:0;background:#f8fafc;z-index:1;color:#334155;font-size:.72rem;text-transform:uppercase;letter-spacing:.04em;}
+    tr:last-child td{border-bottom:0}
+    .num{text-align:right;font-variant-numeric:tabular-nums;}
+    .bar-cell{min-width:160px;}
+    .bar-bg{height:10px;background:#e2e8f0;border-radius:999px;overflow:hidden;}
+    .bar-fill{height:100%;background:linear-gradient(90deg,var(--brand),#60a5fa);border-radius:999px;}
+    .badge{display:inline-flex;align-items:center;justify-content:center;border-radius:999px;padding:5px 9px;font-size:.72rem;font-weight:1000;}
+    .badge.a{background:#dcfce7;color:#166534}.badge.b{background:#fef3c7;color:#92400e}.badge.c{background:#fee2e2;color:#991b1b}
+    .badge.estado{background:#e0f2fe;color:#075985}.badge.term{background:#dcfce7;color:#166534}.badge.prep{background:#fef3c7;color:#92400e}.badge.pend{background:#e2e8f0;color:#475569}
+    .cards-abc{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;}
+    .abc-card{border:1px solid var(--line);border-radius:20px;padding:14px;background:#fff;box-shadow:0 10px 24px rgba(15,23,42,.06);}
+    .abc-card h3{margin:0 0 8px;font-size:1rem;display:flex;align-items:center;justify-content:space-between;gap:8px;}
+    .abc-card p{margin:0;color:var(--muted);font-size:.85rem;line-height:1.35;}
+    .abc-value{font-size:2rem;font-weight:1000;letter-spacing:-.06em;margin:8px 0 0;}
+    .report-controls{display:grid;grid-template-columns:1fr 1fr auto auto;gap:10px;margin-bottom:10px;align-items:end;}
+    .mini-chart{display:grid;gap:8px;}
+    .chart-row{display:grid;grid-template-columns:110px 1fr 62px;gap:9px;align-items:center;font-size:.8rem;font-weight:800;}
+    .chart-label{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#334155;}
+    .chart-val{text-align:right;color:var(--muted);font-variant-numeric:tabular-nums;}
+    .toast{position:fixed;right:18px;bottom:18px;background:#0f172a;color:#fff;padding:12px 14px;border-radius:16px;box-shadow:0 18px 38px rgba(15,23,42,.24);opacity:0;transform:translateY(12px);transition:.22s;z-index:50;font-weight:800;max-width:min(440px,calc(100vw - 28px));}
+    .toast.show{opacity:1;transform:translateY(0)}
+    .empty{padding:28px;text-align:center;color:var(--muted);font-weight:800;}
+    @media(max-width:1200px){.filters{grid-template-columns:1fr 1fr 1fr}.main{grid-template-columns:1fr}.kpi-grid{grid-template-columns:repeat(2,minmax(0,1fr));}.cards-abc{grid-template-columns:1fr}.report-controls{grid-template-columns:1fr 1fr}}
+    @media(max-width:700px){body{overflow:auto}.shell{height:auto;min-height:100vh;padding:10px}.topbar{align-items:flex-start;flex-direction:column}.filters{grid-template-columns:1fr}.top-actions{width:100%;justify-content:stretch}.top-actions button{flex:1}.kpi-grid{grid-template-columns:1fr}.table-wrap{max-height:none}.report-controls{grid-template-columns:1fr}h1{white-space:normal}.main{min-height:auto}.scroll{overflow:visible}}
+    @media print{body{overflow:visible;background:#fff}.shell{height:auto;padding:0}.filters,.top-actions,.toast{display:none!important}.main{display:block}.left,.right{display:block}.content-card,.topbar,.kpi{box-shadow:none;break-inside:avoid}.table-wrap{max-height:none;overflow:visible}.scroll{overflow:visible}.right{margin-top:12px}}
+
+
+    /* CORRECCION ANTISUPERPOSICION 2026-05-08
+       Evita tarjetas montadas y permite que KPI, tablas y ABC respiren en web y movil. */
+    html,body{min-height:100%;height:auto;}
+    body{overflow:auto;}
+    .shell{min-height:100dvh;height:auto;max-width:100%;grid-template-rows:auto auto auto;overflow:visible;}
+    .topbar{flex-wrap:wrap;align-items:center;}
+    .topbar,.brand,.top-actions,.filters,.main,.left,.right,.content-card,.kpi,.abc-card,.table-wrap,.report-controls{min-width:0;max-width:100%;}
+    .main{align-items:start;grid-template-columns:minmax(0,1.2fr) minmax(320px,.8fr);overflow:visible;}
+    .left,.right{overflow:visible;}
+    .scroll{overflow:visible;padding-right:0;}
+    .filters{grid-template-columns:repeat(auto-fit,minmax(160px,1fr));align-items:end;}
+    .filters .field:first-child{grid-column:span 2;}
+    .kpi-grid{grid-template-columns:repeat(auto-fit,minmax(210px,1fr));align-items:stretch;}
+    .kpi{height:auto;min-height:112px;overflow:hidden;}
+    .kpi .value,.kpi .hint,.kpi .label,.section-title,.abc-card h3,.abc-card p,.chart-label,.pill{overflow-wrap:anywhere;word-break:break-word;}
+    .kpi .value{line-height:1.05;}
+    .content-card{overflow:hidden;}
+    .section-head{flex-wrap:wrap;align-items:flex-start;}
+    .table-wrap{max-width:100%;overflow:auto;}
+    table{min-width:720px;}
+    .cards-abc{grid-template-columns:repeat(auto-fit,minmax(230px,1fr));align-items:stretch;}
+    .abc-card{height:auto;overflow:hidden;}
+    .report-controls{grid-template-columns:repeat(auto-fit,minmax(170px,1fr));}
+    .report-controls button{width:100%;}
+    .mini-chart,.chart-row{min-width:0;max-width:100%;}
+    .chart-row{grid-template-columns:minmax(80px,110px) minmax(0,1fr) minmax(54px,62px);}
+    .top-actions button{min-width:128px;}
+    @media(max-width:1100px){.main{grid-template-columns:1fr;}.filters .field:first-child{grid-column:1/-1;}.top-actions{width:100%;justify-content:flex-start;}.top-actions button{flex:1 1 160px;}}
+    @media(max-width:700px){.shell{padding:10px;}.filters{grid-template-columns:1fr;}.filters .field:first-child{grid-column:auto;}.top-actions{align-items:stretch;}.top-actions button{width:100%;}.kpi-grid{grid-template-columns:1fr;}.cards-abc{grid-template-columns:1fr;}table{min-width:680px;}}
+  </style>
+</head>
+<body>
+  <main class="shell">
+    <header class="topbar">
+      <div class="brand">
+        <div class="logo">AS</div>
+        <div style="min-width:0">
+          <h1>Dashboard KPI Pikeadores y ABC Bodega</h1>
+          <div class="subtitle" id="subtitle">Rendimiento, tiempos de preparación, rotación de productos e informe ABC.</div>
+        </div>
+      </div>
+      <div class="top-actions">
+        <div>
+          <div class="clock" id="clock">--:--</div>
+          <div class="date" id="dateLine">--</div>
+        </div>
+        <button id="btnSync"><span class="loader"></span><span>Sincronizar</span></button>
+        <button class="secondary" id="btnPrint"><span class="loader"></span><span>Imprimir / PDF</span></button>
+        <button class="ok" id="btnCsv"><span class="loader"></span><span>Exportar XLSX</span></button>
+      </div>
+    </header>
+
+    <section class="filters">
+      <div class="field"><label>Buscar</label><input id="txtFiltro" placeholder="Pedido, cliente, vendedor, pikeador, código o producto" /></div>
+      <div class="field"><label>Desde</label><input id="dtDesde" type="date" /></div>
+      <div class="field"><label>Hasta</label><input id="dtHasta" type="date" /></div>
+      <div class="field"><label>Pikeador</label><select id="selPikeador"><option value="">Todos</option></select></div>
+      <div class="field"><label>Estado</label><select id="selEstado"><option value="">Todos</option><option>PENDIENTE</option><option>PREPARACION</option><option>RECIBIDO</option><option>DESPACHADO</option><option>EN RUTA</option><option>TERMINADO</option><option>CANCELADO</option></select></div>
+      <div class="field"><label>Informe</label><select id="selInforme"><option value="pikeador">Rendimiento pikeador</option><option value="rotacion">Rotación productos</option><option value="abc">ABC bodega</option><option value="cliente">Clientes</option><option value="vendedor">Vendedores</option></select></div>
+      <button class="secondary" id="btnLimpiar"><span class="loader"></span><span>Limpiar</span></button>
+    </section>
+
+    <section class="main">
+      <div class="left scroll">
+        <section class="kpi-grid">
+          <div class="kpi"><div class="label">Pedidos procesados</div><div class="value" id="kPedidos">0</div><div class="hint" id="hPedidos">Terminados dentro del filtro</div></div>
+          <div class="kpi"><div class="label">Productos promedio</div><div class="value" id="kPromProd">0</div><div class="hint">Promedio de líneas por pedido</div></div>
+          <div class="kpi"><div class="label">Unidades promedio</div><div class="value" id="kPromUni">0</div><div class="hint">Promedio de unidades por pedido</div></div>
+          <div class="kpi"><div class="label">Tiempo promedio</div><div class="value" id="kTiempo">0 min</div><div class="hint">Preparación desde inicio a término</div></div>
+          <div class="kpi"><div class="label">Pikeadores activos</div><div class="value" id="kPikeadores">0</div><div class="hint">Con pedidos asignados</div></div>
+          <div class="kpi"><div class="label">Producto mayor rotación</div><div class="value" id="kTopProd" style="font-size:1.35rem">-</div><div class="hint" id="hTopProd">0 unidades</div></div>
+          <div class="kpi"><div class="label">Eficiencia promedio</div><div class="value" id="kEficiencia">0</div><div class="hint">Unidades por hora preparada</div></div>
+          <div class="kpi"><div class="label">Última sync</div><div class="value" id="kSync">--:--</div><div class="hint" id="hSync">Esperando datos</div></div>
+        </section>
+
+        <section class="content-card">
+          <div class="section-head"><h2 class="section-title">KPI por pikeador</h2><span class="pill" id="pillPikeadores">0 registros</span></div>
+          <div class="table-wrap"><table id="tblPikeadores"><thead></thead><tbody></tbody></table></div>
+        </section>
+
+        <section class="content-card">
+          <div class="section-head"><h2 class="section-title">Productos con más rotación</h2><span class="pill" id="pillRotacion">ABC automático</span></div>
+          <div class="table-wrap"><table id="tblRotacion"><thead></thead><tbody></tbody></table></div>
+        </section>
+      </div>
+
+      <div class="right scroll">
+        <section class="content-card">
+          <div class="section-head"><h2 class="section-title">Forma ABC para bodega</h2><span class="pill" id="pillABC">A 80% · B 95% · C resto</span></div>
+          <div class="cards-abc" id="abcCards"></div>
+        </section>
+
+        <section class="content-card">
+          <div class="section-head"><h2 class="section-title">Top visual de rotación</h2><span class="pill">Unidades</span></div>
+          <div class="mini-chart" id="chartRotacion"></div>
+        </section>
+
+        <section class="content-card">
+          <div class="section-head"><h2 class="section-title">Informe personalizado</h2><span class="pill" id="pillInforme">Listo</span></div>
+          <div class="report-controls">
+            <div class="field"><label>Agrupar por</label><select id="selGrupo"><option value="pikeador">Pikeador</option><option value="producto">Producto</option><option value="cliente">Cliente</option><option value="vendedor">Vendedor</option><option value="estado">Estado</option></select></div>
+            <div class="field"><label>Medir</label><select id="selMetrica"><option value="unidades">Unidades</option><option value="pedidos">Pedidos</option><option value="tiempo">Tiempo preparación</option><option value="productos">Productos</option></select></div>
+            <button id="btnGenerar"><span class="loader"></span><span>Generar</span></button>
+            <button class="secondary" id="btnCsvCustom"><span class="loader"></span><span>XLSX</span></button>
+          </div>
+          <div class="table-wrap"><table id="tblInforme"><thead></thead><tbody></tbody></table></div>
+        </section>
+      </div>
+    </section>
+  </main>
+  <div class="toast" id="toast"></div>
+
+<script>
+const DEFAULT_API_URL = 'https://script.google.com/macros/s/AKfycbwKJ0I0LL3J12cJg1sVuOuIe60v4Us3h9rnp4iev-3SuR5GHVEz3-Q1H-JJyjs96sOMPg/exec';
+const API_URL = DEFAULT_API_URL;
+const $ = id => document.getElementById(id);
+let pedidos = [];
+let pedidosFiltrados = [];
+let rowsInforme = [];
+let syncBusy = false;
+let timer = null;
+const qs = new URLSearchParams(location.search);
+const intervalo = Math.max(10000, Number(qs.get('intervalo') || qs.get('refresh') || 30000));
+
+window.addEventListener('DOMContentLoaded', () => {
+  bind();
+  reloj();
+  setInterval(reloj, 1000);
+  cargarPedidos($('btnSync'));
+  timer = setInterval(() => cargarPedidos(), intervalo);
+});
+
+function bind(){
+  $('btnSync').addEventListener('click', () => cargarPedidos($('btnSync')));
+  $('btnPrint').addEventListener('click', () => withLoader($('btnPrint'), () => window.print()));
+  $('btnCsv').addEventListener('click', () => withLoader($('btnCsv'), () => exportXlsx(rowsInforme.length ? rowsInforme : tablaPikeadores(), 'dashboard_kpi_pikeadores.xlsx', 'KPI Pikeadores')));
+  $('btnCsvCustom').addEventListener('click', () => withLoader($('btnCsvCustom'), () => exportXlsx(rowsInforme, 'informe_personalizado.xlsx', 'Informe Personalizado')));
+  $('btnGenerar').addEventListener('click', () => generarInforme($('btnGenerar')));
+  $('btnLimpiar').addEventListener('click', limpiarFiltros);
+  ['txtFiltro','dtDesde','dtHasta','selPikeador','selEstado','selInforme','selGrupo','selMetrica'].forEach(id => {
+    $(id).addEventListener('input', aplicarFiltros);
+    $(id).addEventListener('change', aplicarFiltros);
+  });
+}
+
+function jsonp(accion, params = {}){
+  return new Promise((resolve, reject) => {
+    const cb = 'cbDash_' + Date.now() + '_' + Math.floor(Math.random() * 999999);
+    const url = new URL(API_URL);
+    url.searchParams.set('accion', accion);
+    url.searchParams.set('callback', cb);
+    url.searchParams.set('_', Date.now());
+    Object.entries(params).forEach(([k,v]) => { if(v !== undefined && v !== null && v !== '') url.searchParams.set(k, String(v)); });
+    const s = document.createElement('script');
+    const timeout = setTimeout(() => finish(new Error('Tiempo agotado consultando Apps Script')), 30000);
+    window[cb] = data => finish(null, data);
+    function finish(err, data){
+      clearTimeout(timeout);
+      try{ delete window[cb]; }catch(e){}
+      try{ s.remove(); }catch(e){}
+      err ? reject(err) : resolve(data);
+    }
+    s.onerror = () => finish(new Error('No se pudo conectar con Apps Script'));
+    s.src = url.toString();
+    document.body.appendChild(s);
+  });
+}
+
+async function cargarPedidos(btn){
+  if(syncBusy) return;
+  syncBusy = true;
+  setButtonLoading(btn, true);
+  try{
+    const r = await jsonp('listar_pedidos', {mostrarTodo:1});
+    if(!r || !r.ok) throw new Error((r && r.msg) || 'Respuesta inválida desde Apps Script');
+    pedidos = normalizarLista(r);
+    cargarSelectPikeadores(pedidos);
+    aplicarFiltros();
+    $('kSync').textContent = new Date().toLocaleTimeString('es-CL',{hour:'2-digit',minute:'2-digit'});
+    $('hSync').textContent = `${pedidos.length} pedidos leídos`;
+    toast('Dashboard sincronizado correctamente');
+  }catch(err){
+    toast('Error: ' + (err.message || err));
+  }finally{
+    syncBusy = false;
+    setButtonLoading(btn, false);
+  }
+}
+
+function normalizarLista(r){
+  const base = Array.isArray(r.pedidos) ? r.pedidos : agruparDesdeTabla(r.headers || [], r.data || []);
+  return base.map(p => {
+    const productos = Array.isArray(p.productos) ? p.productos.map(normalizarProducto) : [];
+    const totalProductos = Number(p.total_productos || productos.length || 0);
+    const totalUnidades = Number(p.total_unidades || productos.reduce((s,x)=>s + x.cantidad,0) || 0);
+    const inicio = txt(p.hora_inicio || p.inicio_preparacion || p.fecha_inicio || '');
+    const termino = txt(p.hora_termino || p.termino_preparacion || p.fecha_termino || '');
+    const min = minutosPreparacion(inicio, termino, p.tiempo_preparacion_min || p.minutos_preparacion || 0);
+    return {
+      pedido:txt(p.pedido || p.numero || ''),
+      fecha:txt(p.fecha || ''),
+      cliente:txt(p.cliente || ''),
+      vendedor:txt(p.vendedor || p.responsable || ''),
+      pikeador:limpiarPikeador(p.pikeador || p.picker || p.preparador || '', p.cliente || ''),
+      status:estadoSeguro(p.status || p.estado || 'PENDIENTE'),
+      hora_inicio:inicio,
+      hora_termino:termino,
+      tiempo_preparacion_min:min,
+      total_productos:totalProductos,
+      total_unidades:totalUnidades,
+      productos
+    };
+  }).filter(p => p.pedido);
+}
+
+function agruparDesdeTabla(headers, data){
+  const ix = idx(headers);
+  const map = {};
+  (data || []).forEach((r, i) => {
+    const ped = cell(r, ix.pedido) || 'SIN_PEDIDO_' + (i+1);
+    const key = normalKey(ped);
+    if(!map[key]) map[key] = {
+      pedido:ped, fecha:cell(r,ix.fecha), cliente:cell(r,ix.cliente), vendedor:cell(r,ix.vendedor),
+      pikeador:cell(r,ix.pikeador), status:cell(r,ix.status), hora_inicio:cell(r,ix.hora_inicio), hora_termino:cell(r,ix.hora_termino),
+      tiempo_preparacion_min:Number(cell(r,ix.tiempo_preparacion_min) || 0), productos:[]
+    };
+    const p = map[key];
+    ['fecha','cliente','vendedor','pikeador','status','hora_inicio','hora_termino'].forEach(k => { const v = cell(r,ix[k]); if(v) p[k] = v; });
+    const prod = normalizarProducto({codigo:cell(r,ix.codigo), descripcion:cell(r,ix.descripcion), ubicacion:cell(r,ix.ubicacion), cantidad:cell(r,ix.cantidad)});
+    if(prod.codigo || prod.descripcion) p.productos.push(prod);
+  });
+  Object.values(map).forEach(p => { p.total_productos = p.productos.length; p.total_unidades = p.productos.reduce((s,x)=>s+x.cantidad,0); });
+  return Object.values(map);
+}
+
+function normalizarProducto(x){
+  return {codigo:txt(x.codigo || x.cod || x.sku || ''), descripcion:txt(x.descripcion || x.detalle || x.nombre || ''), ubicacion:txt(x.ubicacion || x.bodega || ''), cantidad:num(x.cantidad || x.unidades || x.qty || 0) || 0};
+}
+
+function cargarSelectPikeadores(lista){
+  const actual = $('selPikeador').value;
+  const names = Array.from(new Set(lista.map(p => p.pikeador || 'Sin asignar'))).sort((a,b)=>a.localeCompare(b));
+  $('selPikeador').innerHTML = '<option value="">Todos</option>' + names.map(n => `<option value="${esc(n)}">${esc(n)}</option>`).join('');
+  if(names.includes(actual)) $('selPikeador').value = actual;
+}
+
+function aplicarFiltros(){
+  const filtro = normalText($('txtFiltro').value);
+  const desde = $('dtDesde').value ? new Date($('dtDesde').value + 'T00:00:00') : null;
+  const hasta = $('dtHasta').value ? new Date($('dtHasta').value + 'T23:59:59') : null;
+  const pikeador = $('selPikeador').value;
+  const estado = $('selEstado').value;
+  pedidosFiltrados = pedidos.filter(p => {
+    const fecha = parseFecha(p.fecha) || parseFecha(p.hora_inicio) || parseFecha(p.hora_termino);
+    const blob = normalText([p.pedido,p.cliente,p.vendedor,p.pikeador,p.status,...p.productos.map(x => `${x.codigo} ${x.descripcion} ${x.ubicacion}`)].join(' '));
+    if(filtro && !blob.includes(filtro)) return false;
+    if(desde && fecha && fecha < desde) return false;
+    if(hasta && fecha && fecha > hasta) return false;
+    if(pikeador && (p.pikeador || 'Sin asignar') !== pikeador) return false;
+    if(estado && p.status !== estado) return false;
+    return true;
+  });
+  render();
+}
+
+function render(){
+  const pikeadores = tablaPikeadores();
+  const rotacion = tablaRotacion();
+  const abc = calcularABC(rotacion);
+  renderKpis(pikeadores, rotacion);
+  renderTablaPikeadores(pikeadores);
+  renderTablaRotacion(abc);
+  renderAbcCards(abc);
+  renderMiniChart(abc.slice(0,8));
+  generarInforme();
+}
+
+function tablaPikeadores(){
+  const map = {};
+  pedidosFiltrados.forEach(p => {
+    const pk = p.pikeador || 'Sin asignar';
+    if(!map[pk]) map[pk] = {pikeador:pk,pedidos:0,terminados:0,en_preparacion:0,pendientes:0,cancelados:0,productos:0,unidades:0,tiempo_total_min:0,pedidos_con_tiempo:0,promedio_min:0,eficiencia_hora:0,cumplimiento:0};
+    const x = map[pk];
+    x.pedidos++;
+    x.productos += Number(p.total_productos || 0);
+    x.unidades += Number(p.total_unidades || 0);
+    if(p.status === 'TERMINADO') x.terminados++;
+    else if(p.status === 'PREPARACION') x.en_preparacion++;
+    else if(p.status === 'CANCELADO') x.cancelados++;
+    else x.pendientes++;
+    if(Number(p.tiempo_preparacion_min || 0) > 0){ x.tiempo_total_min += Number(p.tiempo_preparacion_min); x.pedidos_con_tiempo++; }
+  });
+  return Object.values(map).map(x => {
+    x.promedio_min = x.pedidos_con_tiempo ? Math.round(x.tiempo_total_min / x.pedidos_con_tiempo) : 0;
+    x.eficiencia_hora = x.tiempo_total_min > 0 ? Math.round((x.unidades / (x.tiempo_total_min / 60)) * 10) / 10 : 0;
+    x.cumplimiento = x.pedidos ? Math.round((x.terminados / x.pedidos) * 100) : 0;
+    return x;
+  }).sort((a,b)=>b.terminados-a.terminados || b.unidades-a.unidades || a.promedio_min-b.promedio_min);
+}
+
+function tablaRotacion(){
+  const map = {};
+  pedidosFiltrados.forEach(p => {
+    p.productos.forEach(prod => {
+      const key = normalKey(prod.codigo || prod.descripcion || 'SIN_CODIGO');
+      if(!map[key]) map[key] = {codigo:prod.codigo || '-', descripcion:prod.descripcion || '-', ubicacion:prod.ubicacion || '-', unidades:0, pedidosSet:new Set(), lineas:0};
+      const x = map[key];
+      x.unidades += Number(prod.cantidad || 0);
+      x.lineas++;
+      x.pedidosSet.add(p.pedido);
+      if(prod.ubicacion && x.ubicacion === '-') x.ubicacion = prod.ubicacion;
+    });
+  });
+  return Object.values(map).map(x => ({codigo:x.codigo,descripcion:x.descripcion,ubicacion:x.ubicacion,unidades:x.unidades,pedidos:x.pedidosSet.size,lineas:x.lineas})).sort((a,b)=>b.unidades-a.unidades || b.pedidos-a.pedidos);
+}
+
+function calcularABC(rows){
+  const total = rows.reduce((s,x)=>s + Number(x.unidades || 0), 0) || 1;
+  let acum = 0;
+  return rows.map(x => {
+    acum += Number(x.unidades || 0);
+    const pct = (Number(x.unidades || 0) / total) * 100;
+    const pctAcum = (acum / total) * 100;
+    const clase = pctAcum <= 80 ? 'A' : (pctAcum <= 95 ? 'B' : 'C');
+    const recomendacion = clase === 'A' ? 'Ubicar en zona frontal de picking y revisar stock diario' : clase === 'B' ? 'Reposición programada y ubicación media' : 'Baja rotación; revisar sobrestock o ubicación secundaria';
+    return {...x, pct, pct_acumulado:pctAcum, clase, recomendacion};
+  });
+}
+
+function renderKpis(pikeadores, rotacion){
+  const terminados = pedidosFiltrados.filter(p => p.status === 'TERMINADO');
+  const baseTiempo = pedidosFiltrados.filter(p => Number(p.tiempo_preparacion_min || 0) > 0);
+  const basePedidos = pedidosFiltrados.length || 1;
+  const totalProductos = pedidosFiltrados.reduce((s,p)=>s+Number(p.total_productos||0),0);
+  const totalUnidades = pedidosFiltrados.reduce((s,p)=>s+Number(p.total_unidades||0),0);
+  const totalMin = baseTiempo.reduce((s,p)=>s+Number(p.tiempo_preparacion_min||0),0);
+  const top = rotacion[0];
+  $('kPedidos').textContent = terminados.length;
+  $('hPedidos').textContent = `${pedidosFiltrados.length} pedidos visibles`;
+  $('kPromProd').textContent = dec(totalProductos / basePedidos, 1);
+  $('kPromUni').textContent = dec(totalUnidades / basePedidos, 1);
+  $('kTiempo').textContent = formatearMinutos(baseTiempo.length ? totalMin / baseTiempo.length : 0);
+  $('kPikeadores').textContent = pikeadores.filter(x => x.pikeador !== 'Sin asignar').length;
+  $('kTopProd').textContent = top ? (top.codigo !== '-' ? top.codigo : corte(top.descripcion, 16)) : '-';
+  $('hTopProd').textContent = top ? `${top.unidades} unidades · ${corte(top.descripcion, 34)}` : '0 unidades';
+  $('kEficiencia').textContent = totalMin > 0 ? dec(totalUnidades / (totalMin / 60), 1) : '0';
+}
+
+function renderTablaPikeadores(rows){
+  $('pillPikeadores').textContent = `${rows.length} pikeadores`;
+  setTable('tblPikeadores', ['Pikeador','Pedidos','Terminados','Prep.','Pend.','Productos','Unidades','Promedio','Total','Efic./h','Cumpl.'], rows.map(x => [
+    esc(x.pikeador), numCell(x.pedidos), numCell(x.terminados), numCell(x.en_preparacion), numCell(x.pendientes), numCell(x.productos), numCell(x.unidades), esc(formatearMinutos(x.promedio_min)), esc(formatearMinutos(x.tiempo_total_min)), numCell(x.eficiencia_hora), progressCell(x.cumplimiento)
+  ]));
+}
+
+function renderTablaRotacion(rows){
+  $('pillRotacion').textContent = `${rows.length} productos`;
+  setTable('tblRotacion', ['ABC','Código','Descripción','Ubicación','Unidades','Pedidos','%','% acum.','Recomendación'], rows.slice(0,60).map(x => [
+    `<span class="badge ${x.clase.toLowerCase()}">${x.clase}</span>`, esc(x.codigo), esc(corte(x.descripcion,60)), esc(x.ubicacion), numCell(x.unidades), numCell(x.pedidos), pctCell(x.pct), pctCell(x.pct_acumulado), esc(x.recomendacion)
+  ]));
+}
+
+function renderAbcCards(rows){
+  const resumen = {A:{items:0,unidades:0,txt:'Alta rotación. Debe estar cerca del punto de preparación, con reposición diaria y conteo frecuente.'},B:{items:0,unidades:0,txt:'Rotación media. Mantener ubicación intermedia, reposición programada y control semanal.'},C:{items:0,unidades:0,txt:'Baja rotación. Usar ubicación secundaria, revisar sobrestock y depuración de catálogo.'}};
+  rows.forEach(x => { resumen[x.clase].items++; resumen[x.clase].unidades += Number(x.unidades || 0); });
+  $('abcCards').innerHTML = ['A','B','C'].map(k => `<div class="abc-card"><h3>Clase ${k}<span class="badge ${k.toLowerCase()}">${resumen[k].items} SKU</span></h3><p>${resumen[k].txt}</p><div class="abc-value">${resumen[k].unidades}</div><p>unidades procesadas</p></div>`).join('');
+}
+
+function renderMiniChart(rows){
+  const max = Math.max(1, ...rows.map(x => Number(x.unidades || 0)));
+  $('chartRotacion').innerHTML = rows.length ? rows.map(x => `<div class="chart-row"><div class="chart-label" title="${escAttr(x.descripcion)}">${esc(x.codigo || x.descripcion)}</div><div class="bar-bg"><div class="bar-fill" style="width:${Math.max(3, (x.unidades / max) * 100)}%"></div></div><div class="chart-val">${x.unidades}</div></div>`).join('') : '<div class="empty">Sin productos para graficar.</div>';
+}
+
+function generarInforme(btn){
+  setButtonLoading(btn, true);
+  const grupo = $('selGrupo').value;
+  const metrica = $('selMetrica').value;
+  const tipoInforme = $('selInforme').value;
+  let data;
+  if(tipoInforme === 'rotacion' || tipoInforme === 'abc'){
+    data = calcularABC(tablaRotacion()).map(x => ({grupo:x.codigo, detalle:x.descripcion, clase:x.clase, unidades:x.unidades, pedidos:x.pedidos, porcentaje:dec(x.pct,2), acumulado:dec(x.pct_acumulado,2), recomendacion:x.recomendacion}));
+    setTable('tblInforme', ['Código','Descripción','ABC','Unidades','Pedidos','%','% acum.','Recomendación'], data.slice(0,100).map(x => [esc(x.grupo), esc(corte(x.detalle,50)), `<span class="badge ${x.clase.toLowerCase()}">${x.clase}</span>`, numCell(x.unidades), numCell(x.pedidos), pctCell(x.porcentaje), pctCell(x.acumulado), esc(x.recomendacion)]));
+  }else{
+    data = agruparPersonalizado(grupo, metrica);
+    setTable('tblInforme', ['Grupo','Pedidos','Terminados','Productos','Unidades','Tiempo total','Tiempo promedio','Métrica'], data.map(x => [esc(x.grupo), numCell(x.pedidos), numCell(x.terminados), numCell(x.productos), numCell(x.unidades), esc(formatearMinutos(x.tiempo_total_min)), esc(formatearMinutos(x.promedio_min)), numCell(x.valor)]));
+  }
+  rowsInforme = data;
+  $('pillInforme').textContent = `${data.length} filas`;
+  setTimeout(() => setButtonLoading(btn, false), 120);
+}
+
+function agruparPersonalizado(grupo, metrica){
+  const map = {};
+  if(grupo === 'producto'){
+    pedidosFiltrados.forEach(p => {
+      p.productos.forEach(prod => {
+        const key = prod.codigo || prod.descripcion || 'Sin producto';
+        if(!map[key]) map[key] = {grupo:key,pedidos:0,terminados:0,productos:0,unidades:0,tiempo_total_min:0,pedidos_con_tiempo:0,promedio_min:0,valor:0,pedidosSet:new Set()};
+        const x = map[key];
+        if(!x.pedidosSet.has(p.pedido)){
+          x.pedidosSet.add(p.pedido);
+          x.pedidos++;
+          if(p.status === 'TERMINADO') x.terminados++;
+          if(Number(p.tiempo_preparacion_min || 0) > 0){ x.tiempo_total_min += Number(p.tiempo_preparacion_min); x.pedidos_con_tiempo++; }
+        }
+        x.productos++;
+        x.unidades += Number(prod.cantidad || 0);
+      });
+    });
+  }else{
+    pedidosFiltrados.forEach(p => {
+      const key = valorGrupo(p, grupo);
+      if(!map[key]) map[key] = {grupo:key,pedidos:0,terminados:0,productos:0,unidades:0,tiempo_total_min:0,pedidos_con_tiempo:0,promedio_min:0,valor:0};
+      const x = map[key];
+      x.pedidos++;
+      if(p.status === 'TERMINADO') x.terminados++;
+      x.productos += Number(p.total_productos || 0);
+      x.unidades += Number(p.total_unidades || 0);
+      if(Number(p.tiempo_preparacion_min || 0) > 0){ x.tiempo_total_min += Number(p.tiempo_preparacion_min); x.pedidos_con_tiempo++; }
+    });
+  }
+  return Object.values(map).map(x => {
+    delete x.pedidosSet;
+    x.promedio_min = x.pedidos_con_tiempo ? Math.round(x.tiempo_total_min / x.pedidos_con_tiempo) : 0;
+    x.valor = metrica === 'pedidos' ? x.pedidos : metrica === 'productos' ? x.productos : metrica === 'tiempo' ? x.tiempo_total_min : x.unidades;
+    return x;
+  }).sort((a,b)=>b.valor-a.valor);
+}
+
+function valorGrupo(p, grupo){
+  if(grupo === 'pikeador') return p.pikeador || 'Sin asignar';
+  if(grupo === 'cliente') return p.cliente || 'Sin cliente';
+  if(grupo === 'vendedor') return p.vendedor || 'Sin vendedor';
+  if(grupo === 'estado') return p.status || 'Sin estado';
+  if(grupo === 'producto') return p.productos[0] ? (p.productos[0].codigo || p.productos[0].descripcion || 'Sin producto') : 'Sin producto';
+  return 'General';
+}
+
+function limpiarFiltros(){
+  withLoader($('btnLimpiar'), () => {
+    ['txtFiltro','dtDesde','dtHasta'].forEach(id => $(id).value = '');
+    $('selPikeador').value = '';
+    $('selEstado').value = '';
+    $('selInforme').value = 'pikeador';
+    $('selGrupo').value = 'pikeador';
+    $('selMetrica').value = 'unidades';
+    aplicarFiltros();
+  });
+}
+
+function setTable(id, headers, rows){
+  const t = $(id);
+  t.querySelector('thead').innerHTML = `<tr>${headers.map(h => `<th>${esc(h)}</th>`).join('')}</tr>`;
+  t.querySelector('tbody').innerHTML = rows.length ? rows.map(r => `<tr>${r.map(c => `<td>${c}</td>`).join('')}</tr>`).join('') : `<tr><td colspan="${headers.length}" class="empty">Sin datos para el filtro actual.</td></tr>`;
+}
+
+function exportXlsx(rows, filename, sheetName = 'Informe'){
+  if(!rows || !rows.length){ toast('No hay datos para exportar'); return; }
+  filename = String(filename || 'informe.xlsx').replace(/\.csv$/i, '.xlsx');
+  if(!/\.xlsx$/i.test(filename)) filename += '.xlsx';
+  const keys = Object.keys(rows[0]);
+  const data = [keys].concat(rows.map(r => keys.map(k => xlsxCellValue(r[k]))));
+  const blob = makeXlsxBlob(data, sheetName);
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(a.href), 500);
+  toast('Informe XLSX generado');
+}
+
+function makeXlsxBlob(data, sheetName){
+  const now = new Date().toISOString();
+  const safeSheet = txt(sheetName || 'Informe').slice(0,31).replace(/[\\/?*\[\]:]/g,' ') || 'Informe';
+  const rowsXml = data.map((row, rIdx) => {
+    const cells = row.map((value, cIdx) => {
+      const ref = xlsxCol(cIdx + 1) + (rIdx + 1);
+      if(typeof value === 'number' && Number.isFinite(value)) return `<c r="${ref}" t="n"><v>${value}</v></c>`;
+      return `<c r="${ref}" t="inlineStr"><is><t>${xlsxXml(value)}</t></is></c>`;
+    }).join('');
+    return `<row r="${rIdx + 1}">${cells}</row>`;
+  }).join('');
+  const dim = data.length ? `A1:${xlsxCol(Math.max(...data.map(r => r.length), 1))}${data.length}` : 'A1:A1';
+  const sheetXml = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><dimension ref="${dim}"/><sheetViews><sheetView workbookViewId="0"/></sheetViews><sheetFormatPr defaultRowHeight="18"/><sheetData>${rowsXml}</sheetData></worksheet>`;
+  const files = {
+    '[Content_Types].xml': `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/docProps/app.xml" ContentType="application/vnd.openxmlformats-officedocument.extended-properties+xml"/><Override PartName="/docProps/core.xml" ContentType="application/vnd.openxmlformats-package.core-properties+xml"/><Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/><Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/><Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/></Types>`,
+    '_rels/.rels': `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/><Relationship Id="rId2" Type="http://schemas.openxmlformats.org/package/2006/relationships/metadata/core-properties" Target="docProps/core.xml"/><Relationship Id="rId3" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/extended-properties" Target="docProps/app.xml"/></Relationships>`,
+    'docProps/app.xml': `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Properties xmlns="http://schemas.openxmlformats.org/officeDocument/2006/extended-properties" xmlns:vt="http://schemas.openxmlformats.org/officeDocument/2006/docPropsVTypes"><Application>Sistema Gestión Servicios AS</Application></Properties>`,
+    'docProps/core.xml': `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><cp:coreProperties xmlns:cp="http://schemas.openxmlformats.org/package/2006/metadata/core-properties" xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:dcterms="http://purl.org/dc/terms/" xmlns:dcmitype="http://purl.org/dc/dcmitype/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"><dc:creator>Sistema Gestión Servicios AS</dc:creator><cp:lastModifiedBy>Sistema Gestión Servicios AS</cp:lastModifiedBy><dcterms:created xsi:type="dcterms:W3CDTF">${now}</dcterms:created><dcterms:modified xsi:type="dcterms:W3CDTF">${now}</dcterms:modified></cp:coreProperties>`,
+    'xl/workbook.xml': `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><sheets><sheet name="${xlsxXml(safeSheet)}" sheetId="1" r:id="rId1"/></sheets></workbook>`,
+    'xl/_rels/workbook.xml.rels': `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/><Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/></Relationships>`,
+    'xl/styles.xml': `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><fonts count="1"><font><sz val="11"/><name val="Calibri"/></font></fonts><fills count="1"><fill><patternFill patternType="none"/></fill></fills><borders count="1"><border/></borders><cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs><cellXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/></cellXfs></styleSheet>`,
+    'xl/worksheets/sheet1.xml': sheetXml
+  };
+  return new Blob([zipStore(files)], {type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});
+}
+
+function xlsxCellValue(v){
+  if(v instanceof Set) v = Array.from(v).join(', ');
+  if(typeof v === 'number' && Number.isFinite(v)) return v;
+  const s = txt(v);
+  const normalized = s.replace(/\./g,'').replace(',','.');
+  if(/^[-+]?\d+(?:[.,]\d+)?$/.test(s) && s.length < 16) return Number(normalized);
+  return s;
+}
+
+function xlsxCol(n){ let s = ''; while(n > 0){ const m = (n - 1) % 26; s = String.fromCharCode(65 + m) + s; n = Math.floor((n - 1) / 26); } return s; }
+function xlsxXml(v){ return txt(v).replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&apos;'}[m])); }
+
+function zipStore(files){
+  const enc = new TextEncoder();
+  const localParts = [];
+  const centralParts = [];
+  let offset = 0;
+  Object.entries(files).forEach(([name, content]) => {
+    const nameBytes = enc.encode(name);
+    const data = typeof content === 'string' ? enc.encode(content) : content;
+    const crc = crc32(data);
+    const local = new Uint8Array(30 + nameBytes.length);
+    const lv = new DataView(local.buffer);
+    lv.setUint32(0, 0x04034b50, true); lv.setUint16(4, 20, true); lv.setUint16(6, 0, true); lv.setUint16(8, 0, true);
+    lv.setUint16(10, 0, true); lv.setUint16(12, 0, true); lv.setUint32(14, crc, true); lv.setUint32(18, data.length, true); lv.setUint32(22, data.length, true); lv.setUint16(26, nameBytes.length, true); lv.setUint16(28, 0, true); local.set(nameBytes, 30);
+    localParts.push(local, data);
+    const central = new Uint8Array(46 + nameBytes.length);
+    const cv = new DataView(central.buffer);
+    cv.setUint32(0, 0x02014b50, true); cv.setUint16(4, 20, true); cv.setUint16(6, 20, true); cv.setUint16(8, 0, true); cv.setUint16(10, 0, true);
+    cv.setUint16(12, 0, true); cv.setUint16(14, 0, true); cv.setUint32(16, crc, true); cv.setUint32(20, data.length, true); cv.setUint32(24, data.length, true); cv.setUint16(28, nameBytes.length, true); cv.setUint16(30, 0, true); cv.setUint16(32, 0, true); cv.setUint16(34, 0, true); cv.setUint16(36, 0, true); cv.setUint32(38, 0, true); cv.setUint32(42, offset, true); central.set(nameBytes, 46);
+    centralParts.push(central);
+    offset += local.length + data.length;
+  });
+  const centralSize = centralParts.reduce((a,p)=>a+p.length,0);
+  const end = new Uint8Array(22);
+  const ev = new DataView(end.buffer);
+  ev.setUint32(0, 0x06054b50, true); ev.setUint16(8, centralParts.length, true); ev.setUint16(10, centralParts.length, true); ev.setUint32(12, centralSize, true); ev.setUint32(16, offset, true);
+  return new Blob([...localParts, ...centralParts, end]);
+}
+
+function crc32(data){
+  let c = -1;
+  for(let i = 0; i < data.length; i++){
+    c = (c >>> 8) ^ crcTable[(c ^ data[i]) & 255];
+  }
+  return (c ^ -1) >>> 0;
+}
+const crcTable = (() => {
+  const table = new Uint32Array(256);
+  for(let n = 0; n < 256; n++){
+    let c = n;
+    for(let k = 0; k < 8; k++) c = c & 1 ? 0xedb88320 ^ (c >>> 1) : c >>> 1;
+    table[n] = c >>> 0;
+  }
+  return table;
+})();
+
+function idx(headers){
+  const h = (headers || []).map(normalKey);
+  const find = names => { for(const n of names){ const i = h.indexOf(normalKey(n)); if(i >= 0) return i; } return -1; };
+  return {
+    fecha:find(['fecha','fecha ingreso','fecha_pedido','fecha pedido','fecha creacion','fecha creación']), pedido:find(['pedido','nro pedido','numero pedido','número pedido','numero','número','orden','orden pedido']), cliente:find(['cliente','nombre cliente','razon social','razón social']), vendedor:find(['vendedor','responsable','ejecutivo']), pikeador:find(['pikeador','picker','preparador','asignado','asignado a']), codigo:find(['codigo','código','cod','sku','codigo producto','código producto']), descripcion:find(['descripcion','descripción','detalle','nombre','producto','nombre producto']), ubicacion:find(['ubicacion','ubicación','bodega','ubicacion producto']), cantidad:find(['cantidad','unidades','cajas','qty','cant']), status:find(['status','estado','estado pedido']), hora_inicio:find(['hora_inicio','hora inicio','inicio_preparacion','inicio preparación','fecha_inicio','fecha asignacion']), hora_termino:find(['hora_termino','hora termino','hora término','termino_preparacion','fecha_termino']), tiempo_preparacion_min:find(['tiempo_preparacion_min','tiempo preparacion min','tiempo preparación min','minutos_preparacion','duracion_min'])
+  };
+}
+
+function cell(row, i){ return i >= 0 && row && row[i] != null ? String(row[i]).trim() : ''; }
+function txt(v){ return String(v == null ? '' : v).trim(); }
+function num(v){ const n = Number(String(v == null ? '' : v).replace(',','.')); return Number.isFinite(n) ? n : 0; }
+function normalKey(v){ return txt(v).toUpperCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[\s_\-.]+/g,''); }
+function normalText(v){ return txt(v).toUpperCase().normalize('NFD').replace(/[\u0300-\u036f]/g,''); }
+function limpiarPikeador(pk, cliente){ pk = txt(pk); cliente = txt(cliente); if(!pk) return ''; if(cliente && normalKey(pk) === normalKey(cliente)) return ''; if(estadoSeguro(pk, '') !== '') return ''; return pk; }
+function estadoSeguro(v, defecto='PENDIENTE'){
+  const e = normalKey(v); const map = {PENDIENTE:'PENDIENTE',PREPARACION:'PREPARACION',ENPREPARACION:'PREPARACION',RECIBIDO:'RECIBIDO',RECEPCIONADO:'RECEPCIONADO',DESPACHADO:'DESPACHADO',ENRUTA:'EN RUTA',ENTREGADO:'ENTREGADO',TERMINADO:'TERMINADO',CANCELADO:'CANCELADO',ANULADO:'CANCELADO'};
+  if(map[e]) return map[e]; if(defecto === '') return ''; return map[normalKey(defecto)] || 'PENDIENTE';
+}
+function parseFecha(v){
+  v = txt(v); if(!v) return null;
+  let m = v.match(/^(\d{4})-(\d{1,2})-(\d{1,2})(?:[ T](\d{1,2}):(\d{2})(?::(\d{2}))?)?/);
+  if(m) return new Date(+m[1], +m[2]-1, +m[3], +(m[4]||0), +(m[5]||0), +(m[6]||0));
+  m = v.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})(?:[ T](\d{1,2}):(\d{2})(?::(\d{2}))?)?/);
+  if(m) return new Date(+m[3], +m[2]-1, +m[1], +(m[4]||0), +(m[5]||0), +(m[6]||0));
+  const d = new Date(v); return Number.isNaN(d.getTime()) ? null : d;
+}
+function minutosPreparacion(inicio, termino, directo){ const d = num(directo); if(d > 0) return Math.round(d); const a = parseFecha(inicio), b = parseFecha(termino); if(!a || !b) return 0; return Math.max(0, Math.round((b-a)/60000)); }
+function formatearMinutos(min){ min = Math.round(num(min)); if(min <= 0) return '0 min'; const h = Math.floor(min/60), m = min % 60; return h ? `${h}h ${String(m).padStart(2,'0')}m` : `${m} min`; }
+function dec(n, d=1){ n = Number(n || 0); return Number.isFinite(n) ? n.toFixed(d).replace(/\.0$/,'') : '0'; }
+function corte(v, n){ v = txt(v); return v.length > n ? v.slice(0,n-1) + '…' : v; }
+function esc(v){ return txt(v).replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])); }
+function escAttr(v){ return esc(v).replace(/`/g,'&#96;'); }
+function numCell(v){ return `<span class="num">${esc(dec(v, Number(v)%1 ? 1 : 0))}</span>`; }
+function pctCell(v){ return `<span class="num">${esc(dec(v,1))}%</span>`; }
+function progressCell(v){ const pct = Math.max(0, Math.min(100, Number(v || 0))); return `<div class="bar-cell"><div class="bar-bg"><div class="bar-fill" style="width:${pct}%"></div></div><div class="num" style="font-size:.72rem;color:#64748b;margin-top:3px">${pct}%</div></div>`; }
+function setButtonLoading(btn, on){ if(!btn) return; btn.classList.toggle('loading', !!on); btn.disabled = !!on; }
+function withLoader(btn, fn){ setButtonLoading(btn, true); try{ fn(); }finally{ setTimeout(()=>setButtonLoading(btn,false), 180); } }
+function toast(msg){ const el = $('toast'); el.textContent = msg; el.classList.add('show'); clearTimeout(toast._t); toast._t = setTimeout(()=>el.classList.remove('show'), 2600); }
+function reloj(){ const d = new Date(); $('clock').textContent = d.toLocaleTimeString('es-CL',{hour:'2-digit',minute:'2-digit'}); $('dateLine').textContent = d.toLocaleDateString('es-CL',{weekday:'long',day:'2-digit',month:'long'}); }
+</script>
+</body>
+</html>
