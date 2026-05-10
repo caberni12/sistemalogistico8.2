@@ -82,6 +82,7 @@ function doGet(e){
     else if(['preparar_pedido','enviar_preparacion','enviar_a_preparacion'].includes(accion)) r = alertaPedido_(p, 'PREPARACION', 'Pedido enviado a preparación', true);
     else if(['reenviar_alerta','reenviar_alerta_pedido','enviar_alerta','disparar_alerta_pedido'].includes(accion)) r = alertaPedido_(p, 'ALERTA', 'Pedido enviado a preparación', false);
     else if(['asignar_pikeador','asignar_pikeador_pedido'].includes(accion)) r = asignarPikeador_(p);
+    else if(['verificar_importacion_pedidos','verificar_pedidos_importados','verificar_importacion'].includes(accion)) r = verificarImportacionPedidos_(p);
     else if(['guardar_pedido','guardar_pedido_rapido','importar_pedidos','importar_pedidos_rapido','importar_listado','enviar_base_datos','enviar_bd'].includes(accion)) r = guardarPedido_(p);
     else r = {ok:false,msg:'Acción no válida: '+accion};
     return out_(r, cb);
@@ -138,10 +139,11 @@ function doPost(e){
     else if(['eliminar_maestra','borrar_maestra'].includes(accion)) r = eliminarMaestra_(b);
     else if(['importar_maestra','importar_maestra_xlsx','cargar_archivo_maestra'].includes(accion)) r = importarMaestra_(b);
     else if(['listar_maestra'].includes(accion)) r = listarMaestra_();
+    else if(['verificar_importacion_pedidos','verificar_pedidos_importados','verificar_importacion'].includes(accion)) r = verificarImportacionPedidos_(b);
     else if(['guardar_pedido','guardar_pedido_rapido','importar_pedidos','importar_pedidos_rapido','importar_listado','enviar_base_datos','enviar_bd'].includes(accion)) r = guardarPedido_(b);
     else r = {ok:false,msg:'Acción POST no válida: '+accion};
-    return out_(r, '');
-  }catch(err){ return out_({ok:false,msg:String(err.message||err),stack:String(err.stack||'')}, ''); }
+    return outPost_(r, b);
+  }catch(err){ return outPost_({ok:false,msg:String(err.message||err),stack:String(err.stack||'')}, (typeof b!=='undefined'?b:{})); }
 }
 
 
@@ -447,10 +449,40 @@ function listarMaestra_(){
 function buscarProducto_(codigo){
   codigo = code_(codigo);
   if(!codigo) return {ok:false,msg:'Código vacío'};
-  const p = (listarMaestra_().productos || []).find(x=>code_(x.codigo)===codigo);
+
+  // Búsqueda exacta directa en toda la hoja MAESTRA.
+  // No usa listarMaestra_(), porque esa acción puede venir paginada y solo devolver
+  // la primera página; eso hacía que algunos productos no aparecieran en Orden de Pedido.
+  const sh = maestraSheet_(true);
+  const v = values_(sh);
+  const headers = v.headers && v.headers.length ? v.headers : maestraHeaders_();
+  const ix = maestraIdx_(headers);
+  let p = null;
+  if(ix.codigo >= 0){
+    for(let i=0;i<v.data.length;i++){
+      const row = v.data[i];
+      if(code_(getCell_(row, ix.codigo)) === codigo){
+        p = {
+          ok:true,
+          rowNumber:i+2,
+          id: ix.id >= 0 ? t_(getCell_(row, ix.id)) : '',
+          codigo: code_(getCell_(row, ix.codigo)),
+          descripcion: ix.descripcion >= 0 ? t_(getCell_(row, ix.descripcion)) : '',
+          cantidad: ix.cantidad >= 0 ? t_(getCell_(row, ix.cantidad)) : '',
+          categoria: ix.categoria >= 0 ? t_(getCell_(row, ix.categoria)) : '',
+          unidad: ix.unidad >= 0 ? t_(getCell_(row, ix.unidad)) : '',
+          status: ix.status >= 0 ? t_(getCell_(row, ix.status)) : '',
+          ubicacion: ix.ubicacion >= 0 ? t_(getCell_(row, ix.ubicacion)) : '',
+          fuente:'MAESTRA'
+        };
+        break;
+      }
+    }
+  }
+
   const ubicacion = ubicacionPorCodigo_(codigo);
-  if(p) return Object.assign({ok:true},p,{ubicacion:ubicacion || p.ubicacion || ''});
-  return ubicacion ? {ok:true,codigo:codigo,descripcion:'',cantidad:0,ubicacion:ubicacion,fuente:'MOVIMIENTO'} : {ok:false,msg:'Código no encontrado',codigo:codigo};
+  if(p) return Object.assign(p,{ubicacion:ubicacion || p.ubicacion || ''});
+  return ubicacion ? {ok:true,codigo:codigo,descripcion:'',cantidad:0,ubicacion:ubicacion,fuente:'MOVIMIENTO'} : {ok:false,msg:'Código no encontrado en MAESTRA/MOVIMIENTO',codigo:codigo};
 }
 
 
@@ -1113,7 +1145,7 @@ function collectRawHeaders_(items){
 }
 function isCanonicalPedidoHeader_(h){
   const n = nh_(h);
-  const canonical = ['id','fecha','pedido','cliente','vendedor','pikeador','bodega_preparacion','bodega preparación','bodega preparacion','bodega pedido','codigo','código','cod','sku','descripcion','descripción','detalle','ubicacion','ubicación','cantidad','unidades','status','estado','alerta_token','alerta_ts','alerta_tipo','alerta_mensaje','hora_inicio','hora inicio','inicio_preparacion','fecha_asignacion','hora_termino','hora termino','hora término','termino_preparacion','fecha_termino','tiempo_preparacion_min','minutos_preparacion','import_raw_json','import_headers_json'];
+  const canonical = ['id','fecha','pedido','cliente','vendedor','pikeador','bodega_preparacion','bodega preparación','bodega preparacion','bodega pedido','bodega de preparacion','bodega de preparación','nombre_bodega','nombre bodega','bodega','codigo','código','cod','sku','descripcion','descripción','detalle','ubicacion','ubicación','cantidad','unidades','status','estado','alerta_token','alerta_ts','alerta_tipo','alerta_mensaje','hora_inicio','hora inicio','inicio_preparacion','fecha_asignacion','hora_termino','hora termino','hora término','termino_preparacion','fecha_termino','tiempo_preparacion_min','minutos_preparacion','import_raw_json','import_headers_json'];
   return canonical.some(x => nh_(x) === n);
 }
 function safeJson_(v){
@@ -1177,7 +1209,7 @@ function guardarPedidoImpl_(b, usarAuto){
   if(!pedido && !items.length) return {ok:false,msg:'Pedido vacío'};
 
   const base = {
-    fecha:t_(b.fecha)||Utilities.formatDate(new Date(),TZ,'yyyy-MM-dd HH:mm:ss'),
+    fecha:fechaVisible_(b.fecha)||Utilities.formatDate(new Date(),TZ,'yyyy-MM-dd HH:mm:ss'),
     pedido:pedido,
     cliente:t_(b.cliente),
     vendedor:t_(b.vendedor),
@@ -1199,7 +1231,7 @@ function guardarPedidoImpl_(b, usarAuto){
   const rows = (items.length?items:[b]).map(it=>{
     const row = {
       id:id_('PD'),
-      fecha:t_(it.fecha || base.fecha) || base.fecha,
+      fecha:fechaVisible_(it.fecha || base.fecha) || base.fecha,
       pedido:usarAuto ? pedido : valorPedido_(Object.assign({}, it.__raw || {}, it), pedido),
       cliente:t_(it.cliente||base.cliente),
       vendedor:t_(it.vendedor||base.vendedor),
@@ -1231,7 +1263,10 @@ function guardarPedidoImpl_(b, usarAuto){
     if(vistos[marker]){ duplicadosArchivo++; return; }
     vistos[marker] = true;
 
-    const found = porClave[key] || porPedidoCodigo[pc];
+    // Respeta varias líneas del mismo pedido/código cuando tienen descripción o ubicación distinta.
+    // El fallback por pedido+código solo se usa para archivos antiguos sin ubicación ni descripción.
+    const usarFallbackPedidoCodigo = pc && !t_(row.ubicacion) && !t_(row.descripcion);
+    const found = porClave[key] || (usarFallbackPedidoCodigo ? porPedidoCodigo[pc] : null);
     if(!found){
       nuevos.push(row);
       if(key) porClave[key] = {row:0,obj:row};
@@ -1279,6 +1314,47 @@ function guardarPedidoImpl_(b, usarAuto){
 }
 
 
+function verificarImportacionPedidos_(p){
+  const sh = pedidosSheet_(false);
+  if(!sh) return {ok:false,msg:'No existe hoja PEDIDOS',recibidos:0,encontrados:0,faltantes:0};
+  const items = parseItems_(p.items || p.keys || p.rows || p.detalle);
+  if(!items.length) return {ok:true,msg:'Sin filas para verificar',recibidos:0,encontrados:0,faltantes:0};
+  const v = values_(sh), ix = idx_(v.headers);
+  const exactos = {};
+  const pedidoCodigo = {};
+  v.data.forEach((r,i)=>{
+    const obj = rowToObj_(r, ix);
+    const key = uniquePedidoProductoKey_(obj.pedido, obj.codigo, obj.descripcion, obj.ubicacion);
+    if(key) exactos[key] = true;
+    const pc = pedidoCodigoKey_(obj.pedido, obj.codigo);
+    if(pc) pedidoCodigo[pc] = true;
+  });
+  let encontrados = 0;
+  const faltantes = [];
+  items.forEach(it=>{
+    const codigo = code_(it.codigo || it.CODIGO || it.cod || it.sku || it.producto);
+    const obj = {
+      pedido:valorPedido_(it, it.pedido || it.numero || it['número'] || it.nro || ''),
+      codigo:codigo,
+      descripcion:t_(it.descripcion || it.DESCRIPCION || it.detalle || it.nombre || ''),
+      ubicacion:t_(it.ubicacion || it.UBICACION || '')
+    };
+    const key = uniquePedidoProductoKey_(obj.pedido, obj.codigo, obj.descripcion, obj.ubicacion);
+    const pc = pedidoCodigoKey_(obj.pedido, obj.codigo);
+    if(exactos[key] || (!obj.ubicacion && !obj.descripcion && pedidoCodigo[pc])) encontrados++;
+    else faltantes.push(obj);
+  });
+  return {
+    ok:true,
+    recibidos:items.length,
+    encontrados:encontrados,
+    faltantes:faltantes.length,
+    detalle_faltantes:faltantes.slice(0,100),
+    serverTime:new Date().toISOString()
+  };
+}
+
+
 function editarPedidoCompleto_(b){
   const sh = pedidosSheet_(true);
   const cols = ['id','fecha','pedido','cliente','vendedor','pikeador','bodega_preparacion','codigo','descripcion','ubicacion','cantidad','status','alerta_token','alerta_ts','alerta_tipo','alerta_mensaje','hora_inicio','hora_termino','tiempo_preparacion_min','import_raw_json','import_headers_json'];
@@ -1311,7 +1387,7 @@ function editarPedidoCompleto_(b){
 
   const primera = filas[0].data;
   const estadoAnterior = estadoSeguro_(getCell_(primera, ix.status), 'PENDIENTE');
-  const fecha = t_(b.fecha) || getCell_(primera, ix.fecha) || Utilities.formatDate(new Date(), TZ, 'yyyy-MM-dd HH:mm:ss');
+  const fecha = fechaVisible_(b.fecha) || fechaVisible_(getCell_(primera, ix.fecha)) || Utilities.formatDate(new Date(), TZ, 'yyyy-MM-dd HH:mm:ss');
   const cliente = t_(b.cliente) || getCell_(primera, ix.cliente);
   const vendedor = t_(b.vendedor) || getCell_(primera, ix.vendedor);
   const pikeador = limpiarPikeador_(b.pikeador || getCell_(primera, ix.pikeador), cliente);
@@ -1400,7 +1476,7 @@ function editarPedidoCompleto_(b){
 
 function rowToObj_(r, ix){
   return {
-    fecha:getCell_(r, ix.fecha),
+    fecha:fechaVisible_(getCell_(r, ix.fecha)),
     pedido:getCell_(r, ix.pedido),
     cliente:getCell_(r, ix.cliente),
     vendedor:getCell_(r, ix.vendedor),
@@ -1411,8 +1487,8 @@ function rowToObj_(r, ix){
     ubicacion:getCell_(r, ix.ubicacion),
     cantidad:getNumCell_(r, ix.cantidad) || 1,
     status:estadoSeguro_(getCell_(r, ix.status), 'PENDIENTE'),
-    hora_inicio:getCell_(r, ix.hora_inicio),
-    hora_termino:getCell_(r, ix.hora_termino),
+    hora_inicio:fechaHoraVisible_(getCell_(r, ix.hora_inicio)),
+    hora_termino:fechaHoraVisible_(getCell_(r, ix.hora_termino)),
     tiempo_preparacion_min:getNumCell_(r, ix.tiempo_preparacion_min)
   };
 }
@@ -1562,22 +1638,19 @@ function mensajeVozEstado_(pedido, estado, pikeador, cliente, vendedor){
   estado = estadoSeguro_(estado, 'PENDIENTE');
   cliente = t_(cliente) || clientePedido_(pedido);
   vendedor = t_(vendedor);
-  const quien = t_(pikeador) ? ' Pikeador asignado: ' + t_(pikeador) + '.' : '';
-  const pedidoTxt = pedido ? 'pedido ' + pedido : 'pedido sin número';
-  const clienteTxt = cliente ? ', cliente ' + cliente : '';
-  const vendedorTxt = vendedor ? ', vendedor asociado ' + vendedor : '';
-  const mensajes = {
-    'PENDIENTE':'Pedido ' + pedido + ' quedó pendiente.' + quien,
-    'PREPARACION':'Pedido ' + pedido + ' enviado a preparación.' + quien,
-    'RECIBIDO':'Pedido ' + pedido + ' fue recibido.' + quien,
-    'RECEPCIONADO':'Pedido ' + pedido + ' fue recepcionado.' + quien,
-    'DESPACHADO':'Pedido ' + pedido + ' fue despachado.' + quien,
-    'EN RUTA':'Pedido ' + pedido + ' está en ruta.' + quien,
-    'ENTREGADO':'Pedido ' + pedido + ' fue entregado.' + quien,
-    'TERMINADO':'Pedido terminado, ' + pedidoTxt + clienteTxt + vendedorTxt,
-    'CANCELADO':'Pedido ' + pedido + ' fue cancelado.' + quien
-  };
-  return mensajes[estado] || ('Pedido ' + pedido + ' cambió a estado ' + estado + '.' + quien);
+  pikeador = limpiarPikeador_(t_(pikeador), cliente);
+  const terminado = estado === 'TERMINADO';
+  const partes = [];
+  if(terminado) partes.push('Pedido terminado');
+  else partes.push('Pedido cambió a estado ' + estado);
+  partes.push(pedido ? 'número de pedido ' + pedido : 'número de pedido sin registrar');
+  partes.push(cliente ? 'cliente ' + cliente : 'cliente sin registrar');
+  if(terminado){
+    partes.push(vendedor ? 'vendedor asociado ' + vendedor : 'vendedor sin registrar');
+  }else{
+    partes.push(pikeador ? 'pikeador asignado ' + pikeador : 'pikeador sin asignar');
+  }
+  return partes.join(', ');
 }
 
 function emitirAlertaStatus_(pedido, estado, cliente, vendedor, pikeador, origen, actualizarPedidos){
@@ -1585,7 +1658,6 @@ function emitirAlertaStatus_(pedido, estado, cliente, vendedor, pikeador, origen
   estado = estadoSeguro_(estado, '');
   if(!pedido || !estado) return {ok:false,msg:'Pedido o estado vacío'};
   const tipo = alertaTipoEstado_(estado);
-  const mensaje = mensajeVozEstado_(pedido, estado, pikeador, cliente, vendedor);
   const token = 'ALERTA-' + nh_(estado) + '-' + Date.now() + '-' + Utilities.getUuid().slice(0,8).toUpperCase();
   const ts = Utilities.formatDate(new Date(), TZ, 'yyyy-MM-dd HH:mm:ss');
   let count = 0;
@@ -1602,7 +1674,6 @@ function emitirAlertaStatus_(pedido, estado, cliente, vendedor, pikeador, origen
       if(ix.alerta_token >= 0) sh.getRange(row, ix.alerta_token + 1).setValue(token);
       if(ix.alerta_ts >= 0) sh.getRange(row, ix.alerta_ts + 1).setValue(ts);
       if(ix.alerta_tipo >= 0) sh.getRange(row, ix.alerta_tipo + 1).setValue(tipo);
-      if(ix.alerta_mensaje >= 0) sh.getRange(row, ix.alerta_mensaje + 1).setValue(mensaje);
       let inicioFinal = getCell_(r, ix.hora_inicio);
       if(estado === 'PREPARACION' && ix.hora_inicio >= 0 && !inicioFinal){
         sh.getRange(row, ix.hora_inicio + 1).setValue(ts);
@@ -1623,9 +1694,22 @@ function emitirAlertaStatus_(pedido, estado, cliente, vendedor, pikeador, origen
     });
   }
 
+  const mensaje = mensajeVozEstado_(pedido, estado, pikeador, cliente, vendedor);
+  if(actualizarPedidos){
+    const shMsg = pedidosSheet_(false);
+    if(shMsg){
+      const vMsg = values_(shMsg), ixMsg = idx_(vMsg.headers), keyMsg = pedido_(pedido);
+      if(ixMsg.alerta_mensaje >= 0){
+        vMsg.data.forEach((r,i)=>{
+          if(pedido_(getCell_(r, ixMsg.pedido)) === keyMsg) shMsg.getRange(i + 2, ixMsg.alerta_mensaje + 1).setValue(mensaje);
+        });
+      }
+    }
+  }
+
   registrarAlerta_(pedido, cliente, pikeador, tipo, mensaje, token, ts, estado, vendedor, origen || 'STATUS');
   SpreadsheetApp.flush();
-  return {ok:true,msg:mensaje,pedido:pedido,status:estado,actualizados:count,alerta_token:token,alerta_ts:ts,alerta_tipo:tipo,alerta_mensaje:mensaje,voice:mensaje};
+  return {ok:true,msg:mensaje,pedido:pedido,status:estado,cliente:cliente,vendedor:vendedor,pikeador:pikeador,actualizados:count,alerta_token:token,alerta_ts:ts,alerta_tipo:tipo,alerta_mensaje:mensaje,voice:mensaje};
 }
 
 function listarAlertas_(p){
@@ -1692,6 +1776,8 @@ function actualizarEstadoPedido_(b){
     msg:'Estado actualizado correctamente',
     pedido:pedido,
     status:estado,
+    cliente:cliente,
+    vendedor:vendedor,
     pikeador:pikeadorFinal,
     actualizados:count,
     alerta_token:alerta.alerta_token,
@@ -1713,43 +1799,60 @@ function alertaPedido_(b, tipo, mensaje, cambiarEstado){
   const pedido = valorPedido_(b, b.order || b.nro_pedido);
   if(!pedido) return {ok:false,msg:'Pedido vacío'};
 
-  // Protección: si esta función se llama desde una acción genérica de alerta
-  // pero viene un status/estado distinto de PREPARACION, la voz y el mensaje
-  // deben corresponder al estado real. Ejemplo: TERMINADO => "Pedido terminado".
-  const estadoSolicitado = estadoSeguro_(b.status || b.estado || b.nuevo_estado || b.state || (cambiarEstado ? 'PREPARACION' : ''), '');
-  if(estadoSolicitado && estadoSolicitado !== 'PREPARACION'){
-    tipo = alertaTipoEstado_(estadoSolicitado);
-    mensaje = mensajeVozEstado_(pedido, estadoSolicitado, b.pikeador || b.picker || b.preparador || '', b.cliente || '');
-    cambiarEstado = false;
-  }
+  const estadoFinal = estadoSeguro_(b.status || b.estado || b.nuevo_estado || b.state || (cambiarEstado ? 'PREPARACION' : 'PREPARACION'), 'PREPARACION');
+  tipo = alertaTipoEstado_(estadoFinal) || tipo || 'ALERTA';
+  cambiarEstado = cambiarEstado || estadoFinal === 'PREPARACION';
 
   const sh = pedidosSheet_(true);
   const cols = ['id','fecha','pedido','cliente','vendedor','pikeador','bodega_preparacion','codigo','descripcion','ubicacion','cantidad','status','alerta_token','alerta_ts','alerta_tipo','alerta_mensaje','hora_inicio','hora_termino','tiempo_preparacion_min'];
   ensureCols_(sh, cols);
   const v = values_(sh), ix = idx_(v.headers);
-  const token = 'ALERTA-' + Date.now() + '-' + Utilities.getUuid().slice(0,8).toUpperCase();
+  const token = 'ALERTA-' + nh_(estadoFinal) + '-' + Date.now() + '-' + Utilities.getUuid().slice(0,8).toUpperCase();
   const ts = Utilities.formatDate(new Date(), TZ, 'yyyy-MM-dd HH:mm:ss');
   const key = pedido_(pedido);
-  let count = 0, cliente = t_(b.cliente), pikeador = t_(b.pikeador);
+  let count = 0;
+  let cliente = t_(b.cliente);
+  let vendedor = t_(b.vendedor || b.ejecutivo || b.responsable_venta);
+  let pikeador = limpiarPikeador_(t_(b.pikeador || b.picker || b.preparador || ''), cliente);
+
   v.data.forEach((r,i)=>{
     if(pedido_(getCell_(r, ix.pedido)) !== key) return;
-    const row = i+2;
-    if(ix.alerta_token>=0) sh.getRange(row,ix.alerta_token+1).setValue(token);
-    if(ix.alerta_ts>=0) sh.getRange(row,ix.alerta_ts+1).setValue(ts);
-    if(ix.alerta_tipo>=0) sh.getRange(row,ix.alerta_tipo+1).setValue(tipo);
-    if(ix.alerta_mensaje>=0) sh.getRange(row,ix.alerta_mensaje+1).setValue(mensaje);
-    if(cambiarEstado && ix.status>=0) sh.getRange(row,ix.status+1).setValue('PREPARACION');
-    if(pikeador && ix.pikeador>=0) sh.getRange(row,ix.pikeador+1).setValue(pikeador);
-    if((cambiarEstado || pikeador) && ix.hora_inicio>=0 && !getCell_(r, ix.hora_inicio)) sh.getRange(row,ix.hora_inicio+1).setValue(ts);
+    const row = i + 2;
     if(!cliente) cliente = getCell_(r, ix.cliente);
-    if(!pikeador) pikeador = getCell_(r, ix.pikeador);
+    if(!vendedor) vendedor = getCell_(r, ix.vendedor);
+    if(!pikeador) pikeador = limpiarPikeador_(getCell_(r, ix.pikeador), getCell_(r, ix.cliente));
+    if(ix.alerta_token >= 0) sh.getRange(row, ix.alerta_token + 1).setValue(token);
+    if(ix.alerta_ts >= 0) sh.getRange(row, ix.alerta_ts + 1).setValue(ts);
+    if(ix.alerta_tipo >= 0) sh.getRange(row, ix.alerta_tipo + 1).setValue(tipo);
+    if((cambiarEstado || estadoFinal) && ix.status >= 0) sh.getRange(row, ix.status + 1).setValue(estadoFinal);
+    if(pikeador && ix.pikeador >= 0) sh.getRange(row, ix.pikeador + 1).setValue(pikeador);
+    if((cambiarEstado || pikeador || estadoFinal === 'PREPARACION') && ix.hora_inicio >= 0 && !getCell_(r, ix.hora_inicio)) sh.getRange(row, ix.hora_inicio + 1).setValue(ts);
+    if(estadoFinal === 'TERMINADO'){
+      const inicio = getCell_(r, ix.hora_inicio) || ts;
+      if(ix.hora_inicio >= 0 && !getCell_(r, ix.hora_inicio)) sh.getRange(row, ix.hora_inicio + 1).setValue(inicio);
+      if(ix.hora_termino >= 0) sh.getRange(row, ix.hora_termino + 1).setValue(ts);
+      if(ix.tiempo_preparacion_min >= 0) sh.getRange(row, ix.tiempo_preparacion_min + 1).setValue(minutosPreparacion_(inicio, ts, 0));
+    }
     count++;
   });
-  if(!count){ guardarPedido_(Object.assign({},b,{pedido:pedido,status:cambiarEstado?'PREPARACION':'PENDIENTE'})); return alertaPedido_(b,tipo,mensaje,cambiarEstado); }
+
+  if(!count){
+    guardarPedido_(Object.assign({}, b, {pedido:pedido, status:estadoFinal, pikeador:pikeador}));
+    return alertaPedido_(b, tipo, mensaje, cambiarEstado);
+  }
+
+  const mensajeFinal = mensajeVozEstado_(pedido, estadoFinal, pikeador, cliente, vendedor);
+  if(ix.alerta_mensaje >= 0){
+    v.data.forEach((r,i)=>{
+      if(pedido_(getCell_(r, ix.pedido)) === key) sh.getRange(i + 2, ix.alerta_mensaje + 1).setValue(mensajeFinal);
+    });
+  }
+
   if(pikeador) agregarPikeador_(pikeador);
   if(vendedor) agregarVendedor_(vendedor);
-  registrarAlerta_(pedido,cliente,pikeador,tipo,mensaje,token,ts);
-  return {ok:true,msg:mensaje,pedido:pedido,actualizados:count,alerta_token:token,alerta_ts:ts,alerta_tipo:tipo,alerta_mensaje:mensaje,voice:mensaje};
+  registrarAlerta_(pedido, cliente, pikeador, tipo, mensajeFinal, token, ts, estadoFinal, vendedor, 'ALERTA_PEDIDO');
+  SpreadsheetApp.flush();
+  return {ok:true,msg:mensajeFinal,pedido:pedido,cliente:cliente,vendedor:vendedor,pikeador:pikeador,status:estadoFinal,actualizados:count,alerta_token:token,alerta_ts:ts,alerta_tipo:tipo,alerta_mensaje:mensajeFinal,voice:mensajeFinal};
 }
 
 function asignarPikeador_(b){
@@ -1804,7 +1907,7 @@ function agrupar_(headers, rows){
       map[key]={
         key:key,
         pedido:ped,
-        fecha:getCell_(r, ix.fecha),
+        fecha:fechaVisible_(getCell_(r, ix.fecha)),
         cliente:getCell_(r, ix.cliente),
         vendedor:getCell_(r, ix.vendedor),
         pikeador:limpiarPikeador_(getCell_(r, ix.pikeador), getCell_(r, ix.cliente)),
@@ -1814,8 +1917,8 @@ function agrupar_(headers, rows){
         alerta_ts:getCell_(r, ix.alerta_ts),
         alerta_tipo:getCell_(r, ix.alerta_tipo),
         alerta_mensaje:getCell_(r, ix.alerta_mensaje),
-        hora_inicio:getCell_(r, ix.hora_inicio),
-        hora_termino:getCell_(r, ix.hora_termino),
+        hora_inicio:fechaHoraVisible_(getCell_(r, ix.hora_inicio)),
+        hora_termino:fechaHoraVisible_(getCell_(r, ix.hora_termino)),
         tiempo_preparacion_min:getNumCell_(r, ix.tiempo_preparacion_min),
         total_unidades:0,total_productos:0,productos:[],rows:[]
       };
@@ -1823,7 +1926,7 @@ function agrupar_(headers, rows){
     const p = map[key], cant = getNumCell_(r, ix.cantidad) || 1;
     ['fecha','cliente','vendedor','bodega_preparacion','alerta_token','alerta_ts','alerta_tipo','alerta_mensaje','hora_inicio','hora_termino'].forEach(k=>{
       const val = getCell_(r, ix[k]);
-      if(val) p[k]=val;
+      if(val) p[k] = k === 'fecha' ? fechaVisible_(val) : (k === 'hora_inicio' || k === 'hora_termino' ? fechaHoraVisible_(val) : val);
     });
     const minutosPrep = getNumCell_(r, ix.tiempo_preparacion_min);
     if(minutosPrep > 0) p.tiempo_preparacion_min = minutosPrep;
@@ -1842,6 +1945,11 @@ function agrupar_(headers, rows){
 function fechaHoraPedido_(v){
   v = t_(v);
   if(!v) return null;
+  const serial = Number(String(v).replace(',','.'));
+  if(isFinite(serial) && serial > 20000 && serial < 90000){
+    const d = new Date(Date.UTC(1899, 11, 30) + Math.round(serial * 86400000));
+    return isNaN(d.getTime()) ? null : d;
+  }
   let m = v.match(/^(\d{4})-(\d{1,2})-(\d{1,2})(?:[ T](\d{1,2}):(\d{2})(?::(\d{2}))?)?/);
   if(m) return new Date(Number(m[1]), Number(m[2])-1, Number(m[3]), Number(m[4]||0), Number(m[5]||0), Number(m[6]||0));
   m = v.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})(?:[ T](\d{1,2}):(\d{2})(?::(\d{2}))?)?/);
@@ -1926,10 +2034,10 @@ function idx_(h){
     cliente:find_(h,['cliente','nombre cliente','razon social','razón social'],-1),
     vendedor:find_(h,['vendedor','responsable','ejecutivo'],-1),
     pikeador:find_(h,['pikeador','picker','preparador','asignado','asignado a'],-1),
-    bodega_preparacion:find_(h,['bodega_preparacion','bodega preparación','bodega preparacion','bodega pedido','bodega_origen','bodega de preparacion','bodega de preparación','nombre_bodega','nombre bodega'],-1),
+    bodega_preparacion:find_(h,['bodega_preparacion','bodega preparación','bodega preparacion','bodega pedido','bodega_origen','bodega de preparacion','bodega de preparación','nombre_bodega','nombre bodega','bodega'],-1),
     codigo:find_(h,['codigo','código','cod','sku','codigo producto','código producto'],-1),
     descripcion:find_(h,['descripcion','descripción','detalle','nombre','producto','nombre producto','descripcion producto','descripción producto'],-1),
-    ubicacion:find_(h,['ubicacion','ubicación','bodega','ubicacion producto','ubicación producto'],-1),
+    ubicacion:find_(h,['ubicacion','ubicación','ubicacion producto','ubicación producto','posicion','posición','rack','pasillo'],-1),
     cantidad:find_(h,['cantidad','unidades','cajas','qty','cant'],-1),
     status:find_(h,['status','estado','estado pedido','estado del pedido'],-1),
     alerta_token:find_(h,['alerta_token','token_alerta','alert token','alerta token'],-1),
@@ -1942,10 +2050,54 @@ function idx_(h){
   };
 }
 function getCell_(r, idx){ return (idx == null || idx < 0 || !Array.isArray(r)) ? '' : t_(r[idx]); }
+
+function fechaVisible_(valor){
+  let v = t_(valor);
+  if(!v) return '';
+  if(v.charAt(0)==="'") v = v.slice(1).trim();
+  const n = Number(String(v).replace(',', '.'));
+  if(isFinite(n) && n > 20000 && n < 90000){
+    const d = new Date(Date.UTC(1899, 11, 30) + Math.round(n * 86400000));
+    const dd = String(d.getUTCDate()).padStart(2,'0');
+    const mm = String(d.getUTCMonth()+1).padStart(2,'0');
+    const yy = d.getUTCFullYear();
+    const frac = n - Math.floor(n);
+    if(frac > 0.0007){
+      const mins = Math.round(frac * 1440);
+      return dd + '-' + mm + '-' + yy + ' ' + String(Math.floor(mins/60)%24).padStart(2,'0') + ':' + String(mins%60).padStart(2,'0');
+    }
+    return dd + '-' + mm + '-' + yy;
+  }
+  let m = v.match(/^(\d{4})-(\d{1,2})-(\d{1,2})(?:[T\s](\d{1,2}):(\d{2})(?::\d{2})?)?/);
+  if(m) return String(Number(m[3])).padStart(2,'0') + '-' + String(Number(m[2])).padStart(2,'0') + '-' + m[1] + (m[4] ? ' ' + String(Number(m[4])).padStart(2,'0') + ':' + m[5] : '');
+  m = v.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})(?:[T\s](\d{1,2}):(\d{2})(?::\d{2})?)?/);
+  if(m) return String(Number(m[1])).padStart(2,'0') + '-' + String(Number(m[2])).padStart(2,'0') + '-' + m[3] + (m[4] ? ' ' + String(Number(m[4])).padStart(2,'0') + ':' + m[5] : '');
+  return v;
+}
+function fechaHoraVisible_(valor){ return fechaVisible_(valor); }
+
 function getNumCell_(r, idx){ return (idx == null || idx < 0 || !Array.isArray(r)) ? 0 : n_(r[idx]); }
 function find_(h,names,fb){ const a=h.map(nh_); for(const n of names){ const i=a.indexOf(nh_(n)); if(i!==-1) return i; } return fb; }
 function out_(o,cb){ const j=JSON.stringify(o); return ContentService.createTextOutput(cb?cb+'('+j+');':j).setMimeType(cb?ContentService.MimeType.JAVASCRIPT:ContentService.MimeType.JSON); }
-function body_(e){ try{ if(e&&e.parameter&&e.parameter.data) return JSON.parse(e.parameter.data); }catch(x){} try{ if(e&&e.postData&&e.postData.contents) return JSON.parse(e.postData.contents); }catch(x){} return e&&e.parameter?Object.assign({},e.parameter):{}; }
+function outPost_(o,b){
+  b = b || {};
+  if(b.__iframe_post || b.iframe_post || b.iframe || b.__post_token){
+    const token = t_(b.__post_token || b.post_token || '');
+    const payload = JSON.stringify({source:'orden_pedidos_post',token:token,data:o}).replace(/</g,'\\u003c');
+    return HtmlService.createHtmlOutput('<!doctype html><html><body><script>try{parent.postMessage('+payload+',"*");}catch(e){}<\/script></body></html>')
+      .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
+  }
+  return out_(o,'');
+}
+function body_(e){
+  try{ if(e&&e.parameter&&e.parameter.data) return JSON.parse(e.parameter.data); }catch(x){}
+  try{ if(e&&e.parameter&&e.parameter.payload) return JSON.parse(e.parameter.payload); }catch(x){}
+  try{ if(e&&e.postData&&e.postData.contents){
+    const raw = String(e.postData.contents || '');
+    if(raw && raw.trim().charAt(0)==='{') return JSON.parse(raw);
+  }}catch(x){}
+  return e&&e.parameter?Object.assign({},e.parameter):{};
+}
 function parseItems_(v){ if(!v) return []; if(Array.isArray(v)) return v; try{ const x=JSON.parse(String(v)); return Array.isArray(x)?x:[]; }catch(e){ return []; } }
 
 function limpiarPikeador_(pk, cliente){

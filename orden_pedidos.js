@@ -1,4 +1,4 @@
-const API_URL='https://script.google.com/macros/s/AKfycbyHM9r8WQ9m6-Hacd63TVhTBMac23SD9jhz7Qu4ORdmSzrHd0SAC1H7_13ogKJAWu6z8g/exec';
+const API_URL='https://script.google.com/macros/s/AKfycbxN9OrEY-1VvKVr_aZ8C-to9VCyjG9kc27DU-MssF1Qr7A0Zjsd6frfg4XDsPlaanFWZg/exec';
 
 const state={
   pedidos:[],
@@ -18,6 +18,7 @@ const state={
   selectedKey:null,
   editandoPedido:false,
   importados:[],
+  importFallidos:[],
   importStats:{nuevos:0,cambios:0,iguales:0,errores:0},
   importHeaders:[],
   manualProductos:[],
@@ -25,6 +26,51 @@ const state={
 };
 
 const $=id=>document.getElementById(id);
+
+/* ================= FORMATO FECHAS =================
+   Evita que fechas importadas desde Excel/Sheets aparezcan como serial numérico.
+   Formato visible: dd-mm-yyyy o dd-mm-yyyy HH:MM.
+================================================== */
+function fechaVisiblePedido(valor){
+  const v0 = valor;
+  let v = String(valor == null ? '' : valor).trim();
+  if(!v) return '';
+  if(v.startsWith("'")) v = v.slice(1).trim();
+  const n = Number(v.replace(',', '.'));
+  if(Number.isFinite(n) && n > 20000 && n < 90000){
+    const ms = Math.round(n * 86400000);
+    const d = new Date(Date.UTC(1899, 11, 30) + ms);
+    const dd = String(d.getUTCDate()).padStart(2,'0');
+    const mm = String(d.getUTCMonth()+1).padStart(2,'0');
+    const yy = d.getUTCFullYear();
+    const frac = n - Math.floor(n);
+    if(frac > 0.0007){
+      const mins = Math.round(frac * 1440);
+      const hh = String(Math.floor(mins/60)%24).padStart(2,'0');
+      const mi = String(mins%60).padStart(2,'0');
+      return `${dd}-${mm}-${yy} ${hh}:${mi}`;
+    }
+    return `${dd}-${mm}-${yy}`;
+  }
+  let m = v.match(/^(\d{4})-(\d{1,2})-(\d{1,2})(?:[T\s](\d{1,2}):(\d{2})(?::\d{2})?)?/);
+  if(m){
+    const dd = String(Number(m[3])).padStart(2,'0');
+    const mm = String(Number(m[2])).padStart(2,'0');
+    const yy = m[1];
+    return m[4] ? `${dd}-${mm}-${yy} ${String(Number(m[4])).padStart(2,'0')}:${m[5]}` : `${dd}-${mm}-${yy}`;
+  }
+  m = v.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})(?:[T\s](\d{1,2}):(\d{2})(?::\d{2})?)?/);
+  if(m){
+    const dd = String(Number(m[1])).padStart(2,'0');
+    const mm = String(Number(m[2])).padStart(2,'0');
+    const yy = m[3];
+    return m[4] ? `${dd}-${mm}-${yy} ${String(Number(m[4])).padStart(2,'0')}:${m[5]}` : `${dd}-${mm}-${yy}`;
+  }
+  return String(v0 == null ? '' : v0).trim();
+}
+function fechaHoraVisiblePedido(valor){ return fechaVisiblePedido(valor); }
+function esHeaderFechaPedido(h){ return /fecha/i.test(String(h||'')); }
+
 
 /* ================= LOADER BOTONES ================= */
 function loaderStart(btn){
@@ -78,7 +124,7 @@ function inicializarPanelesOrden(){
 }
 
 function prepararCargaManualOrden(){
-  setStatus('Carga automática desactivada. Presiona Sincronizar para consultar PEDIDOS.');
+  setStatus('Carga automática desactivada. Presiona Sincronizar para consultar la base de datos.');
   const tb=$('tbodyPedidos');
   if(tb){
     tb.innerHTML='<tr><td colspan="13" style="text-align:center;padding:30px;color:#64748b">Carga automática desactivada. Presiona <b>Sincronizar</b> para mostrar pedidos.</td></tr>';
@@ -188,7 +234,7 @@ function bind(){
 
 /* ================= CARGA PRINCIPAL ================= */
 async function cargarTodo(){
-  setStatus('Cargando hoja PEDIDOS y ubicaciones...');
+  setStatus('Sincronizando con base de datos...');
   try{
     const ubicacionesPromise=cargarUbicacionesPedido().catch(err=>{
       console.warn('No se pudieron cargar ubicaciones múltiples', err);
@@ -207,12 +253,12 @@ async function cargarTodo(){
     aplicarUbicacionesAPedidos();
     llenarSelectEstadosOrden();
     filtrar();
-    setStatus('Conectado. Pedidos cargados: '+state.pedidos.length+' | Productos con ubicaciones: '+Object.keys(state.ubicacionesMap||{}).length);
+    setStatus('Sincronización con base de datos completada. Pedidos: '+state.pedidos.length+' | Productos con ubicaciones: '+Object.keys(state.ubicacionesMap||{}).length);
     marcarTokens();
   }catch(e){
     console.error(e);
-    setStatus('Error cargando PEDIDOS: '+e.message);
-    errorTabla('No se pudo cargar PEDIDOS. Verifica doGet/listar_pedidos en Apps Script.');
+    setStatus('Error sincronizando con base de datos: '+e.message);
+    errorTabla('No se pudo sincronizar con base de datos. Verifica doGet/listar_pedidos en Apps Script.');
   }
   cargarPikeadores().catch(console.warn);
   cargarVendedores().catch(console.warn);
@@ -320,9 +366,9 @@ function normClientes(r){
     const headers=(r.headers||[]).map(norm);
     const idx=(names)=>{for(const n of names){const i=headers.indexOf(norm(n)); if(i>=0)return i;} return -1;};
     const ix={id:idx(['id']),cliente:idx(['cliente','nombre','razon_social','razón social']),rut:idx(['rut','r.u.t']),vendedor:idx(['vendedor','ejecutivo','asesor','responsable_venta','responsable venta']),clase_cliente:idx(['clase_cliente','clase cliente','tipo_cliente','tipo cliente','categoria_cliente','categoría cliente','categoria']),direccion:idx(['direccion','dirección']),giro:idx(['giro']),medio_pago:idx(['medio_pago','medio pago','forma_pago','forma pago']),telefono:idx(['telefono','teléfono','fono']),correo:idx(['correo_electronico','correo electrónico','correo','email','mail']),responsable:idx(['responsable_empresa','responsable empresa','responsable']),fecha:idx(['fecha_creacion','fecha creación','fecha']),status:idx(['status','estado'])};
-    return arr.map((x,i)=>({rowNumber:(r.rowNumbers&&r.rowNumbers[i])||i+2,id:String(x[ix.id]||'').trim(),cliente:String(x[ix.cliente]||'').trim(),rut:String(x[ix.rut]||'').trim(),vendedor:String(x[ix.vendedor]||'').trim(),clase_cliente:String(x[ix.clase_cliente]||'CLIENTE NORMAL').trim().toUpperCase(),direccion:String(x[ix.direccion]||'').trim(),giro:String(x[ix.giro]||'').trim(),medio_pago:String(x[ix.medio_pago]||'').trim(),telefono:String(x[ix.telefono]||'').trim(),correo_electronico:String(x[ix.correo]||'').trim(),responsable_empresa:String(x[ix.responsable]||'').trim(),fecha_creacion:String(x[ix.fecha]||'').trim(),status:String(x[ix.status]||'ACTIVO').trim().toUpperCase()})).filter(x=>x.cliente);
+    return arr.map((x,i)=>({rowNumber:(r.rowNumbers&&r.rowNumbers[i])||i+2,id:String(x[ix.id]||'').trim(),cliente:String(x[ix.cliente]||'').trim(),rut:String(x[ix.rut]||'').trim(),vendedor:String(x[ix.vendedor]||'').trim(),clase_cliente:String(x[ix.clase_cliente]||'CLIENTE NORMAL').trim().toUpperCase(),direccion:String(x[ix.direccion]||'').trim(),giro:String(x[ix.giro]||'').trim(),medio_pago:String(x[ix.medio_pago]||'').trim(),telefono:String(x[ix.telefono]||'').trim(),correo_electronico:String(x[ix.correo]||'').trim(),responsable_empresa:String(x[ix.responsable]||'').trim(),fecha_creacion:fechaHoraVisiblePedido(x[ix.fecha]),status:String(x[ix.status]||'ACTIVO').trim().toUpperCase()})).filter(x=>x.cliente);
   }
-  return arr.map(x=>({rowNumber:x.rowNumber||x.fila||x.row||'',id:String(x.id||x.ID||'').trim(),cliente:String(x.cliente||x.nombre||x.razon_social||x['razón social']||'').trim(),rut:String(x.rut||x.RUT||'').trim(),vendedor:String(x.vendedor||x.ejecutivo||x.asesor||'').trim(),clase_cliente:String(x.clase_cliente||x.claseCliente||x.tipo_cliente||x.tipoCliente||x.categoria_cliente||x.categoria||'CLIENTE NORMAL').trim().toUpperCase(),direccion:String(x.direccion||x['dirección']||'').trim(),giro:String(x.giro||'').trim(),medio_pago:String(x.medio_pago||x.medioPago||x.forma_pago||'').trim(),telefono:String(x.telefono||x.fono||'').trim(),correo_electronico:String(x.correo_electronico||x.correo||x.email||x.mail||'').trim(),responsable_empresa:String(x.responsable_empresa||x.responsable||'').trim(),fecha_creacion:String(x.fecha_creacion||x.fecha||'').trim(),status:String(x.status||x.estado||'ACTIVO').trim().toUpperCase()})).filter(x=>x.cliente);
+  return arr.map(x=>({rowNumber:x.rowNumber||x.fila||x.row||'',id:String(x.id||x.ID||'').trim(),cliente:String(x.cliente||x.nombre||x.razon_social||x['razón social']||'').trim(),rut:String(x.rut||x.RUT||'').trim(),vendedor:String(x.vendedor||x.ejecutivo||x.asesor||'').trim(),clase_cliente:String(x.clase_cliente||x.claseCliente||x.tipo_cliente||x.tipoCliente||x.categoria_cliente||x.categoria||'CLIENTE NORMAL').trim().toUpperCase(),direccion:String(x.direccion||x['dirección']||'').trim(),giro:String(x.giro||'').trim(),medio_pago:String(x.medio_pago||x.medioPago||x.forma_pago||'').trim(),telefono:String(x.telefono||x.fono||'').trim(),correo_electronico:String(x.correo_electronico||x.correo||x.email||x.mail||'').trim(),responsable_empresa:String(x.responsable_empresa||x.responsable||'').trim(),fecha_creacion:fechaHoraVisiblePedido(x.fecha_creacion||x.fecha),status:String(x.status||x.estado||'ACTIVO').trim().toUpperCase()})).filter(x=>x.cliente);
 }
 function llenarDatalistClientes(){
   const dl=$('dlClientes'); if(!dl) return;
@@ -365,7 +411,7 @@ async function guardarCliente(){
   if(!r?.ok) return toast(r?.msg||'No se pudo guardar cliente');
   limpiarClienteForm();
   await cargarClientes();
-  toast('Cliente guardado en hoja CLIENTES');
+  toast('Cliente guardado en base de datos CLIENTES');
 }
 function renderClientesTabla(){
   const tb=$('tbodyClientes'); if(!tb) return;
@@ -436,15 +482,16 @@ function normBodegas(r){
     const headers=(r.headers||[]).map(norm);
     const idx=(names)=>{for(const n of names){const i=headers.indexOf(norm(n)); if(i>=0)return i;} return -1;};
     const ix={nombre:idx(['nombre_bodega','nombre bodega','bodega','nombre']),direccion:idx(['direccion','dirección']),fecha:idx(['fecha_creacion','fecha creación','fecha']),status:idx(['status','estado']),radio:idx(['radio_metros','radio','radio metros']),lat:idx(['latitud','lat']),lng:idx(['longitud','lng','lon'])};
-    return arr.map(x=>({nombre:String(x[ix.nombre]||'').trim(),direccion:String(x[ix.direccion]||'').trim(),fecha_creacion:String(x[ix.fecha]||'').trim(),status:String(x[ix.status]||'ACTIVA').trim().toUpperCase(),radio_metros:Number(x[ix.radio]||200)||200,latitud:String(x[ix.lat]||'').trim(),longitud:String(x[ix.lng]||'').trim()})).filter(x=>x.nombre);
+    return arr.map(x=>({nombre:String(x[ix.nombre]||'').trim(),direccion:String(x[ix.direccion]||'').trim(),fecha_creacion:fechaHoraVisiblePedido(x[ix.fecha]),status:String(x[ix.status]||'ACTIVA').trim().toUpperCase(),radio_metros:Number(x[ix.radio]||200)||200,latitud:String(x[ix.lat]||'').trim(),longitud:String(x[ix.lng]||'').trim()})).filter(x=>x.nombre);
   }
-  return arr.map(x=>({nombre:String(x.nombre||x.nombre_bodega||x.bodega||'').trim(),direccion:String(x.direccion||x.dirección||'').trim(),fecha_creacion:String(x.fecha_creacion||x.fecha||'').trim(),status:String(x.status||x.estado||'ACTIVA').trim().toUpperCase(),radio_metros:Number(x.radio_metros||x.radio||200)||200,latitud:String(x.latitud||x.lat||'').trim(),longitud:String(x.longitud||x.lng||x.lon||'').trim()})).filter(x=>x.nombre);
+  return arr.map(x=>({nombre:String(x.nombre||x.nombre_bodega||x.bodega||'').trim(),direccion:String(x.direccion||x.dirección||'').trim(),fecha_creacion:fechaHoraVisiblePedido(x.fecha_creacion||x.fecha),status:String(x.status||x.estado||'ACTIVA').trim().toUpperCase(),radio_metros:Number(x.radio_metros||x.radio||200)||200,latitud:String(x.latitud||x.lat||'').trim(),longitud:String(x.longitud||x.lng||x.lon||'').trim()})).filter(x=>x.nombre);
 }
 function llenarSelectBodegas(){
-  [$('manBodega'),$('editBodegaPedido')].filter(Boolean).forEach(s=>{
+  [$('manBodega'),$('editBodegaPedido'),$('impBodega')].filter(Boolean).forEach(s=>{
     const v=s.value;
     const activas=(state.bodegas||[]).filter(b=>String(b.status||'ACTIVA').toUpperCase()==='ACTIVA');
-    s.innerHTML='<option value="">Sin bodega</option>'+activas.map(b=>`<option value="${esc(b.nombre)}">${esc(b.nombre)}${b.direccion?' — '+esc(b.direccion):''}</option>`).join('');
+    const first=s.id==='impBodega'?'<option value="">Tomar desde archivo / Sin bodega</option>':'<option value="">Sin bodega</option>';
+    s.innerHTML=first+activas.map(b=>`<option value="${esc(b.nombre)}">${esc(b.nombre)}${b.direccion?' — '+esc(b.direccion):''}</option>`).join('');
     if(v){
       if(!activas.some(b=>String(b.nombre)===String(v))) s.insertAdjacentHTML('beforeend',`<option value="${esc(v)}">${esc(v)}</option>`);
       s.value=v;
@@ -520,13 +567,13 @@ async function agregarBodega(){
   if($('txtBodegaRadio')) $('txtBodegaRadio').value='200';
   if($('selBodegaStatus')) $('selBodegaStatus').value='ACTIVA';
   await cargarBodegas();
-  toast('Bodega guardada en hoja BODEGAS');
+  toast('Bodega guardada en base de datos BODEGAS');
 }
 
 
 
 /* ================= MAESTRA DE PRODUCTOS =================
-   Se sincroniza desde la hoja MAESTRA y se usa para completar
+   Se sincroniza desde la base de datos MAESTRA y se usa para completar
    la descripción del producto al digitar el código en Pedido Manual.
 ================================================== */
 function normProductosMaestra(r){
@@ -584,12 +631,45 @@ function llenarDatalistMaestra(){
 async function cargarMaestra(silencioso=true){
   if(silencioso && !state.maestra.length) cargarCacheMaestra();
   const msg=$('manualMaestraMsg');
-  if(msg && !silencioso) msg.textContent='Sincronizando MAESTRA de productos...';
-  const r=await api('listar_maestra',{});
-  if(!r?.ok) throw new Error(r?.msg||'No se pudo leer MAESTRA');
-  const lista=normProductosMaestra(r);
-  setMaestra(lista);
+  if(msg && !silencioso) msg.textContent='Sincronizando MAESTRA de productos desde base de datos...';
+
+  const pageSize=500;
+  let offset=0;
+  let todos=[];
+  let vueltas=0;
+  let ultimo=null;
+
+  // La MAESTRA quedó paginada para evitar timeout; Orden de Pedido debe recorrer
+  // todas las páginas para que aparezcan todos los códigos, no solo los primeros 300/500.
+  while(true){
+    vueltas++;
+    const r=await api('listar_maestra_bd',{limit:pageSize,offset});
+    if(!r?.ok) throw new Error(r?.msg||'No se pudo leer MAESTRA');
+    ultimo=r;
+    const lista=normProductosMaestra(r);
+    todos=todos.concat(lista);
+    if(msg && !silencioso){
+      const totalRef=Number(r.totalFilasMaestra||r.total||0)||'';
+      msg.textContent='Sincronizando MAESTRA: '+todos.length+(totalRef?' de '+totalRef:'')+' productos leídos...';
+    }
+    const hasMore=Boolean(r.hasMore);
+    const nextOffset=Number(r.offset||offset)+Number(r.limit||pageSize);
+    if(!hasMore || !lista.length || nextOffset<=offset || vueltas>80) break;
+    offset=nextOffset;
+    await new Promise(res=>setTimeout(res,25));
+  }
+
+  // Respaldo para Web Apps antiguos que todavía no tengan listar_maestra_bd paginado.
+  if(!todos.length){
+    const r=await api('listar_maestra',{});
+    if(!r?.ok) throw new Error(r?.msg||'No se pudo leer MAESTRA');
+    todos=normProductosMaestra(r);
+    ultimo=r;
+  }
+
+  setMaestra(todos);
   guardarCacheMaestra();
+  state.maestraTotal=Number(ultimo?.totalFilasMaestra||todos.length)||todos.length;
   if(msg) msg.textContent='MAESTRA sincronizada: '+state.maestra.length+' productos disponibles.';
   if(!silencioso) toast('MAESTRA sincronizada: '+state.maestra.length+' productos.');
   return state.maestra;
@@ -759,6 +839,12 @@ async function buscarProductoManualPorCodigo(forzar=false){
       if(r?.ok) prod=enriquecerProductoConUbicacionMovimiento({codigo:r.codigo||codigo, descripcion:r.descripcion||'', cantidad:r.cantidad||0, ubicacion:r.ubicacion||''},codigo);
     }catch(e){ console.warn(e); }
   }
+  if(!prod && forzar){
+    try{
+      const r=await api('buscar_maestra',{codigo});
+      if(r?.ok) prod=enriquecerProductoConUbicacionMovimiento({codigo:r.codigo||codigo, descripcion:r.descripcion||'', cantidad:r.cantidad||0, ubicacion:r.ubicacion||''},codigo);
+    }catch(e){ console.warn(e); }
+  }
 
   const loc=ubicacionMovimientoPorCodigo(codigo);
   if(prod || loc){
@@ -798,7 +884,7 @@ function normPedidos(r){
     return r.pedidos.map(p=>({
       key:String(p.key||p.pedido||'').trim().toUpperCase(),
       pedido:String(p.pedido||'').trim(),
-      fecha:String(p.fecha||'').trim(),
+      fecha:fechaVisiblePedido(p.fecha),
       cliente:String(p.cliente||'').trim(),
       vendedor:String(p.vendedor||'').trim(),
       pikeador:limpiarPikeador(p.pikeador, p.cliente),
@@ -808,8 +894,8 @@ function normPedidos(r){
       alerta_ts:String(p.alerta_ts||'').trim(),
       alerta_tipo:String(p.alerta_tipo||'').trim(),
       alerta_mensaje:String(p.alerta_mensaje||'').trim(),
-      hora_inicio:String(p.hora_inicio||p.horaInicio||p.inicio_preparacion||p.fecha_inicio||p.fecha_asignacion||'').trim(),
-      hora_termino:String(p.hora_termino||p.horaTermino||p.termino_preparacion||p.fecha_termino||'').trim(),
+      hora_inicio:fechaHoraVisiblePedido(p.hora_inicio||p.horaInicio||p.inicio_preparacion||p.fecha_inicio||p.fecha_asignacion),
+      hora_termino:fechaHoraVisiblePedido(p.hora_termino||p.horaTermino||p.termino_preparacion||p.fecha_termino),
       tiempo_preparacion_min:Number(p.tiempo_preparacion_min||p.tiempoPreparacionMin||p.tiempo_preparacion||0)||0,
       total_productos:Number(p.total_productos||(p.productos?p.productos.length:0)||0),
       total_unidades:Number(p.total_unidades||0),
@@ -825,9 +911,9 @@ function agrupar(h,rows){
     if(!Array.isArray(r))return;
     const ped=pick(r,ix.pedido,'SIN_PEDIDO_'+(i+1));
     const key=String(ped).replace(/\s+/g,'').toUpperCase();
-    if(!m.has(key))m.set(key,{key,pedido:ped,fecha:pick(r,ix.fecha,''),cliente:pick(r,ix.cliente,''),vendedor:pick(r,ix.vendedor,''),pikeador:limpiarPikeador(pick(r,ix.pikeador,''), pick(r,ix.cliente,'')),bodega_preparacion:pick(r,ix.bodega_preparacion,''),status:estadoSeguroImport(pick(r,ix.status,''),'PENDIENTE'),alerta_token:pick(r,ix.alerta_token,''),alerta_ts:pick(r,ix.alerta_ts,''),alerta_tipo:pick(r,ix.alerta_tipo,''),alerta_mensaje:pick(r,ix.alerta_mensaje,''),hora_inicio:pick(r,ix.hora_inicio,''),hora_termino:pick(r,ix.hora_termino,''),tiempo_preparacion_min:Number(String(pick(r,ix.tiempo_preparacion_min,0)).replace(',','.'))||0,total_productos:0,total_unidades:0,productos:[],rows:[]});
+    if(!m.has(key))m.set(key,{key,pedido:ped,fecha:fechaVisiblePedido(pick(r,ix.fecha,'')),cliente:pick(r,ix.cliente,''),vendedor:pick(r,ix.vendedor,''),pikeador:limpiarPikeador(pick(r,ix.pikeador,''), pick(r,ix.cliente,'')),bodega_preparacion:pick(r,ix.bodega_preparacion,''),status:estadoSeguroImport(pick(r,ix.status,''),'PENDIENTE'),alerta_token:pick(r,ix.alerta_token,''),alerta_ts:pick(r,ix.alerta_ts,''),alerta_tipo:pick(r,ix.alerta_tipo,''),alerta_mensaje:pick(r,ix.alerta_mensaje,''),hora_inicio:fechaHoraVisiblePedido(pick(r,ix.hora_inicio,'')),hora_termino:fechaHoraVisiblePedido(pick(r,ix.hora_termino,'')),tiempo_preparacion_min:Number(String(pick(r,ix.tiempo_preparacion_min,0)).replace(',','.'))||0,total_productos:0,total_unidades:0,productos:[],rows:[]});
     const p=m.get(key);
-    ['fecha','cliente','vendedor','bodega_preparacion','alerta_token','alerta_ts','alerta_tipo','alerta_mensaje','hora_inicio','hora_termino'].forEach(k=>{if(ix[k]>=0&&pick(r,ix[k],''))p[k]=pick(r,ix[k],'')});
+    ['fecha','cliente','vendedor','bodega_preparacion','alerta_token','alerta_ts','alerta_tipo','alerta_mensaje','hora_inicio','hora_termino'].forEach(k=>{if(ix[k]>=0&&pick(r,ix[k],'')){const val=pick(r,ix[k],'');p[k]=k==='fecha'?fechaVisiblePedido(val):(k==='hora_inicio'||k==='hora_termino'?fechaHoraVisiblePedido(val):val);}});
     if(ix.tiempo_preparacion_min>=0){ const tm=Number(String(pick(r,ix.tiempo_preparacion_min,0)).replace(',','.'))||0; if(tm>0)p.tiempo_preparacion_min=tm; }
     if(ix.pikeador>=0){ const pk=limpiarPikeador(pick(r,ix.pikeador,''), p.cliente||pick(r,ix.cliente,'')); if(pk) p.pikeador=pk; }
     if(ix.status>=0 && normalizarEstadoPermitido(pick(r,ix.status,''))) p.status=normalizarEstadoPermitido(pick(r,ix.status,''));
@@ -902,11 +988,11 @@ function filtrar(){
 function render(){
   const tb=$('tbodyPedidos'), mob=$('mobileList');
   if(!state.filtrados.length){
-    tb.innerHTML='<tr><td colspan="13" style="text-align:center;padding:26px;color:#64748b">Sin registros para mostrar. Presiona Sincronizar o revisa la hoja PEDIDOS.</td></tr>';
+    tb.innerHTML='<tr><td colspan="13" style="text-align:center;padding:26px;color:#64748b">Sin registros para mostrar. Presiona Sincronizar o revisa la base de datos de pedidos.</td></tr>';
     mob.innerHTML='<div class="pedido-card">Sin registros para mostrar.</div>';
     return;
   }
-  tb.innerHTML=state.filtrados.map(p=>`<tr class="pedido-row ${state.selectedKey===p.key?'row-selected':''}" data-pedido-key="${esc(p.key)}" tabindex="0" title="Seleccionar para abrir pedido"><td>${esc(p.fecha)}</td><td><b>${esc(p.pedido)}</b></td><td>${esc(p.cliente)}</td><td>${esc(p.vendedor)}</td><td>${esc(pikeadorVisible(p.pikeador))}</td><td>${p.total_productos}</td><td><b>${p.total_unidades}</b></td><td>${badgeEstado(p.status)}</td><td>${esc(horaCorta(p.hora_inicio)||'-')}</td><td>${esc(horaCorta(p.hora_termino)||'-')}</td><td><b>${esc(tiempoPreparacionTexto(p))}</b></td><td>${badgeAlerta(p)}</td><td class="actions-cell"><button data-ver-pedido="${esc(p.key)}">Ver</button></td></tr>`).join('');
+  tb.innerHTML=state.filtrados.map(p=>`<tr class="pedido-row ${state.selectedKey===p.key?'row-selected':''}" data-pedido-key="${esc(p.key)}" tabindex="0" title="Seleccionar para abrir pedido"><td>${esc(fechaVisiblePedido(p.fecha))}</td><td><b>${esc(p.pedido)}</b></td><td>${esc(p.cliente)}</td><td>${esc(p.vendedor)}</td><td>${esc(pikeadorVisible(p.pikeador))}</td><td>${p.total_productos}</td><td><b>${p.total_unidades}</b></td><td>${badgeEstado(p.status)}</td><td>${esc(horaCorta(p.hora_inicio)||'-')}</td><td>${esc(horaCorta(p.hora_termino)||'-')}</td><td><b>${esc(tiempoPreparacionTexto(p))}</b></td><td>${badgeAlerta(p)}</td><td class="actions-cell"><button data-ver-pedido="${esc(p.key)}">Ver</button></td></tr>`).join('');
   mob.innerHTML=state.filtrados.map(p=>`<div class="pedido-card ${state.selectedKey===p.key?'row-selected':''}" data-pedido-key="${esc(p.key)}" tabindex="0"><div class="top"><span>${esc(p.pedido)}</span>${badgeEstado(p.status)}</div><p><b>Cliente:</b> ${esc(p.cliente||'-')}</p><p><b>Pikeador:</b> ${esc(pikeadorVisible(p.pikeador))}</p><p><b>Productos:</b> ${p.total_productos} | <b>Unidades:</b> ${p.total_unidades}</p><p><b>Inicio:</b> ${esc(horaCorta(p.hora_inicio)||'-')} | <b>Término:</b> ${esc(horaCorta(p.hora_termino)||'-')}</p><p><b>Tiempo preparación:</b> ${esc(tiempoPreparacionTexto(p))}</p><p>${badgeAlerta(p)}</p><button data-ver-pedido="${esc(p.key)}">Ver opciones</button></div>`).join('');
 }
 function kpis(){
@@ -1002,7 +1088,7 @@ function abrirModal(key){
   marcarFilaSeleccionada(p.key);
   $('modalTitle').textContent='Pedido '+p.pedido;
   $('modalSub').textContent=(p.cliente||'')+' | Total unidades: '+(p.total_unidades||0);
-  $('detallePedido').innerHTML=[['Fecha',p.fecha],['Pedido',p.pedido],['Cliente',p.cliente],['Vendedor',p.vendedor],['Pikeador',pikeadorVisible(p.pikeador)],['Bodega preparación',p.bodega_preparacion||'-'],['Estado',p.status],['Hora inicio',horaCorta(p.hora_inicio)||'-'],['Hora término',horaCorta(p.hora_termino)||'-'],['Tiempo preparación',tiempoPreparacionTexto(p)],['Productos',p.total_productos],['Total unidades',p.total_unidades],['Avance cliente',porcentajeAvancePedido(p)+'%']].map(([l,v])=>`<div class="detail-item"><div class="l">${l}</div><div class="v">${esc(v)}</div></div>`).join('');
+  $('detallePedido').innerHTML=[['Fecha',fechaVisiblePedido(p.fecha)],['Pedido',p.pedido],['Cliente',p.cliente],['Vendedor',p.vendedor],['Pikeador',pikeadorVisible(p.pikeador)],['Bodega preparación',p.bodega_preparacion||'-'],['Estado',p.status],['Hora inicio',horaCorta(p.hora_inicio)||'-'],['Hora término',horaCorta(p.hora_termino)||'-'],['Tiempo preparación',tiempoPreparacionTexto(p)],['Productos',p.total_productos],['Total unidades',p.total_unidades],['Avance cliente',porcentajeAvancePedido(p)+'%']].map(([l,v])=>`<div class="detail-item"><div class="l">${l}</div><div class="v">${esc(v)}</div></div>`).join('');
   $('tbodyProductos').innerHTML=p.productos.length?p.productos.map(x=>`<tr><td>${esc(x.codigo)}</td><td>${esc(x.descripcion)}</td><td>${esc(x.ubicacion)}</td><td><b>${x.cantidad}</b></td></tr>`).join(''):'<tr><td colspan="4" style="text-align:center;color:#64748b">Este pedido no tiene productos detallados.</td></tr>';
   llenarSelects();
   renderEdicionPedido(p);
@@ -1067,7 +1153,7 @@ function renderEdicionPedido(p){
   const pikeadorOptions=opcionesPikeadorEdicion(p.pikeador);
   box.innerHTML=`
     <div class="edit-grid">
-      <div class="edit-field span-2"><label>Fecha</label><input id="editFechaPedido" value="${esc(p.fecha||'')}"></div>
+      <div class="edit-field span-2"><label>Fecha</label><input id="editFechaPedido" value="${esc(fechaVisiblePedido(p.fecha)||'')}"></div>
       <div class="edit-field span-2"><label>Pedido</label><input id="editNumeroPedido" value="${esc(p.pedido||'')}"></div>
       <div class="edit-field span-4"><label>Cliente</label><input id="editClientePedido" value="${esc(p.cliente||'')}"></div>
       <div class="edit-field span-2"><label>Vendedor</label><select id="editVendedorPedido">${opcionesVendedores(p.vendedor||'')}</select></div>
@@ -1087,7 +1173,7 @@ function renderEdicionPedido(p){
         <tbody id="tbodyEditProductos">${productos.map((x,i)=>filaProductoEdicion(x,i)).join('')}</tbody>
       </table>
     </div>
-    <div class="hint" style="margin-top:10px">Al guardar, se actualizan los datos del pedido y sus productos en la hoja PEDIDOS. Los ceros iniciales del código se conservan como texto.</div>
+    <div class="hint" style="margin-top:10px">Al guardar, se actualizan los datos del pedido y sus productos en la base de datos PEDIDOS. Los ceros iniciales del código se conservan como texto.</div>
   `;
 }
 function opcionesEstadoEdicion(actual){
@@ -1177,7 +1263,7 @@ async function guardarEdicionPedidoActual(){
   const payload={
     pedido_original:p.pedido,
     pedido:pedidoNuevo,
-    fecha:($('editFechaPedido')?.value||'').trim(),
+    fecha:fechaVisiblePedido(($('editFechaPedido')?.value||'').trim()),
     cliente:($('editClientePedido')?.value||'').trim(),
     vendedor:($('editVendedorPedido')?.value||'').trim(),
     pikeador:($('editPikeadorPedido')?.value||'').trim(),
@@ -1219,8 +1305,9 @@ async function actualizarEstadoActual(){
   if(!confirm(`Actualizar pedido ${p.pedido} al estado ${estado}?`))return;
   const r=await api('actualizar_estado_pedido',{pedido:p.pedido,status:estado,pikeador:pk});
   if(!r.ok)return toast(r.msg||'No se pudo actualizar estado');
-  toast('Estado actualizado: '+estado);
-  const vozMsg = estado==='TERMINADO' ? mensajePedidoTerminado(p) : (r.voice || (estado==='PREPARACION' ? 'Pedido enviado a preparación' : ''));
+  const datosVoz = {pedido:r.pedido||p.pedido, cliente:r.cliente||p.cliente, vendedor:r.vendedor||p.vendedor, pikeador:r.pikeador||pk||p.pikeador, status:r.status||estado};
+  const vozMsg = mensajeEstadoPedido(p, estado, datosVoz);
+  toast(vozMsg);
   if(vozMsg) voz(vozMsg);
   await cargarTodo();
   abrirModal(p.key);
@@ -1231,14 +1318,16 @@ async function prepararActual(){
   if(!confirm(`Enviar pedido ${p.pedido} a preparación?\nProductos: ${p.total_productos}\nUnidades: ${p.total_unidades}`))return;
   const r=await api('preparar_pedido',{pedido:p.pedido,pikeador:pk});
   if(!r.ok)return toast(r.msg||'No se pudo enviar');
-  voz('Pedido enviado a preparación'); toast('Pedido enviado a preparación. Hora de inicio registrada.');
+  const vozPrep = mensajeEstadoPedido(p, 'PREPARACION', {pedido:r.pedido||p.pedido, cliente:r.cliente||p.cliente, vendedor:r.vendedor||p.vendedor, pikeador:r.pikeador||pk||p.pikeador});
+  voz(vozPrep); toast(vozPrep + '. Hora de inicio registrada.');
   await cargarTodo(); await verificarAlertas(); abrirModal(p.key);
 }
 async function reenviarActual(){
   const p=state.sel; if(!p)return;
   const r=await api('reenviar_alerta_pedido',{pedido:p.pedido,pikeador:$('selModalPikeador').value||p.pikeador||''});
   if(!r.ok)return toast(r.msg||'No se pudo reenviar');
-  voz('Pedido enviado a preparación'); toast('Alerta reenviada');
+  const vozReenvio = mensajeEstadoPedido(p, 'PREPARACION', {pedido:r.pedido||p.pedido, cliente:r.cliente||p.cliente, vendedor:r.vendedor||p.vendedor, pikeador:r.pikeador||$('selModalPikeador').value||p.pikeador});
+  voz(vozReenvio); toast('Alerta reenviada: ' + vozReenvio);
   await cargarTodo(); await verificarAlertas(); abrirModal(p.key);
 }
 async function verificarAlertas(){
@@ -1253,8 +1342,8 @@ async function verificarAlertas(){
       if(old&&old!==p.alerta_token){
         hubo=true;
         const estadoAlerta = String(p.status || p.estado || '').trim().toUpperCase();
-        const msgAlerta = p.alerta_mensaje || (estadoAlerta === 'TERMINADO' ? mensajePedidoTerminado(p) : (estadoAlerta === 'PREPARACION' ? 'Pedido enviado a preparación' : ('Pedido ' + p.pedido + ' cambió de estado')));
-        toast('🔔 ' + msgAlerta + ': ' + p.pedido);
+        const msgAlerta = p.alerta_mensaje || mensajeEstadoPedido(p, estadoAlerta || p.status || 'ACTUALIZADO');
+        toast('🔔 ' + msgAlerta);
         voz(msgAlerta);
       }
       state.tokens[p.key]=p.alerta_token;
@@ -1331,7 +1420,7 @@ function prepararPedidoAutogeneradoLocal(){
   input.value=calcularSiguientePedidoLocal();
   input.readOnly=true;
   input.classList.add('input-readonly');
-  input.title='Número generado automáticamente desde la hoja PEDIDOS';
+  input.title='Número generado automáticamente desde la base de datos PEDIDOS';
   const msg=$('manualNumeroMsg');
   if(msg) msg.textContent='Número sugerido automáticamente. Se validará nuevamente al guardar para evitar duplicados.';
 }
@@ -1362,7 +1451,7 @@ async function generarNumeroPedidoManual(mostrarToast=false){
 
 function datosManualBase(){
   return {
-    fecha:$('manFecha')?.value||'',
+    fecha:fechaVisiblePedido($('manFecha')?.value||''),
     pedido:($('manPedido')?.value||'').trim(),
     cliente:($('manCliente')?.value||'').trim(),
     clase_cliente:(()=>{ const n=($('manCliente')?.value||'').trim().toLowerCase(); const c=(state.clientes||[]).find(x=>String(x.cliente||'').trim().toLowerCase()===n); return c?.clase_cliente||''; })(),
@@ -1442,6 +1531,7 @@ async function guardarPedidoManual(){
 /* ================= IMPORTAR LISTADO ================= */
 function abrirImportar(){
   llenarSelects();
+  if(!state.bodegas.length) cargarBodegas().catch(console.warn);
   limpiarImportacion(false);
   const hoy=new Date();
   const yyyy=hoy.getFullYear(), mm=String(hoy.getMonth()+1).padStart(2,'0'), dd=String(hoy.getDate()).padStart(2,'0');
@@ -1468,13 +1558,53 @@ function setImportProgress(percent,msg='',detail='',mode=''){
 function resetImportProgress(){
   setImportProgress(0,'Esperando archivo para importar','Selecciona un XLSX/CSV y presiona Validar y previsualizar.');
 }
+
+function resetImportFinal(){
+  const box=$('importFinalBox');
+  if(box) box.classList.add('hidden');
+  ['chkImportConexion','chkImportEnvio','chkImportVerificacion','chkImportFinal'].forEach(id=>{
+    const el=$(id);
+    if(el) el.textContent='⏳';
+  });
+  const title=$('importFinalTitle');
+  if(title) title.textContent='Resultado de importación';
+  const msg=$('importFinalMsg');
+  if(msg) msg.textContent='El resultado aparecerá al finalizar el envío.';
+  state.importFallidos=[];
+  renderImportFailedList();
+}
+function setImportCheck(id,estado){
+  const el=$(id);
+  if(!el) return;
+  const e=String(estado||'pendiente').toLowerCase();
+  el.textContent=e==='ok'?'✅':(e==='error'?'❌':(e==='warn'?'⚠️':'⏳'));
+}
+function mostrarResultadoImportacion(res){
+  const box=$('importFinalBox');
+  if(box) box.classList.remove('hidden');
+  const ok=!Number(res?.fallidos||0);
+  setImportCheck('chkImportConexion','ok');
+  setImportCheck('chkImportEnvio', Number(res?.enviados||0)>0 ? 'ok' : 'error');
+  setImportCheck('chkImportVerificacion', ok ? 'ok' : 'warn');
+  setImportCheck('chkImportFinal', ok ? 'ok' : 'error');
+  const title=$('importFinalTitle');
+  if(title) title.textContent=ok?'✅ Importación finalizada correctamente':'❌ Importación finalizada con errores';
+  const msg=$('importFinalMsg');
+  if(msg){
+    const detalle=Number(res?.fallidos||0)>0?' Revisa abajo los registros marcados en rojo para corregirlos y volver a importar.':'';
+    msg.textContent=`Enviadas: ${res?.enviados||0}. Insertados: ${res?.insertados||0}. Actualizados: ${res?.actualizados||0}. Sin cambio: ${res?.sinCambios||0}. Fallidas: ${res?.fallidos||0}.${detalle}`;
+  }
+  renderImportFailedList();
+}
 function limpiarImportacion(clearFile=true){
   state.importados=[];
+  state.importFallidos=[];
   state.importHeaders=[];
   if(clearFile && $('fileImportar')) $('fileImportar').value='';
   setImportStats(0,0,0,0,0,0,0);
   resetImportProgress();
-  if($('tbodyImportar')) $('tbodyImportar').innerHTML='<tr><td colspan="12" style="text-align:center;color:#64748b;padding:20px">Selecciona un archivo y presiona Previsualizar.</td></tr>';
+  resetImportFinal();
+  if($('tbodyImportar')) $('tbodyImportar').innerHTML='<tr><td colspan="14" style="text-align:center;color:#64748b;padding:20px">Selecciona un archivo y presiona Previsualizar.</td></tr>';
 }
 async function procesarImportacion(){
   const file=$('fileImportar')?.files?.[0];
@@ -1498,17 +1628,18 @@ async function procesarImportacion(){
     const fechaDefault=$('impFecha')?.value||'';
     const statusDefault=$('impStatus')?.value||'PENDIENTE';
     const pikeadorDefault=$('impPikeador')?.value||'';
+    const bodegaDefault=$('impBodega')?.value||'';
     const items=data.map((r,i)=>{
       if(i%50===0 || i===data.length-1){
         const pct=55+Math.round(((i+1)/Math.max(1,data.length))*20);
         setImportProgress(pct,'Validando filas del archivo',`Fila ${i+1} de ${data.length}`);
       }
-      return normalizarFilaImport(r,headers,ix,i,fechaDefault,statusDefault,pikeadorDefault);
+      return normalizarFilaImport(r,headers,ix,i,fechaDefault,statusDefault,pikeadorDefault,bodegaDefault);
     }).filter(x=>x._hasData);
     setImportProgress(78,'Comparando con PEDIDOS','Verificando nuevos, cambios y duplicados contra la tabla actual.');
     state.importados=validarImportadosContraPedidos(items);
     renderImportPreview();
-    const enviables=(state.importados||[]).filter(x=>!x._error && x._hasData && x._estadoImport!=='SIN CAMBIO').length;
+    const enviables=(state.importados||[]).filter(x=>!x._error && x._hasData).length;
     setImportProgress(100,'Validación terminada',`Nuevos: ${state.importStats.nuevos} | Cambios: ${state.importStats.cambios} | Sin cambio: ${state.importStats.iguales} | Errores: ${state.importStats.errores} | Listos para enviar: ${enviables}`, state.importStats.errores?'':'ok');
     toast('Listado validado: '+items.length+' filas');
     setStatus('Importación validada. Nuevos: '+state.importStats.nuevos+' | Cambios: '+state.importStats.cambios+' | Sin cambio: '+state.importStats.iguales+' | Errores: '+state.importStats.errores);
@@ -1622,9 +1753,10 @@ function mapImportHeaders(headers){
     cliente:idxHeader(headers,['cliente','nombre cliente','razon social','razón social']),
     vendedor:idxHeader(headers,['vendedor','responsable','ejecutivo']),
     pikeador:idxHeader(headers,['pikeador','picker','preparador','asignado','asignado a']),
+    bodega_preparacion:idxHeader(headers,['bodega_preparacion','bodega preparación','bodega preparacion','bodega pedido','bodega de preparacion','bodega de preparación','nombre_bodega','nombre bodega','bodega']),
     codigo:idxHeader(headers,['codigo','código','cod','sku','codigo producto','código producto']),
     descripcion:idxHeader(headers,['descripcion','descripción','detalle','nombre','producto','nombre producto','descripcion producto','descripción producto']),
-    ubicacion:idxHeader(headers,['ubicacion','ubicación','bodega','ubicacion producto','ubicación producto']),
+    ubicacion:idxHeader(headers,['ubicacion','ubicación','ubicacion producto','ubicación producto','ubicacion producto pedido','ubicación producto pedido','posicion','posición','rack','pasillo']),
     cantidad:idxHeader(headers,['cantidad','unidades','cajas','qty','cant']),
     status:idxHeader(headers,['status','estado','estado pedido','estado del pedido']),
     observacion:idxHeader(headers,['observacion','observación','obs','comentario','comentarios'])
@@ -1635,7 +1767,7 @@ function mapImportHeaders(headers){
     // Compatibilidad con plantillas sin encabezado: se aplican posiciones base,
     // pero ESTADO sigue sin posición por defecto para no copiar DESCRIPCIÓN.
     return {
-      fecha:0,pedido:1,cliente:2,vendedor:3,pikeador:-1,codigo:5,descripcion:6,ubicacion:7,cantidad:8,status:-1,observacion:10
+      fecha:1,pedido:0,cliente:2,vendedor:3,pikeador:4,bodega_preparacion:5,codigo:6,descripcion:7,ubicacion:8,cantidad:9,status:10,observacion:11
     };
   }
   return ix;
@@ -1649,19 +1781,22 @@ function obtenerPedidoDesdeImport(r,headers,ix,raw){
   return desdePedido || desdeNumero;
 }
 
-function normalizarFilaImport(r,headers,ix,i,fechaDefault,statusDefault,pikeadorDefault){
+function normalizarFilaImport(r,headers,ix,i,fechaDefault,statusDefault,pikeadorDefault,bodegaDefault){
   const raw = rawObjectFromRow(headers,r);
   const rawStatus = pick(r,ix.status,'');
   const statusFinal = estadoSeguroImport(rawStatus, statusDefault || 'PENDIENTE');
   const clienteImport = pick(r,ix.cliente,'');
   const pikeadorDesdeArchivo = ix.pikeador >= 0 ? pick(r,ix.pikeador,'') : '';
   const pikeadorFinal = limpiarPikeador(pikeadorDesdeArchivo || pikeadorDefault, clienteImport);
+  const bodegaDesdeArchivo = ix.bodega_preparacion >= 0 ? pick(r,ix.bodega_preparacion,'') : pickRaw(raw,['bodega_preparacion','bodega preparación','bodega preparacion','bodega pedido','bodega de preparacion','bodega de preparación','nombre_bodega','nombre bodega','bodega']);
+  const bodegaFinal = bodegaDesdeArchivo || bodegaDefault || '';
   const item={
-    fecha:pick(r,ix.fecha,fechaDefault)||pickRaw(raw,['fecha','fecha ingreso','fecha pedido'])||fechaDefault,
+    fecha:fechaVisiblePedido(pick(r,ix.fecha,fechaDefault)||pickRaw(raw,['fecha','fecha ingreso','fecha pedido'])||fechaDefault),
     pedido:obtenerPedidoDesdeImport(r,headers,ix,raw)||pickRaw(raw,['pedido','orden','orden pedido','orden de pedido']),
     cliente:clienteImport,
     vendedor:pick(r,ix.vendedor,''),
     pikeador:pikeadorFinal,
+    bodega_preparacion:bodegaFinal,
     codigo:pick(r,ix.codigo,''),
     descripcion:pick(r,ix.descripcion,''),
     ubicacion:pick(r,ix.ubicacion,''),
@@ -1684,7 +1819,7 @@ function validarImportadosContraPedidos(items){
   const porPedidoCodigo=new Map();
   (state.pedidos||[]).forEach(p=>{
     (p.productos||[]).forEach(prod=>{
-      const base={fecha:p.fecha||'',pedido:p.pedido||'',cliente:p.cliente||'',vendedor:p.vendedor||'',pikeador:p.pikeador||'',codigo:prod.codigo||'',descripcion:prod.descripcion||'',ubicacion:prod.ubicacion||'',cantidad:Number(prod.cantidad||0),status:p.status||'PENDIENTE'};
+      const base={fecha:fechaVisiblePedido(p.fecha)||'',pedido:p.pedido||'',cliente:p.cliente||'',vendedor:p.vendedor||'',pikeador:p.pikeador||'',bodega_preparacion:p.bodega_preparacion||'',codigo:prod.codigo||'',descripcion:prod.descripcion||'',ubicacion:prod.ubicacion||'',cantidad:Number(prod.cantidad||0),status:p.status||'PENDIENTE'};
       porKey.set(importKey(base),base);
       const pc=pedidoCodigoKey(base);
       if(pc&&!porPedidoCodigo.has(pc)) porPedidoCodigo.set(pc,base);
@@ -1701,10 +1836,14 @@ function validarImportadosContraPedidos(items){
     const k=importKey(item);
     if(vistosArchivo.has(k)){ item._error='Duplicado dentro del archivo'; item._estadoImport='ERROR'; stats.errores++; return item; }
     vistosArchivo.add(k);
-    const actual=porKey.get(k)||porPedidoCodigo.get(pedidoCodigoKey(item));
+    // Si el mismo pedido/código tiene varias ubicaciones o descripciones, se debe respetar como línea distinta.
+    // El fallback por pedido+código solo se usa cuando la fila importada no trae ubicación ni descripción.
+    const pcKey = pedidoCodigoKey(item);
+    const usarFallbackPedidoCodigo = pcKey && !String(item.ubicacion||'').trim() && !String(item.descripcion||'').trim();
+    const actual=porKey.get(k)||(usarFallbackPedidoCodigo?porPedidoCodigo.get(pcKey):null);
     if(!actual){ stats.nuevos++; item._estadoImport='NUEVO'; return item; }
     item._exists=true;
-    const campos=['fecha','cliente','vendedor','pikeador','descripcion','ubicacion','cantidad','status'];
+    const campos=['fecha','cliente','vendedor','pikeador','bodega_preparacion','descripcion','ubicacion','cantidad','status'];
     campos.forEach(c=>{
       const a=c==='cantidad'?Number(actual[c]||0):String(actual[c]||'').trim().toUpperCase();
       const b=c==='cantidad'?Number(item[c]||0):String(item[c]||'').trim().toUpperCase();
@@ -1723,7 +1862,7 @@ function normPedido(v){return String(v||'').replace(/^'+/,'').replace(/\s+/g,'')
 function normCodigo(v){return String(v||'').replace(/^'+/,'').replace(/\s+/g,'').toUpperCase();}
 function normTxt(v){return String(v||'').trim().toUpperCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/\s+/g,' ');}
 function estadoImportBadge(x){
-  const e=String(x._estadoImport||'NUEVO').toUpperCase();
+  const e=String((x._postError||x._error)?'ERROR':(x._estadoImport||'NUEVO')).toUpperCase();
   if(e==='ERROR') return '<span class="estado-import estado-error">Error</span>';
   if(e==='CAMBIO') return '<span class="estado-import estado-cambio">Cambio</span>';
   if(e==='SIN CAMBIO') return '<span class="estado-import estado-igual">Sin cambio</span>';
@@ -1741,7 +1880,9 @@ function renderImportPreview(){
   const table=tbody.closest('table');
   const thead=table?.querySelector('thead');
   const rawHeaders=(state.importHeaders||[]).filter(Boolean);
-  const view=items.slice(0,200);
+  const fallidosVista=items.filter(x=>x._postError||x._error);
+  const normalesVista=items.filter(x=>!(x._postError||x._error));
+  const view=(fallidosVista.length?[...fallidosVista,...normalesVista]:items).slice(0,200);
   const baseHeads=['#','Validación','Cambios detectados'];
   const heads=[...baseHeads,...rawHeaders];
   if(thead){
@@ -1753,9 +1894,11 @@ function renderImportPreview(){
   }
   tbody.innerHTML=view.map((x,i)=>{
     const raw=x.__raw||{};
-    const cambios=esc(x._error||(([...(x._statusAdvertencia?[x._statusAdvertencia]:[]), ...(x._changes||[])]).join(' | ')||'—'));
-    const rawCells=rawHeaders.map(h=>`<td>${esc(raw[h]??'')}</td>`).join('');
-    return `<tr style="${x._error?'background:#fee2e2':''}"><td>${i+1}</td><td>${estadoImportBadge(x)}</td><td class="changes-list">${cambios}</td>${rawCells}</tr>`;
+    const errorTxt=x._postError||x._error||'';
+    const cambios=esc(errorTxt||(([...(x._statusAdvertencia?[x._statusAdvertencia]:[]), ...(x._changes||[])]).join(' | ')||'—'));
+    const rawCells=rawHeaders.map(h=>`<td>${esc(esHeaderFechaPedido(h)?fechaVisiblePedido(raw[h]):(raw[h]??''))}</td>`).join('');
+    const cls=(x._postError||x._error)?'import-row-error':'';
+    return `<tr class="${cls}"><td>${i+1}</td><td>${estadoImportBadge(x)}</td><td class="changes-list">${cambios}</td>${rawCells}</tr>`;
   }).join('');
 }
 function setImportStats(pedidos,filas,unidades,errores,nuevos=0,cambios=0,iguales=0){
@@ -1767,49 +1910,149 @@ function setImportStats(pedidos,filas,unidades,errores,nuevos=0,cambios=0,iguale
   if($('impCambios')) $('impCambios').textContent=cambios;
   if($('impIguales')) $('impIguales').textContent=iguales;
 }
-async function enviarImportacionBD(){
-  const items=(state.importados||[]).filter(x=>!x._error && x._hasData && x._estadoImport!=='SIN CAMBIO');
-  if(!items.length){
-    setImportProgress(100,'Sin cambios para enviar','Todo está igual o existen errores pendientes de corregir.','ok');
-    return toast('No hay cambios para enviar. Todo está igual o tiene errores.');
+function importFailureKey(x){ return importKey(x||{}); }
+function matchFaltantesImport(batchOriginal, detalleFaltantes){
+  const detalles=Array.isArray(detalleFaltantes)?detalleFaltantes:[];
+  if(!detalles.length) return batchOriginal.slice();
+  const faltantesKeys=new Set(detalles.map(importFailureKey).filter(Boolean));
+  return batchOriginal.filter(x=>faltantesKeys.has(importFailureKey(x)));
+}
+function registrarFallosImportacion(batchOriginal,motivo,detalleFaltantes=[]){
+  const afectados=matchFaltantesImport(batchOriginal||[],detalleFaltantes);
+  afectados.forEach(x=>{
+    x._postError=motivo||'No se pudo guardar o verificar esta fila en la base de datos';
+    x._estadoImport='ERROR';
+  });
+  const existentes=new Set((state.importFallidos||[]).map(x=>String(x._row||'')+'|'+importFailureKey(x)));
+  const nuevos=afectados.filter(x=>{
+    const k=String(x._row||'')+'|'+importFailureKey(x);
+    if(existentes.has(k)) return false;
+    existentes.add(k);
+    return true;
+  });
+  state.importFallidos=[...(state.importFallidos||[]),...nuevos];
+  return afectados.length;
+}
+function renderImportFailedList(){
+  const box=$('importFailedBox');
+  const tbody=$('tbodyImportFallidos');
+  if(!box || !tbody) return;
+  const fallidos=state.importFallidos||[];
+  if(!fallidos.length){
+    box.classList.add('hidden');
+    tbody.innerHTML='';
+    return;
   }
-  if(!confirm(`Enviar ${items.length} filas con cambios/nuevos a la Base de Datos PEDIDOS?`)) return;
+  box.classList.remove('hidden');
+  tbody.innerHTML=fallidos.map((x,i)=>`<tr class="import-row-error"><td>${i+1}</td><td>${esc(x._row||'')}</td><td>${esc(x.pedido||'')}</td><td>${esc(x.cliente||'')}</td><td>${esc(x.bodega_preparacion||'')}</td><td>${esc(x.codigo||'')}</td><td>${esc(x.descripcion||'')}</td><td>${esc(x.ubicacion||'')}</td><td>${esc(x.cantidad||'')}</td><td class="changes-list">${esc(x._postError||x._error||'No se pudo guardar')}</td></tr>`).join('');
+}
+
+function sleepImport(ms){ return new Promise(resolve=>setTimeout(resolve,ms)); }
+function clavesVerificacionImport(items){
+  return (items||[]).map(x=>({pedido:x.pedido||'',codigo:x.codigo||'',descripcion:x.descripcion||'',ubicacion:x.ubicacion||''}));
+}
+async function verificarImportacionBatch(batch,intentos=4,esperaMs=1200){
+  const keys=clavesVerificacionImport(batch);
+  if(!keys.length) return {ok:true,encontrados:0,faltantes:0};
+  let last=null;
+  for(let i=0;i<intentos;i++){
+    if(i>0) await sleepImport(esperaMs);
+    try{
+      const r=await api('verificar_importacion_pedidos',{items:JSON.stringify(keys),_ver:i});
+      last=r;
+      if(r?.ok && Number(r.encontrados||0)>=keys.length) return r;
+    }catch(err){ last={ok:false,msg:err.message||String(err)}; }
+  }
+  return last || {ok:false,msg:'No se pudo verificar importación'};
+}
+
+async function enviarImportacionBD(){
+  const items=(state.importados||[]).filter(x=>!x._error && x._hasData);
+  if(!items.length){
+    setImportProgress(100,'Sin filas válidas para enviar','Existen errores pendientes de corregir o el archivo está vacío.','error');
+    mostrarResultadoImportacion({enviados:0,insertados:0,actualizados:0,sinCambios:0,fallidos:0});
+    setImportCheck('chkImportEnvio','error');
+    setImportCheck('chkImportFinal','error');
+    return toast('No hay filas válidas para enviar. Corrige los errores o revisa el archivo.');
+  }
+  if(!confirm(`Enviar ${items.length} fila(s) válida(s) a la base de datos PEDIDOS?`)) return;
+  resetImportFinal();
+  state.importFallidos=[];
+  (state.importados||[]).forEach(x=>{ delete x._postError; });
+  renderImportPreview();
+  const finalBox=$('importFinalBox');
+  if(finalBox) finalBox.classList.remove('hidden');
+  setImportCheck('chkImportConexion','pendiente');
+  setImportCheck('chkImportEnvio','pendiente');
+  setImportCheck('chkImportVerificacion','pendiente');
+  setImportCheck('chkImportFinal','pendiente');
   let enviados=0, fallidos=0, insertados=0, actualizados=0, sinCambios=0;
-  const chunkSize=10;
+  const chunkSize=20;
   const totalChunks=Math.ceil(items.length/chunkSize);
-  setImportProgress(0,'Iniciando envío a Base de Datos',`Se enviarán ${items.length} filas en ${totalChunks} bloque(s).`);
+  setImportProgress(0,'Iniciando sincronización con base de datos',`Se enviarán ${items.length} filas en ${totalChunks} bloque(s).`);
+  setImportCheck('chkImportConexion','ok');
   for(let i=0,chunkIndex=0;i<items.length;i+=chunkSize,chunkIndex++){
-    const batch=items.slice(i,i+chunkSize).map(({_row,_hasData,_error,_estadoImport,_exists,_changes,_statusAdvertencia,...x})=>x);
+    const batchOriginal=items.slice(i,i+chunkSize);
+    const batch=batchOriginal.map(({_row,_hasData,_error,_postError,_estadoImport,_exists,_changes,_statusAdvertencia,...x})=>x);
     const desde=i+1;
     const hasta=Math.min(i+chunkSize,items.length);
     const pctInicio=Math.round((i/items.length)*100);
-    setImportProgress(pctInicio,'Enviando a Base de Datos',`Bloque ${chunkIndex+1} de ${totalChunks} | Filas ${desde}-${hasta} de ${items.length}`);
-    setStatus(`Importando filas ${desde}-${hasta} de ${items.length}...`);
+    setImportProgress(pctInicio,'Sincronizando con base de datos',`Bloque ${chunkIndex+1} de ${totalChunks} | Filas ${desde}-${hasta} de ${items.length}`);
+    setStatus(`Sincronizando con base de datos. Filas ${desde}-${hasta} de ${items.length}...`);
     try{
-      const r=await api('importar_pedidos',{items:JSON.stringify(batch)});
-      if(r?.ok){
+      const r=await apiPostIframe('importar_pedidos',{items:JSON.stringify(batch)},180000).catch(err=>({ok:false,msg:err.message||String(err),pendiente_verificacion:true}));
+      const ver=await verificarImportacionBatch(batch,5,1600);
+      if(ver.ok && Number(ver.encontrados||0)>=batch.length){
         enviados+=batch.length;
         insertados+=Number(r.insertados||0);
         actualizados+=Number(r.actualizados||0);
         sinCambios+=Number(r.sin_cambios||0);
+        setImportCheck('chkImportEnvio','ok');
+        setImportCheck('chkImportVerificacion','ok');
+        if(r.pendiente_verificacion) console.warn('Bloque guardado y verificado sin respuesta directa del iframe', r);
+      }else if(ver.ok && Number(ver.encontrados||0)>0){
+        const faltan=batch.length-Number(ver.encontrados||0);
+        enviados+=Number(ver.encontrados||0);
+        fallidos+=faltan;
+        const motivo=`No se verificó en base de datos después del envío. Bloque ${chunkIndex+1}.`;
+        const marcados=registrarFallosImportacion(batchOriginal,motivo,ver.detalle_faltantes||[]);
+        if(marcados!==faltan) console.warn('Diferencia marcando fallidos', {faltan,marcados,ver});
+        setImportCheck('chkImportEnvio','warn');
+        setImportCheck('chkImportVerificacion','warn');
+        console.warn('Bloque importado parcialmente', {respuesta:r,verificacion:ver});
       }else{
         fallidos+=batch.length;
+        registrarFallosImportacion(batchOriginal,`No se guardó o no se pudo verificar el bloque ${chunkIndex+1}: ${(ver&&ver.msg)|| (r&&r.msg) || 'sin respuesta válida de Apps Script'}`);
+        setImportCheck('chkImportEnvio','error');
+        setImportCheck('chkImportVerificacion','error');
+        console.warn('Bloque no verificado en BD', {respuesta:r,verificacion:ver});
       }
     }catch(err){
       console.error(err);
       fallidos+=batch.length;
+      registrarFallosImportacion(batchOriginal,`Error enviando bloque ${chunkIndex+1}: ${err.message||err}`);
+      setImportCheck('chkImportEnvio','error');
+      setImportCheck('chkImportVerificacion','error');
+      setImportProgress(pctInicio,'Error enviando bloque',`Bloque ${chunkIndex+1}: ${err.message||err}`,'error');
     }
+    renderImportPreview();
+    renderImportFailedList();
     const pctFin=Math.round((Math.min(i+chunkSize,items.length)/items.length)*100);
-    setImportProgress(pctFin,'Enviando a Base de Datos',`Avance ${pctFin}% | Enviadas: ${enviados} | Insertados: ${insertados} | Actualizados: ${actualizados} | Fallidas: ${fallidos}`);
+    setImportProgress(pctFin,'Sincronizando con base de datos',`Avance ${pctFin}% | Enviadas: ${enviados} | Insertados: ${insertados} | Actualizados: ${actualizados} | Fallidas: ${fallidos}`);
   }
   if(fallidos){
-    setImportProgress(100,'Importación terminada con observaciones',`Enviadas: ${enviados}. Insertados: ${insertados}. Actualizados: ${actualizados}. Sin cambio: ${sinCambios}. Fallidas: ${fallidos}.`,'error');
+    setImportProgress(100,'❌ Importación finalizada con errores',`Enviadas: ${enviados}. Insertados: ${insertados}. Actualizados: ${actualizados}. Sin cambio: ${sinCambios}. Fallidas: ${fallidos}. Revisa las filas en rojo.`, 'error');
   }else{
-    setImportProgress(100,'Importación completada',`Enviadas: ${enviados}. Insertados: ${insertados}. Actualizados: ${actualizados}. Sin cambio: ${sinCambios}.`,'ok');
+    setImportProgress(100,'✅ Importación finalizada correctamente',`Enviadas: ${enviados}. Insertados: ${insertados}. Actualizados: ${actualizados}. Sin cambio: ${sinCambios}.`,'ok');
   }
-  toast(`Importación terminada. Enviadas: ${enviados}. Insertados: ${insertados}. Actualizados: ${actualizados}. Sin cambio: ${sinCambios}. Fallidas: ${fallidos}.`);
-  await cargarTodo();
-  if(!fallidos) setTimeout(()=>cerrarImportar(),900);
+  mostrarResultadoImportacion({enviados,insertados,actualizados,sinCambios,fallidos});
+  toast(`${fallidos?'Importación finalizada con errores. Revisa las filas en rojo.':'Importación finalizada correctamente'}. Enviadas: ${enviados}. Insertados: ${insertados}. Actualizados: ${actualizados}. Sin cambio: ${sinCambios}. Fallidas: ${fallidos}.`);
+  if(!fallidos){
+    await cargarTodo();
+    setTimeout(()=>cerrarImportar(),900);
+  }else{
+    setStatus(`Importación finalizada con errores. ${fallidos} fila(s) quedaron destacadas en rojo para corregir.`);
+  }
 }
 
 /* ================= PDFS MEJORADOS ================= */
@@ -1866,7 +2109,7 @@ function pdfGeneral(){
   d.autoTable({
     startY:42,
     head:[['Fecha','Pedido','Cliente','Vendedor','Pikeador','Productos','Unidades','Estado']],
-    body:state.filtrados.map(p=>[p.fecha,p.pedido,p.cliente,p.vendedor,pikeadorVisible(p.pikeador),p.total_productos,p.total_unidades,p.status]),
+    body:state.filtrados.map(p=>[fechaVisiblePedido(p.fecha),p.pedido,p.cliente,p.vendedor,pikeadorVisible(p.pikeador),p.total_productos,p.total_unidades,p.status]),
     theme:'grid',
     styles:{fontSize:7.5,cellPadding:1.8,overflow:'linebreak',valign:'middle'},
     headStyles:{fillColor:[15,118,110],textColor:255,fontStyle:'bold'},
@@ -1887,7 +2130,7 @@ function pdfPedidoA4(){
   d.setFont('helvetica','normal'); d.setFontSize(9); d.text('Generado: '+new Date().toLocaleString('es-CL'),105,33,{align:'center'});
   d.setDrawColor(210); d.roundedRect(14,38,182,42,2,2);
   d.setFontSize(9);
-  infoLine(d,18,46,'Pedido',p.pedido); infoLine(d,75,46,'Fecha',p.fecha||'-'); infoLine(d,132,46,'Estado',p.status||'-');
+  infoLine(d,18,46,'Pedido',p.pedido); infoLine(d,75,46,'Fecha',fechaVisiblePedido(p.fecha)||'-'); infoLine(d,132,46,'Estado',p.status||'-');
   infoLine(d,18,55,'Cliente',p.cliente||'-'); infoLine(d,105,55,'Vendedor',p.vendedor||'-');
   infoLine(d,18,64,'Pikeador',pikeadorVisible(p.pikeador)); infoLine(d,105,64,'Bodega',p.bodega_preparacion||'-');
   infoLine(d,18,73,'Total unidades',String(p.total_unidades||0));
@@ -1954,6 +2197,12 @@ function esPedidoProcesado(p){ return ['TERMINADO','DESPACHADO','RECIBIDO'].incl
 function fechaHoraValida(v){
   v=String(v||'').trim();
   if(!v) return null;
+  const serial=Number(v.replace(',','.'));
+  if(Number.isFinite(serial) && serial>20000 && serial<90000){
+    const ms=Math.round(serial*86400000);
+    const d=new Date(Date.UTC(1899,11,30)+ms);
+    return isNaN(d.getTime())?null:d;
+  }
   let d=null;
   const m=v.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})(?:\s+(\d{1,2}):(\d{2})(?::(\d{2}))?)?/);
   if(m) d=new Date(Number(m[3]),Number(m[2])-1,Number(m[1]),Number(m[4]||0),Number(m[5]||0),Number(m[6]||0));
@@ -2113,6 +2362,57 @@ function api(accion,params={}){
     document.body.appendChild(s);
   });
 }
+
+function apiPostIframe(accion,params={},timeoutMs=120000){
+  return new Promise((resolve,reject)=>{
+    const token='op_post_'+Date.now()+'_'+Math.floor(Math.random()*999999);
+    const iframe=document.createElement('iframe');
+    const form=document.createElement('form');
+    const input=document.createElement('textarea');
+    const frameName='frame_'+token;
+    let doneCalled=false;
+    let submitted=false;
+    let submittedAt=0;
+    iframe.name=frameName;
+    iframe.style.display='none';
+    iframe.onload=()=>{
+      if(!submitted || doneCalled) return;
+      if(Date.now()-submittedAt<500) return;
+      // Apps Script a veces no permite leer la respuesta del iframe/postMessage,
+      // pero el POST ya fue recibido. Se resuelve como pendiente y luego se verifica contra PEDIDOS.
+      setTimeout(()=>done(null,{ok:true,pendiente_verificacion:true,msg:'POST enviado; verificación contra PEDIDOS pendiente'}),900);
+    };
+    form.method='POST';
+    form.action=API_URL;
+    form.target=frameName;
+    form.style.display='none';
+    input.name='data';
+    input.value=JSON.stringify(Object.assign({},params,{accion:accion,__iframe_post:1,__post_token:token}));
+    form.appendChild(input);
+    document.body.appendChild(iframe);
+    document.body.appendChild(form);
+    const timer=setTimeout(()=>done(new Error('Tiempo agotado enviando a Apps Script. Revisa publicación del Web App.')),timeoutMs);
+    function cleanup(){
+      clearTimeout(timer);
+      window.removeEventListener('message',onMsg);
+      setTimeout(()=>{try{form.remove();iframe.remove();}catch(e){}},200);
+    }
+    function done(err,data){
+      if(doneCalled) return;
+      doneCalled=true;
+      cleanup();
+      err?reject(err):resolve(data);
+    }
+    function onMsg(ev){
+      const msg=ev && ev.data;
+      if(!msg || typeof msg!=='object') return;
+      if(msg.source!=='orden_pedidos_post' || msg.token!==token) return;
+      done(null,msg.data||msg.result||msg);
+    }
+    window.addEventListener('message',onMsg);
+    try{submitted=true; submittedAt=Date.now(); form.submit();}catch(err){done(err);}
+  });
+}
 function errorTabla(m){ $('tbodyPedidos').innerHTML=`<tr><td colspan="13" style="padding:28px;text-align:center;color:#991b1b">${esc(m)}</td></tr>`; }
 function badgeEstado(s){
   s=String(s||'PENDIENTE').toUpperCase(); let c='pendiente';
@@ -2122,11 +2422,35 @@ function badgeEstado(s){
 function badgeAlerta(p){ return p.alerta_token?`<span class="badge alerta">${esc(p.alerta_tipo||'ALERTA')}</span>`:'<span style="color:#94a3b8">Sin alerta</span>'; }
 function setStatus(t){ if($('statusLine')) $('statusLine').textContent=t; }
 function toast(m){ const e=$('toast'); if(!e)return alert(m); e.textContent=m; e.classList.add('show'); setTimeout(()=>e.classList.remove('show'),4200); }
-function mensajePedidoTerminado(p){
+function datosPedidoParaVoz(p, extra){
   p = p || {};
-  const pedido = String(p.pedido || '').trim();
-  const cliente = String(p.cliente || '').trim();
-  return 'Pedido terminado' + (pedido ? ', pedido ' + pedido : '') + (cliente ? ', cliente ' + cliente : '');
+  extra = extra || {};
+  return {
+    pedido: String(extra.pedido || p.pedido || '').trim(),
+    cliente: String(extra.cliente || p.cliente || '').trim(),
+    vendedor: String(extra.vendedor || p.vendedor || p.vendedor_asociado || '').trim(),
+    pikeador: String(extra.pikeador || p.pikeador || '').trim(),
+    status: String(extra.status || extra.estado || p.status || p.estado || '').trim().toUpperCase()
+  };
+}
+function mensajeEstadoPedido(p, estado, extra){
+  const d = datosPedidoParaVoz(p, Object.assign({}, extra || {}, {status: estado || (extra && (extra.status || extra.estado))}));
+  const estadoTxt = d.status || 'ACTUALIZADO';
+  const terminado = estadoTxt === 'TERMINADO';
+  const partes = [];
+  if(terminado) partes.push('Pedido terminado');
+  else partes.push('Pedido cambió a estado ' + estadoTxt);
+  partes.push(d.pedido ? 'número de pedido ' + d.pedido : 'número de pedido sin registrar');
+  partes.push(d.cliente ? 'cliente ' + d.cliente : 'cliente sin registrar');
+  if(terminado){
+    partes.push(d.vendedor ? 'vendedor asociado ' + d.vendedor : 'vendedor sin registrar');
+  }else{
+    partes.push(d.pikeador ? 'pikeador asignado ' + d.pikeador : 'pikeador sin asignar');
+  }
+  return partes.join(', ');
+}
+function mensajePedidoTerminado(p, extra){
+  return mensajeEstadoPedido(p, 'TERMINADO', extra);
 }
 function voz(t){ try{const u=new SpeechSynthesisUtterance(t);u.lang='es-CL';speechSynthesis.cancel();speechSynthesis.speak(u);}catch(e){} }
 function pick(r,i,f){return (i == null || i < 0 || !Array.isArray(r) || i >= r.length || r[i] == null || String(r[i]).trim()==='') ? f : String(r[i]).trim();}

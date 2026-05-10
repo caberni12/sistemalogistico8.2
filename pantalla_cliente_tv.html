@@ -28,7 +28,7 @@
     .controls button{position:relative;display:inline-flex;align-items:center;justify-content:center;gap:8px;background:linear-gradient(135deg,var(--pri),var(--blue));border:0;cursor:pointer;white-space:nowrap;color:#fff;box-shadow:0 10px 24px rgba(37,99,235,.18);transition:transform .15s ease,filter .15s ease,box-shadow .15s ease}.controls button:hover{filter:brightness(1.04);transform:translateY(-1px)}.controls button:active{transform:translateY(0)}.controls button.secondary{background:#e2e8f0;color:#0f172a;box-shadow:0 8px 20px rgba(15,23,42,.08)}.controls button.voice-on{background:linear-gradient(135deg,#22c55e,#14b8a6);color:#fff}.controls button.voice-off{background:#cbd5e1;color:#0f172a}.controls button.is-loading{pointer-events:none;color:transparent!important;filter:saturate(.85)}.controls button.is-loading::after{content:"";position:absolute;width:20px;height:20px;border:3px solid rgba(255,255,255,.55);border-top-color:#fff;border-radius:50%;animation:spin .75s linear infinite}.controls button.secondary.is-loading::after,.controls button.voice-off.is-loading::after{border-color:rgba(15,23,42,.20);border-top-color:#0f172a}.controls button:disabled{opacity:.82;cursor:wait}
     .stats{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px}.stat{background:rgba(255,255,255,.90);border:1px solid var(--line);border-radius:20px;padding:12px 14px;min-width:0;box-shadow:0 10px 28px rgba(15,23,42,.07)}.stat .l{font-size:12px;color:#64748b;font-weight:900;text-transform:uppercase;letter-spacing:.06em}.stat .v{font-size:clamp(22px,2.2vw,36px);font-weight:1000;margin-top:4px;line-height:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:#0f172a}
     .board{min-height:0;overflow:auto;padding:2px 3px 24px;scrollbar-width:thin;scrollbar-color:#cbd5e1 transparent}.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:14px}.pedido-card{position:relative;overflow:hidden;background:linear-gradient(180deg,#ffffff 0%,#f8fafc 100%);color:#0f172a;border:1px solid rgba(203,213,225,.95);border-radius:28px;padding:18px;box-shadow:0 18px 42px rgba(15,23,42,.12);min-height:252px;display:flex;flex-direction:column;justify-content:space-between}.pedido-card:before{content:"";position:absolute;left:0;top:0;bottom:0;width:9px;background:var(--warn)}.pedido-card.preparacion:before{background:var(--blue)}.pedido-card.recibido:before,.pedido-card.despachado:before,.pedido-card.en-ruta:before{background:var(--purple)}.pedido-card.terminado:before{background:var(--ok)}.pedido-card.cancelado:before{background:var(--danger)}
-    .card-head{display:flex;justify-content:space-between;gap:10px;align-items:flex-start}.pedido{font-size:clamp(26px,2.5vw,42px);font-weight:1000;letter-spacing:-.05em;line-height:.95}.badge{border-radius:999px;padding:8px 12px;font-size:13px;font-weight:1000;color:white;background:#92400e;white-space:nowrap}.badge.preparacion{background:#1d4ed8}.badge.recibido,.badge.despachado,.badge.en-ruta{background:#7c3aed}.badge.terminado{background:#16a34a}.badge.cancelado{background:#dc2626}.cliente{font-size:clamp(17px,1.45vw,24px);font-weight:1000;margin-top:12px;line-height:1.1}.meta{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:14px}.box{background:#eef4fb;border:1px solid #dbe4ef;border-radius:16px;padding:10px;min-width:0}.box .l{font-size:11px;color:#64748b;font-weight:1000;text-transform:uppercase;letter-spacing:.04em}.box .v{font-size:15px;font-weight:1000;margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.progress{height:15px;background:#e2e8f0;border-radius:999px;overflow:hidden;margin-top:15px}.bar{height:100%;background:linear-gradient(90deg,var(--pri),var(--blue));width:0%;transition:width .25s ease}.foot{display:flex;justify-content:space-between;gap:10px;align-items:center;margin-top:14px;color:#475569;font-weight:900;font-size:13px}.empty{height:50vh;display:grid;place-items:center;text-align:center;color:#334155}.empty h2{font-size:38px;margin:0 0 10px}.empty p{margin:0;color:#64748b}
+    .card-head{display:flex;justify-content:space-between;gap:10px;align-items:flex-start}.pedido{font-size:clamp(26px,2.5vw,42px);font-weight:1000;letter-spacing:-.05em;line-height:.95}.badge{border-radius:999px;padding:8px 12px;font-size:13px;font-weight:1000;color:white;background:#92400e;white-space:nowrap}.badge.preparacion{background:#1d4ed8}.badge.recibido,.badge.despachado,.badge.en-ruta{background:#7c3aed}.badge.terminado{background:#16a34a}.badge.cancelado{background:#dc2626}.cliente{font-size:clamp(17px,1.45vw,24px);font-weight:1000;margin-top:12px;line-height:1.1}.meta{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:14px}.box{background:#eef4fb;border:1px solid #dbe4ef;border-radius:16px;padding:10px;min-width:0}.box .l{font-size:11px;color:#64748b;font-weight:1000;text-transform:uppercase;letter-spacing:.04em}.box .v{font-size:15px;font-weight:1000;margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.progress{height:15px;background:#e2e8f0;border-radius:999px;overflow:hidden;margin-top:15px}.bar{height:100%;background:linear-gradient(90deg,var(--pri),var(--blue));width:0%;transition:width .25s ease}.foot{display:flex;justify-content:space-between;gap:10px;align-items:center;margin-top:14px;color:#475569;font-weight:900;font-size:13px}.empty{height:50vh;display:grid;place-items:center;text-align:center;color:#334155}.empty h2{font-size:38px;margin:0 0 10px}.empty p{margin:0;color:#64748b}.card-actions{display:flex;justify-content:flex-end;gap:10px;margin-top:12px;flex-wrap:wrap}.btn-segundo{position:relative;border:0;border-radius:14px;background:linear-gradient(135deg,#16a34a,#059669);color:#fff;font-weight:1000;padding:10px 14px;cursor:pointer;box-shadow:0 10px 22px rgba(22,163,74,.22);white-space:nowrap}.btn-segundo:hover{filter:brightness(1.05);transform:translateY(-1px)}.btn-segundo:active{transform:translateY(0)}.btn-segundo.is-loading{pointer-events:none;color:transparent!important;filter:saturate(.85)}.btn-segundo.is-loading::after{content:"";position:absolute;left:50%;top:50%;width:18px;height:18px;margin-left:-9px;margin-top:-9px;border:3px solid rgba(255,255,255,.55);border-top-color:#fff;border-radius:50%;animation:spin .75s linear infinite}
     .popup{position:fixed;inset:0;background:rgba(15,23,42,.45);display:none;align-items:center;justify-content:center;z-index:50;padding:24px;backdrop-filter:blur(8px)}.popup.show{display:flex}.popup-card{width:min(920px,96vw);background:linear-gradient(135deg,#dcfce7 0%,#ffffff 52%,#e0f2fe 100%);color:#064e3b;border-radius:42px;padding:36px;text-align:center;box-shadow:0 35px 110px rgba(15,23,42,.30);border:3px solid rgba(34,197,94,.38);animation:pop .22s ease-out}.popup-icon{width:96px;height:96px;border-radius:36px;background:linear-gradient(135deg,#22c55e,#14b8a6);color:white;display:grid;place-items:center;margin:0 auto 16px;font-size:48px;font-weight:1000}.popup-title{font-size:clamp(36px,5vw,76px);font-weight:1000;line-height:.95;letter-spacing:-.06em}.popup-info{margin-top:20px;display:grid;grid-template-columns:repeat(3,1fr);gap:12px}.popup-info .box{background:rgba(255,255,255,.72);border-color:#bbf7d0}.popup-info .box .v{font-size:clamp(20px,2vw,32px);color:#0f172a}.toast{position:fixed;right:18px;bottom:18px;background:#ffffff;color:#0f172a;border:1px solid var(--line);border-radius:16px;padding:12px 14px;box-shadow:var(--shadow);display:none;z-index:70;font-weight:800}.toast.show{display:block}@keyframes pop{from{transform:scale(.92);opacity:.2}to{transform:scale(1);opacity:1}}@keyframes spin{to{transform:rotate(360deg)}}
     @media (min-width:1500px){.grid{grid-template-columns:repeat(4,minmax(0,1fr));gap:18px}.pedido-card{min-height:286px}.meta{gap:10px}.box{padding:12px}.box .v{font-size:17px}}
     @media (max-width:920px){body{overflow:auto}.tv-shell{height:auto;min-height:100%;padding:10px}.topbar{border-radius:20px;align-items:flex-start}.controls{grid-template-columns:1fr 1fr}.controls button{width:100%}.stats{grid-template-columns:repeat(2,1fr)}.board{overflow:visible}.grid{grid-template-columns:1fr}.popup-info{grid-template-columns:1fr}.pedido-card{min-height:0}.meta{grid-template-columns:1fr}}
@@ -114,7 +114,7 @@
   <div class="popup" id="popupTerminado">
     <div class="popup-card">
       <div class="popup-icon">✓</div>
-      <div class="popup-title">PEDIDO TERMINADO</div>
+      <div class="popup-title" id="popupTitle">PEDIDO TERMINADO</div>
       <div class="popup-info">
         <div class="box"><div class="l">Pedido</div><div class="v" id="popPedido">-</div></div>
         <div class="box"><div class="l">Cliente</div><div class="v" id="popCliente">-</div></div>
@@ -125,7 +125,7 @@
   <div class="toast" id="toast"></div>
 
 <script>
-const API_URL = 'https://script.google.com/macros/s/AKfycbyHM9r8WQ9m6-Hacd63TVhTBMac23SD9jhz7Qu4ORdmSzrHd0SAC1H7_13ogKJAWu6z8g/exec';
+const API_URL = 'https://script.google.com/macros/s/AKfycbxN9OrEY-1VvKVr_aZ8C-to9VCyjG9kc27DU-MssF1Qr7A0Zjsd6frfg4XDsPlaanFWZg/exec';
 const STORAGE_STATUS = 'pantalla_tv_cliente_estado_pedidos_v1';
 const STORAGE_VOICE = 'pantalla_tv_cliente_voz_activa_v1';
 const $ = id => document.getElementById(id);
@@ -135,6 +135,9 @@ let pedidos = [];
 let lastStatus = loadStatusMap();
 let initialized = false;
 let vozActiva = localStorage.getItem(STORAGE_VOICE) !== '0';
+let vozDesbloqueada = false;
+let ultimoMensajeVoz = '';
+let ultimoMensajeVozTs = 0;
 let timer = null;
 let popupTimer = null;
 let sincronizando = false;
@@ -148,8 +151,17 @@ window.addEventListener('DOMContentLoaded', () => {
   $('btnActualizar').addEventListener('click', () => cargarPedidos($('btnActualizar')));
   $('btnVoz').addEventListener('click', toggleVoz);
   $('btnPantalla').addEventListener('click', pantallaCompleta);
+  ['click','touchstart','keydown'].forEach(evt => {
+    document.addEventListener(evt, desbloquearVoz, {passive:true});
+  });
   $('txtFiltro').addEventListener('input', render);
   $('selEstado').addEventListener('change', render);
+  $('gridPedidos').addEventListener('click', e => {
+    const btn = e.target.closest('.btn-segundo');
+    if(!btn) return;
+    e.preventDefault();
+    segundoLlamadoPedido(btn.dataset.pedido || '', btn);
+  });
   setInterval(reloj, 1000);
   reloj();
   cargarPedidos();
@@ -199,6 +211,21 @@ async function cargarPedidos(btn){
   }
 }
 
+
+function fechaVisiblePedido(valor){
+  let v = String(valor == null ? '' : valor).trim();
+  if(!v) return '';
+  if(v.startsWith("'")) v = v.slice(1).trim();
+  const n = Number(v.replace(',', '.'));
+  if(Number.isFinite(n) && n > 20000 && n < 90000){
+    const d = new Date(Date.UTC(1899, 11, 30) + Math.round(n * 86400000));
+    return `${String(d.getUTCDate()).padStart(2,'0')}-${String(d.getUTCMonth()+1).padStart(2,'0')}-${d.getUTCFullYear()}`;
+  }
+  const m = v.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/);
+  if(m) return `${String(+m[3]).padStart(2,'0')}-${String(+m[2]).padStart(2,'0')}-${m[1]}`;
+  return v;
+}
+
 function normalizarPedido(p){
   const status = estadoSeguro(p.status || p.estado || 'PENDIENTE');
   const totalProductos = Number(p.total_productos || (Array.isArray(p.productos) ? p.productos.length : 0) || 0);
@@ -211,7 +238,7 @@ function normalizarPedido(p){
     vendedor:String(p.vendedor || p.responsable || '').trim(),
     pikeador:String(p.pikeador || p.picker || '').trim(),
     status,
-    fecha:String(p.fecha || '').trim(),
+    fecha:fechaVisiblePedido(p.fecha || ''),
     hora_inicio:String(p.hora_inicio || p.inicio_preparacion || '').trim(),
     hora_termino:String(p.hora_termino || p.termino_preparacion || '').trim(),
     total_productos:totalProductos,
@@ -236,14 +263,54 @@ function detectarTerminados(lista){
 }
 
 function avisarTerminado(p){
+  const title = $('popupTitle');
+  if(title) title.textContent = 'PEDIDO TERMINADO';
   $('popPedido').textContent = p.pedido || '-';
   $('popCliente').textContent = p.cliente || '-';
   $('popVendedor').textContent = p.vendedor || '-';
   $('popupTerminado').classList.add('show');
   clearTimeout(popupTimer);
   popupTimer = setTimeout(() => $('popupTerminado').classList.remove('show'), 9000);
-  const texto = `Pedido terminado, número de pedido ${p.pedido || 'sin número'}, cliente ${p.cliente || 'sin cliente'}, vendedor asociado ${p.vendedor || 'sin vendedor asignado'}.`;
-  hablar(texto);
+  hablar(mensajeVozTerminado(p), {motivo:'terminado', reintentos:3, mostrarAviso:true});
+}
+
+function mensajeVozTerminado(p){
+  const pedido = p && p.pedido ? p.pedido : 'sin número';
+  const cliente = p && p.cliente ? p.cliente : 'sin cliente';
+  const vendedor = p && p.vendedor ? p.vendedor : 'sin vendedor asignado';
+  return `Pedido terminado, número de pedido ${pedido}, cliente ${cliente}, vendedor asociado ${vendedor}.`;
+}
+
+function mensajeVozSegundoLlamado(p){
+  const pedido = p && p.pedido ? p.pedido : 'sin número';
+  const cliente = p && p.cliente ? p.cliente : 'sin cliente';
+  const vendedor = p && p.vendedor ? p.vendedor : 'sin vendedor asignado';
+  const estado = estadoSeguro(p && p.status);
+  if(estado === 'TERMINADO'){
+    return `Segundo llamado. Pedido terminado, número de pedido ${pedido}, cliente ${cliente}, vendedor asociado ${vendedor}. Favor acercarse a retirar su pedido.`;
+  }
+  return `Segundo llamado. Número de pedido ${pedido}, cliente ${cliente}, estado ${estado}, vendedor asociado ${vendedor}.`;
+}
+
+function segundoLlamadoPedido(pedidoId, btn){
+  const pedidoTxt = String(pedidoId || '').trim();
+  const p = pedidos.find(x => String(x.pedido || '').trim() === pedidoTxt) || null;
+  if(!p){
+    toast('No se encontró el pedido para realizar el segundo llamado.');
+    return;
+  }
+  setButtonLoading(btn, true);
+  const title = $('popupTitle');
+  if(title) title.textContent = 'SEGUNDO LLAMADO';
+  $('popPedido').textContent = p.pedido || '-';
+  $('popCliente').textContent = p.cliente || '-';
+  $('popVendedor').textContent = p.vendedor || '-';
+  $('popupTerminado').classList.add('show');
+  clearTimeout(popupTimer);
+  popupTimer = setTimeout(() => $('popupTerminado').classList.remove('show'), 9000);
+  hablar(mensajeVozSegundoLlamado(p), {motivo:'segundo_llamado', reintentos:3, mostrarAviso:true, forzar:true});
+  toast(`Segundo llamado enviado para pedido ${p.pedido || '-'}.`);
+  setTimeout(() => setButtonLoading(btn, false), 900);
 }
 
 function render(){
@@ -284,6 +351,7 @@ function cardPedido(p){
         <div class="box"><div class="l">Unidades</div><div class="v">${esc(p.total_unidades || 0)}</div></div>
       </div>
       <div class="progress"><div class="bar" style="width:${avance}%"></div></div>
+      <div class="card-actions"><button type="button" class="btn-segundo" data-pedido="${esc(p.pedido)}">Segundo llamado</button></div>
     </div>
     <div class="foot">
       <span>Avance ${avance}%</span>
@@ -292,18 +360,77 @@ function cardPedido(p){
   </article>`;
 }
 
-function hablar(texto){
-  if(!vozActiva || !('speechSynthesis' in window)) return;
+function desbloquearVoz(){
+  if(!('speechSynthesis' in window)) return;
   try{
-    window.speechSynthesis.cancel();
-    const u = new SpeechSynthesisUtterance(texto);
-    u.lang = 'es-CL';
-    u.rate = 0.92;
-    u.pitch = 1;
-    u.volume = 1;
-    window.speechSynthesis.speak(u);
-  }catch(e){ toast('El navegador bloqueó la voz. Presiona “Voz activa”.'); }
+    window.speechSynthesis.resume();
+    vozDesbloqueada = true;
+  }catch(e){}
 }
+
+function seleccionarVozEspanol(){
+  if(!('speechSynthesis' in window)) return null;
+  const voces = window.speechSynthesis.getVoices ? window.speechSynthesis.getVoices() : [];
+  return voces.find(v => /^es[-_]?CL/i.test(v.lang))
+      || voces.find(v => /^es[-_]?/i.test(v.lang))
+      || voces.find(v => /spanish|español/i.test(v.name || ''))
+      || null;
+}
+
+function hablar(texto, opciones = {}){
+  if(!texto) return false;
+  if(!vozActiva){
+    if(opciones.mostrarAviso) toast('Voz apagada. Presiona “Voz apagada” para activar avisos.');
+    return false;
+  }
+  if(!('speechSynthesis' in window)){
+    if(opciones.mostrarAviso) toast('Este navegador no permite voz automática.');
+    return false;
+  }
+  const ahora = Date.now();
+  if(!opciones.forzar && texto === ultimoMensajeVoz && ahora - ultimoMensajeVozTs < 2500) return true;
+  ultimoMensajeVoz = texto;
+  ultimoMensajeVozTs = ahora;
+
+  const reintentos = Number.isFinite(opciones.reintentos) ? opciones.reintentos : 1;
+  const ejecutar = (intento = 0) => {
+    try{
+      const synth = window.speechSynthesis;
+      synth.resume();
+      synth.cancel();
+      const u = new SpeechSynthesisUtterance(texto);
+      const voz = seleccionarVozEspanol();
+      if(voz) u.voice = voz;
+      u.lang = (voz && voz.lang) || 'es-CL';
+      u.rate = 0.9;
+      u.pitch = 1;
+      u.volume = 1;
+      u.onerror = () => {
+        if(intento < reintentos){
+          setTimeout(() => ejecutar(intento + 1), 650);
+        }else if(opciones.mostrarAviso){
+          toast('El navegador bloqueó la voz. Presiona “Voz activa” una vez para habilitar audio.');
+        }
+      };
+      synth.speak(u);
+      setTimeout(() => {
+        if(!synth.speaking && !synth.pending && intento < reintentos){
+          ejecutar(intento + 1);
+        }
+      }, 450);
+      return true;
+    }catch(e){
+      if(intento < reintentos){
+        setTimeout(() => ejecutar(intento + 1), 650);
+      }else if(opciones.mostrarAviso){
+        toast('El navegador bloqueó la voz. Presiona “Voz activa” una vez para habilitar audio.');
+      }
+      return false;
+    }
+  };
+  return ejecutar(0);
+}
+
 function toggleVoz(){
   const btn = $('btnVoz');
   vozActiva = !vozActiva;
@@ -311,7 +438,8 @@ function toggleVoz(){
   updateVoiceButton();
   setButtonLoading(btn, true);
   setTimeout(() => setButtonLoading(btn, false), 520);
-  if(vozActiva) hablar('Voz activada para avisos de pedidos terminados.');
+  desbloquearVoz();
+  if(vozActiva) hablar('Voz activada para avisos de pedidos terminados.', {motivo:'prueba', reintentos:2, mostrarAviso:true});
 }
 function updateVoiceButton(){
   const btn = $('btnVoz');

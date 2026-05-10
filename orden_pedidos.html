@@ -8,7 +8,7 @@ button{position:relative;display:inline-flex;align-items:center;justify-content:
 button.btn-loading,button[aria-busy="true"]{pointer-events:none;opacity:.82;padding-right:34px!important;filter:saturate(.9);}
 button.btn-loading::after,button[aria-busy="true"]::after{content:"";position:absolute;right:10px;top:50%;width:15px;height:15px;margin-top:-7.5px;border:3px solid rgba(255,255,255,.95);border-top-color:transparent;border-radius:50%;animation:btnSpin .75s linear infinite;}
 button.secondary.btn-loading::after,button.secondary[aria-busy="true"]::after{border-color:rgba(15,23,42,.85);border-top-color:transparent;}
-@keyframes btnSpin{to{transform:rotate(360deg)}}.btn-link{display:inline-flex;align-items:center;justify-content:center;text-decoration:none;padding:10px 12px;border-radius:10px;background:#e2e8f0;color:#0f172a;font-weight:700;border:0;min-height:40px}.btn-link:hover{background:#cbd5e1}.estado-import{display:inline-flex;align-items:center;gap:5px;border-radius:999px;padding:4px 9px;font-weight:800;font-size:11px}.estado-nuevo{background:#dbeafe;color:#1e40af}.estado-cambio{background:#fef3c7;color:#92400e}.estado-igual{background:#dcfce7;color:#166534}.estado-error{background:#fee2e2;color:#991b1b}.changes-list{font-size:11px;color:#475569;max-width:220px;white-space:normal}
+@keyframes btnSpin{to{transform:rotate(360deg)}}.btn-link{display:inline-flex;align-items:center;justify-content:center;text-decoration:none;padding:10px 12px;border-radius:10px;background:#e2e8f0;color:#0f172a;font-weight:700;border:0;min-height:40px}.btn-link:hover{background:#cbd5e1}.estado-import{display:inline-flex;align-items:center;gap:5px;border-radius:999px;padding:4px 9px;font-weight:800;font-size:11px}.estado-nuevo{background:#dbeafe;color:#1e40af}.estado-cambio{background:#fef3c7;color:#92400e}.estado-igual{background:#dcfce7;color:#166534}.estado-error{background:#fee2e2;color:#991b1b}.changes-list{font-size:11px;color:#475569;max-width:220px;white-space:normal}.import-row-error td{background:#fee2e2!important;color:#7f1d1d!important;border-bottom-color:#fecaca!important}.import-row-error .changes-list{color:#991b1b!important;font-weight:800}.import-failed{margin:12px 0;border:1px solid #fecaca;background:#fff1f2;border-radius:14px;padding:12px}.import-failed h4{margin:0 0 8px;color:#991b1b;font-size:14px}.import-failed .hint-error{font-size:12px;color:#7f1d1d;margin-bottom:8px}.import-failed-table{max-height:220px;overflow:auto;border:1px solid #fecaca;border-radius:12px;background:#fff}.import-failed-table table{min-width:980px}.import-failed-table th{background:#fee2e2;color:#7f1d1d}
 /* ================= PROGRESO IMPORTADOR XLSX ================= */
 .import-progress{margin:12px 0 14px;background:#f8fafc;border:1px solid #dbe3ef;border-radius:14px;padding:12px;box-shadow:inset 0 1px 0 rgba(255,255,255,.75)}
 .import-progress-head{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:8px;font-size:13px;font-weight:800;color:#0f172a}
@@ -18,6 +18,13 @@ button.secondary.btn-loading::after,button.secondary[aria-busy="true"]::after{bo
 .import-progress-detail{font-size:12px;color:#64748b;margin-top:7px;line-height:1.35}
 .import-progress.ok .import-progress-fill{background:linear-gradient(90deg,#16a34a,#22c55e)}
 .import-progress.error .import-progress-fill{background:linear-gradient(90deg,#dc2626,#ef4444)}
+.import-final{margin:12px 0 14px;border:1px solid #dbe3ef;border-radius:14px;background:#fff;padding:12px;box-shadow:0 8px 22px rgba(15,23,42,.07)}
+.import-final h3{margin:0 0 10px;font-size:15px;color:#0f172a}
+.import-final-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-bottom:8px}
+.import-check{display:flex;align-items:center;gap:8px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:12px;padding:9px 10px;font-size:12px;font-weight:800;color:#334155}
+.import-check .ico{font-size:17px;line-height:1}.import-final-msg{font-size:12px;color:#475569;line-height:1.45}
+@media(max-width:700px){.import-final-grid{grid-template-columns:1fr}}
+
 
 /* ================= MODAL PEDIDO MANUAL ================= */
 .manual-products{max-height:260px;overflow:auto;border:1px solid #e2e8f0;border-radius:14px;background:#fff;margin-top:10px}
@@ -156,7 +163,7 @@ button.secondary.btn-loading::after,button.secondary[aria-busy="true"]::after{bo
     <div class="modal-head">
       <div>
         <h2>Importar listado de pedidos</h2>
-        <div class="status-line">Carga la plantilla XLSX, valida contra la hoja PEDIDOS y envía solo nuevos productos o campos modificados.</div>
+        <div class="status-line">Carga la plantilla XLSX, valida contra la base de datos PEDIDOS y envía solo nuevos productos o campos modificados.</div>
       </div>
       <button id="btnCerrarImportar" class="close">×</button>
     </div>
@@ -164,11 +171,12 @@ button.secondary.btn-loading::after,button.secondary[aria-busy="true"]::after{bo
       <div class="toolbar" style="margin-bottom:12px">
         <div class="field span-3"><label>Archivo Excel/CSV</label><input id="fileImportar" type="file" accept=".xlsx,.xls,.csv"></div>
         <div class="field span-2"><label>Estado por defecto</label><select id="impStatus"><option>PENDIENTE</option><option>PREPARACION</option><option>RECIBIDO</option><option>DESPACHADO</option><option>TERMINADO</option><option>CANCELADO</option></select></div>
-        <div class="field span-3"><label>Pikeador por defecto</label><select id="impPikeador"><option value="">Sin asignar</option></select></div>
+        <div class="field span-2"><label>Pikeador por defecto</label><select id="impPikeador"><option value="">Sin asignar</option></select></div>
+        <div class="field span-2"><label>Bodega por defecto</label><select id="impBodega"><option value="">Sin bodega</option></select></div>
         <div class="field span-2"><label>Fecha por defecto</label><input id="impFecha" type="date"></div>
         <a class="btn-link span-2 secondary" href="Plantilla_Importar_Pedidos_Ergonomica.xlsx" download>📘 Descargar plantilla XLSX</a><button id="btnProcesarImport" class="span-2 info">👁️ Validar y previsualizar</button>
       </div>
-      <div class="hint">Formato recomendado: descarga la plantilla XLSX. El sistema valida contra PEDIDOS: si existe PEDIDO + CÓDIGO actualiza solo campos cambiados; si no existe, agrega la línea; si está igual, no duplica.</div>
+      <div class="hint">Formato recomendado: descarga la plantilla XLSX. El sistema valida contra la base de datos PEDIDOS. La columna BODEGA_PREPARACION se guarda como bodega donde se prepara el pedido; UBICACION queda para la ubicación del producto. Si existe PEDIDO + CÓDIGO actualiza solo campos cambiados; si no existe, agrega la línea; si está igual, no duplica.</div>
       <div id="importProgress" class="import-progress" aria-live="polite">
         <div class="import-progress-head">
           <span id="importProgressMsg">Esperando archivo para importar</span>
@@ -179,6 +187,26 @@ button.secondary.btn-loading::after,button.secondary[aria-busy="true"]::after{bo
         </div>
         <div id="importProgressDetail" class="import-progress-detail">Selecciona un XLSX/CSV y presiona Validar y previsualizar.</div>
       </div>
+      <div id="importFinalBox" class="import-final hidden" aria-live="polite">
+        <h3 id="importFinalTitle">Resultado de importación</h3>
+        <div class="import-final-grid">
+          <div class="import-check"><span id="chkImportConexion" class="ico">⏳</span><span>Conexión con base de datos</span></div>
+          <div class="import-check"><span id="chkImportEnvio" class="ico">⏳</span><span>Envío de registros</span></div>
+          <div class="import-check"><span id="chkImportVerificacion" class="ico">⏳</span><span>Verificación en base de datos</span></div>
+          <div class="import-check"><span id="chkImportFinal" class="ico">⏳</span><span>Finalización del proceso</span></div>
+        </div>
+        <div id="importFinalMsg" class="import-final-msg">El resultado aparecerá al finalizar el envío.</div>
+        <div id="importFailedBox" class="import-failed hidden">
+          <h4>Registros con falla detectada</h4>
+          <div class="hint-error">Estas filas no fueron verificadas en la base de datos. Corrige los datos marcados en rojo y vuelve a enviar la importación.</div>
+          <div class="import-failed-table">
+            <table>
+              <thead><tr><th>#</th><th>Fila archivo</th><th>Pedido</th><th>Cliente</th><th>Bodega</th><th>Código</th><th>Descripción</th><th>Ubicación</th><th>Cantidad</th><th>Motivo</th></tr></thead>
+              <tbody id="tbodyImportFallidos"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
       <div class="import-summary">
         <div class="box">Pedidos detectados<b id="impPedidos">0</b></div>
         <div class="box">Filas/productos<b id="impFilas">0</b></div>
@@ -187,8 +215,8 @@ button.secondary.btn-loading::after,button.secondary[aria-busy="true"]::after{bo
       </div>
       <div class="import-preview">
         <table>
-          <thead><tr><th>#</th><th>Validación</th><th>Cambios detectados</th><th>Fecha</th><th>Pedido</th><th>Cliente</th><th>Pikeador</th><th>Código</th><th>Descripción</th><th>Ubicación</th><th>Cantidad</th><th>Estado</th></tr></thead>
-          <tbody id="tbodyImportar"><tr><td colspan="12" style="text-align:center;color:#64748b;padding:20px">Selecciona un archivo y presiona Previsualizar.</td></tr></tbody>
+          <thead><tr><th>#</th><th>Validación</th><th>Cambios detectados</th><th>Fecha</th><th>Pedido</th><th>Cliente</th><th>Vendedor</th><th>Pikeador</th><th>Bodega</th><th>Código</th><th>Descripción</th><th>Ubicación</th><th>Cantidad</th><th>Estado</th></tr></thead>
+          <tbody id="tbodyImportar"><tr><td colspan="14" style="text-align:center;color:#64748b;padding:20px">Selecciona un archivo y presiona Previsualizar.</td></tr></tbody>
         </table>
       </div>
       <div class="import-actions">
@@ -204,7 +232,7 @@ button.secondary.btn-loading::after,button.secondary[aria-busy="true"]::after{bo
     <div class="modal-head">
       <div>
         <h2>Crear Pedido</h2>
-        <div class="status-line">Ingresa los datos del pedido y agrega uno o más productos antes de guardar en la hoja PEDIDOS.</div>
+        <div class="status-line">Ingresa los datos del pedido y agrega uno o más productos antes de guardar en la base de datos PEDIDOS.</div>
       </div>
       <button id="btnCerrarManual" class="close">×</button>
     </div>

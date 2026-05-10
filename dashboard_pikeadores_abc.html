@@ -225,7 +225,7 @@
   <div class="toast" id="toast"></div>
 
 <script>
-const DEFAULT_API_URL = 'https://script.google.com/macros/s/AKfycbyHM9r8WQ9m6-Hacd63TVhTBMac23SD9jhz7Qu4ORdmSzrHd0SAC1H7_13ogKJAWu6z8g/exec';
+const DEFAULT_API_URL = 'https://script.google.com/macros/s/AKfycbxN9OrEY-1VvKVr_aZ8C-to9VCyjG9kc27DU-MssF1Qr7A0Zjsd6frfg4XDsPlaanFWZg/exec';
 const API_URL = DEFAULT_API_URL;
 const $ = id => document.getElementById(id);
 let pedidos = [];
@@ -301,18 +301,45 @@ async function cargarPedidos(btn){
   }
 }
 
+
+function fechaVisiblePedido(valor){
+  const original = valor;
+  let v = txt(valor);
+  if(!v) return '';
+  if(v.startsWith("'")) v = v.slice(1).trim();
+  const n = Number(v.replace(',', '.'));
+  if(Number.isFinite(n) && n > 20000 && n < 90000){
+    const d = new Date(Date.UTC(1899, 11, 30) + Math.round(n * 86400000));
+    const dd = String(d.getUTCDate()).padStart(2,'0');
+    const mm = String(d.getUTCMonth()+1).padStart(2,'0');
+    const yy = d.getUTCFullYear();
+    const frac = n - Math.floor(n);
+    if(frac > 0.0007){
+      const mins = Math.round(frac * 1440);
+      return `${dd}-${mm}-${yy} ${String(Math.floor(mins/60)%24).padStart(2,'0')}:${String(mins%60).padStart(2,'0')}`;
+    }
+    return `${dd}-${mm}-${yy}`;
+  }
+  let m = v.match(/^(\d{4})-(\d{1,2})-(\d{1,2})(?:[T\s](\d{1,2}):(\d{2})(?::\d{2})?)?/);
+  if(m) return `${String(+m[3]).padStart(2,'0')}-${String(+m[2]).padStart(2,'0')}-${m[1]}` + (m[4] ? ` ${String(+m[4]).padStart(2,'0')}:${m[5]}` : '');
+  m = v.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})(?:[T\s](\d{1,2}):(\d{2})(?::\d{2})?)?/);
+  if(m) return `${String(+m[1]).padStart(2,'0')}-${String(+m[2]).padStart(2,'0')}-${m[3]}` + (m[4] ? ` ${String(+m[4]).padStart(2,'0')}:${m[5]}` : '');
+  return txt(original);
+}
+function fechaHoraVisiblePedido(v){ return fechaVisiblePedido(v); }
+
 function normalizarLista(r){
   const base = Array.isArray(r.pedidos) ? r.pedidos : agruparDesdeTabla(r.headers || [], r.data || []);
   return base.map(p => {
     const productos = Array.isArray(p.productos) ? p.productos.map(normalizarProducto) : [];
     const totalProductos = Number(p.total_productos || productos.length || 0);
     const totalUnidades = Number(p.total_unidades || productos.reduce((s,x)=>s + x.cantidad,0) || 0);
-    const inicio = txt(p.hora_inicio || p.inicio_preparacion || p.fecha_inicio || '');
-    const termino = txt(p.hora_termino || p.termino_preparacion || p.fecha_termino || '');
+    const inicio = fechaHoraVisiblePedido(p.hora_inicio || p.inicio_preparacion || p.fecha_inicio || '');
+    const termino = fechaHoraVisiblePedido(p.hora_termino || p.termino_preparacion || p.fecha_termino || '');
     const min = minutosPreparacion(inicio, termino, p.tiempo_preparacion_min || p.minutos_preparacion || 0);
     return {
       pedido:txt(p.pedido || p.numero || ''),
-      fecha:txt(p.fecha || ''),
+      fecha:fechaVisiblePedido(p.fecha || ''),
       cliente:txt(p.cliente || ''),
       vendedor:txt(p.vendedor || p.responsable || ''),
       pikeador:limpiarPikeador(p.pikeador || p.picker || p.preparador || '', p.cliente || ''),
@@ -334,12 +361,12 @@ function agruparDesdeTabla(headers, data){
     const ped = cell(r, ix.pedido) || 'SIN_PEDIDO_' + (i+1);
     const key = normalKey(ped);
     if(!map[key]) map[key] = {
-      pedido:ped, fecha:cell(r,ix.fecha), cliente:cell(r,ix.cliente), vendedor:cell(r,ix.vendedor),
+      pedido:ped, fecha:fechaVisiblePedido(cell(r,ix.fecha)), cliente:cell(r,ix.cliente), vendedor:cell(r,ix.vendedor),
       pikeador:cell(r,ix.pikeador), status:cell(r,ix.status), hora_inicio:cell(r,ix.hora_inicio), hora_termino:cell(r,ix.hora_termino),
       tiempo_preparacion_min:Number(cell(r,ix.tiempo_preparacion_min) || 0), productos:[]
     };
     const p = map[key];
-    ['fecha','cliente','vendedor','pikeador','status','hora_inicio','hora_termino'].forEach(k => { const v = cell(r,ix[k]); if(v) p[k] = v; });
+    ['fecha','cliente','vendedor','pikeador','status','hora_inicio','hora_termino'].forEach(k => { const v = cell(r,ix[k]); if(v) p[k] = k === 'fecha' ? fechaVisiblePedido(v) : (k === 'hora_inicio' || k === 'hora_termino' ? fechaHoraVisiblePedido(v) : v); });
     const prod = normalizarProducto({codigo:cell(r,ix.codigo), descripcion:cell(r,ix.descripcion), ubicacion:cell(r,ix.ubicacion), cantidad:cell(r,ix.cantidad)});
     if(prod.codigo || prod.descripcion) p.productos.push(prod);
   });
@@ -778,6 +805,11 @@ function estadoSeguro(v, defecto='PENDIENTE'){
 }
 function parseFecha(v){
   v = txt(v); if(!v) return null;
+  const serial = Number(v.replace(',','.'));
+  if(Number.isFinite(serial) && serial > 20000 && serial < 90000){
+    const d = new Date(Date.UTC(1899,11,30) + Math.round(serial * 86400000));
+    return Number.isNaN(d.getTime()) ? null : d;
+  }
   let m = v.match(/^(\d{4})-(\d{1,2})-(\d{1,2})(?:[ T](\d{1,2}):(\d{2})(?::(\d{2}))?)?/);
   if(m) return new Date(+m[1], +m[2]-1, +m[3], +(m[4]||0), +(m[5]||0), +(m[6]||0));
   m = v.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})(?:[ T](\d{1,2}):(\d{2})(?::(\d{2}))?)?/);
