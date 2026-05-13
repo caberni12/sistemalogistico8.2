@@ -1,0 +1,8 @@
+CAMBIOS UBICACIONES - SINCRONIZACIÓN MANUAL
+
+- Se eliminó la carga automática de BD-MOVIMIENTO al abrir el módulo.
+- Se eliminó la sincronización automática de MAESTRA en segundo plano.
+- La BD de Ubicaciones/MOVIMIENTO sólo se consulta al presionar el botón Recargar.
+- Guardar, editar, eliminar e importar no vuelven a consultar la BD automáticamente.
+- Después de importar se informa que debe presionarse Recargar para ver la BD actualizada.
+- Se agregó mensaje de estado indicando que el módulo trabaja con sincronización manual.

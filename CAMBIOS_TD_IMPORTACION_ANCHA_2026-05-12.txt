@@ -1,0 +1,10 @@
+CAMBIOS TD IMPORTACIÓN ANCHA - 2026-05-12
+
+Se amplió la previsualización de importación de Ubicaciones:
+
+- Modal de previsualización con ancho hasta 1680px y 98.8vw.
+- Tabla de importación con ancho mínimo amplio para evitar TD angostos.
+- Scroll horizontal visible dentro del modal.
+- Columnas más anchas para observación, descripción y ubicación.
+- Encabezado fijo mientras se baja por la tabla.
+- En móvil la tabla de previsualización se mantiene como tabla con scroll horizontal para no comprimir datos.

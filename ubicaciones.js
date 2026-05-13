@@ -3,7 +3,7 @@ let CARD_STATE = {}; // idFila => true (expandida) | false (colapsada)
    CONFIGURACIÓN
 ===================================================== */
 const DEFAULT_URL_GS =
-  'https://script.google.com/macros/s/AKfycbxN9OrEY-1VvKVr_aZ8C-to9VCyjG9kc27DU-MssF1Qr7A0Zjsd6frfg4XDsPlaanFWZg/exec';
+  'https://script.google.com/macros/s/AKfycbxDPLaKDy5LqC9US-DQcCicPDIPb0XlxnPPA-y6N1AdDvbHZPxLzM0awD-NoFTcVk8Fkw/exec';
 
 function abrirDialogoImpresionPdf(doc,nombreArchivo){
   try{
@@ -24,6 +24,11 @@ let URL_GS = '';
 
 let DATA = [];
 let DATA_FILTRADA = [];
+let DATA_SEARCH = [];
+let timerFiltroUbicaciones = null;
+let ULTIMA_RECARGA_MANUAL = '';
+const SYNC_MANUAL_ONLY = true; // Ubicaciones sólo consulta la BD al presionar Recargar
+const RENDER_LIMIT_UBICACIONES = 700; // evita congelar el navegador con miles de nodos visibles
 let ORIGEN = /android|iphone|ipad|mobile/i.test(navigator.userAgent)
   ? 'MOBILE'
   : 'WEB';
@@ -104,7 +109,7 @@ function guardarConfiguracionUrl(){
     localStorage.removeItem(PRODUCT_CACHE_KEY);
     localStorage.removeItem(PRODUCT_CACHE_TS_KEY);
     PRODUCT_MAP = {};
-    precargarCatalogo(true);
+    estadoSincronizacionManual('URL actualizada. Presiona Recargar para consultar la BD; la MAESTRA sólo se sincroniza con su botón.');
   }
   if(status) status.textContent = 'Configuración guardada: ' + URL_GS;
   return true;
@@ -161,6 +166,42 @@ function escapeHtml(value){
     .replace(/>/g,'&gt;')
     .replace(/"/g,'&quot;')
     .replace(/'/g,'&#039;');
+}
+
+function normalizarBusqueda(value){
+  return String(value ?? '')
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[̀-ͯ]/g, '')
+    .trim();
+}
+
+function actualizarIndiceBusquedaUbicaciones(){
+  DATA_SEARCH = DATA.map(r => normalizarBusqueda((r || []).join(' ')));
+}
+
+function jsonAttr(value){
+  return escapeHtml(JSON.stringify(value));
+}
+
+function vistaMovilUbicaciones(){
+  return !!(window.matchMedia && window.matchMedia('(max-width: 820px)').matches);
+}
+
+function estadoSincronizacionManual(msg){
+  const texto = msg || 'Sin sincronización automática. Presiona Recargar para consultar BD-MOVIMIENTO.';
+  const targets = ['ubicacionesSyncStatus','statusUbicaciones','configStatus'];
+  for(const id of targets){
+    const el = $(id);
+    if(el){ el.textContent = texto; return; }
+  }
+  const cont = document.querySelector('.toolbar,.topbar,.actions,.header-actions,.panel-actions') || document.body;
+  if(!cont || document.getElementById('ubicacionesSyncStatus')) return;
+  const div = document.createElement('div');
+  div.id = 'ubicacionesSyncStatus';
+  div.className = 'sync-manual-status';
+  div.textContent = texto;
+  cont.appendChild(div);
 }
 
 /* ===== FECHA PARA TABLA / TARJETA ===== */
@@ -425,25 +466,38 @@ function selectProducto(c,d,stock){
 ===================================================== */
 function cargar(){
   startProgress();
-  fetch(`${URL_GS}?accion=listar`)
+  estadoSincronizacionManual('Recargando BD-MOVIMIENTO manualmente...');
+  return fetch(`${URL_GS}?accion=listar&t=${Date.now()}`, { cache:'no-store' })
     .then(r=>r.json())
     .then(d=>{
       DATA = d.data || [];
       DATA_FILTRADA = DATA;
+      actualizarIndiceBusquedaUbicaciones();
       renderTabla(DATA);
       endProgress();
+      ULTIMA_RECARGA_MANUAL = new Date().toLocaleString();
+      estadoSincronizacionManual(`BD-MOVIMIENTO cargada manualmente. Registros: ${DATA.length}. Última recarga: ${ULTIMA_RECARGA_MANUAL}`);
+      return DATA;
     })
     .catch(()=>{
       DATA = [];
       DATA_FILTRADA = [];
       renderTabla([]);
       endProgress();
+      estadoSincronizacionManual('No se pudo recargar BD-MOVIMIENTO. Revisa conexión o Apps Script.');
+      return DATA;
     });
 }
 
 function renderTabla(arr){
+  arr = Array.isArray(arr) ? arr : [];
   const tbody = $('tabla');
   const cards = $('cards');
+  if(!tbody || !cards) return;
+
+  const esMovil = vistaMovilUbicaciones();
+  const visibles = arr.slice(0, RENDER_LIMIT_UBICACIONES);
+  const quedanOcultas = Math.max(0, arr.length - visibles.length);
 
   tbody.innerHTML = '';
   cards.innerHTML = '';
@@ -458,74 +512,95 @@ function renderTabla(arr){
     return;
   }
 
-  arr.forEach(r=>{
-
-    /* ===== TABLA ESCRITORIO ===== */
-    tbody.innerHTML += `
-      <tr>
-        <td>${r[5]}</td>
-        <td>${r[6]}</td>
-        <td>${r[4]}</td>
-        <td>${r[7]}</td>
-        <td>${formatFechaTabla(r[1])}</td>
-        <td>${formatFechaTabla(r[2])}</td>
-        <td>${formatFechaTabla(r[3])}</td>
-        <td>${r[8]}</td>
-        <td>${r[9]}</td>
-        <td>${r[10]}</td>
+  if(!esMovil){
+    const html = visibles.map(r=>{
+      const id = String(r[0] ?? '');
+      return `
+      <tr class="fila-clickable" title="Clic para abrir detalle/edición" onclick='abrirFilaUbicacion(event, ${jsonAttr(r)})'>
+        <td>${escapeHtml(r[5])}</td>
+        <td>${escapeHtml(r[6])}</td>
+        <td>${escapeHtml(r[4])}</td>
+        <td>${escapeHtml(r[7])}</td>
+        <td>${escapeHtml(formatFechaTabla(r[1]))}</td>
+        <td>${escapeHtml(formatFechaTabla(r[2]))}</td>
+        <td>${escapeHtml(formatFechaTabla(r[3]))}</td>
+        <td>${escapeHtml(r[8])}</td>
+        <td>${escapeHtml(r[9])}</td>
+        <td>${escapeHtml(r[10])}</td>
         <td class="actions-td">
-          <button class="edit" onclick='editar(${JSON.stringify(r)})'>✏️</button>
-          <button class="del" onclick='eliminar("${r[0]}",this)'>🗑️</button>
+          <button class="edit" onclick='event.stopPropagation(); editar(${jsonAttr(r)})' title="Editar">✏️</button>
+          <button class="del" onclick='event.stopPropagation(); eliminar(${jsonAttr(id)},this)' title="Eliminar">🗑️</button>
         </td>
       </tr>`;
-/* ===== TARJETA MÓVIL ===== */
-const id = r[0];
-const open = CARD_STATE[id] === true;
+    }).join('');
 
-cards.innerHTML += `
-  <div class="card-item" data-id="${id}">
+    tbody.innerHTML = html + (quedanOcultas ? `
+      <tr>
+        <td colspan="11" style="text-align:center;padding:14px;color:#64748b;font-weight:800">
+          Vista optimizada: mostrando ${visibles.length} de ${arr.length} registros. Usa el buscador para reducir el resultado.
+        </td>
+      </tr>` : '');
+    return;
+  }
+
+  cards.innerHTML = visibles.map(r=>{
+    const id = String(r[0] ?? '');
+    const open = CARD_STATE[id] === true;
+    return `
+  <div class="card-item fila-clickable" data-id="${escapeHtml(id)}" title="Clic para abrir detalle/edición" onclick='abrirFilaUbicacion(event, ${jsonAttr(r)})'>
 
     <div class="card-head">
-      <div class="desc">${r[6]}</div>
-      <button onclick="toggleCard('${id}', this)">
+      <div class="desc">${escapeHtml(r[6])}</div>
+      <button onclick='event.stopPropagation(); toggleCard(${jsonAttr(id)}, this)'>
         ${open ? '−' : '+'}
       </button>
     </div>
 
-    <!-- VISIBLE POR DEFECTO -->
-    <div class="card-row"><b>Código</b><span>${r[5]}</span></div>
-    <div class="card-row"><b>Ubicación</b><span>${r[4]}</span></div>
-    <div class="card-row"><b>Stock</b><span>${r[7]}</span></div>
+    <div class="card-row"><b>Código</b><span>${escapeHtml(r[5])}</span></div>
+    <div class="card-row"><b>Ubicación</b><span>${escapeHtml(r[4])}</span></div>
+    <div class="card-row"><b>Stock</b><span>${escapeHtml(r[7])}</span></div>
 
-    <!-- OCULTO / EXPANDIBLE -->
     <div class="card-body" style="display:${open ? 'block' : 'none'}">
 
-      <div class="card-row"><b>Responsable</b><span>${r[8]}</span></div>
-      <div class="card-row"><b>Origen</b><span>${r[10]}</span></div>
+      <div class="card-row"><b>Responsable</b><span>${escapeHtml(r[8])}</span></div>
+      <div class="card-row"><b>Origen</b><span>${escapeHtml(r[10])}</span></div>
 
       <div class="card-fechas">
-        <div>📥 ${formatFechaTabla(r[2])}</div>
-        <div>📤 ${formatFechaTabla(r[3])}</div>
+        <div>📥 ${escapeHtml(formatFechaTabla(r[2]))}</div>
+        <div>📤 ${escapeHtml(formatFechaTabla(r[3]))}</div>
       </div>
 
       <span class="badge ${r[9] === 'VIGENTE' ? 'vigente' : 'retirado'}">
-        ${r[9]}
+        ${escapeHtml(r[9])}
       </span>
 
       <div class="card-actions">
-        <button class="edit" onclick='editar(${JSON.stringify(r)})'>✏️</button>
-        <button class="del" onclick='eliminar("${r[0]}",this)'>🗑️</button>
+        <button class="edit" onclick='event.stopPropagation(); editar(${jsonAttr(r)})' title="Editar">✏️</button>
+        <button class="del" onclick='event.stopPropagation(); eliminar(${jsonAttr(id)},this)' title="Eliminar">🗑️</button>
       </div>
 
     </div>
 
   </div>`;
-  });
+  }).join('') + (quedanOcultas ? `
+    <div class="card-item" style="text-align:center;color:#64748b;font-weight:800">
+      Vista optimizada: mostrando ${visibles.length} de ${arr.length} registros. Usa el buscador para reducir el resultado.
+    </div>` : '');
 }
 
 /* =====================================================
    EDITAR / ELIMINAR
 ===================================================== */
+function abrirFilaUbicacion(ev, r){
+  if(ev){
+    const target = ev.target;
+    if(target && target.closest && target.closest('button,a,input,select,textarea,.actions-td,.card-actions,.card-head button')){
+      return;
+    }
+  }
+  editar(r);
+}
+
 function editar(r){
   abrirModal();
   $('id').value = r[0];
@@ -549,7 +624,14 @@ function eliminar(idFila, btn){
     method:'POST',
     body:JSON.stringify({accion:'eliminar_movimiento',id:idFila})
   })
-  .then(()=>{ endBtnLoader(btn); cargar(); })
+  .then(()=>{
+    endBtnLoader(btn);
+    DATA = DATA.filter(r => String(r[0] ?? '') !== String(idFila ?? ''));
+    DATA_FILTRADA = DATA_FILTRADA.filter(r => String(r[0] ?? '') !== String(idFila ?? ''));
+    actualizarIndiceBusquedaUbicaciones();
+    renderTabla(DATA_FILTRADA.length ? DATA_FILTRADA : DATA);
+    estadoSincronizacionManual('Registro eliminado. La BD no se vuelve a consultar hasta presionar Recargar.');
+  })
   .catch(()=>{ endBtnLoader(btn); alert('Error al eliminar'); });
 }
 
@@ -610,7 +692,7 @@ function guardar(){
       return;
     }
     cerrarModal();
-    cargar();
+    estadoSincronizacionManual('Registro guardado. La vista no consulta nuevamente la BD hasta presionar Recargar.');
   })
   .catch(()=>{
     endBtnLoader(btn);
@@ -622,11 +704,16 @@ function guardar(){
    FILTRO
 ===================================================== */
 function filtrar(txt){
-  txt = txt.toLowerCase();
-  DATA_FILTRADA = DATA.filter(r =>
-    r.join(' ').toLowerCase().includes(txt)
-  );
-  renderTabla(DATA_FILTRADA);
+  const q = normalizarBusqueda(txt);
+  clearTimeout(timerFiltroUbicaciones);
+  timerFiltroUbicaciones = setTimeout(()=>{
+    if(!q){
+      DATA_FILTRADA = DATA;
+    }else{
+      DATA_FILTRADA = DATA.filter((r, i) => (DATA_SEARCH[i] || '').includes(q));
+    }
+    renderTabla(DATA_FILTRADA);
+  }, 160);
 }
 
 /* =====================================================
@@ -685,18 +772,21 @@ function cerrarScanner(){
 
    
 function recargar(){
-  cargar();
+  return cargar();
 }
 
 
 /* =====================================================
    IMPORTAR ARCHIVOS XLSX / CSV A BD-UBICACIONES
    Flujo: descargar preformato -> leer archivo -> previsualizar -> confirmar.
-   Usa el Apps Script existente mediante guardar_movimiento.
+   Usa importación masiva por Apps Script mediante importar_movimiento.
 ===================================================== */
 let IMPORT_PREVIEW_ROWS = [];
 let IMPORT_PREVIEW_VALIDAS = [];
 let IMPORT_PREVIEW_FILE_NAME = '';
+let IMPORT_PREVIEW_SHEET_NAME = '';
+let IMPORT_PREVIEW_TOTAL_ARCHIVO = 0;
+const IMPORT_PREVIEW_MAX_RENDER = 350;
 
 function abrirImportadorUbicaciones(){
   const input = $('inputImportUbicaciones');
@@ -754,9 +844,10 @@ function descargarFormatoUbicaciones(){
     ['1. No cambies los nombres de las columnas.'],
     ['2. El campo CODIGO debe escribirse como texto para conservar ceros iniciales.'],
     ['3. Las columnas obligatorias son CODIGO y UBICACION.'],
-    ['4. CANTIDAD acepta números enteros.'],
+    ['4. CANTIDAD acepta números enteros o decimales. No acepta valores negativos.'],
     ['5. STATUS recomendado: VIGENTE o RETIRADO.'],
-    ['6. Antes de importar, el sistema mostrará una previsualización y pedirá confirmación.']
+    ['6. Antes de importar, el sistema mostrará una previsualización con válidas, errores y duplicadas.'],
+    ['7. Al confirmar, el sistema enviará todas las líneas válidas en una sola carga masiva.']
   ];
 
   const ws = XLSX.utils.json_to_sheet(ejemplo, {header: headers});
@@ -765,7 +856,7 @@ function descargarFormatoUbicaciones(){
     {wch:18},{wch:38},{wch:16},{wch:12},{wch:20},{wch:12},{wch:16},{wch:16},{wch:12}
   ];
   const wsInfo = XLSX.utils.aoa_to_sheet(instrucciones);
-  wsInfo['!cols'] = [{wch:95}];
+  wsInfo['!cols'] = [{wch:110}];
 
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, ws, 'BD-UBICACIONES');
@@ -824,9 +915,31 @@ function valorImport(row, aliases){
 }
 
 function numeroImport(v, def=0){
-  const raw = String(v ?? '').trim().replace(/\./g,'').replace(',', '.');
+  const rawOriginal = String(v ?? '').trim();
+  if(!rawOriginal) return def;
+
+  // Si viene como 1.234,56 lo convierte a 1234.56.
+  // Si viene como 1234.56 lo mantiene.
+  let raw = rawOriginal;
+  if(/^[-+]?\d{1,3}(\.\d{3})+(,\d+)?$/.test(raw)) raw = raw.replace(/\./g,'').replace(',', '.');
+  else raw = raw.replace(',', '.');
+
   const n = Number(raw);
   return Number.isFinite(n) ? n : def;
+}
+
+function estadoVisibleImportacion(item){
+  if(!item.valida) return '⚠️ Error';
+  if(item.duplicada) return '🟡 Válida duplicada';
+  return '✅ Válida';
+}
+
+function observacionImportacion(item){
+  const obs = [];
+  if(item.errores && item.errores.length) obs.push(...item.errores);
+  if(item.duplicada) obs.push('Código + ubicación repetidos en el archivo');
+  if(item.payload && Number(item.payload.cantidad) === 0) obs.push('Cantidad en 0');
+  return obs.join(' · ') || 'Lista para importar';
 }
 
 function mapearFilaUbicacion(row, index=0){
@@ -853,13 +966,27 @@ function mapearFilaUbicacion(row, index=0){
   const errores = [];
   if(!codigo) errores.push('Falta código');
   if(!ubicacion) errores.push('Falta ubicación');
+  if(cantidad < 0) errores.push('Cantidad negativa');
+  if(status && !['VIGENTE','RETIRADO','ACTIVO','INACTIVO'].includes(status)) errores.push('Status no reconocido');
 
   return {
     fila: index + 2,
     valida: errores.length === 0,
     errores,
+    duplicada:false,
+    clave: codigo && ubicacion ? `${codigo}||${normalizarHeaderImport(ubicacion)}` : '',
     payload
   };
+}
+
+function marcarDuplicadasImportacion(rows){
+  const conteo = {};
+  rows.forEach(item => {
+    if(!item.clave) return;
+    conteo[item.clave] = (conteo[item.clave] || 0) + 1;
+  });
+  rows.forEach(item => { item.duplicada = !!item.clave && conteo[item.clave] > 1; });
+  return rows;
 }
 
 async function leerArchivoImportacion(file){
@@ -883,8 +1010,8 @@ async function importarArchivoUbicaciones(file){
     if(!sheetName) throw new Error('El archivo no contiene hojas válidas.');
 
     const ws = wb.Sheets[sheetName];
-    const rows = XLSX.utils.sheet_to_json(ws, {defval:'', raw:false});
-    const previewRows = rows.map((row, index) => mapearFilaUbicacion(row, index));
+    const rows = XLSX.utils.sheet_to_json(ws, {defval:'', raw:false, blankrows:false});
+    const previewRows = marcarDuplicadasImportacion(rows.map((row, index) => mapearFilaUbicacion(row, index)));
     const validas = previewRows.filter(x => x.valida).map(x => x.payload);
 
     if(!previewRows.length){
@@ -895,6 +1022,14 @@ async function importarArchivoUbicaciones(file){
     IMPORT_PREVIEW_ROWS = previewRows;
     IMPORT_PREVIEW_VALIDAS = validas;
     IMPORT_PREVIEW_FILE_NAME = file.name || 'archivo seleccionado';
+    IMPORT_PREVIEW_SHEET_NAME = sheetName;
+    IMPORT_PREVIEW_TOTAL_ARCHIVO = previewRows.length;
+
+    const filtro = $('importPreviewFiltro');
+    const buscar = $('importPreviewBuscar');
+    if(filtro) filtro.value = 'todas';
+    if(buscar) buscar.value = '';
+
     renderPreviewImportacionUbicaciones();
   }catch(err){
     alert('Error al leer archivo: ' + (err.message || err));
@@ -905,26 +1040,85 @@ async function importarArchivoUbicaciones(file){
   }
 }
 
+function filtrarPreviewImportacionUbicaciones(){
+  const filtro = String($('importPreviewFiltro')?.value || 'todas');
+  const q = normalizarHeaderImport($('importPreviewBuscar')?.value || '');
+  return IMPORT_PREVIEW_ROWS.filter(item => {
+    if(filtro === 'validas' && !item.valida) return false;
+    if(filtro === 'errores' && item.valida) return false;
+    if(filtro === 'duplicadas' && !item.duplicada) return false;
+    if(q){
+      const p = item.payload || {};
+      const texto = normalizarHeaderImport([
+        item.fila,
+        estadoVisibleImportacion(item),
+        observacionImportacion(item),
+        p.codigo,
+        p.descripcion,
+        p.ubicacion,
+        p.cantidad,
+        p.responsable,
+        p.status,
+        p.fecha_entrada,
+        p.fecha_salida
+      ].join(' '));
+      if(!texto.includes(q)) return false;
+    }
+    return true;
+  });
+}
+
+function statPreviewHtml(titulo, valor, detalle){
+  return `<div style="border:1px solid #e2e8f0;border-radius:16px;padding:12px;background:#f8fafc">
+    <div style="font-size:11px;color:#64748b;font-weight:900;text-transform:uppercase;letter-spacing:.05em">${escapeHtml(titulo)}</div>
+    <div style="font-size:24px;font-weight:1000;margin-top:4px">${escapeHtml(valor)}</div>
+    <div style="font-size:12px;color:#64748b;margin-top:2px">${escapeHtml(detalle || '')}</div>
+  </div>`;
+}
+
 function renderPreviewImportacionUbicaciones(){
   const modal = $('importPreviewModal');
   const resumen = $('importPreviewResumen');
+  const stats = $('importPreviewStats');
   const tabla = $('importPreviewTabla');
+  const nota = $('importPreviewNota');
   const btn = $('btnConfirmarImportUbicaciones');
   if(!modal || !resumen || !tabla) return;
 
   const total = IMPORT_PREVIEW_ROWS.length;
   const validas = IMPORT_PREVIEW_ROWS.filter(x => x.valida).length;
-  const ignoradas = total - validas;
-  resumen.innerHTML = `Archivo: <b>${escapeHtml(IMPORT_PREVIEW_FILE_NAME)}</b><br>` +
-    `Filas detectadas: <b>${total}</b> · Válidas para importar: <b>${validas}</b> · Ignoradas: <b>${ignoradas}</b>`;
+  const errores = IMPORT_PREVIEW_ROWS.filter(x => !x.valida).length;
+  const duplicadas = IMPORT_PREVIEW_ROWS.filter(x => x.duplicada).length;
+  const cantidadTotal = IMPORT_PREVIEW_ROWS
+    .filter(x => x.valida)
+    .reduce((acc, x) => acc + (Number(x.payload?.cantidad) || 0), 0);
+  const filtradas = filtrarPreviewImportacionUbicaciones();
+  const visibles = filtradas.slice(0, IMPORT_PREVIEW_MAX_RENDER);
+
+  resumen.innerHTML = `Archivo: <b>${escapeHtml(IMPORT_PREVIEW_FILE_NAME)}</b>` +
+    (IMPORT_PREVIEW_SHEET_NAME ? ` · Hoja leída: <b>${escapeHtml(IMPORT_PREVIEW_SHEET_NAME)}</b>` : '') + `<br>` +
+    `<b>Revisión previa:</b> aquí se muestra exactamente lo que se enviará a BD-MOVIMIENTO. ` +
+    `Al confirmar, el sistema hará una sola carga masiva, no una solicitud por fila.`;
+
+  if(stats){
+    stats.innerHTML = [
+      statPreviewHtml('Detectadas', total, 'filas leídas'),
+      statPreviewHtml('Válidas', validas, 'se importarán'),
+      statPreviewHtml('Con errores', errores, 'no se enviarán'),
+      statPreviewHtml('Duplicadas', duplicadas, 'repetidas en archivo'),
+      statPreviewHtml('Cantidad total', cantidadTotal, 'solo filas válidas')
+    ].join('');
+  }
 
   tabla.innerHTML = '';
-  IMPORT_PREVIEW_ROWS.slice(0, 120).forEach(item => {
-    const p = item.payload;
+  visibles.forEach(item => {
+    const p = item.payload || {};
     const tr = document.createElement('tr');
+    tr.style.background = item.valida ? '#ffffff' : '#fff7ed';
     tr.innerHTML = `
-      <td>${item.fila}</td>
-      <td>${item.valida ? '✅ Válida' : '⚠️ ' + escapeHtml(item.errores.join(', '))}</td>
+      <td>${escapeHtml(item.fila)}</td>
+      <td>${escapeHtml(estadoVisibleImportacion(item))}</td>
+      <td>${escapeHtml(observacionImportacion(item))}</td>
       <td>${escapeHtml(p.codigo)}</td>
       <td>${escapeHtml(p.descripcion)}</td>
       <td>${escapeHtml(p.ubicacion)}</td>
@@ -936,19 +1130,67 @@ function renderPreviewImportacionUbicaciones(){
     tabla.appendChild(tr);
   });
 
-  if(IMPORT_PREVIEW_ROWS.length > 120){
+  if(!filtradas.length){
     const tr = document.createElement('tr');
-    tr.innerHTML = `<td colspan="10">Vista limitada a las primeras 120 filas. Al confirmar se importarán todas las filas válidas.</td>`;
+    tr.innerHTML = `<td colspan="11" style="text-align:center;color:#64748b">No hay filas para mostrar con el filtro actual.</td>`;
     tabla.appendChild(tr);
   }
 
-  if(btn) btn.disabled = validas === 0;
+  if(filtradas.length > IMPORT_PREVIEW_MAX_RENDER){
+    const tr = document.createElement('tr');
+    tr.innerHTML = `<td colspan="11" style="text-align:center;color:#64748b;font-weight:800">Vista rápida limitada a ${IMPORT_PREVIEW_MAX_RENDER} filas de ${filtradas.length} filtradas. Al confirmar se importarán todas las filas válidas: ${validas}.</td>`;
+    tabla.appendChild(tr);
+  }
+
+  if(nota){
+    nota.innerHTML = `Mostrando <b>${Math.min(filtradas.length, IMPORT_PREVIEW_MAX_RENDER)}</b> de <b>${filtradas.length}</b> filas filtradas. ` +
+      `Se importarán <b>${validas}</b> filas válidas. Las filas con errores quedan fuera automáticamente.`;
+  }
+
+  if(btn){
+    btn.disabled = validas === 0;
+    btn.textContent = validas ? `Confirmar importación masiva (${validas} líneas)` : 'No hay líneas válidas para importar';
+  }
   modal.classList.add('active');
 }
 
 function cerrarPreviewImportacionUbicaciones(){
   const modal = $('importPreviewModal');
   if(modal) modal.classList.remove('active');
+}
+
+function csvImportPreviewLine(values){
+  return values.map(v => {
+    const raw = String(v ?? '');
+    return /[";\n\r]/.test(raw) ? '"' + raw.replace(/"/g,'""') + '"' : raw;
+  }).join(';');
+}
+
+function descargarObservacionesImportacionUbicaciones(){
+  if(!IMPORT_PREVIEW_ROWS.length){
+    alert('No hay previsualización cargada.');
+    return;
+  }
+  const rows = [
+    ['FILA','ESTADO','OBSERVACION','CODIGO','DESCRIPCION','UBICACION','CANTIDAD','RESPONSABLE','STATUS','FECHA_ENTRADA','FECHA_SALIDA']
+  ];
+  IMPORT_PREVIEW_ROWS.forEach(item => {
+    const p = item.payload || {};
+    rows.push([
+      item.fila,
+      estadoVisibleImportacion(item),
+      observacionImportacion(item),
+      p.codigo,
+      p.descripcion,
+      p.ubicacion,
+      p.cantidad,
+      p.responsable,
+      p.status,
+      p.fecha_entrada,
+      p.fecha_salida
+    ]);
+  });
+  descargarBlob('Observaciones_Importacion_Ubicaciones.csv', rows.map(csvImportPreviewLine).join('\n'), 'text/csv;charset=utf-8');
 }
 
 async function confirmarImportacionUbicaciones(){
@@ -959,48 +1201,78 @@ async function confirmarImportacionUbicaciones(){
   }
 
   const btn = $('btnConfirmarImportUbicaciones');
+  const bar = $('progress-bar');
   startBtnLoader(btn);
   startProgress();
+  if(bar) bar.style.width = '18%';
 
   try{
-    let insertados = 0;
-    const errores = [];
-    const bar = $('progress-bar');
+    // Limpia la acción individual para que el servidor reciba solo filas de datos.
+    const rows = mapeadas.map(item => {
+      const row = Object.assign({}, item);
+      delete row.accion;
+      row.origen = row.origen || ORIGEN;
+      return row;
+    });
 
-    for(let i=0; i<mapeadas.length; i++){
-      const payload = mapeadas[i];
-      try{
-        const res = await fetch(URL_GS, {
-          method:'POST',
-          body: JSON.stringify(payload)
-        });
-        const json = await res.json().catch(()=>({ok:res.ok}));
-        if(json && json.ok === false){
-          errores.push(`Fila válida ${i+1}: ${json.msg || 'rechazada por Apps Script'}`);
-        }else{
-          insertados++;
-          if(payload.codigo && payload.descripcion){
-            setProductoEnCache(payload.codigo, payload.descripcion, payload.cantidad);
-          }
-        }
-      }catch(err){
-        errores.push(`Fila válida ${i+1}: ${err.message || err}`);
+    if(bar) bar.style.width = '42%';
+
+    const res = await fetch(URL_GS, {
+      method:'POST',
+      body: JSON.stringify({
+        accion:'importar_movimiento',
+        modo:'append',
+        origen:ORIGEN,
+        rows
+      })
+    });
+
+    if(bar) bar.style.width = '72%';
+
+    const json = await res.json().catch(()=>null);
+    if(!res.ok || !json){
+      throw new Error('Apps Script no respondió con JSON válido.');
+    }
+    if(json.ok === false){
+      throw new Error(json.msg || 'Apps Script rechazó la importación masiva.');
+    }
+
+    rows.forEach(payload => {
+      if(payload.codigo && payload.descripcion){
+        setProductoEnCache(payload.codigo, payload.descripcion, payload.cantidad);
       }
-      if(bar) bar.style.width = `${Math.max(8, Math.round(((i+1)/mapeadas.length)*100))}%`;
+    });
+
+    if(bar) bar.style.width = '88%';
+    cerrarPreviewImportacionUbicaciones();
+    estadoSincronizacionManual('Importación enviada correctamente. Presiona Recargar para consultar nuevamente BD-MOVIMIENTO.');
+
+    const recibidos = Number(json.recibidos ?? rows.length) || rows.length;
+    const insertados = Number(json.insertados || 0);
+    const actualizados = Number(json.actualizados || 0);
+    const omitidos = Number(json.omitidos || 0);
+    const procesados = Number(json.procesados ?? (insertados + actualizados)) || (insertados + actualizados);
+    const errores = Array.isArray(json.errores) ? json.errores : [];
+    const completas = procesados === rows.length && omitidos === 0 && errores.length === 0;
+
+    const resumen = [
+      completas ? 'Importación confirmada: todas las líneas válidas fueron importadas correctamente.' : 'Importación finalizada con observaciones.',
+      `Filas detectadas en previsualización: ${IMPORT_PREVIEW_TOTAL_ARCHIVO || IMPORT_PREVIEW_ROWS.length}`,
+      `Filas válidas enviadas: ${rows.length}`,
+      `Filas recibidas por Apps Script: ${recibidos}`,
+      `Insertadas: ${insertados}`,
+      `Actualizadas: ${actualizados}`,
+      `Omitidas por Apps Script: ${omitidos}`,
+      `Procesadas correctamente: ${procesados}`
+    ];
+
+    if(json.total !== undefined) resumen.push(`Total actual en BD-MOVIMIENTO: ${json.total}`);
+    if(errores.length){
+      resumen.push('');
+      resumen.push('Primeras observaciones:');
+      resumen.push(errores.slice(0,10).join('\n'));
     }
 
-    cerrarPreviewImportacionUbicaciones();
-    await recargar();
-    const resumen = [
-      `Importación terminada.`,
-      `Registros válidos enviados: ${mapeadas.length}`,
-      `Insertados/aceptados: ${insertados}`,
-      `Errores: ${errores.length}`
-    ];
-    if(errores.length){
-      resumen.push('\nPrimeros errores:');
-      resumen.push(errores.slice(0,8).join('\n'));
-    }
     alert(resumen.join('\n'));
   }catch(err){
     alert('Error al importar archivo: ' + (err.message || err));
@@ -1081,6 +1353,15 @@ function toggleCard(id, btn){
 document.addEventListener('DOMContentLoaded', async ()=>{
   await cargarConfiguracionUrl();
   cargarCatalogoDesdeMemoria();
-  precargarCatalogo(false); // sincroniza catálogo en segundo plano sólo si falta o está vencido
-  cargar();
+  DATA = [];
+  DATA_FILTRADA = [];
+  actualizarIndiceBusquedaUbicaciones();
+  renderTabla([]);
+  estadoSincronizacionManual('Sin sincronización automática. Presiona Recargar para consultar BD-MOVIMIENTO.');
+});
+
+let timerResizeUbicaciones = null;
+window.addEventListener('resize', ()=>{
+  clearTimeout(timerResizeUbicaciones);
+  timerResizeUbicaciones = setTimeout(()=>renderTabla(DATA_FILTRADA.length ? DATA_FILTRADA : DATA), 180);
 });

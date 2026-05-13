@@ -1,0 +1,16 @@
+CORRECCIÓN IMPORTACIÓN PEDIDOS - 2026-05-09
+
+Problema detectado:
+- La previsualización del importador funcionaba, pero al presionar Enviar a Base de Datos no se grababan los pedidos.
+- La causa era que el envío usaba JSONP/GET con el JSON de productos en la URL. Con archivos reales esa URL crece demasiado y Apps Script/navegador no recibe el payload completo.
+
+Corrección aplicada:
+- La lectura sigue usando JSONP para evitar CORS.
+- El envío de importación ahora usa POST mediante iframe oculto, sin límite práctico de URL y sin bloqueo CORS.
+- Apps Script devuelve la respuesta al HTML con postMessage.
+- Los lotes de importación ahora se envían en bloques de 50 filas.
+- Se agregó diagnóstico de error por bloque.
+
+IMPORTANTE:
+- Debes copiar y pegar el Apps Script actualizado y volver a publicar el Web App.
+- Configurar: Ejecutar como Yo / Acceso Cualquier persona.

@@ -1,0 +1,29 @@
+CAMBIO VOZ ESTADOS ORDEN DE PEDIDO - 2026-05-09
+
+Se corrigió el mensaje de voz de Orden de Pedido.
+
+Reglas aplicadas:
+
+1. Cuando el pedido cambia a TERMINADO:
+   - Dice: Pedido terminado.
+   - Incluye número de pedido.
+   - Incluye nombre del cliente.
+   - Incluye vendedor asociado.
+   - No menciona pikeador asignado.
+
+2. Cuando el pedido cambia a cualquier otro estado:
+   - Dice el estado nuevo.
+   - Incluye número de pedido.
+   - Incluye nombre del cliente.
+   - Incluye pikeador asignado.
+   - No exige vendedor para estados intermedios.
+
+Archivos actualizados:
+- sistemaweb/sistemawebpedidos8.0/sistemawebpedidos/orden_pedidos.js
+- sistemaweb/sistemawebpedidos8.0/sistemawebpedidos/APPS_SCRIPT_MOVIMIENTO_ALERTAS_LISTO.gs
+- Android assets/orden_pedidos.js
+- Android APPS_SCRIPT_MOVIMIENTO_ALERTAS_LISTO.gs
+- Android OrdenPedidosActivity.kt
+
+Importante:
+Copiar el Apps Script actualizado y volver a publicar como Web App para que las alertas guardadas en la base de datos salgan con el texto nuevo.

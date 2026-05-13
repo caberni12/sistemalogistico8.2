@@ -1,0 +1,18 @@
+CAMBIOS IMPORTACION PEDIDOS - BODEGA DE PREPARACION
+
+Se agregó soporte para importar la bodega donde se prepara el pedido desde el archivo XLSX/CSV.
+
+Cambios aplicados:
+- Nueva columna recomendada en plantilla: BODEGA_PREPARACION.
+- El importador reconoce aliases: BODEGA_PREPARACION, BODEGA PREPARACION, BODEGA DE PREPARACION, NOMBRE_BODEGA y BODEGA.
+- En el modal de importación se agregó selector "Bodega por defecto".
+- Si el archivo trae BODEGA_PREPARACION, se usa ese valor.
+- Si el archivo no trae bodega, se usa la bodega seleccionada por defecto.
+- UBICACION queda reservada para ubicación del producto.
+- La previsualización muestra la bodega.
+- Los registros fallidos muestran la bodega asociada y quedan destacados en rojo.
+- La plantilla Plantilla_Importar_Pedidos_Ergonomica.xlsx fue actualizada.
+- Actualizado también en assets Android.
+
+IMPORTANTE:
+Copia el Apps Script actualizado y vuelve a publicarlo como Web App para que la columna bodega_preparacion quede activa en la hoja PEDIDOS.

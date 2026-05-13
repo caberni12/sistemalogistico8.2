@@ -1,0 +1,2 @@
+Se corrigió el dashboard para conservar los ceros iniciales de los códigos en el informe personalizado, la tabla ABC y la exportación XLSX.
+Los campos codigo/código/cod/sku/producto/pedido/grupo se exportan como texto cuando corresponde.

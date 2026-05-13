@@ -1,0 +1,8 @@
+CAMBIOS APLICADOS - FILA ABRE MODAL UBICACIONES
+
+- Ahora al pinchar una fila de la tabla de Ubicaciones se abre el modal de detalle/edición.
+- Los botones de acciones siguen funcionando de forma independiente.
+- El botón editar abre el modal sin duplicar eventos.
+- El botón eliminar elimina sin abrir el modal.
+- En vista móvil, al pinchar la tarjeta también se abre el modal.
+- El botón +/− de la tarjeta móvil mantiene su función de expandir/contraer sin abrir el modal.

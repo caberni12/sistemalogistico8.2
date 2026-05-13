@@ -143,10 +143,10 @@
 <div class="modal-body">
 <h2>Configuración</h2>
 <label>URL del Apps Script</label>
-<input id="configUrlGs" placeholder="https://script.google.com/macros/s/AKfycbxN9OrEY-1VvKVr_aZ8C-to9VCyjG9kc27DU-MssF1Qr7A0Zjsd6frfg4XDsPlaanFWZg/exec">
+<input id="configUrlGs" placeholder="https://script.google.com/macros/s/AKfycbxDPLaKDy5LqC9US-DQcCicPDIPb0XlxnPPA-y6N1AdDvbHZPxLzM0awD-NoFTcVk8Fkw/exec">
 <p style="font-size:12px;color:#64748b;line-height:1.35">
 Puedes guardar la URL aquí o cargarla desde un archivo <b>config.txt</b> ubicado junto al HTML.<br>
-Formatos aceptados: <code>API_URL=https://script.google.com/macros/s/AKfycbxN9OrEY-1VvKVr_aZ8C-to9VCyjG9kc27DU-MssF1Qr7A0Zjsd6frfg4XDsPlaanFWZg/exec</code> o JSON con <code>API_URL</code>.
+Formatos aceptados: <code>API_URL=https://script.google.com/macros/s/AKfycbxDPLaKDy5LqC9US-DQcCicPDIPb0XlxnPPA-y6N1AdDvbHZPxLzM0awD-NoFTcVk8Fkw/exec</code> o JSON con <code>API_URL</code>.
 </p>
 <input id="configTxtInput" type="file" accept=".txt,.json" style="display:none" onchange="cargarConfigTxtArchivo(this.files[0])">
 <span id="configStatus" style="display:block;font-size:12px;color:#0f766e;word-break:break-word"></span>
@@ -162,17 +162,45 @@ Formatos aceptados: <code>API_URL=https://script.google.com/macros/s/AKfycbxN9Or
 </div>
 
 
-<div class="modal" id="importPreviewModal">
-<div class="modal-card" style="max-width:96vw;width:1100px;max-height:92vh;overflow:hidden;display:flex;flex-direction:column">
-<div class="modal-body" style="overflow:auto">
-<h2>Previsualización de importación · BD-UBICACIONES</h2>
+<div class="modal import-preview-modal" id="importPreviewModal">
+<div class="modal-card import-preview-card">
+<div class="modal-body import-preview-body">
+<h2>Previsualización antes de importar · BD-UBICACIONES</h2>
 <p id="importPreviewResumen" style="font-size:13px;color:#334155;line-height:1.4;margin:8px 0 12px"></p>
-<div style="overflow:auto;border:1px solid #e2e8f0;border-radius:14px;max-height:58vh">
-<table style="min-width:980px">
+
+<div id="importPreviewStats" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin:10px 0 14px"></div>
+
+<div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin:8px 0 12px">
+  <select id="importPreviewFiltro" onchange="renderPreviewImportacionUbicaciones()" style="max-width:220px;margin-top:0">
+    <option value="todas">Todas las filas</option>
+    <option value="validas">Solo válidas</option>
+    <option value="errores">Con errores</option>
+    <option value="duplicadas">Duplicadas en archivo</option>
+  </select>
+  <input id="importPreviewBuscar" oninput="renderPreviewImportacionUbicaciones()" placeholder="Buscar código, descripción, ubicación o responsable…" style="flex:1;min-width:260px;margin-top:0">
+  <button onclick="descargarObservacionesImportacionUbicaciones()" style="white-space:nowrap">⬇️ Observaciones</button>
+</div>
+
+<div class="import-preview-table-wrap">
+<table class="import-preview-table">
+<colgroup>
+<col class="col-fila">
+<col class="col-estado">
+<col class="col-observacion">
+<col class="col-codigo">
+<col class="col-descripcion">
+<col class="col-ubicacion">
+<col class="col-cantidad">
+<col class="col-responsable">
+<col class="col-status">
+<col class="col-fecha">
+<col class="col-fecha">
+</colgroup>
 <thead>
 <tr>
 <th>Fila</th>
 <th>Estado</th>
+<th>Observación</th>
 <th>Código</th>
 <th>Descripción</th>
 <th>Ubicación</th>
@@ -186,10 +214,10 @@ Formatos aceptados: <code>API_URL=https://script.google.com/macros/s/AKfycbxN9Or
 <tbody id="importPreviewTabla"></tbody>
 </table>
 </div>
-<p style="font-size:12px;color:#64748b;margin-top:10px">Solo se enviarán al Apps Script las filas marcadas como válidas. Deben tener al menos <b>Código</b> y <b>Ubicación</b>.</p>
+<p id="importPreviewNota" style="font-size:12px;color:#64748b;margin-top:10px">Solo se enviarán al Apps Script las filas marcadas como válidas. Deben tener al menos <b>Código</b> y <b>Ubicación</b>. La importación final se ejecuta en una sola carga masiva.</p>
 </div>
 <div class="modal-footer">
-<button id="btnConfirmarImportUbicaciones" onclick="confirmarImportacionUbicaciones()">Confirmar importación</button>
+<button id="btnConfirmarImportUbicaciones" onclick="confirmarImportacionUbicaciones()">Confirmar importación masiva</button>
 <button onclick="cerrarPreviewImportacionUbicaciones()">Cancelar</button>
 </div>
 </div>

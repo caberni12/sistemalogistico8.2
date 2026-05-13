@@ -1,7 +1,7 @@
 URL ACTUALIZADA - 2026-05-09
 
 Nueva URL oficial aplicada en el proyecto:
-https://script.google.com/macros/s/AKfycbyHM9r8WQ9m6-Hacd63TVhTBMac23SD9jhz7Qu4ORdmSzrHd0SAC1H7_13ogKJAWu6z8g/exec
+https://script.google.com/macros/s/AKfycbxDPLaKDy5LqC9US-DQcCicPDIPb0XlxnPPA-y6N1AdDvbHZPxLzM0awD-NoFTcVk8Fkw/exec
 
 Se reemplazaron las URLs anteriores de Google Apps Script en archivos web, Android, assets y Apps Script cuando correspondía.
 

@@ -1,0 +1,27 @@
+CAMBIOS IMPORTACIÓN MASIVA UBICACIONES - 2026-05-12
+
+Archivos modificados:
+- ubicaciones.js
+- APPS_SCRIPT_MOVIMIENTO_ALERTAS_LISTO.gs
+
+Correcciones aplicadas:
+1. El módulo Ubicaciones ya no envía una solicitud por cada fila al importar.
+2. La confirmación de importación ahora envía todas las filas válidas en una sola carga masiva con accion=importar_movimiento.
+3. Apps Script ahora graba los registros de BD-MOVIMIENTO usando setValues en bloque, equivalente a copiar y pegar muchas filas de una vez.
+4. La ventana de previsualización informa que usará modo rápido.
+5. Al finalizar, el sistema muestra confirmación con:
+   - Filas válidas enviadas
+   - Filas recibidas por Apps Script
+   - Insertadas
+   - Actualizadas
+   - Omitidas
+   - Procesadas correctamente
+   - Total actual en BD-MOVIMIENTO
+6. Si todas las líneas válidas fueron importadas, muestra el mensaje:
+   "Importación confirmada: todas las líneas válidas fueron importadas correctamente."
+7. Se mantiene la conservación de ceros iniciales en CODIGO mediante normalización como texto.
+8. La recarga posterior a importar ahora espera la respuesta antes de mostrar la confirmación final.
+
+Importante:
+- Para que funcione en producción, reemplazar el contenido del Apps Script publicado por APPS_SCRIPT_MOVIMIENTO_ALERTAS_LISTO.gs y volver a implementar el Web App.
+- El frontend corregido está en ubicaciones.js.

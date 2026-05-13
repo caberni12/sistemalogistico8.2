@@ -1,0 +1,10 @@
+CAMBIOS DASHBOARD 2026-05-13
+
+- Reorganizacion moderna de cuadros KPI.
+- Menos espacios vacios entre tarjetas.
+- Filtros compactos y alineados.
+- Topbar mas ordenada.
+- Panel ABC y graficos laterales mejor estructurados.
+- Tablas con alto controlado, encabezado fijo y scroll interno.
+- Diseno responsive para tablet y movil.
+- Se mantienen todos los IDs y funciones JavaScript existentes.

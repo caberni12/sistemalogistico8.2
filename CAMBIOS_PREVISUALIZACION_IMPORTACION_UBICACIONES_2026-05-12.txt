@@ -1,0 +1,22 @@
+CAMBIOS PREVISUALIZACIÓN IMPORTACIÓN UBICACIONES - 2026-05-12
+
+- Se agregó una previsualización obligatoria antes de confirmar la importación de ubicaciones.
+- El sistema lee el archivo Excel/CSV y muestra lo que se va a importar antes de enviar al Apps Script.
+- La previsualización muestra:
+  - Archivo leído.
+  - Hoja leída.
+  - Filas detectadas.
+  - Filas válidas.
+  - Filas con errores.
+  - Filas duplicadas dentro del archivo.
+  - Cantidad total válida.
+- Se agregó filtro por:
+  - Todas las filas.
+  - Solo válidas.
+  - Con errores.
+  - Duplicadas en archivo.
+- Se agregó buscador dentro de la previsualización.
+- Se agregó descarga de observaciones en CSV.
+- Las filas con errores no se envían a Apps Script.
+- La importación final sigue siendo masiva mediante accion importar_movimiento.
+- El sistema mantiene los códigos con ceros iniciales.

@@ -1188,3 +1188,148 @@ td:last-child{
   .modal-footer{grid-template-columns:1fr 1fr !important;padding:10px !important;}
 }
 @media(max-width:480px){.modal-footer{grid-template-columns:1fr !important;}}
+
+/* =====================================================
+   PREVISUALIZACIÓN IMPORTACIÓN UBICACIONES - TABLA ANCHA
+   Permite ver mejor los TD de importación y evita columnas comprimidas.
+===================================================== */
+#importPreviewModal.import-preview-modal{
+  padding:10px !important;
+  align-items:center !important;
+  justify-content:center !important;
+}
+#importPreviewModal .import-preview-card{
+  width:98.8vw !important;
+  max-width:1680px !important;
+  min-width:min(98.8vw,1180px) !important;
+  max-height:96vh !important;
+  overflow:hidden !important;
+  display:flex !important;
+  flex-direction:column !important;
+}
+#importPreviewModal .import-preview-body{
+  overflow:auto !important;
+  padding:18px 22px !important;
+}
+#importPreviewModal .import-preview-table-wrap{
+  width:100% !important;
+  max-width:100% !important;
+  overflow:auto !important;
+  border:1px solid #e2e8f0 !important;
+  border-radius:16px !important;
+  max-height:64vh !important;
+  background:#fff !important;
+  box-shadow:0 12px 28px rgba(15,23,42,.08) !important;
+}
+#importPreviewModal table.import-preview-table{
+  width:max-content !important;
+  min-width:1680px !important;
+  table-layout:auto !important;
+  border-collapse:separate !important;
+  border-spacing:0 !important;
+  box-shadow:none !important;
+  border-radius:0 !important;
+}
+#importPreviewModal .import-preview-table th,
+#importPreviewModal .import-preview-table td{
+  padding:12px 14px !important;
+  font-size:13px !important;
+  line-height:1.45 !important;
+  vertical-align:top !important;
+  white-space:normal !important;
+  word-break:normal !important;
+  overflow-wrap:anywhere !important;
+}
+#importPreviewModal .import-preview-table th{
+  position:sticky !important;
+  top:0 !important;
+  z-index:2 !important;
+  background:#eaf2ff !important;
+  color:#0f172a !important;
+  font-size:12px !important;
+  font-weight:950 !important;
+  text-transform:uppercase !important;
+  letter-spacing:.035em !important;
+  white-space:nowrap !important;
+}
+#importPreviewModal .import-preview-table td:nth-child(1),
+#importPreviewModal .import-preview-table td:nth-child(2),
+#importPreviewModal .import-preview-table td:nth-child(4),
+#importPreviewModal .import-preview-table td:nth-child(7),
+#importPreviewModal .import-preview-table td:nth-child(9),
+#importPreviewModal .import-preview-table td:nth-child(10),
+#importPreviewModal .import-preview-table td:nth-child(11){
+  white-space:nowrap !important;
+}
+#importPreviewModal .import-preview-table .col-fila{width:72px !important;}
+#importPreviewModal .import-preview-table .col-estado{width:130px !important;}
+#importPreviewModal .import-preview-table .col-observacion{width:340px !important;}
+#importPreviewModal .import-preview-table .col-codigo{width:170px !important;}
+#importPreviewModal .import-preview-table .col-descripcion{width:420px !important;}
+#importPreviewModal .import-preview-table .col-ubicacion{width:300px !important;}
+#importPreviewModal .import-preview-table .col-cantidad{width:120px !important;}
+#importPreviewModal .import-preview-table .col-responsable{width:190px !important;}
+#importPreviewModal .import-preview-table .col-status{width:140px !important;}
+#importPreviewModal .import-preview-table .col-fecha{width:160px !important;}
+#importPreviewModal .modal-footer{
+  flex-shrink:0 !important;
+}
+@media(max-width:768px){
+  #importPreviewModal.import-preview-modal{
+    align-items:flex-start !important;
+    padding:8px !important;
+  }
+  #importPreviewModal .import-preview-card{
+    width:100% !important;
+    min-width:0 !important;
+    max-width:100% !important;
+    max-height:96vh !important;
+  }
+  #importPreviewModal .import-preview-body{
+    padding:12px !important;
+  }
+  #importPreviewModal table.import-preview-table{
+    display:table !important;
+    min-width:1520px !important;
+  }
+  #importPreviewModal .import-preview-table th,
+  #importPreviewModal .import-preview-table td{
+    padding:10px 12px !important;
+    font-size:12px !important;
+  }
+}
+
+/* =====================================================
+   FILA CLICKEABLE UBICACIONES
+   Permite abrir el modal al pinchar la fila completa.
+===================================================== */
+.fila-clickable{
+  cursor:pointer;
+}
+.fila-clickable:hover td,
+.fila-clickable:hover .card-row,
+.fila-clickable:hover .desc{
+  color:#0f172a;
+}
+.fila-clickable .actions-td,
+.fila-clickable .card-actions,
+.fila-clickable button{
+  cursor:auto;
+}
+
+/* Estado de sincronización manual para Ubicaciones */
+.sync-manual-status{
+  display:inline-flex;
+  align-items:center;
+  gap:8px;
+  margin:6px 0 8px;
+  padding:8px 12px;
+  border-radius:12px;
+  background:#f8fafc;
+  border:1px solid #cbd5e1;
+  color:#334155;
+  font-size:13px;
+  font-weight:800;
+  width:auto;
+  max-width:100%;
+}

@@ -1,0 +1,11 @@
+CAMBIOS APLICADOS - APPS SCRIPT REGULARIZADO
+
+1. Se regularizó importar_movimiento para el módulo de Ubicaciones/BD-MOVIMIENTO.
+2. La importación ahora arma un arreglo completo y graba en bloque con setValues mediante appendObjects_.
+3. Ya no llama agregarMovimiento_ por cada fila en modo append.
+4. La respuesta del Apps Script devuelve recibidos, insertados, actualizados, omitidos, procesados, todas_importadas y total actual.
+5. Se validan código, ubicación y cantidad antes de guardar.
+6. Se conserva el código como texto para mantener ceros iniciales.
+7. También se optimizó importarGestionBD_ para MOVIMIENTO_UBICACION y MOVIMIENTO_PEDIDOS.
+
+Después de copiar el Apps Script, debes volver a implementar el Web App y reemplazar la URL /exec si Google entrega una nueva.

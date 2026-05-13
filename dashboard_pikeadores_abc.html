@@ -73,6 +73,7 @@
     th{position:sticky;top:0;background:#f8fafc;z-index:1;color:#334155;font-size:.72rem;text-transform:uppercase;letter-spacing:.04em;}
     tr:last-child td{border-bottom:0}
     .num{text-align:right;font-variant-numeric:tabular-nums;}
+    .code-cell{font-family:Consolas,Monaco,monospace;font-weight:900;letter-spacing:.02em;white-space:nowrap;}
     .bar-cell{min-width:160px;}
     .bar-bg{height:10px;background:#e2e8f0;border-radius:999px;overflow:hidden;}
     .bar-fill{height:100%;background:linear-gradient(90deg,var(--brand),#60a5fa);border-radius:999px;}
@@ -126,6 +127,226 @@
     .top-actions button{min-width:128px;}
     @media(max-width:1100px){.main{grid-template-columns:1fr;}.filters .field:first-child{grid-column:1/-1;}.top-actions{width:100%;justify-content:flex-start;}.top-actions button{flex:1 1 160px;}}
     @media(max-width:700px){.shell{padding:10px;}.filters{grid-template-columns:1fr;}.filters .field:first-child{grid-column:auto;}.top-actions{align-items:stretch;}.top-actions button{width:100%;}.kpi-grid{grid-template-columns:1fr;}.cards-abc{grid-template-columns:1fr;}table{min-width:680px;}}
+  
+    /* =========================================================
+       ORGANIZACION VISUAL MODERNA 2026-05-13
+       - Reduce espacios vacios entre cuadros.
+       - Ordena KPIs, filtros, tablas y panel ABC.
+       - Mantiene IDs y funciones existentes.
+    ========================================================= */
+    :root{
+      --bg:#eef3fb;
+      --card:#ffffff;
+      --card-2:#f8fafc;
+      --text:#132033;
+      --muted:#64748b;
+      --line:#dbe4f0;
+      --brand:#2563eb;
+      --brand-2:#1d4ed8;
+      --ok:#16a34a;
+      --warn:#f59e0b;
+      --bad:#dc2626;
+      --violet:#7c3aed;
+      --shadow:0 12px 30px rgba(15,23,42,.08);
+      --shadow-soft:0 8px 20px rgba(15,23,42,.055);
+      --radius:20px;
+    }
+    html,body{min-height:100%;height:auto;}
+    body{
+      overflow:auto;
+      background:
+        radial-gradient(circle at 18% 0%, rgba(96,165,250,.20), transparent 34%),
+        radial-gradient(circle at 100% 0%, rgba(124,58,237,.12), transparent 30%),
+        linear-gradient(180deg,#f7faff 0%,var(--bg) 100%);
+    }
+    .shell{
+      width:min(100%,1680px);
+      min-height:100dvh;
+      height:auto;
+      margin:0 auto;
+      padding:12px;
+      gap:12px;
+      grid-template-rows:auto auto auto;
+      overflow:visible;
+    }
+    .topbar,.filters,.content-card{
+      border-radius:var(--radius);
+      box-shadow:var(--shadow);
+      background:rgba(255,255,255,.96);
+      backdrop-filter:blur(8px);
+    }
+    .topbar{
+      display:grid;
+      grid-template-columns:minmax(0,1fr) auto;
+      align-items:center;
+      padding:12px 14px;
+      gap:12px;
+    }
+    .brand{gap:10px;align-items:center;}
+    .logo{
+      width:44px;
+      height:44px;
+      border-radius:16px;
+      font-size:.9rem;
+      flex:0 0 auto;
+    }
+    h1{font-size:clamp(1.1rem,1.5vw,1.65rem);line-height:1.1;letter-spacing:-.035em;}
+    .subtitle{font-size:.82rem;line-height:1.25;}
+    .top-actions{
+      display:grid;
+      grid-template-columns:auto repeat(3,max-content);
+      align-items:center;
+      gap:8px;
+    }
+    .clock{font-size:1.12rem;line-height:1;}
+    .date{font-size:.72rem;}
+    button,input,select{height:38px;border-radius:12px;font-size:.85rem;}
+    button{padding:0 12px;box-shadow:0 8px 18px rgba(37,99,235,.15);}
+    button.secondary{box-shadow:none;background:#eef3fb;}
+    label{font-size:.67rem;letter-spacing:.055em;}
+    .filters{
+      display:grid;
+      grid-template-columns:minmax(280px,2fr) repeat(6,minmax(122px,1fr)) minmax(92px,.65fr);
+      gap:8px;
+      align-items:end;
+      padding:12px;
+    }
+    .filters .field:first-child{grid-column:auto;}
+    .field{gap:4px;}
+    .main{
+      display:grid;
+      grid-template-columns:minmax(0,2.15fr) minmax(360px,.85fr);
+      align-items:start;
+      gap:12px;
+      min-height:0;
+      overflow:visible;
+    }
+    .left,.right{gap:12px;min-width:0;overflow:visible;}
+    .scroll{overflow:visible;padding-right:0;}
+    .kpi-grid{
+      display:grid;
+      grid-template-columns:repeat(4,minmax(0,1fr));
+      grid-auto-flow:dense;
+      gap:10px;
+      align-items:stretch;
+    }
+    .kpi{
+      min-height:92px;
+      height:auto;
+      border-radius:18px;
+      padding:12px;
+      box-shadow:var(--shadow-soft);
+      display:grid;
+      grid-template-rows:auto 1fr auto;
+      gap:6px;
+      overflow:hidden;
+      position:relative;
+    }
+    .kpi::before{
+      content:"";
+      position:absolute;
+      left:0;
+      top:0;
+      bottom:0;
+      width:4px;
+      background:linear-gradient(180deg,var(--brand),#60a5fa);
+      opacity:.9;
+    }
+    .kpi:nth-child(6){grid-column:span 2;}
+    .kpi .label{font-size:.68rem;line-height:1.15;}
+    .kpi .value{font-size:clamp(1.35rem,1.9vw,2.05rem);line-height:1.02;letter-spacing:-.045em;}
+    .kpi .hint{font-size:.72rem;line-height:1.25;}
+    #kTopProd{font-size:clamp(1.05rem,1.35vw,1.35rem)!important;white-space:normal;}
+    .content-card{
+      padding:12px;
+      min-height:0;
+      overflow:hidden;
+    }
+    .section-head{
+      min-height:30px;
+      margin-bottom:8px;
+      align-items:center;
+      flex-wrap:wrap;
+    }
+    .section-title{font-size:1rem;line-height:1.2;}
+    .pill{font-size:.7rem;padding:5px 9px;}
+    .table-wrap{
+      max-height:360px;
+      border-radius:16px;
+      overflow:auto;
+      background:#fff;
+    }
+    table{min-width:760px;font-size:.81rem;}
+    th,td{padding:8px 10px;}
+    th{font-size:.68rem;}
+    .cards-abc{grid-template-columns:1fr;gap:10px;}
+    .abc-card{
+      border-radius:18px;
+      padding:12px;
+      box-shadow:var(--shadow-soft);
+      display:grid;
+      gap:6px;
+    }
+    .abc-card h3{font-size:.95rem;margin:0;}
+    .abc-card p{font-size:.79rem;line-height:1.3;}
+    .abc-value{font-size:1.55rem;margin:0;line-height:1;}
+    .mini-chart{gap:7px;}
+    .chart-row{grid-template-columns:minmax(72px,95px) minmax(0,1fr) minmax(48px,58px);gap:8px;font-size:.78rem;}
+    .bar-bg{height:9px;}
+    .report-controls{
+      grid-template-columns:1fr 1fr;
+      gap:8px;
+      margin-bottom:8px;
+    }
+    .report-controls button{width:100%;}
+    .empty{padding:20px;}
+
+    @media(min-width:1500px){
+      .main{grid-template-columns:minmax(0,2.35fr) minmax(390px,.8fr);}
+      .table-wrap{max-height:400px;}
+    }
+    @media(max-width:1250px){
+      .topbar{grid-template-columns:1fr;}
+      .top-actions{grid-template-columns:auto repeat(3,minmax(125px,1fr));width:100%;}
+      .filters{grid-template-columns:repeat(4,minmax(0,1fr));}
+      .filters .field:first-child{grid-column:span 2;}
+      .main{grid-template-columns:1fr;}
+      .right{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));align-items:start;}
+      .right .content-card:last-child{grid-column:1/-1;}
+      .cards-abc{grid-template-columns:repeat(3,minmax(0,1fr));}
+    }
+    @media(max-width:900px){
+      .filters{grid-template-columns:repeat(2,minmax(0,1fr));}
+      .filters .field:first-child{grid-column:1/-1;}
+      .kpi-grid{grid-template-columns:repeat(2,minmax(0,1fr));}
+      .kpi:nth-child(6){grid-column:span 2;}
+      .right{grid-template-columns:1fr;}
+      .right .content-card:last-child{grid-column:auto;}
+      .cards-abc{grid-template-columns:1fr;}
+      .top-actions{grid-template-columns:1fr 1fr;}
+      .top-actions > div{grid-column:1/-1;text-align:left;}
+      .clock,.date{text-align:left;}
+    }
+    @media(max-width:620px){
+      .shell{padding:8px;gap:10px;}
+      .topbar,.filters,.content-card{border-radius:17px;}
+      .topbar{padding:10px;}
+      .brand{align-items:flex-start;}
+      .logo{width:40px;height:40px;border-radius:14px;}
+      h1{white-space:normal;font-size:1.12rem;}
+      .subtitle{font-size:.78rem;}
+      .filters{grid-template-columns:1fr;padding:10px;}
+      .filters .field:first-child{grid-column:auto;}
+      .top-actions{grid-template-columns:1fr;}
+      .kpi-grid{grid-template-columns:1fr;}
+      .kpi:nth-child(6){grid-column:auto;}
+      .kpi{min-height:82px;}
+      .content-card{padding:10px;}
+      table{min-width:700px;}
+      .table-wrap{max-height:unset;}
+      .report-controls{grid-template-columns:1fr;}
+    }
+
   </style>
 </head>
 <body>
@@ -225,7 +446,7 @@
   <div class="toast" id="toast"></div>
 
 <script>
-const DEFAULT_API_URL = 'https://script.google.com/macros/s/AKfycbxN9OrEY-1VvKVr_aZ8C-to9VCyjG9kc27DU-MssF1Qr7A0Zjsd6frfg4XDsPlaanFWZg/exec';
+const DEFAULT_API_URL = 'https://script.google.com/macros/s/AKfycbxDPLaKDy5LqC9US-DQcCicPDIPb0XlxnPPA-y6N1AdDvbHZPxLzM0awD-NoFTcVk8Fkw/exec';
 const API_URL = DEFAULT_API_URL;
 const $ = id => document.getElementById(id);
 let pedidos = [];
@@ -564,7 +785,7 @@ function renderTablaTopClientes(rows){
 function renderTablaRotacion(rows){
   $('pillRotacion').textContent = `${rows.length} productos`;
   setTable('tblRotacion', ['ABC','Código','Descripción','Ubicación','Unidades','Pedidos','%','% acum.','Recomendación'], rows.slice(0,60).map(x => [
-    `<span class="badge ${x.clase.toLowerCase()}">${x.clase}</span>`, esc(x.codigo), esc(corte(x.descripcion,60)), esc(x.ubicacion), numCell(x.unidades), numCell(x.pedidos), pctCell(x.pct), pctCell(x.pct_acumulado), esc(x.recomendacion)
+    `<span class="badge ${x.clase.toLowerCase()}">${x.clase}</span>`, codeCell(x.codigo), esc(corte(x.descripcion,60)), esc(x.ubicacion), numCell(x.unidades), numCell(x.pedidos), pctCell(x.pct), pctCell(x.pct_acumulado), esc(x.recomendacion)
   ]));
 }
 
@@ -587,7 +808,7 @@ function generarInforme(btn){
   let data;
   if(tipoInforme === 'rotacion' || tipoInforme === 'abc'){
     data = calcularABC(tablaRotacion()).map(x => ({grupo:x.codigo, detalle:x.descripcion, clase:x.clase, unidades:x.unidades, pedidos:x.pedidos, porcentaje:dec(x.pct,2), acumulado:dec(x.pct_acumulado,2), recomendacion:x.recomendacion}));
-    setTable('tblInforme', ['Código','Descripción','ABC','Unidades','Pedidos','%','% acum.','Recomendación'], data.slice(0,100).map(x => [esc(x.grupo), esc(corte(x.detalle,50)), `<span class="badge ${x.clase.toLowerCase()}">${x.clase}</span>`, numCell(x.unidades), numCell(x.pedidos), pctCell(x.porcentaje), pctCell(x.acumulado), esc(x.recomendacion)]));
+    setTable('tblInforme', ['Código','Descripción','ABC','Unidades','Pedidos','%','% acum.','Recomendación'], data.slice(0,100).map(x => [codeCell(x.grupo), esc(corte(x.detalle,50)), `<span class="badge ${x.clase.toLowerCase()}">${x.clase}</span>`, numCell(x.unidades), numCell(x.pedidos), pctCell(x.porcentaje), pctCell(x.acumulado), esc(x.recomendacion)]));
   }else{
     data = agruparPersonalizado(grupo, metrica);
     setTable('tblInforme', ['Grupo','Pedidos','Terminados','Productos','Unidades','Tiempo total','Tiempo promedio','Métrica'], data.map(x => [esc(x.grupo), numCell(x.pedidos), numCell(x.terminados), numCell(x.productos), numCell(x.unidades), esc(formatearMinutos(x.tiempo_total_min)), esc(formatearMinutos(x.promedio_min)), numCell(x.valor)]));
@@ -690,7 +911,7 @@ function exportXlsx(rows, filename, sheetName = 'Informe'){
   filename = String(filename || 'informe.xlsx').replace(/\.csv$/i, '.xlsx');
   if(!/\.xlsx$/i.test(filename)) filename += '.xlsx';
   const keys = Object.keys(rows[0]);
-  const data = [keys].concat(rows.map(r => keys.map(k => xlsxCellValue(r[k]))));
+  const data = [keys].concat(rows.map(r => keys.map(k => xlsxCellValue(r[k], k))));
   const blob = makeXlsxBlob(data, sheetName);
   const a = document.createElement('a');
   a.href = URL.createObjectURL(blob);
@@ -728,10 +949,18 @@ function makeXlsxBlob(data, sheetName){
   return new Blob([zipStore(files)], {type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});
 }
 
-function xlsxCellValue(v){
+function xlsxCellValue(v, key = ''){
   if(v instanceof Set) v = Array.from(v).join(', ');
-  if(typeof v === 'number' && Number.isFinite(v)) return v;
+  const field = normalKey(key);
+  const textFields = ['CODIGO','CODIGOPRODUCTO','COD','SKU','PRODUCTO','PEDIDO','NROPEDIDO','NUMEROPEDIDO','GRUPO'];
+  if(typeof v === 'number' && Number.isFinite(v)){
+    return textFields.includes(field) ? String(v) : v;
+  }
   const s = txt(v);
+  if(!s) return '';
+  // Mantiene como texto cualquier código o valor numérico con cero inicial.
+  // Esto evita que Excel elimine los ceros delanteros en códigos como 000123.
+  if(textFields.includes(field) || /^0\d+/.test(s) || /^0\d+[.,]\d+$/.test(s)) return s;
   const normalized = s.replace(/\./g,'').replace(',','.');
   if(/^[-+]?\d+(?:[.,]\d+)?$/.test(s) && s.length < 16) return Number(normalized);
   return s;
@@ -822,6 +1051,9 @@ function dec(n, d=1){ n = Number(n || 0); return Number.isFinite(n) ? n.toFixed(
 function corte(v, n){ v = txt(v); return v.length > n ? v.slice(0,n-1) + '…' : v; }
 function esc(v){ return txt(v).replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])); }
 function escAttr(v){ return esc(v).replace(/`/g,'&#96;'); }
+
+function codeCell(v){ return `<span class="code-cell">${esc(txt(v))}</span>`; }
+
 function numCell(v){ return `<span class="num">${esc(dec(v, Number(v)%1 ? 1 : 0))}</span>`; }
 function pctCell(v){ return `<span class="num">${esc(dec(v,1))}%</span>`; }
 function progressCell(v){ const pct = Math.max(0, Math.min(100, Number(v || 0))); return `<div class="bar-cell"><div class="bar-bg"><div class="bar-fill" style="width:${pct}%"></div></div><div class="num" style="font-size:.72rem;color:#64748b;margin-top:3px">${pct}%</div></div>`; }
@@ -829,6 +1061,8 @@ function setButtonLoading(btn, on){ if(!btn) return; btn.classList.toggle('loadi
 function withLoader(btn, fn){ setButtonLoading(btn, true); try{ fn(); }finally{ setTimeout(()=>setButtonLoading(btn,false), 180); } }
 function toast(msg){ const el = $('toast'); el.textContent = msg; el.classList.add('show'); clearTimeout(toast._t); toast._t = setTimeout(()=>el.classList.remove('show'), 2600); }
 function reloj(){ const d = new Date(); $('clock').textContent = d.toLocaleTimeString('es-CL',{hour:'2-digit',minute:'2-digit'}); $('dateLine').textContent = d.toLocaleDateString('es-CL',{weekday:'long',day:'2-digit',month:'long'}); }
+
+/* CORRECCION_CEROS_INICIALES_INFORME_2026_05_13: códigos y campos grupo/código se exportan como texto para mantener ceros delanteros. */
 </script>
 </body>
 </html>

@@ -1,0 +1,14 @@
+CORRECCIÓN SINCRONIZACIÓN MAESTRA - ORDEN DE PEDIDO
+
+Se corrigió la sincronización de productos desde la hoja MAESTRA.
+
+Cambios aplicados:
+- Orden de Pedido ya no carga solo la primera página de MAESTRA.
+- El botón Sincronizar Maestra ahora recorre todas las páginas de la BD.
+- La búsqueda exacta por código consulta toda la hoja MAESTRA desde Apps Script.
+- Se mantiene el flujo optimizado: no se vuelve a cargar un datalist masivo para no ralentizar la digitación.
+- Si el producto tiene ubicación en MOVIMIENTO o MOVIMIENTO_UBICACION, la sigue trayendo automáticamente.
+- Actualizado también en assets Android.
+
+IMPORTANTE:
+Copiar el Apps Script actualizado y volver a publicarlo como Web App para que la búsqueda exacta en toda la MAESTRA quede activa.

@@ -1,0 +1,24 @@
+CAMBIO APLICADO
+
+Se actualizó la URL oficial del Web App en el sistema web:
+https://script.google.com/macros/s/AKfycbxDPLaKDy5LqC9US-DQcCicPDIPb0XlxnPPA-y6N1AdDvbHZPxLzM0awD-NoFTcVk8Fkw/exec
+
+Módulos revisados/actualizados:
+- ubicaciones.js
+- ubicaciones.html
+- orden_pedidos.js
+- index.html
+- sheet_module.js
+- bd_maestra.html
+- bd_movimiento.html
+- bd_movimiento_ubicacion.html
+- bd_movimiento_pedidos.html
+- seguimiento_cliente.html
+- pantalla_cliente_tv.html
+- dashboard_pikeadores_abc.html
+
+El módulo Ubicaciones mantiene:
+- previsualización antes de importar
+- validación de líneas
+- importación masiva con accion importar_movimiento
+- confirmación de líneas recibidas, válidas, insertadas, omitidas y procesadas
