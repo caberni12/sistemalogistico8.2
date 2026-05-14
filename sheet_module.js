@@ -1,5 +1,5 @@
 (function(){
-  const DEFAULT_API_URL = 'https://script.google.com/macros/s/AKfycbxDPLaKDy5LqC9US-DQcCicPDIPb0XlxnPPA-y6N1AdDvbHZPxLzM0awD-NoFTcVk8Fkw/exec';
+  const DEFAULT_API_URL = 'https://script.google.com/macros/s/AKfycbzMCtHIfVrCjRkBlPSeAxI8ngbfAxm_0Qe6c-yzZ2RZhaBAaF1GSM5Yl9KFl2FlkEMKoA/exec';
   const AUTO_REFRESH_MS = 2000;
   const DEVICE_ID = (() => {
     const key = 'sgsa_device_id';
@@ -67,6 +67,21 @@
     });
   }
 
+  const LEGACY_API_IDS = [
+    'AKfycbwbvr0nnbS9G0dUPB7OkNuVtN3qlvh-TlI7h_tUZoLJHeoXX-dPNUpX_L3NIEw8AK8COg',
+    'AKfycbxDPLaKDy5LqC9US-DQcCicPDIPb0XlxnPPA-y6N1AdDvbHZPxLzM0awD-NoFTcVk8Fkw',
+    'AKfycbxN9OrEY-1VvKVr_aZ8C-to9VCyjG9kc27DU-MssF1Qr7A0Zjsd6frfg4XDsPlaanFWZg',
+    'AKfycbxMbXCpUDk7kKC09x1vlc3UemthLhiiX3dE7QYmUvZdb58mAu4wLXGhhEk7XtuLk4ElFA',
+    'AKfycbwy9XG5qpTcV46NKnKyuNz39Bh2J10oSrk1zPSTQjORCSJcXpvMEj7zMgPRH637eecx2Q'
+  ];
+
+  function normalizeApiUrlFromStorage(value){
+    const url = txt(value);
+    if(!url) return DEFAULT_API_URL;
+    if(LEGACY_API_IDS.some(id => url.includes(id))) return DEFAULT_API_URL;
+    return url;
+  }
+
   function updateInfo(message){
     if(syncInfo) syncInfo.textContent = message || '';
   }
@@ -84,13 +99,9 @@
   }
 
   async function loadApiConfig(){
-    API_URL = DEFAULT_API_URL;
     try{
-      localStorage.removeItem('API_URL_SGL');
-      localStorage.removeItem('API_URL_PEDIDOS');
-      localStorage.removeItem('API_URL_UBICACIONES');
-      localStorage.removeItem('sistema_pedidos_api_url');
-    }catch(err){}
+      API_URL = normalizeApiUrlFromStorage(localStorage.getItem('sistema_pedidos_api_url') || localStorage.getItem('API_URL_PEDIDOS') || localStorage.getItem('API_URL_SGL') || DEFAULT_API_URL);
+    }catch(err){ API_URL = DEFAULT_API_URL; }
   }
 
   function findIndex(possibleNames){
@@ -191,7 +202,7 @@
     isLoading = true;
     if(manual) setButtonLoading(btnSync, true, 'Sincronizando...');
     try{
-      const url = `${API_URL}?accion=listar_bd&sheet=${encodeURIComponent(SHEET_NAME)}&device=${encodeURIComponent(DEVICE_ID)}&rt=${Date.now()}&nocache=${Math.random().toString(36).slice(2)}`;
+      const url = `${API_URL}?accion=listar_bd&action=listar_bd&sheet=${encodeURIComponent(SHEET_NAME)}&bd=${encodeURIComponent(SHEET_NAME)}&hoja=${encodeURIComponent(SHEET_NAME)}&device=${encodeURIComponent(DEVICE_ID)}&rt=${Date.now()}&nocache=${Math.random().toString(36).slice(2)}`;
       const data = await jsonpListData(url);
       if(!data || !data.ok){
         throw new Error((data && data.msg) || 'No se pudo leer la BD');

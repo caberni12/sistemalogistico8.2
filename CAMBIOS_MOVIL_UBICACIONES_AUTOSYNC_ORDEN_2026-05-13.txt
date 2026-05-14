@@ -1,0 +1,15 @@
+CAMBIOS APLICADOS 2026-05-13
+
+1. Módulo Ubicaciones - versión móvil
+   - Botones superiores reorganizados en grilla uniforme.
+   - Botones con ancho completo, altura pareja y texto centrado para evitar distorsión.
+   - Tarjetas móviles ordenadas con encabezado, filas alineadas, fechas, badge de estado y acciones uniformes.
+   - Acciones móviles de tarjeta ahora muestran Editar y Eliminar con mejor separación.
+   - Se corrigió el comportamiento visual para pantallas pequeñas, evitando desbordes horizontales.
+
+2. HTML Orden de Pedido
+   - Se agregó checkbox “Auto sync 2s” en el panel principal.
+   - Si está desactivado, el sistema mantiene la sincronización manual mediante el botón Sincronizar.
+   - Si está activado, consulta automáticamente la base de datos cada 2 segundos.
+   - Se guarda la preferencia en localStorage para mantener la selección al recargar.
+   - Se evita superponer consultas: si una sincronización está en curso, la siguiente espera al próximo ciclo.

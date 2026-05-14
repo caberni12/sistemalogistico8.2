@@ -12,7 +12,7 @@
 
 ## URL configurada
 
-https://script.google.com/macros/s/AKfycbxDPLaKDy5LqC9US-DQcCicPDIPb0XlxnPPA-y6N1AdDvbHZPxLzM0awD-NoFTcVk8Fkw/exec
+https://script.google.com/macros/s/AKfycbzMCtHIfVrCjRkBlPSeAxI8ngbfAxm_0Qe6c-yzZ2RZhaBAaF1GSM5Yl9KFl2FlkEMKoA/exec
 
 ## Reemplazo necesario
 

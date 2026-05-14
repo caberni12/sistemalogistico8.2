@@ -3,7 +3,7 @@ let CARD_STATE = {}; // idFila => true (expandida) | false (colapsada)
    CONFIGURACIÓN
 ===================================================== */
 const DEFAULT_URL_GS =
-  'https://script.google.com/macros/s/AKfycbxDPLaKDy5LqC9US-DQcCicPDIPb0XlxnPPA-y6N1AdDvbHZPxLzM0awD-NoFTcVk8Fkw/exec';
+  'https://script.google.com/macros/s/AKfycbzMCtHIfVrCjRkBlPSeAxI8ngbfAxm_0Qe6c-yzZ2RZhaBAaF1GSM5Yl9KFl2FlkEMKoA/exec';
 
 function abrirDialogoImpresionPdf(doc,nombreArchivo){
   try{
@@ -575,8 +575,8 @@ function renderTabla(arr){
       </span>
 
       <div class="card-actions">
-        <button class="edit" onclick='event.stopPropagation(); editar(${jsonAttr(r)})' title="Editar">✏️</button>
-        <button class="del" onclick='event.stopPropagation(); eliminar(${jsonAttr(id)},this)' title="Eliminar">🗑️</button>
+        <button class="edit" onclick='event.stopPropagation(); editar(${jsonAttr(r)})' title="Editar">✏️ Editar</button>
+        <button class="del" onclick='event.stopPropagation(); eliminar(${jsonAttr(id)},this)' title="Eliminar">🗑️ Eliminar</button>
       </div>
 
     </div>

@@ -286,6 +286,8 @@
         <button class="nav-btn" data-module="dashboard_pikeadores_abc.html" data-title="Dashboard KPI Pikeadores" data-subtitle="KPI por pikeador, tiempo de preparación, rotación y ABC bodega"><span class="nav-icon">📊</span><span>Dashboard KPI</span></button>
         <button class="nav-btn" data-module="ubicaciones.html" data-title="Ubicaciones" data-subtitle="Movimientos, scanner, códigos y descripción rápida"><span class="nav-icon">📍</span><span>Ubicaciones</span></button>
         <button class="nav-btn" data-module="bd_maestra.html" data-title="BD-MAESTRA" data-subtitle="Productos maestros: ver, agregar, editar, eliminar, importar y exportar"><span class="nav-icon">📘</span><span>BD-MAESTRA</span></button>
+        <button class="nav-btn" data-module="bd_vendedores.html" data-title="BD-VENDEDORES" data-subtitle="Administrar vendedores: agregar, editar, eliminar, importar y exportar"><span class="nav-icon">👤</span><span>BD-VENDEDORES</span></button>
+        <button class="nav-btn" data-module="bd_pikeadores.html" data-title="BD-PIKEADORES" data-subtitle="Administrar pikeadores: agregar, editar, eliminar, importar y exportar"><span class="nav-icon">🧑‍🏭</span><span>BD-PIKEADORES</span></button>
         <button class="nav-btn" data-module="bd_movimiento_ubicacion.html" data-title="MOVIMIENTO_UBICACION" data-subtitle="Historial de movimientos por ubicación"><span class="nav-icon">📌</span><span>MOVIMIENTO_UBICACION</span></button>
         <button class="nav-btn" data-module="bd_movimiento_pedidos.html" data-title="MOVIMIENTO_PEDIDOS" data-subtitle="Historial de estados y avances de pedidos"><span class="nav-icon">🧾</span><span>MOVIMIENTO_PEDIDOS</span></button>
         <button class="nav-btn" id="btnOpenConfig"><span class="nav-icon">⚙️</span><span>Configuración URL</span></button>
@@ -316,7 +318,7 @@
           <div class="home-scroll">
             <section class="hero">
               <h2>Sistema de Gestión Servicios AS</h2>
-              <p>Desde este menú puedes entrar a Orden de Pedidos, Ubicaciones, Pantalla Cliente TV, Dashboard KPI, BD-MAESTRA, MOVIMIENTO_UBICACION, MOVIMIENTO_PEDIDOS y cambiar la URL del Apps Script sin modificar el proyecto.</p>
+              <p>Desde este menú puedes entrar a Orden de Pedidos, Ubicaciones, Pantalla Cliente TV, Dashboard KPI, BD-MAESTRA, BD-VENDEDORES, BD-PIKEADORES, MOVIMIENTO_UBICACION, MOVIMIENTO_PEDIDOS y cambiar la URL del Apps Script sin modificar el proyecto.</p>
               <div class="hero-actions">
                 <button class="infra-btn" onclick="openModule('orden_pedidos.html','Orden de Pedidos','Carga, importación, ubicaciones y PDF de pedidos')">Abrir Orden de Pedidos</button>
                 <button class="infra-btn secondary" onclick="openModule('ubicaciones.html','Ubicaciones','Scanner y movimientos de productos')">Abrir Ubicaciones</button>
@@ -324,6 +326,8 @@
                 <button class="infra-btn secondary" onclick="openModule('dashboard_pikeadores_abc.html','Dashboard KPI Pikeadores','KPI por pikeador, tiempos, rotación y ABC bodega')">Dashboard KPI</button>
 
                 <button class="infra-btn secondary" onclick="openModule('bd_maestra.html','BD-MAESTRA','Productos maestros: ver, agregar, editar, eliminar, importar y exportar')">BD-MAESTRA</button>
+                <button class="infra-btn secondary" onclick="openModule('bd_vendedores.html','BD-VENDEDORES','Administrar vendedores: agregar, editar, eliminar, importar y exportar')">BD-VENDEDORES</button>
+                <button class="infra-btn secondary" onclick="openModule('bd_pikeadores.html','BD-PIKEADORES','Administrar pikeadores: agregar, editar, eliminar, importar y exportar')">BD-PIKEADORES</button>
                 <button class="infra-btn secondary" onclick="openModule('bd_movimiento_ubicacion.html','MOVIMIENTO_UBICACION','Historial de movimientos por ubicación')">MOVIMIENTO_UBICACION</button>
                 <button class="infra-btn secondary" onclick="openModule('bd_movimiento_pedidos.html','MOVIMIENTO_PEDIDOS','Historial de estados y avances de pedidos')">MOVIMIENTO_PEDIDOS</button>
                 <button class="infra-btn secondary" onclick="openConfig()">Configurar URL</button>
@@ -336,6 +340,8 @@
               <button class="quick-card" onclick="openModule('pantalla_cliente_tv.html','Pantalla Cliente TV','Tarjetas de avance, alerta emergente y voz')"><div><div class="icon">📺</div><h3>Pantalla Cliente TV</h3><p>Vista tipo televisor con tarjetas grandes, aviso emergente y voz al terminar pedidos.</p></div></button>
               <button class="quick-card" onclick="openModule('dashboard_pikeadores_abc.html','Dashboard KPI Pikeadores','KPI por pikeador, tiempos, rotación y ABC bodega')"><div><div class="icon">📊</div><h3>Dashboard KPI</h3><p>Rendimiento de pikeadores, tiempo promedio de preparación, productos con más rotación y ABC de bodega.</p></div></button>
               <button class="quick-card" onclick="openModule('bd_maestra.html','BD-MAESTRA','Productos maestros: ver, agregar, editar, eliminar, importar y exportar')"><div><div class="icon">📘</div><h3>BD-MAESTRA</h3><p>Carga la MAESTRA, agrega, edita, elimina, importa archivo con previsualización y exporta XLSX.</p></div></button>
+              <button class="quick-card" onclick="openModule('bd_vendedores.html','BD-VENDEDORES','Administrar vendedores: agregar, editar, eliminar, importar y exportar')"><div><div class="icon">👤</div><h3>BD-VENDEDORES</h3><p>Crear, editar, eliminar, importar y exportar vendedores conectados a la hoja VENDEDORES.</p></div></button>
+              <button class="quick-card" onclick="openModule('bd_pikeadores.html','BD-PIKEADORES','Administrar pikeadores: agregar, editar, eliminar, importar y exportar')"><div><div class="icon">🧑‍🏭</div><h3>BD-PIKEADORES</h3><p>Crear, editar, eliminar, importar y exportar pikeadores conectados a la hoja PIKEADORES.</p></div></button>
               <button class="quick-card" onclick="openModule('bd_movimiento_ubicacion.html','MOVIMIENTO_UBICACION','Historial de movimientos por ubicación')"><div><div class="icon">📌</div><h3>MOVIMIENTO_UBICACION</h3><p>Consulta y administra movimientos de ubicación con agregar, editar, eliminar e importar.</p></div></button>
               <button class="quick-card" onclick="openModule('bd_movimiento_pedidos.html','MOVIMIENTO_PEDIDOS','Historial de estados y avances de pedidos')"><div><div class="icon">🧾</div><h3>MOVIMIENTO_PEDIDOS</h3><p>Consulta y administra el historial de pedidos, estados, pikeadores, clientes y vendedores.</p></div></button>
             </section>
@@ -373,7 +379,7 @@
       <div class="modal-header"><h2>Configuración de URL Apps Script</h2><button class="close-x" onclick="closeConfig()">×</button></div>
       <div class="modal-body">
         <label>URL del Apps Script</label>
-        <input id="apiUrlInput" placeholder="https://script.google.com/macros/s/AKfycbxDPLaKDy5LqC9US-DQcCicPDIPb0XlxnPPA-y6N1AdDvbHZPxLzM0awD-NoFTcVk8Fkw/exec" />
+        <input id="apiUrlInput" placeholder="https://script.google.com/macros/s/AKfycbzMCtHIfVrCjRkBlPSeAxI8ngbfAxm_0Qe6c-yzZ2RZhaBAaF1GSM5Yl9KFl2FlkEMKoA/exec" />
         <p class="help">Esta URL queda guardada en memoria local y será usada por Pedidos y Ubicaciones Pro. También puedes descargar un <b>config.txt</b>.</p>
         <input type="file" id="txtConfigInput" accept=".txt,.json" hidden />
         <div class="status-box" id="configStatus">Sin cambios.</div>
@@ -388,7 +394,7 @@
   </div>
 
   <script>
-    const DEFAULT_API_URL = 'https://script.google.com/macros/s/AKfycbxDPLaKDy5LqC9US-DQcCicPDIPb0XlxnPPA-y6N1AdDvbHZPxLzM0awD-NoFTcVk8Fkw/exec';
+    const DEFAULT_API_URL = 'https://script.google.com/macros/s/AKfycbzMCtHIfVrCjRkBlPSeAxI8ngbfAxm_0Qe6c-yzZ2RZhaBAaF1GSM5Yl9KFl2FlkEMKoA/exec';
     const API_URL_STORAGE_KEY = 'sistema_pedidos_api_url';
     try{ localStorage.removeItem(API_URL_STORAGE_KEY); localStorage.removeItem('API_URL_SGL'); localStorage.removeItem('API_URL_PEDIDOS'); localStorage.removeItem('API_URL_UBICACIONES'); }catch(e){}
     const UBICACIONES_CACHE_KEY = 'pedidos_ubicaciones_cache_v3_all_locations';
