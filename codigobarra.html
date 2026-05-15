@@ -237,6 +237,378 @@ button:disabled{opacity:.55;cursor:not-allowed;transform:none}
  .codigo,.descripcion,.unidades,.code{transform:none!important}
 }
 
+
+/* FIX FINAL: IMPRESIÓN CENTRADA REAL
+   Al abrir el diálogo de impresión, el contenido interno queda anclado
+   al centro exacto de la etiqueta. La escala/zoom afecta solo el interior,
+   nunca la medida física configurada de la etiqueta. */
+@media print{
+ body > *:not(.sheet-wrap){display:none!important;visibility:hidden!important;height:0!important;min-height:0!important;overflow:hidden!important}
+ .sheet-wrap{display:block!important;visibility:visible!important;position:static!important;margin:0!important;padding:0!important;width:auto!important;height:auto!important;min-height:0!important;background:#fff!important;overflow:visible!important}
+ .sheet-wrap *{visibility:visible!important}
+ #preview.sheet{display:flex!important;flex-wrap:wrap!important;align-items:flex-start!important;align-content:flex-start!important;justify-content:flex-start!important;width:auto!important;max-width:100%!important;margin:0!important;padding:0!important;overflow:visible!important;background:#fff!important;border:0!important;gap:var(--print-gap-y,0mm) var(--print-gap-x,0mm)!important;page-break-after:auto!important;break-after:auto!important}
+ #preview .label{position:relative!important;display:block!important;float:none!important;flex:0 0 auto!important;box-sizing:border-box!important;overflow:hidden!important;margin:0!important;border:0!important;box-shadow:none!important;page-break-inside:avoid!important;break-inside:avoid!important;page-break-before:avoid!important;page-break-after:avoid!important;break-before:avoid!important;break-after:avoid!important}
+ #preview .label-inner{position:absolute!important;left:50%!important;top:50%!important;width:100%!important;height:100%!important;margin:0!important;display:grid!important;grid-template-rows:auto minmax(0,1fr) auto auto!important;place-items:center!important;place-content:center!important;align-content:center!important;justify-items:center!important;text-align:center!important;transform-origin:center center!important;transform:translate(-50%,-50%) scale(calc(var(--content-zoom,1) * var(--print-fit-scale,1)))!important}
+ #preview .codigo,#preview .descripcion,#preview .unidades{width:100%!important;text-align:center!important;justify-self:center!important;margin-left:auto!important;margin-right:auto!important}
+ #preview .code{width:100%!important;display:flex!important;align-items:center!important;justify-content:center!important;justify-self:center!important;align-self:center!important;text-align:center!important;margin-left:auto!important;margin-right:auto!important;overflow:hidden!important}
+ #preview .code canvas,#preview .code svg,#preview .code img{display:block!important;margin:auto!important;max-width:100%!important;max-height:100%!important;object-fit:contain!important}
+}
+
+
+/* FIX DEFINITIVO ANTI-DESBORDE:
+   La medida física de la etiqueta no cambia. Solo se escala el contenido interno
+   para que entre dentro de la etiqueta, centrado horizontal y verticalmente. */
+.label{
+ position:relative!important;
+ overflow:hidden!important;
+ display:grid!important;
+ place-items:center!important;
+ place-content:center!important;
+}
+.label-inner{
+ max-width:100%!important;
+ max-height:100%!important;
+ min-width:0!important;
+ min-height:0!important;
+ overflow:hidden!important;
+ transform:scale(var(--final-label-scale,var(--content-zoom,1)))!important;
+ transform-origin:center center!important;
+}
+.codigo,.descripcion,.unidades{
+ max-width:100%!important;
+ min-width:0!important;
+ overflow:hidden!important;
+ text-align:center!important;
+ overflow-wrap:anywhere!important;
+ word-break:break-word!important;
+}
+.descripcion{
+ display:-webkit-box!important;
+ -webkit-box-orient:vertical!important;
+}
+.code{
+ max-width:100%!important;
+ min-width:0!important;
+ overflow:hidden!important;
+ display:flex!important;
+ align-items:center!important;
+ justify-content:center!important;
+}
+.code canvas,.code svg,.code img{
+ max-width:100%!important;
+ max-height:100%!important;
+ object-fit:contain!important;
+ margin:auto!important;
+}
+@media print{
+ #preview .label{
+  width:var(--w)!important;
+  height:var(--h)!important;
+  overflow:hidden!important;
+ }
+ #preview .label-inner{
+  position:absolute!important;
+  left:50%!important;
+  top:50%!important;
+  width:100%!important;
+  height:100%!important;
+  transform-origin:center center!important;
+  transform:translate(-50%,-50%) scale(var(--print-final-scale,var(--final-label-scale,1)))!important;
+  overflow:hidden!important;
+ }
+}
+
+
+
+/* FIX FINAL SIN MARGEN INTERNO + SIN MONTAJE ENTRE PÁGINAS
+   - La etiqueta física conserva su ancho/alto configurado por cada item.
+   - No se agrega padding/margen interno dentro de la etiqueta.
+   - En impresión cada etiqueta se comporta como bloque indivisible para evitar cortes entre páginas. */
+.label{
+ padding:0!important;
+ margin:0!important;
+ box-sizing:border-box!important;
+ width:var(--item-w,var(--w))!important;
+ height:var(--item-h,var(--h))!important;
+ min-width:var(--item-w,var(--w))!important;
+ max-width:var(--item-w,var(--w))!important;
+ min-height:var(--item-h,var(--h))!important;
+ max-height:var(--item-h,var(--h))!important;
+ overflow:hidden!important;
+ position:relative!important;
+ display:grid!important;
+ place-items:center!important;
+ place-content:center!important;
+ text-align:center!important;
+ page-break-inside:avoid!important;
+ break-inside:avoid!important;
+}
+.label-inner{
+ padding:0!important;
+ margin:0!important;
+ box-sizing:border-box!important;
+ width:100%!important;
+ height:100%!important;
+ max-width:100%!important;
+ max-height:100%!important;
+ overflow:hidden!important;
+}
+.codigo,.descripcion,.unidades,.code{
+ margin:0!important;
+ padding:0!important;
+ box-sizing:border-box!important;
+ max-width:100%!important;
+ min-width:0!important;
+ overflow:hidden!important;
+}
+.code{min-height:0!important;}
+@media print{
+ @page{margin:var(--print-margin)!important;}
+ html,body{
+  background:#fff!important;
+  margin:0!important;
+  padding:0!important;
+  width:auto!important;
+  height:auto!important;
+  min-height:0!important;
+  overflow:visible!important;
+  zoom:1!important;
+  -webkit-print-color-adjust:exact!important;
+  print-color-adjust:exact!important;
+ }
+ body > *:not(.sheet-wrap){display:none!important;visibility:hidden!important;height:0!important;min-height:0!important;overflow:hidden!important;}
+ .sheet-wrap{
+  display:block!important;
+  visibility:visible!important;
+  position:static!important;
+  margin:0!important;
+  padding:0!important;
+  width:auto!important;
+  height:auto!important;
+  min-height:0!important;
+  overflow:visible!important;
+  background:#fff!important;
+ }
+ .sheet-wrap *{visibility:visible!important;}
+ #preview.sheet{
+  display:block!important;
+  flex-wrap:initial!important;
+  align-items:initial!important;
+  align-content:initial!important;
+  justify-content:initial!important;
+  width:auto!important;
+  max-width:100%!important;
+  height:auto!important;
+  min-height:0!important;
+  margin:0!important;
+  padding:0!important;
+  border:0!important;
+  background:#fff!important;
+  overflow:visible!important;
+  font-size:0!important;
+  line-height:0!important;
+  white-space:normal!important;
+  gap:0!important;
+  page-break-after:auto!important;
+  break-after:auto!important;
+ }
+ #preview .label{
+  display:inline-block!important;
+  vertical-align:top!important;
+  float:none!important;
+  box-sizing:border-box!important;
+  width:var(--item-w,var(--w))!important;
+  height:var(--item-h,var(--h))!important;
+  min-width:var(--item-w,var(--w))!important;
+  max-width:var(--item-w,var(--w))!important;
+  min-height:var(--item-h,var(--h))!important;
+  max-height:var(--item-h,var(--h))!important;
+  padding:0!important;
+  border:0!important;
+  box-shadow:none!important;
+  overflow:hidden!important;
+  position:relative!important;
+  margin:0 var(--print-gap-x,0mm) var(--print-gap-y,0mm) 0!important;
+  page-break-inside:avoid!important;
+  break-inside:avoid!important;
+  break-inside:avoid-page!important;
+  page-break-before:auto!important;
+  page-break-after:auto!important;
+  break-before:auto!important;
+  break-after:auto!important;
+ }
+ #preview .label-inner{
+  position:absolute!important;
+  left:50%!important;
+  top:50%!important;
+  width:100%!important;
+  height:100%!important;
+  padding:0!important;
+  margin:0!important;
+  display:grid!important;
+  grid-template-rows:auto minmax(0,1fr) auto auto!important;
+  place-items:center!important;
+  place-content:center!important;
+  align-content:center!important;
+  justify-items:center!important;
+  text-align:center!important;
+  overflow:hidden!important;
+  transform-origin:center center!important;
+  transform:translate(-50%,-50%) scale(var(--print-final-scale,var(--final-label-scale,1)))!important;
+ }
+ #preview .codigo,#preview .descripcion,#preview .unidades,#preview .code{
+  margin:0!important;
+  padding:0!important;
+  width:100%!important;
+  max-width:100%!important;
+  text-align:center!important;
+  justify-self:center!important;
+  overflow:hidden!important;
+ }
+ #preview .code{display:flex!important;align-items:center!important;justify-content:center!important;}
+ #preview .code canvas,#preview .code svg,#preview .code img{
+  display:block!important;
+  margin:auto!important;
+  max-width:100%!important;
+  max-height:100%!important;
+  object-fit:contain!important;
+ }
+}
+
+
+
+/* AJUSTE FINAL: CENTRADO REAL HORIZONTAL Y VERTICAL
+   Mantiene la etiqueta sin margen interno, respeta el tamaño configurado
+   y centra tanto la vista previa como el contenido interno en impresión. */
+.sheet{
+ justify-content:center!important;
+ align-items:flex-start!important;
+ align-content:flex-start!important;
+ text-align:center!important;
+}
+.label{
+ display:grid!important;
+ place-items:center!important;
+ place-content:center!important;
+ text-align:center!important;
+ padding:0!important;
+ overflow:hidden!important;
+}
+.label-inner{
+ position:absolute!important;
+ left:50%!important;
+ top:50%!important;
+ width:100%!important;
+ height:100%!important;
+ display:grid!important;
+ grid-template-rows:auto minmax(0,1fr) auto auto!important;
+ place-items:center!important;
+ place-content:center!important;
+ align-content:center!important;
+ justify-content:center!important;
+ justify-items:center!important;
+ text-align:center!important;
+ margin:0!important;
+ padding:0!important;
+ transform-origin:center center!important;
+ transform:translate(-50%,-50%) scale(var(--final-label-scale,var(--content-zoom,1)))!important;
+ overflow:hidden!important;
+}
+.codigo,.descripcion,.unidades{
+ width:100%!important;
+ max-width:100%!important;
+ text-align:center!important;
+ justify-self:center!important;
+ align-self:center!important;
+ margin-left:auto!important;
+ margin-right:auto!important;
+}
+.code{
+ width:100%!important;
+ max-width:100%!important;
+ display:flex!important;
+ align-items:center!important;
+ justify-content:center!important;
+ justify-self:center!important;
+ align-self:center!important;
+ text-align:center!important;
+ margin-left:auto!important;
+ margin-right:auto!important;
+ overflow:hidden!important;
+}
+.code canvas,.code svg,.code img{
+ display:block!important;
+ margin-left:auto!important;
+ margin-right:auto!important;
+ margin-top:auto!important;
+ margin-bottom:auto!important;
+ max-width:100%!important;
+ max-height:100%!important;
+ object-fit:contain!important;
+}
+.code svg{
+ overflow:visible!important;
+ transform-origin:center center!important;
+}
+@media print{
+ #preview.sheet{
+  display:block!important;
+  width:100%!important;
+  max-width:100%!important;
+  text-align:center!important;
+  margin-left:auto!important;
+  margin-right:auto!important;
+  padding:0!important;
+  font-size:0!important;
+  line-height:0!important;
+  white-space:normal!important;
+ }
+ #preview .label{
+  display:inline-block!important;
+  vertical-align:top!important;
+  position:relative!important;
+  text-align:center!important;
+  margin-left:calc(var(--print-gap-x,0mm) / 2)!important;
+  margin-right:calc(var(--print-gap-x,0mm) / 2)!important;
+  margin-top:0!important;
+  margin-bottom:var(--print-gap-y,0mm)!important;
+  page-break-inside:avoid!important;
+  break-inside:avoid!important;
+  overflow:hidden!important;
+ }
+ #preview .label-inner{
+  position:absolute!important;
+  left:50%!important;
+  top:50%!important;
+  width:100%!important;
+  height:100%!important;
+  display:grid!important;
+  place-items:center!important;
+  place-content:center!important;
+  align-content:center!important;
+  justify-content:center!important;
+  justify-items:center!important;
+  text-align:center!important;
+  margin:0!important;
+  padding:0!important;
+  transform-origin:center center!important;
+  transform:translate(-50%,-50%) scale(var(--print-final-scale,var(--final-label-scale,var(--content-zoom,1))))!important;
+ }
+ #preview .codigo,#preview .descripcion,#preview .unidades,#preview .code{
+  width:100%!important;
+  max-width:100%!important;
+  text-align:center!important;
+  justify-self:center!important;
+  align-self:center!important;
+  margin-left:auto!important;
+  margin-right:auto!important;
+ }
+ #preview .code{
+  display:flex!important;
+  align-items:center!important;
+  justify-content:center!important;
+ }
+}
 </style>
 </head>
 
@@ -398,6 +770,7 @@ button:disabled{opacity:.55;cursor:not-allowed;transform:none}
     <label>Tamaño rápido</label>
     <select id="template" onchange="setTemplate(this.value); actualizarResumenConfig()">
      <option value="">Personalizado</option>
+     <option value="30x50">30 x 50 mm - etiqueta pequeña</option>
      <option value="50x30">50 x 30 mm</option>
      <option value="60x40">60 x 40 mm</option>
      <option value="80x50" selected>80 x 50 mm</option>
@@ -447,15 +820,15 @@ button:disabled{opacity:.55;cursor:not-allowed;transform:none}
   <div class="row3">
    <div>
     <label>Margen interno etiqueta mm</label>
-    <input id="paddingMm" type="number" min="0" step="0.5" value="3" oninput="guardarConfig()">
+    <input id="paddingMm" type="number" min="0" step="0.5" value="0" oninput="guardarConfig()">
    </div>
    <div>
     <label>Separación pantalla mm</label>
-    <input id="gapMm" type="number" min="0" step="0.5" value="4" oninput="guardarConfig(); aplicarConfigVisual()">
+    <input id="gapMm" type="number" min="0" step="0.5" value="0" oninput="guardarConfig(); aplicarConfigVisual()">
    </div>
    <div>
     <label>Margen impresión mm</label>
-    <input id="printMarginMm" type="number" min="0" step="0.5" value="4" oninput="guardarConfig(); aplicarConfigVisual()">
+    <input id="printMarginMm" type="number" min="0" step="0.5" value="0" oninput="guardarConfig(); aplicarConfigVisual()">
    </div>
   </div>
   <div class="row3">
@@ -475,7 +848,24 @@ button:disabled{opacity:.55;cursor:not-allowed;transform:none}
     <input id="printGapYmm" type="number" min="0" step="0.5" value="2" oninput="guardarConfig(); aplicarConfigVisual()">
    </div>
   </div>
-  <small class="help">Modo intervalo deja separación real entre etiquetas, sin crear saltos de página. Si imprimes 1 o 2 etiquetas, solo salen esas etiquetas con la separación configurada.</small>
+  <div class="row3">
+   <div>
+    <label>Separación de intervalos</label>
+    <select id="intervalMultiplier" onchange="guardarConfig(); aplicarConfigVisual(); generarPreview(true)">
+     <option value="1" selected>Normal</option>
+     <option value="2">Doble intervalo</option>
+    </select>
+   </div>
+   <div>
+    <label>Preset etiqueta pequeña</label>
+    <button type="button" class="ghost" onclick="setSmallLabel30x50()">Aplicar 30 x 50 + doble intervalo</button>
+   </div>
+   <div>
+    <label>Separación efectiva impresión</label>
+    <input id="effectiveGapInfo" value="2 x 2 mm" readonly>
+   </div>
+  </div>
+  <small class="help">Modo intervalo deja separación externa real entre etiquetas, sin crear saltos de página. Para etiquetas pequeñas 30 x 50 mm puedes activar doble intervalo: mantiene la etiqueta sin margen interno y duplica solo la separación externa.</small>
   <div class="row3">
    <div>
     <label>Escala real al imprimir</label>
@@ -679,12 +1069,13 @@ function getConfig(){
   h: num("h",50),
   tipo: $("tipo").value,
   padLength: parseInt($("padLength").value || "0",10) || 0,
-  paddingMm: num("paddingMm",3),
+  paddingMm: 0,
   gapMm: num("gapMm",4),
-  printMarginMm: num("printMarginMm",4),
+  printMarginMm: num("printMarginMm",0),
   printMode: ($("printMode")?.value || "continuo"),
   printGapXmm: num("printGapXmm",0),
   printGapYmm: num("printGapYmm",0),
+  intervalMultiplier: Number($("intervalMultiplier")?.value || 1) || 1,
   printAutoScale: (($("printAutoScale")?.value || "1") === "1"),
   printScaleMin: num("printScaleMin",0.70),
   printScaleMax: num("printScaleMax",1.35),
@@ -704,8 +1095,12 @@ function aplicarConfigVisual(){
  document.documentElement.style.setProperty("--paper-bg",c.paper==="normal"?"#f8fafc":"#fff");
  document.documentElement.style.setProperty("--screen-gap",c.gapMm+"mm");
  document.documentElement.style.setProperty("--print-margin",c.printMarginMm+"mm");
- document.documentElement.style.setProperty("--print-gap-x",(c.printMode==="intervalo" ? c.printGapXmm : 0)+"mm");
- document.documentElement.style.setProperty("--print-gap-y",(c.printMode==="intervalo" ? c.printGapYmm : 0)+"mm");
+ const mul=Math.max(1,Number(c.intervalMultiplier || 1));
+ const effGapX=(c.printMode==="intervalo" ? Number(c.printGapXmm || 0)*mul : 0);
+ const effGapY=(c.printMode==="intervalo" ? Number(c.printGapYmm || 0)*mul : 0);
+ document.documentElement.style.setProperty("--print-gap-x",effGapX+"mm");
+ document.documentElement.style.setProperty("--print-gap-y",effGapY+"mm");
+ if($("effectiveGapInfo")) $("effectiveGapInfo").value=`${effGapX} x ${effGapY} mm`;
  document.documentElement.style.setProperty("--ui-zoom",c.uiZoom);
  document.documentElement.style.setProperty("--content-zoom",c.contentZoom);
  actualizarEstiloImpresion(c);
@@ -718,9 +1113,10 @@ function actualizarEstiloImpresion(c=getConfig()){
   st.id="dynamicPrintStyle";
   document.head.appendChild(st);
  }
- const gapX=(c.printMode==="intervalo") ? Number(c.printGapXmm||0) : 0;
- const gapY=(c.printMode==="intervalo") ? Number(c.printGapYmm||0) : 0;
- st.textContent=`@page{margin:${c.printMarginMm}mm;}\n@media print{.sheet{gap:${gapY}mm ${gapX}mm!important;padding:0!important}.label{flex:0 0 auto!important;margin:0!important}}`;
+ const mul=Math.max(1,Number(c.intervalMultiplier || 1));
+ const gapX=(c.printMode==="intervalo") ? Number(c.printGapXmm||0)*mul : 0;
+ const gapY=(c.printMode==="intervalo") ? Number(c.printGapYmm||0)*mul : 0;
+ st.textContent=`@page{margin:${c.printMarginMm}mm;}\n@media print{.sheet{text-align:center!important;gap:${gapY}mm ${gapX}mm!important;padding:0!important}.label{flex:0 0 auto!important;margin:0 calc(${gapX}mm / 2) ${gapY}mm calc(${gapX}mm / 2)!important}}`;
 }
 function guardarConfig(){
  const c=getConfig();
@@ -754,12 +1150,13 @@ function cargarConfig(){
   if(c.h) $("h").value=c.h;
   if(c.tipo) $("tipo").value=c.tipo;
   if(c.padLength!==undefined) $("padLength").value=c.padLength;
-  if(c.paddingMm!==undefined) $("paddingMm").value=c.paddingMm;
+  $("paddingMm").value=0;
   if(c.gapMm!==undefined) $("gapMm").value=c.gapMm;
-  if(c.printMarginMm!==undefined) $("printMarginMm").value=c.printMarginMm;
+  if(c.printMarginMm!==undefined) $("printMarginMm").value=c.printMarginMm; else $("printMarginMm").value=0;
   if(c.printMode!==undefined && $("printMode")) $("printMode").value=c.printMode || "continuo";
   if(c.printGapXmm!==undefined && $("printGapXmm")) $("printGapXmm").value=c.printGapXmm;
   if(c.printGapYmm!==undefined && $("printGapYmm")) $("printGapYmm").value=c.printGapYmm;
+  if(c.intervalMultiplier!==undefined && $("intervalMultiplier")) $("intervalMultiplier").value=String(c.intervalMultiplier || 1);
   if(c.printAutoScale!==undefined && $("printAutoScale")) $("printAutoScale").value=c.printAutoScale ? "1" : "0";
   if(c.printScaleMin!==undefined && $("printScaleMin")) $("printScaleMin").value=c.printScaleMin;
   if(c.printScaleMax!==undefined && $("printScaleMax")) $("printScaleMax").value=c.printScaleMax;
@@ -780,8 +1177,8 @@ function resetConfig(){
  if($("remoteSheet")) $("remoteSheet").value="MAESTRA";
  if($("remoteAction")) $("remoteAction").value="";
  $("paper").value="termico"; $("template").value="80x50"; $("w").value=80; $("h").value=50;
- $("tipo").value="CODE128"; $("padLength").value=0; $("paddingMm").value=3; $("gapMm").value=4; $("printMarginMm").value=4;
- if($("printMode")) $("printMode").value="intervalo"; if($("printGapXmm")) $("printGapXmm").value=2; if($("printGapYmm")) $("printGapYmm").value=2;
+ $("tipo").value="CODE128"; $("padLength").value=0; $("paddingMm").value=0; $("gapMm").value=4; $("printMarginMm").value=0;
+ if($("printMode")) $("printMode").value="intervalo"; if($("printGapXmm")) $("printGapXmm").value=2; if($("printGapYmm")) $("printGapYmm").value=2; if($("intervalMultiplier")) $("intervalMultiplier").value="1";
  if($("printAutoScale")) $("printAutoScale").value="1"; if($("printScaleMin")) $("printScaleMin").value=0.70; if($("printScaleMax")) $("printScaleMax").value=1.35; if($("contentZoom")) $("contentZoom").value=1;
  $("barHeightMm").value=18; $("qrSize").value=90; $("uiZoom").value=".90"; $("fontCodigo").value=18; $("fontDesc").value=12; $("fontUnd").value=12;
  guardarConfig(); generarPreview(true); toast("Configuración restablecida","verde");
@@ -791,8 +1188,40 @@ function setTemplate(v){
  if(!v) return;
  const [a,b]=v.split("x");
  $("w").value=a; $("h").value=b;
+ if(v==="30x50"){
+  if($("printMode")) $("printMode").value="intervalo";
+  if($("intervalMultiplier")) $("intervalMultiplier").value="2";
+  if($("printGapXmm") && Number($("printGapXmm").value || 0)<2) $("printGapXmm").value=2;
+  if($("printGapYmm") && Number($("printGapYmm").value || 0)<2) $("printGapYmm").value=2;
+  if($("contentZoom")) $("contentZoom").value="0.90";
+  if($("barHeightMm")) $("barHeightMm").value="14";
+  if($("fontCodigo")) $("fontCodigo").value="12";
+  if($("fontDesc")) $("fontDesc").value="8";
+  if($("fontUnd")) $("fontUnd").value="8";
+ }
  guardarConfig();
+ aplicarConfigVisual();
  actualizarResumenConfig();
+ generarPreview(true);
+}
+function setSmallLabel30x50(){
+ if($("template")) $("template").value="30x50";
+ $("w").value=30;
+ $("h").value=50;
+ if($("printMode")) $("printMode").value="intervalo";
+ if($("printGapXmm")) $("printGapXmm").value=2;
+ if($("printGapYmm")) $("printGapYmm").value=2;
+ if($("intervalMultiplier")) $("intervalMultiplier").value="2";
+ if($("contentZoom")) $("contentZoom").value="0.90";
+ if($("barHeightMm")) $("barHeightMm").value="14";
+ if($("fontCodigo")) $("fontCodigo").value="12";
+ if($("fontDesc")) $("fontDesc").value="8";
+ if($("fontUnd")) $("fontUnd").value="8";
+ guardarConfig();
+ aplicarConfigVisual();
+ actualizarResumenConfig();
+ generarPreview(true);
+ toast("Etiqueta pequeña 30 x 50 con doble intervalo aplicada","verde");
 }
 
 function firstValue(row,names){
@@ -856,7 +1285,7 @@ async function cargarCache(){
  }
  try{
   const dataBuffer=await idbGet(IDB_BUFFER);
-  if(Array.isArray(dataBuffer)){buffer=dataBuffer;}
+  if(Array.isArray(dataBuffer)){buffer=dataBuffer.map(x=>({...x,paddingMm:0}));}
  }catch(e){
   console.warn("No se pudo cargar listado desde IndexedDB",e);
  }
@@ -1077,7 +1506,7 @@ function crearItem(data){
   tipo:mapTipo(data.tipo || cfg.tipo),
   w:parseFloat(data.w || cfg.w) || cfg.w,
   h:parseFloat(data.h || cfg.h) || cfg.h,
-  paddingMm:cfg.paddingMm,
+  paddingMm:0,
   barHeightMm:cfg.barHeightMm,
   qrSize:cfg.qrSize,
   contentZoom:cfg.contentZoom,
@@ -1162,7 +1591,7 @@ function mmToPx(mm){return Number(mm||0)*3.7795275591;}
 function clamp(n,min,max){return Math.max(min,Math.min(max,n));}
 function calcLayoutEtiqueta(b){
  const cfg=getConfig();
- const w=Number(b.w||cfg.w||80), h=Number(b.h||cfg.h||50), pad=Number(b.paddingMm ?? cfg.paddingMm ?? 3);
+ const w=Number(b.w||cfg.w||80), h=Number(b.h||cfg.h||50), pad=0;
  const innerWmm=Math.max(6,w-(pad*2));
  const innerHmm=Math.max(6,h-(pad*2));
  const innerWpx=mmToPx(innerWmm), innerHpx=mmToPx(innerHmm);
@@ -1228,7 +1657,10 @@ function centrarEtiqueta(label){
  if(inner){
   inner.style.width='100%';
   inner.style.height='100%';
-  inner.style.margin='auto';
+  inner.style.position='absolute';
+  inner.style.left='50%';
+  inner.style.top='50%';
+  inner.style.margin='0';
   inner.style.display='grid';
   inner.style.gridTemplateRows='auto minmax(0,1fr) auto auto';
   inner.style.placeItems='center';
@@ -1236,6 +1668,9 @@ function centrarEtiqueta(label){
   inner.style.alignContent='center';
   inner.style.justifyItems='center';
   inner.style.textAlign='center';
+  inner.style.transformOrigin='center center';
+  const escalaActual = inner.style.getPropertyValue('--final-label-scale') || label.dataset.finalScale || inner.style.getPropertyValue('--content-zoom') || '1';
+  inner.style.transform = `translate(-50%,-50%) scale(${escalaActual})`;
  }
  ['.codigo','.descripcion','.unidades'].forEach(sel=>{
   const el=label.querySelector(sel);
@@ -1250,25 +1685,123 @@ function centrarEtiqueta(label){
  centrarNodoCodigo(label.querySelector('.code'));
 }
 
+
+function medirContenidoEtiquetaSinTransform(label){
+ const inner=label?.querySelector?.('.label-inner');
+ if(!inner) return null;
+
+ const oldTransform=inner.style.transform;
+ const oldFinal=inner.style.getPropertyValue('--final-label-scale');
+ const oldPrint=inner.style.getPropertyValue('--print-final-scale');
+
+ inner.style.transform='none';
+ inner.style.setProperty('--final-label-scale','1');
+ inner.style.setProperty('--print-final-scale','1');
+
+ const ir=inner.getBoundingClientRect();
+ const nodos=[
+  label.querySelector('.codigo'),
+  label.querySelector('.code canvas,.code svg,.code img') || label.querySelector('.code'),
+  label.querySelector('.descripcion'),
+  label.querySelector('.unidades')
+ ].filter(Boolean);
+
+ let minX=Infinity,minY=Infinity,maxX=-Infinity,maxY=-Infinity;
+ nodos.forEach(n=>{
+  const r=rectValido(n);
+  if(!r) return;
+  minX=Math.min(minX,r.left);
+  minY=Math.min(minY,r.top);
+  maxX=Math.max(maxX,r.right);
+  maxY=Math.max(maxY,r.bottom);
+ });
+
+ const boundsOk=Number.isFinite(minX) && Number.isFinite(minY) && Number.isFinite(maxX) && Number.isFinite(maxY);
+ const boundsW=boundsOk ? (maxX-minX) : 0;
+ const boundsH=boundsOk ? (maxY-minY) : 0;
+ const contentW=Math.max(inner.scrollWidth || 0, boundsW);
+ const contentH=Math.max(inner.scrollHeight || 0, boundsH);
+
+ inner.style.transform=oldTransform;
+ if(oldFinal) inner.style.setProperty('--final-label-scale',oldFinal); else inner.style.removeProperty('--final-label-scale');
+ if(oldPrint) inner.style.setProperty('--print-final-scale',oldPrint); else inner.style.removeProperty('--print-final-scale');
+
+ return {
+  inner,
+  innerW:Math.max(1,ir.width),
+  innerH:Math.max(1,ir.height),
+  contentW:Math.max(1,contentW),
+  contentH:Math.max(1,contentH)
+ };
+}
+
+function calcularEscalaEtiqueta(label, opciones={}){
+ const cfg=getConfig();
+ const inner=label?.querySelector?.('.label-inner');
+ if(!inner) return 1;
+
+ const baseZoom=Number(label.dataset.contentZoom || inner.style.getPropertyValue('--content-zoom') || cfg.contentZoom || 1) || 1;
+ const allowGrow=!!opciones.allowGrow;
+ const maxScale=Number(opciones.maxScale || (allowGrow ? (cfg.printScaleMax || 1.35) : baseZoom)) || 1;
+ const desired=allowGrow ? maxScale : baseZoom;
+
+ const m=medirContenidoEtiquetaSinTransform(label);
+ if(!m) return Math.max(0.25, Math.min(desired, maxScale));
+
+ const availableW=Math.max(1,m.innerW-2);
+ const availableH=Math.max(1,m.innerH-2);
+ const fit=Math.min(availableW/m.contentW, availableH/m.contentH) * 0.96;
+
+ let escala=Math.min(desired, fit);
+ escala=clamp(escala,0.25,maxScale);
+
+ // Regla principal: si el mínimo configurado causaría desborde, se ignora.
+ if(escala>fit) escala=Math.max(0.25,fit);
+
+ return escala;
+}
+
+function aplicarEscalaEtiquetaPantalla(label){
+ const inner=label?.querySelector?.('.label-inner');
+ if(!inner) return;
+ const escala=calcularEscalaEtiqueta(label,{allowGrow:false});
+ inner.style.setProperty('--final-label-scale',escala.toFixed(4));
+ inner.style.transformOrigin='center center';
+ inner.style.transform=`translate(-50%,-50%) scale(${escala.toFixed(4)})`;
+ label.dataset.finalScale=escala.toFixed(4);
+}
+
 function ajustarContenidoEtiqueta(label){
- const inner=label.querySelector('.label-inner');
- const code=label.querySelector('.codigo');
- const desc=label.querySelector('.descripcion');
- const und=label.querySelector('.unidades');
+ const inner=label?.querySelector?.('.label-inner');
+ const code=label?.querySelector?.('.codigo');
+ const desc=label?.querySelector?.('.descripcion');
+ const und=label?.querySelector?.('.unidades');
+ if(!inner) return;
+
+ label.classList.remove('too-small');
+ inner.style.setProperty('--final-label-scale','1');
+ inner.style.transform='none';
+
  let tries=0;
- while(inner && (inner.scrollHeight>inner.clientHeight+1 || inner.scrollWidth>inner.clientWidth+1) && tries<18){
+ while((inner.scrollHeight>inner.clientHeight+1 || inner.scrollWidth>inner.clientWidth+1) && tries<24){
   [code,desc,und].forEach(el=>{
    if(!el) return;
    const fs=parseFloat(getComputedStyle(el).fontSize)||10;
-   el.style.fontSize=Math.max(5,fs-.75)+'px';
+   el.style.fontSize=Math.max(5,fs-.65)+'px';
   });
-  if(desc && tries>7) desc.style.webkitLineClamp='1';
+  if(desc && tries>8) desc.style.webkitLineClamp='1';
   tries++;
  }
- if(inner && (inner.scrollHeight>inner.clientHeight+1 || inner.scrollWidth>inner.clientWidth+1)){
+
+ aplicarEscalaEtiquetaPantalla(label);
+
+ const m=medirContenidoEtiquetaSinTransform(label);
+ const escala=Number(label.dataset.finalScale || 1);
+ if(m && (m.contentW*escala>m.innerW+1 || m.contentH*escala>m.innerH+1)){
   label.classList.add('too-small');
  }
 }
+
 function generarPreview(onlySelected=true){
  aplicarConfigVisual();
  const cont=$("preview");
@@ -1288,15 +1821,22 @@ function generarPreview(onlySelected=true){
    const l=document.createElement("div");
    const contentZoom=Number(b.contentZoom ?? getConfig().contentZoom ?? 1) || 1;
    l.className="label fit-label";
-   l.style.width=`${b.w}mm`;
-   l.style.height=`${b.h}mm`;
-   l.style.padding=`${b.paddingMm ?? getConfig().paddingMm}mm`;
+   const labelWmm=Number(b.w || getConfig().w || 80);
+   const labelHmm=Number(b.h || getConfig().h || 50);
+   l.style.setProperty("--item-w",`${labelWmm}mm`);
+   l.style.setProperty("--item-h",`${labelHmm}mm`);
+   l.style.setProperty("width",`${labelWmm}mm`,"important");
+   l.style.setProperty("height",`${labelHmm}mm`,"important");
+   l.style.setProperty("min-width",`${labelWmm}mm`,"important");
+   l.style.setProperty("max-width",`${labelWmm}mm`,"important");
+   l.style.setProperty("min-height",`${labelHmm}mm`,"important");
+   l.style.setProperty("max-height",`${labelHmm}mm`,"important");
+   l.style.setProperty("padding","0mm","important");
+   l.style.setProperty("margin","0","important");
    l.dataset.contentZoom=String(contentZoom);
+   l.dataset.w=String(labelWmm);
+   l.dataset.h=String(labelHmm);
    l.style.flex="0 0 auto";
-   l.style.minWidth=`${b.w}mm`;
-   l.style.maxWidth=`${b.w}mm`;
-   l.style.minHeight=`${b.h}mm`;
-   l.style.maxHeight=`${b.h}mm`;
    l.innerHTML=`
     <div class="label-inner" style="--content-zoom:${contentZoom};--print-fit-scale:1;gap:${layout.gapPx}px;display:grid;grid-template-rows:auto minmax(0,1fr) auto auto;place-items:center;place-content:center;align-content:center;justify-items:center;text-align:center;width:100%;height:100%;margin:auto;transform-origin:center center">
      <div class="codigo" style="font-size:${layout.fontCodigo}px;width:100%;text-align:center;justify-self:center">${esc(b.codigo)}</div>
@@ -1382,64 +1922,99 @@ function rectValido(el){
  if(r.width<=0 || r.height<=0) return null;
  return r;
 }
+
 function obtenerRectContenido(label){
- const inner=label.querySelector(".label-inner");
- if(!inner) return null;
- const nodos=[];
- const codeChild=label.querySelector(".code canvas,.code svg,.code img");
- [label.querySelector(".codigo"),codeChild || label.querySelector(".code"),label.querySelector(".descripcion"),label.querySelector(".unidades")].forEach(n=>{
-  const r=rectValido(n);
-  if(r) nodos.push(r);
- });
- if(!nodos.length) return null;
- const minX=Math.min(...nodos.map(r=>r.left));
- const maxX=Math.max(...nodos.map(r=>r.right));
- const minY=Math.min(...nodos.map(r=>r.top));
- const maxY=Math.max(...nodos.map(r=>r.bottom));
- const ir=inner.getBoundingClientRect();
- return {inner,innerW:ir.width,innerH:ir.height,contentW:maxX-minX,contentH:maxY-minY};
+ return medirContenidoEtiquetaSinTransform(label);
 }
+
 function aplicarEscalaRealImpresion(){
  const cfg=getConfig();
- if(!cfg.printAutoScale) return;
  actualizarEstiloImpresion(cfg);
  document.querySelectorAll("#preview .label").forEach(label=>{
   const inner=label.querySelector(".label-inner");
   if(!inner) return;
-  inner.style.removeProperty("transform");
-  inner.style.setProperty("--print-fit-scale","1");
-  inner.style.setProperty("--content-zoom", String(label.dataset.contentZoom || inner.style.getPropertyValue("--content-zoom") || cfg.contentZoom || 1));
+
   centrarEtiqueta(label);
+  centrarNodoCodigo(label.querySelector(".code"));
+
+  // Primero asegura que en pantalla ya no exista desborde.
   ajustarContenidoEtiqueta(label);
-  const m=obtenerRectContenido(label);
-  if(!m || m.innerW<=0 || m.innerH<=0 || m.contentW<=0 || m.contentH<=0) return;
-  let escala=Math.min(m.innerW/m.contentW,m.innerH/m.contentH)*0.985;
-  const minEsc=Number(cfg.printScaleMin||0.70);
-  const maxEsc=Number(cfg.printScaleMax||1.35);
-  escala=clamp(escala,minEsc,maxEsc);
-  inner.style.setProperty("--print-fit-scale",escala.toFixed(4));
+
+  let escala=Number(label.dataset.finalScale || 1);
+  if(cfg.printAutoScale){
+   // En impresión puede crecer para aprovechar espacio, pero nunca más de lo que cabe.
+   escala=calcularEscalaEtiqueta(label,{allowGrow:true,maxScale:Number(cfg.printScaleMax || 1.35)});
+   const minEsc=Number(cfg.printScaleMin || 0.70);
+   const m=medirContenidoEtiquetaSinTransform(label);
+   if(m){
+    const fit=Math.min((m.innerW-2)/m.contentW,(m.innerH-2)/m.contentH)*0.96;
+    if(fit>=minEsc) escala=Math.max(escala,minEsc);
+    escala=Math.min(escala,fit,Number(cfg.printScaleMax || 1.35));
+   }
+   escala=Math.max(0.25,escala);
+  }
+
+  inner.style.setProperty("--print-final-scale",escala.toFixed(4));
+  inner.style.setProperty("--final-label-scale",escala.toFixed(4));
   inner.style.transformOrigin="center center";
-  label.dataset.printScale=escala.toFixed(2);
+  label.dataset.printScale=escala.toFixed(4);
  });
 }
+
 function limpiarEscalaRealImpresion(){
  document.querySelectorAll("#preview .label").forEach(label=>{
   const inner=label.querySelector(".label-inner");
   if(inner){
-   inner.style.removeProperty("transform");
-   inner.style.removeProperty("--print-fit-scale");
+   inner.style.removeProperty("--print-final-scale");
+   inner.style.removeProperty("position");
+   inner.style.removeProperty("left");
+   inner.style.removeProperty("top");
+   // Reaplica la escala de pantalla para no volver a desbordar después de imprimir.
+   aplicarEscalaEtiquetaPantalla(label);
   }
+  label.style.removeProperty("position");
+  label.style.removeProperty("overflow");
   delete label.dataset.printScale;
  });
 }
-window.addEventListener("beforeprint",()=>aplicarEscalaRealImpresion());
+
+function esperarRenderImpresion(){
+ return new Promise(resolve=>{
+  requestAnimationFrame(()=>requestAnimationFrame(()=>setTimeout(resolve,80)));
+ });
+}
+function centrarTodasEtiquetasImpresion(){
+ const cfg=getConfig();
+ document.querySelectorAll("#preview .label").forEach(label=>{
+  const inner=label.querySelector(".label-inner");
+  if(!inner) return;
+  const z=String(label.dataset.contentZoom || inner.style.getPropertyValue("--content-zoom") || cfg.contentZoom || 1);
+  inner.style.setProperty("--content-zoom",z);
+  inner.style.setProperty("transform-origin","center center");
+  label.style.setProperty("position","relative");
+  label.style.setProperty("overflow","hidden");
+  centrarEtiqueta(label);
+  centrarNodoCodigo(label.querySelector(".code"));
+ });
+}
+window.addEventListener("beforeprint",()=>{
+ aplicarEscalaRealImpresion();
+ centrarTodasEtiquetasImpresion();
+});
 window.addEventListener("afterprint",()=>limpiarEscalaRealImpresion());
 
-function imprimir(){
+async function imprimir(){
  const ok=generarPreview(true);
  if(!ok){toast("Seleccione etiquetas para imprimir","rojo");return;}
- setEstado("Abriendo impresión de etiquetas seleccionadas con intervalo real...","amarillo");
- setTimeout(()=>{aplicarEscalaRealImpresion(); window.print(); setEstado("Listo","verde");},350);
+ setEstado("Centrando etiquetas y abriendo diálogo de impresión...","amarillo");
+ progress(35);
+ await esperarRenderImpresion();
+ aplicarEscalaRealImpresion();
+ centrarTodasEtiquetasImpresion();
+ await esperarRenderImpresion();
+ progress(100);
+ window.print();
+ setTimeout(()=>{progress(0); setEstado("Listo","verde");},300);
 }
 
 async function init(){
