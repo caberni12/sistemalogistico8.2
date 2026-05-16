@@ -19,6 +19,11 @@
  --print-margin:4mm;
  --print-gap-x:0mm;
  --print-gap-y:0mm;
+ --roll-column-gap:3mm;
+ --roll-row-gap:2mm;
+ --roll-total-width:103mm;
+ --roll-label-w:50mm;
+ --roll-label-h:30mm;
  --screen-gap:4mm;
  --ui-zoom:.90;
  --accent:#14b8a6;
@@ -73,8 +78,15 @@ button:disabled{opacity:.55;cursor:not-allowed;transform:none}
 .result{padding:8px;cursor:pointer;border-bottom:1px solid #f1f5f9}
 .result:last-child{border-bottom:0}
 .result:hover{background:#ecfeff}
+.result.active{background:#ccfbf1;border-left:4px solid var(--accent)}
+.result .result-line{display:grid;grid-template-columns:28px 1fr;gap:8px;align-items:center}
+.result .result-check{width:auto;margin:0;transform:scale(1.15)}
 .result b{display:block;font-size:13px;color:#0f172a}
 .result span{font-size:12px;color:#475569}
+.search-toolbar{position:sticky;top:0;z-index:3;background:#fff;border-bottom:1px solid #e2e8f0;padding:8px;display:flex;gap:7px;align-items:center;flex-wrap:wrap}
+.search-toolbar .counter{font-size:12px;padding:6px 9px}
+.search-toolbar button{width:auto;margin:0;padding:6px 9px;font-size:11px;border-radius:9px}
+.search-hint{padding:7px 8px;font-size:12px;color:#64748b;background:#f8fafc;border-bottom:1px solid #f1f5f9;font-weight:700}
 
 /* SCANNER */
 #scanner{display:none;margin-top:10px;background:#000;border-radius:14px;overflow:hidden;min-height:240px}
@@ -172,6 +184,29 @@ button:disabled{opacity:.55;cursor:not-allowed;transform:none}
 @media(max-width:520px){
  .config-summary{grid-template-columns:1fr}
 }
+.check-option{
+ display:flex!important;
+ align-items:flex-start!important;
+ gap:10px!important;
+ margin-top:10px!important;
+ padding:10px 12px!important;
+ border:1px solid #e2e8f0!important;
+ border-radius:14px!important;
+ background:#f8fafc!important;
+ font-weight:800!important;
+ color:#0f172a!important;
+ line-height:1.35!important;
+}
+.check-option input[type="checkbox"]{
+ width:18px!important;
+ height:18px!important;
+ min-width:18px!important;
+ margin:1px 0 0!important;
+ padding:0!important;
+ accent-color:var(--accent);
+}
+.check-option span{display:block!important}
+.check-option small{display:block!important;color:#64748b!important;font-weight:700!important;margin-top:3px!important}
 
 /* MODAL */
 .modal{display:none;position:fixed;inset:0;z-index:999;background:rgba(15,23,42,.55);padding:16px;align-items:center;justify-content:center}
@@ -609,6 +644,385 @@ button:disabled{opacity:.55;cursor:not-allowed;transform:none}
   justify-content:center!important;
  }
 }
+
+
+/* =========================================================
+   MEJORA BUSCADOR/FILTRO: RESULTADOS MÁS AIREADOS Y SCROLL ÚTIL
+   - Aumenta el alto del panel cuando hay resultados.
+   - Mejora separación de cada resultado para seleccionar varios códigos.
+   - Hace el scroll más cómodo en móvil y escritorio.
+   ========================================================= */
+#results.results{
+ scrollbar-gutter:stable;
+ overscroll-behavior:contain;
+ -webkit-overflow-scrolling:touch;
+}
+#results.results:not(:empty){
+ height:clamp(340px,56vh,640px)!important;
+ max-height:clamp(340px,56vh,640px)!important;
+ min-height:340px!important;
+ padding:0 6px 8px!important;
+ border-radius:18px!important;
+ margin-top:10px!important;
+ box-shadow:inset 0 0 0 1px rgba(226,232,240,.55),0 12px 28px rgba(15,23,42,.06)!important;
+}
+#results.results::-webkit-scrollbar{width:13px;height:13px}
+#results.results::-webkit-scrollbar-track{background:#f1f5f9;border-radius:999px}
+#results.results::-webkit-scrollbar-thumb{background:#94a3b8;border-radius:999px;border:3px solid #f1f5f9}
+#results.results::-webkit-scrollbar-thumb:hover{background:#64748b}
+.search-toolbar{
+ top:0!important;
+ padding:11px 10px!important;
+ gap:8px!important;
+ border-radius:0 0 14px 14px!important;
+ box-shadow:0 10px 22px rgba(15,23,42,.07)!important;
+}
+.search-toolbar .counter{
+ padding:7px 10px!important;
+ font-size:12px!important;
+ white-space:nowrap!important;
+}
+.search-toolbar button{
+ padding:7px 10px!important;
+ font-size:11px!important;
+ border-radius:10px!important;
+ min-height:32px!important;
+}
+.search-hint{
+ margin:8px 2px 4px!important;
+ padding:10px 12px!important;
+ border:1px solid #e2e8f0!important;
+ border-radius:14px!important;
+ line-height:1.4!important;
+}
+.result.search-result{
+ padding:12px!important;
+ margin:9px 2px!important;
+ border:1px solid #e2e8f0!important;
+ border-bottom:1px solid #e2e8f0!important;
+ border-radius:16px!important;
+ background:#fff!important;
+ box-shadow:0 8px 18px rgba(15,23,42,.045)!important;
+}
+.result.search-result:hover{background:#ecfeff!important;border-color:#99f6e4!important}
+.result.search-result.active{background:#ccfbf1!important;border-color:var(--accent)!important;border-left:6px solid var(--accent)!important}
+.result .result-line{
+ grid-template-columns:42px 1fr!important;
+ gap:12px!important;
+ align-items:center!important;
+}
+.result .result-check{
+ width:24px!important;
+ height:24px!important;
+ transform:none!important;
+ accent-color:var(--accent);
+ justify-self:center!important;
+}
+.result b{
+ font-size:14px!important;
+ line-height:1.25!important;
+ margin-bottom:5px!important;
+ letter-spacing:.01em!important;
+}
+.result span{
+ display:block!important;
+ font-size:12.5px!important;
+ line-height:1.45!important;
+ color:#475569!important;
+}
+@media(min-width:901px){
+ .wrap{grid-template-columns:minmax(420px,460px) 1fr!important;align-items:start!important}
+}
+@media(max-width:900px){
+ #results.results:not(:empty){
+  height:clamp(360px,58dvh,620px)!important;
+  max-height:clamp(360px,58dvh,620px)!important;
+  min-height:360px!important;
+ }
+ .search-toolbar{align-items:stretch!important}
+ .search-toolbar button{flex:1 1 130px!important}
+ .search-toolbar .counter{flex:1 1 auto!important;text-align:center!important}
+ .result.search-result{padding:13px!important;margin:10px 2px!important}
+ .result .result-line{grid-template-columns:44px 1fr!important;gap:13px!important}
+}
+@media(max-width:520px){
+ #results.results:not(:empty){
+  height:clamp(380px,62dvh,660px)!important;
+  max-height:clamp(380px,62dvh,660px)!important;
+  min-height:380px!important;
+ }
+ .search-toolbar{position:sticky!important;top:0!important;padding:10px 8px!important}
+ .search-toolbar button{flex:1 1 100%!important;width:100%!important}
+ .result b{font-size:15px!important}
+ .result span{font-size:13px!important}
+}
+
+
+
+/* =========================================================
+   ORGANIZACIÓN UI: SECCIONES PLEGABLES Y MENOS BOTONES VISIBLES
+   Cada bloque queda identificado por funcionalidad y sus acciones
+   se muestran solo al desplegar la sección correspondiente.
+   ========================================================= */
+.compact-layout{align-items:start}
+.card-headline{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:10px}
+.card-headline h3{margin:0}
+.card-headline .help{margin:0;max-width:560px}
+.inline-config-btn{width:auto!important;margin:0!important;padding:7px 10px!important;white-space:nowrap!important}
+.ui-section{
+ border:1px solid var(--line);
+ border-radius:16px;
+ background:#fff;
+ margin:10px 0;
+ overflow:hidden;
+ box-shadow:0 8px 20px rgba(15,23,42,.035);
+}
+.ui-section[open]{box-shadow:0 12px 30px rgba(15,23,42,.055)}
+.ui-section > summary{
+ list-style:none;
+ cursor:pointer;
+ user-select:none;
+ display:flex;
+ align-items:center;
+ justify-content:space-between;
+ gap:12px;
+ padding:11px 12px;
+ font-weight:900;
+ color:#0f172a;
+ background:linear-gradient(180deg,#fff,#f8fafc);
+}
+.ui-section > summary::-webkit-details-marker{display:none}
+.ui-section > summary span{display:flex;align-items:center;gap:7px;line-height:1.2}
+.ui-section > summary em{font-style:normal;font-size:11px;color:#0f766e;background:#ccfbf1;border:1px solid #99f6e4;border-radius:999px;padding:5px 8px;white-space:nowrap}
+.ui-section > summary::after{content:'Mostrar';font-size:11px;color:#475569;background:#f1f5f9;border:1px solid #cbd5e1;border-radius:999px;padding:5px 8px;white-space:nowrap}
+.ui-section[open] > summary::after{content:'Ocultar';background:#0f172a;color:#fff;border-color:#0f172a}
+.ui-section > summary em + *{display:none}
+.section-body{padding:12px;border-top:1px solid #edf2f7;background:#fff}
+.section-body > label:first-child{margin-top:0}
+.action-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:8px;margin-top:10px}
+.action-grid button,.primary-action button{margin-top:0!important}
+.primary-action{display:grid;grid-template-columns:1fr;gap:8px;margin-top:10px}
+.primary-action.two{grid-template-columns:repeat(2,minmax(0,1fr))}
+.function-label{display:inline-flex;align-items:center;gap:7px;font-weight:900;color:#0f172a}
+.section-note{display:block;color:#64748b;font-weight:700;font-size:12px;line-height:1.35;margin-top:8px}
+.status-strip{margin-top:12px;padding-top:8px;border-top:1px dashed #cbd5e1}
+.lista-toolbar.compact-toolbar{align-items:flex-start}
+.lista-toolbar.compact-toolbar .right{width:min(560px,100%)}
+.list-actions-section{width:100%;margin:0}
+.list-actions-section .section-body{padding:10px}
+.sheet-title.compact-sheet-title{align-items:flex-start}
+.sheet-actions-section{min-width:min(420px,100%);margin:0}
+.sheet-actions-section .section-body{padding:10px}
+.search-toolbar button{min-width:135px}
+.search-toolbar .dark::after{content:' al listado'}
+@media(max-width:900px){
+ .card-headline{display:block}
+ .inline-config-btn{width:100%!important;margin-top:8px!important}
+ .primary-action.two{grid-template-columns:1fr}
+ .lista-toolbar.compact-toolbar .left,.lista-toolbar.compact-toolbar .right{width:100%}
+ .sheet-title.compact-sheet-title{display:block}
+ .sheet-actions-section{margin-top:8px;width:100%;min-width:0}
+}
+@media(max-width:520px){
+ .ui-section > summary{padding:10px;gap:8px}
+ .ui-section > summary::after{padding:5px 7px}
+ .ui-section > summary em{display:none}
+ .section-body{padding:10px}
+ .action-grid{grid-template-columns:1fr}
+}
+
+
+/* =========================================================
+   MODO ROLLO 5 x 3 cm / 50 x 30 mm - 2 COLUMNAS
+   Respeta dos columnas físicas, separación central y separación vertical
+   entre cada fila, sin crear etiquetas vacías ni saltos extra.
+   ========================================================= */
+#preview.sheet.roll-2cols{
+ display:grid!important;
+ grid-template-columns:repeat(2,var(--roll-label-w,50mm))!important;
+ column-gap:var(--roll-column-gap,3mm)!important;
+ row-gap:var(--roll-row-gap,2mm)!important;
+ width:var(--roll-total-width,103mm)!important;
+ max-width:100%!important;
+ justify-content:center!important;
+ align-content:flex-start!important;
+ align-items:start!important;
+ margin-left:auto!important;
+ margin-right:auto!important;
+ padding:0!important;
+ text-align:left!important;
+}
+#preview.sheet.roll-2cols .label{
+ margin:0!important;
+ width:var(--roll-label-w,50mm)!important;
+ height:var(--roll-label-h,30mm)!important;
+ min-width:var(--roll-label-w,50mm)!important;
+ max-width:var(--roll-label-w,50mm)!important;
+ min-height:var(--roll-label-h,30mm)!important;
+ max-height:var(--roll-label-h,30mm)!important;
+}
+.roll-info{
+ display:block;
+ margin-top:8px;
+ color:#0f766e;
+ font-weight:800;
+ line-height:1.35;
+}
+@media print{
+ #preview.sheet.roll-2cols{
+  display:grid!important;
+  grid-template-columns:repeat(2,var(--roll-label-w,50mm))!important;
+  column-gap:var(--roll-column-gap,3mm)!important;
+  row-gap:var(--roll-row-gap,2mm)!important;
+  width:var(--roll-total-width,103mm)!important;
+  max-width:var(--roll-total-width,103mm)!important;
+  min-width:var(--roll-total-width,103mm)!important;
+  margin:0 auto!important;
+  padding:0!important;
+  justify-content:start!important;
+  align-content:start!important;
+  align-items:start!important;
+  text-align:left!important;
+  font-size:initial!important;
+  line-height:normal!important;
+  white-space:normal!important;
+  overflow:visible!important;
+ }
+ #preview.sheet.roll-2cols .label{
+  display:block!important;
+  vertical-align:top!important;
+  margin:0!important;
+  width:var(--roll-label-w,50mm)!important;
+  height:var(--roll-label-h,30mm)!important;
+  min-width:var(--roll-label-w,50mm)!important;
+  max-width:var(--roll-label-w,50mm)!important;
+  min-height:var(--roll-label-h,30mm)!important;
+  max-height:var(--roll-label-h,30mm)!important;
+  page-break-inside:avoid!important;
+  break-inside:avoid!important;
+ }
+}
+
+
+
+/* ADMINISTRACIÓN LOCAL DE MAESTRA */
+.paste-box{
+ min-height:230px;
+ resize:vertical;
+ font-family:Consolas,"Courier New",monospace;
+ line-height:1.35;
+ white-space:pre;
+ overflow:auto;
+}
+.import-stats{
+ display:grid;
+ grid-template-columns:repeat(3,1fr);
+ gap:8px;
+ margin:8px 0;
+}
+.import-stats div{
+ background:#f8fafc;
+ border:1px solid #e2e8f0;
+ border-radius:12px;
+ padding:9px;
+ font-size:12px;
+ color:#334155;
+}
+.import-stats b{display:block;color:#0f172a;font-size:15px;margin-bottom:2px}
+.sample-table{
+ border:1px solid #e2e8f0;
+ border-radius:12px;
+ max-height:230px;
+ overflow:auto;
+ margin-top:8px;
+ background:#fff;
+}
+.sample-table table{width:100%;border-collapse:collapse;min-width:720px}
+.sample-table th,.sample-table td{padding:7px;border-bottom:1px solid #f1f5f9;text-align:left;font-size:12px;vertical-align:middle}
+.sample-table th{position:sticky;top:0;background:#f8fafc;z-index:1;color:#334155;text-transform:uppercase;font-size:11px;letter-spacing:.04em}
+.maestra-admin-grid{
+ display:grid;
+ grid-template-columns:320px 1fr;
+ gap:12px;
+ align-items:start;
+}
+.maestra-form-card,.maestra-table-card{
+ border:1px solid #e2e8f0;
+ background:#fff;
+ border-radius:14px;
+ padding:12px;
+}
+.maestra-admin-toolbar{
+ display:grid;
+ grid-template-columns:1fr auto auto;
+ gap:8px;
+ align-items:end;
+ margin-bottom:8px;
+}
+.maestra-admin-toolbar button{margin-top:0!important;width:auto!important;min-width:115px}
+.maestra-admin-count{
+ display:inline-flex;
+ align-items:center;
+ justify-content:center;
+ gap:5px;
+ background:#f1f5f9;
+ border:1px solid #e2e8f0;
+ color:#0f172a;
+ font-weight:900;
+ border-radius:999px;
+ padding:7px 10px;
+ font-size:12px;
+ white-space:nowrap;
+}
+.maestra-table-wrap{
+ border:1px solid #e2e8f0;
+ border-radius:12px;
+ overflow:auto;
+ max-height:520px;
+ background:#fff;
+}
+.maestra-table{
+ width:100%;
+ border-collapse:separate;
+ border-spacing:0;
+ min-width:900px;
+}
+.maestra-table th,.maestra-table td{
+ padding:7px 8px;
+ border-bottom:1px solid #f1f5f9;
+ text-align:left;
+ vertical-align:middle;
+ font-size:12px;
+}
+.maestra-table th{
+ position:sticky;
+ top:0;
+ z-index:2;
+ background:#f8fafc;
+ color:#334155;
+ text-transform:uppercase;
+ letter-spacing:.04em;
+ font-size:11px;
+}
+.maestra-table tr:hover td{background:#f8fafc}
+.maestra-actions{display:flex;gap:6px;flex-wrap:wrap}
+.maestra-actions button{width:auto!important;margin:0!important;padding:5px 8px!important;border-radius:8px!important;font-size:11px!important;min-height:auto!important}
+.modal-content.maestra-wide{width:min(1180px,98vw)}
+@media(max-width:900px){
+ .maestra-admin-grid{grid-template-columns:1fr}
+ .maestra-admin-toolbar{grid-template-columns:1fr 1fr}
+ .maestra-admin-toolbar label{grid-column:1 / -1}
+ .maestra-admin-toolbar button{width:100%!important;min-width:0}
+ .maestra-table-wrap{max-height:430px}
+ .import-stats{grid-template-columns:1fr 1fr 1fr}
+}
+@media(max-width:520px){
+ .maestra-admin-toolbar{grid-template-columns:1fr}
+ .maestra-actions{flex-direction:column}
+ .maestra-actions button{width:100%!important}
+ .import-stats{grid-template-columns:1fr}
+}
+
 </style>
 </head>
 
@@ -621,327 +1035,581 @@ button:disabled{opacity:.55;cursor:not-allowed;transform:none}
 <div class="topbar">
  <h2>🏷️ Generador de Códigos y Etiquetas</h2>
  <div class="badges">
-  <span class="badge" id="bdCount">BD: 0</span>
-  <span class="badge" id="bufferCountTop">Agregados: 0</span>
-  <span class="badge" id="syncStatus">Memoria: local</span>
-  <span class="badge">QR · PDF417 · CODE128 · CODE39 · EAN</span><span class="badge">Centrado real</span>
+ <span class="badge" id="bdCount">BD: 0</span>
+ <span class="badge" id="bufferCountTop">Agregados: 0</span>
+ <span class="badge" id="syncStatus">Memoria: local</span>
+ <span class="badge">QR · PDF417 · CODE128 · CODE39 · EAN</span><span class="badge">Centrado real</span>
  </div>
 </div>
 
-<div class="wrap">
+<div class="wrap compact-layout">
 
  <div class="card">
-  <h3>📂 Importar / Consultar</h3>
+ <div class="card-headline">
+ <div>
+ <h3>🔎 Consulta y selección</h3>
+ <small class="help">Los botones quedan agrupados por funcionalidad. Abre solo la sección que necesites usar.</small>
+ </div>
+ </div>
 
-  <label>Archivo Excel para memoria o listado masivo</label>
-  <input type="file" id="file" accept=".xlsx,.xls,.csv">
+ <details class="ui-section" open>
+ <summary><span>🔎 Buscar y seleccionar códigos</span><em>Función principal</em></summary>
+ <div class="section-body">
+ <label>Buscar código o descripción</label>
+ <input id="search" placeholder="Buscar código o descripción" oninput="buscar()" autocomplete="off">
+ <div id="results" class="results"></div>
+ <div class="primary-action">
+ <button class="dark" onclick="agregarSeleccionBusqueda()">Agregar códigos marcados al listado</button>
+ </div>
+ <small class="section-note">Puedes marcar varios resultados y agregarlos juntos. Al pinchar una fila, el producto se carga en captura manual para editarlo antes de agregar.</small>
+ </div>
+ </details>
 
-  <label>Modo de importación</label>
-  <select id="importMode">
-   <option value="memoria">Solo memoria para búsqueda rápida</option>
-   <option value="lista">Solo agregar al listado para imprimir</option>
-   <option value="ambas">Memoria + listado para imprimir</option>
-  </select>
+ <details class="ui-section">
+ <summary><span>📷 Escáner de código</span><em>Lectura cámara</em></summary>
+ <div class="section-body">
+ <button class="secondary" onclick="abrirScanner()">Activar cámara / escanear código</button>
+ <div id="scanner"></div>
+ <small class="section-note">El scanner carga el código detectado en la captura manual. Si existe en MAESTRA, completa también la descripción.</small>
+ </div>
+ </details>
 
-  <div class="btnline">
-   <button onclick="importarXLSX()">Importar XLSX</button>
-   <button class="secondary" onclick="descargarFormato()">Formato</button>
-  </div>
+ <details class="ui-section">
+ <summary><span>📂 Importar Excel / formato</span><em>Carga masiva</em></summary>
+ <div class="section-body">
+ <label>Archivo Excel para memoria o listado masivo</label>
+ <input type="file" id="file" accept=".xlsx,.xls,.csv">
 
-  <div class="btnline">
-   <button class="dark" onclick="sincronizarBD(true)">Sincronizar Maestra remota</button>
-   <button class="ghost" onclick="openModal('importModal')">Opciones</button>
-  </div>
+ <label>Modo de importación</label>
+ <select id="importMode">
+ <option value="memoria">Solo memoria para búsqueda rápida</option>
+ <option value="lista">Solo agregar al listado para imprimir</option>
+ <option value="ambas">Memoria + listado para imprimir</option>
+ </select>
 
-  <label>Buscar código o descripción</label>
-  <input id="search" placeholder="Buscar código o descripción" oninput="buscar()" autocomplete="off">
-  <div id="results" class="results"></div>
+ <div class="action-grid">
+ <button onclick="importarXLSX()">Importar archivo XLSX</button>
+ <button class="secondary" onclick="descargarFormato()">Descargar formato</button>
+ <button class="ghost" onclick="openModal('importModal')">Opciones de importación</button>
+ <button class="dark" onclick="openModal('pasteMaestraModal')">Pegar MAESTRA rápido</button>
+ </div>
+ </div>
+ </details>
 
-  <button class="secondary" onclick="abrirScanner()">📷 Escanear</button>
-  <div id="scanner"></div>
+ <details class="ui-section">
+ <summary><span>🔄 Sincronización MAESTRA</span><em>BD remota</em></summary>
+ <div class="section-body">
+ <div class="action-grid">
+ <button class="dark" onclick="sincronizarBD(true)">Sincronizar MAESTRA remota</button>
+ <button class="ghost" onclick="openModal('configModal')">Configurar URL / BD</button>
+ <button class="secondary" onclick="openMaestraAdmin()">Ver / administrar MAESTRA</button>
+ </div>
+ <small class="section-note">La MAESTRA remota se guarda en memoria local grande para buscar códigos sin consultar la URL a cada momento.</small>
+ </div>
+ </details>
 
-  <button onclick="preAgregar()">Agregar actual</button>
-
-  <div class="progress"><span id="bar"></span></div>
-  <div class="semaforo">
-   <div class="luz rojo" id="lr"></div>
-   <div class="luz amarillo" id="la"></div>
-   <div class="luz verde" id="lv"></div>
-   <span id="estado">Listo</span>
-  </div>
+ <div class="status-strip">
+ <div class="progress"><span id="bar"></span></div>
+ <div class="semaforo">
+ <div class="luz rojo" id="lr"></div>
+ <div class="luz amarillo" id="la"></div>
+ <div class="luz verde" id="lv"></div>
+ <span id="estado">Listo</span>
+ </div>
+ </div>
  </div>
 
  <div class="card">
-  <h3>🏷️ Captura / Agregar <button class="ghost" style="width:auto;margin:0;padding:6px 9px" onclick="openModal('configModal')">⚙️ Configuración</button></h3>
+ <div class="card-headline">
+ <div>
+ <h3>🏷️ Captura manual de etiqueta</h3>
+ <small class="help">Completa o edita un producto antes de enviarlo al listado de impresión.</small>
+ </div>
+ <button class="ghost inline-config-btn" onclick="openModal('configModal')">⚙️ Configuración</button>
+ </div>
 
-  <div class="config-summary">
-   <div><b>Medida:</b> <span id="resumenMedida">80 x 50 mm</span></div>
-   <div><b>Papel:</b> <span id="resumenPapel">Térmico</span></div>
-   <div><b>Memoria:</b> <span id="resumenMemoria">0 productos</span></div>
-  </div>
-  <small class="help">La medida, márgenes, zoom, URL de Apps Script y demás opciones quedan dentro del botón de configuración. Puedes guardarlas localmente para no repetirlas.</small>
+ <div class="config-summary">
+ <div><b>Medida:</b> <span id="resumenMedida">80 x 50 mm</span></div>
+ <div><b>Papel:</b> <span id="resumenPapel">Térmico</span></div>
+ <div><b>Memoria:</b> <span id="resumenMemoria">0 productos</span></div>
+ </div>
 
-  <label>Tipo de código para este producto</label>
-  <select id="tipo" onchange="guardarConfig()">
-   <option value="QR">QR</option>
-   <option value="PDF417">PDF417</option>
-   <option value="CODE128" selected>CODE128</option>
-   <option value="CODE39">CODE39</option>
-   <option value="EAN13">EAN13</option>
-   <option value="EAN8">EAN8</option>
-   <option value="UPC">UPC</option>
-   <option value="ITF14">ITF14</option>
-   <option value="MSI">MSI</option>
-   <option value="codabar">CODABAR</option>
-  </select>
-  <small class="help">Cada producto agregado conserva su propio tipo de código, cantidad y medida configurada.</small>
+ <details class="ui-section" open>
+ <summary><span>✍️ Datos del producto</span><em>Agregar manual</em></summary>
+ <div class="section-body">
+ <label>Tipo de código para este producto</label>
+ <select id="tipo" onchange="guardarConfig()">
+ <option value="QR">QR</option>
+ <option value="PDF417">PDF417</option>
+ <option value="CODE128" selected>CODE128</option>
+ <option value="CODE39">CODE39</option>
+ <option value="EAN13">EAN13</option>
+ <option value="EAN8">EAN8</option>
+ <option value="UPC">UPC</option>
+ <option value="ITF14">ITF14</option>
+ <option value="MSI">MSI</option>
+ <option value="codabar">CODABAR</option>
+ </select>
+ <small class="help">Cada producto agregado conserva su propio tipo de código, cantidad y medida configurada.</small>
 
-  <label>Código</label>
-  <input id="codigo" placeholder="Código" autocomplete="off">
+ <label>Código</label>
+ <input id="codigo" placeholder="Código" autocomplete="off">
 
-  <label>Descripción</label>
-  <input id="descripcion" placeholder="Descripción" autocomplete="off">
+ <label>Descripción</label>
+ <input id="descripcion" placeholder="Descripción" autocomplete="off">
 
-  <div class="row">
-   <div>
-    <label>Unidades</label>
-    <input id="unidades" value="1">
-   </div>
-   <div>
-    <label>Copias</label>
-    <input id="cant" type="number" min="1" step="1" value="1">
-   </div>
-  </div>
+ <div class="row">
+ <div>
+ <label>Unidades</label>
+ <input id="unidades" value="1">
+ </div>
+ <div>
+ <label>Copias</label>
+ <input id="cant" type="number" min="1" step="1" value="1">
+ </div>
+ </div>
 
-  <div class="btnline">
-   <button onclick="preAgregar()">Agregar</button>
-   <button class="secondary" onclick="generarPreview(true)">Vista previa</button>
-  </div>
-  <button class="dark" onclick="imprimir()">Imprimir / Guardar PDF</button>
+ <div class="primary-action">
+ <button onclick="preAgregar()">Agregar producto manual al listado</button>
+ </div>
+ </div>
+ </details>
+
+ <details class="ui-section">
+ <summary><span>🖨️ Vista previa e impresión</span><em>Salida final</em></summary>
+ <div class="section-body">
+ <div class="action-grid">
+ <button class="secondary" onclick="generarPreview(true)">Actualizar vista previa</button>
+ <button class="dark" onclick="imprimir()">Imprimir / Guardar PDF</button>
+ </div>
+ </div>
+ </details>
  </div>
 
  <div class="card full">
-  <div class="lista-toolbar">
-   <div class="left">
-    <h3 style="margin:0">📋 Listado agregado visible</h3>
-    <span class="counter" id="bufferCount">0 agregados</span>
-    <span class="counter" id="selectedCount">0 seleccionados</span>
-   </div>
-   <div class="right">
-    <button class="ghost" style="width:auto;margin:0" onclick="seleccionarTodos(true)">Seleccionar todo</button>
-    <button class="ghost" style="width:auto;margin:0" onclick="seleccionarTodos(false)">Quitar selección</button>
-    <button class="warn" style="width:auto;margin:0" onclick="duplicarSeleccionados()">Duplicar</button>
-    <button class="danger" style="width:auto;margin:0" onclick="limpiarLista()">Limpiar</button>
-   </div>
-  </div>
-  <div class="lista" id="lista"></div>
+ <div class="lista-toolbar compact-toolbar">
+ <div class="left">
+ <h3 style="margin:0">📋 Listado agregado visible</h3>
+ <span class="counter" id="bufferCount">0 agregados</span>
+ <span class="counter" id="selectedCount">0 seleccionados</span>
+ </div>
+ <div class="right">
+ <details class="ui-section list-actions-section">
+ <summary><span>🧰 Acciones del listado</span><em>Selección / limpieza</em></summary>
+ <div class="section-body">
+ <div class="action-grid">
+ <button class="ghost" onclick="seleccionarTodos(true)">Seleccionar todo el listado</button>
+ <button class="ghost" onclick="seleccionarTodos(false)">Quitar selección del listado</button>
+ <button class="warn" onclick="duplicarSeleccionados()">Duplicar seleccionados</button>
+ <button class="danger" onclick="limpiarLista()">Limpiar listado completo</button>
+ </div>
+ </div>
+ </details>
+ </div>
+ </div>
+ <div class="lista" id="lista"></div>
  </div>
 
 </div>
 
 <div class="sheet-wrap">
- <div class="sheet-title">
-  <h3>👁️ Vista previa de etiquetas</h3>
-  <div class="btnline" style="margin:0">
-   <button class="secondary" onclick="generarPreview(true)">Actualizar vista previa</button>
-   <button class="dark" onclick="imprimir()">Imprimir / Guardar PDF</button>
-  </div>
+ <div class="sheet-title compact-sheet-title">
+ <h3>👁️ Vista previa de etiquetas</h3>
+ <details class="ui-section sheet-actions-section">
+ <summary><span>🖨️ Acciones de vista previa</span><em>Imprimir</em></summary>
+ <div class="section-body">
+ <div class="action-grid">
+ <button class="secondary" onclick="generarPreview(true)">Actualizar vista previa</button>
+ <button class="dark" onclick="imprimir()">Imprimir / Guardar PDF</button>
+ </div>
+ </div>
+ </details>
  </div>
  <div class="sheet" id="preview"></div>
 </div>
 
 <div class="modal" id="configModal" onclick="closeModalOnBg(event,'configModal')">
  <div class="modal-content">
+ <div class="modal-head">
+ <h3>⚙️ Configuración del generador</h3>
+ <button class="xbtn" onclick="closeModal('configModal')">X</button>
+ </div>
+
+ <h3 style="margin-top:4px">📐 Medida, papel y formato</h3>
+ <div class="row">
+ <div>
+ <label>Papel</label>
+ <select id="paper" onchange="guardarConfig(); actualizarResumenConfig()">
+ <option value="termico">Papel térmico</option>
+ <option value="normal">Papel normal</option>
+ </select>
+ </div>
+ <div>
+ <label>Tamaño rápido</label>
+ <select id="template" onchange="setTemplate(this.value); actualizarResumenConfig()">
+ <option value="">Personalizado</option>
+ <option value="30x50">30 x 50 mm - etiqueta pequeña</option>
+ <option value="50x30">5 x 3 cm - ancho 50 x alto 30 mm</option>
+ <option value="60x40">60 x 40 mm</option>
+ <option value="80x50" selected>80 x 50 mm</option>
+ <option value="100x70">100 x 70 mm</option>
+ </select>
+ </div>
+ </div>
+ <div class="row3">
+ <div>
+ <label>Ancho etiqueta mm</label>
+ <input id="w" type="number" min="10" step="1" value="80" oninput="guardarConfig(); actualizarResumenConfig()">
+ </div>
+ <div>
+ <label>Alto etiqueta mm</label>
+ <input id="h" type="number" min="10" step="1" value="50" oninput="guardarConfig(); actualizarResumenConfig()">
+ </div>
+ <div>
+ <label>Rellenar ceros a la izquierda</label>
+ <input id="padLength" type="number" min="0" step="1" value="0" oninput="guardarConfig()">
+ </div>
+ </div>
+ <small class="help">La etiqueta se arma centrada dentro del ancho y alto configurado. El sistema reduce texto, QR o barras si el espacio es pequeño para evitar que se salga.</small>
+
+ <div class="btnline">
+ <button onclick="guardarConfigLocalManual()">Guardar configuración local</button>
+ <button class="secondary" onclick="aplicarConfigVisual(); actualizarResumenConfig(); generarPreview(true)">Aplicar a vista previa</button>
+ </div>
+
+ <h3 style="margin-top:16px">🔗 Conexión Apps Script / MAESTRA</h3>
+ <label>URL Web App Apps Script</label>
+ <input id="apiUrl" placeholder="https://script.google.com/macros/s/.../exec" oninput="guardarConfig()">
+ <div class="row">
+ <div>
+ <label>BD remota / hoja</label>
+ <input id="remoteSheet" value="MAESTRA" oninput="guardarConfig()">
+ </div>
+ <div>
+ <label>Acción GET opcional</label>
+ <input id="remoteAction" placeholder="maestra / listarMaestra / vacío" oninput="guardarConfig()">
+ </div>
+ </div>
+ <small class="help">La sincronización consulta Apps Script y guarda la MAESTRA en IndexedDB, una memoria local grande. Así evita el error de cuota de localStorage y permite buscar código y descripción rápidamente sin consultar la URL en cada búsqueda.</small>
+ <div class="btnline">
+ <button class="dark" onclick="guardarConfig(); sincronizarBD(true)">Sincronizar ahora</button>
+ <button class="ghost" onclick="limpiarMemoriaMaestra()">Limpiar memoria MAESTRA</button>
+ </div>
+ <div class="action-grid">
+ <button type="button" class="secondary" onclick="openMaestraAdmin()">Ver / administrar MAESTRA</button>
+ <button type="button" class="dark" onclick="closeModal('configModal'); openModal('pasteMaestraModal')">Pegar MAESTRA rápido</button>
+ </div>
+ <small class="help">La administración de MAESTRA permite ver, buscar, agregar, editar y eliminar códigos guardados en memoria local.</small>
+ <div class="row3">
+ <div>
+ <label>Margen interno etiqueta mm</label>
+ <input id="paddingMm" type="number" min="0" step="0.5" value="0" oninput="guardarConfig()">
+ </div>
+ <div>
+ <label>Separación pantalla mm</label>
+ <input id="gapMm" type="number" min="0" step="0.5" value="0" oninput="guardarConfig(); aplicarConfigVisual()">
+ </div>
+ <div>
+ <label>Margen impresión mm</label>
+ <input id="printMarginMm" type="number" min="0" step="0.5" value="0" oninput="guardarConfig(); aplicarConfigVisual()">
+ </div>
+ </div>
+ <div class="row3">
+ <div>
+ <label>Modo impresión etiquetas</label>
+ <select id="printMode" onchange="guardarConfig(); aplicarConfigVisual(); generarPreview(true)">
+ <option value="intervalo" selected>Con intervalo entre etiquetas</option>
+ <option value="continuo">Continuo sin intervalo</option>
+ </select>
+ </div>
+ <div>
+ <label>Intervalo horizontal mm</label>
+ <input id="printGapXmm" type="number" min="0" step="0.5" value="2" oninput="guardarConfig(); aplicarConfigVisual()">
+ </div>
+ <div>
+ <label>Intervalo vertical mm</label>
+ <input id="printGapYmm" type="number" min="0" step="0.5" value="2" oninput="guardarConfig(); aplicarConfigVisual()">
+ </div>
+ </div>
+
+ <div class="row3">
+ <div>
+ <label>Formato de rollo / página</label>
+ <select id="printLayout" onchange="guardarConfig(); aplicarConfigVisual(); generarPreview(true)">
+ <option value="normal" selected>Normal automático</option>
+ <option value="roll2">Rollo 2 columnas</option>
+ </select>
+ </div>
+ <div>
+ <label>Columnas del rollo</label>
+ <input id="rollColumns" type="number" min="1" max="4" step="1" value="2" oninput="guardarConfig(); aplicarConfigVisual(); generarPreview(true)">
+ </div>
+ <div>
+ <label>Separación central columnas mm</label>
+ <input id="rollColumnGapMm" type="number" min="0" step="0.5" value="3" oninput="guardarConfig(); aplicarConfigVisual(); generarPreview(true)">
+ </div>
+ </div>
+ <div class="row3">
+ <div>
+ <label>Separación hacia abajo mm</label>
+ <input id="rollRowGapMm" type="number" min="0" step="0.5" value="2" oninput="guardarConfig(); aplicarConfigVisual(); generarPreview(true)">
+ </div>
+ <div>
+ <label>Preset rollo 5 x 3 cm</label>
+ <button type="button" class="ghost" onclick="setRoll50x30TwoColumns()">Aplicar 5 x 3 cm / 2 columnas</button>
+ </div>
+ <div>
+ <label>Ancho efectivo del rollo</label>
+ <input id="rollEffectiveInfo" value="103 mm" readonly>
+ </div>
+ </div>
+ <small class="roll-info">Para rollos de 5 cm de ancho x 3 cm de alto: el sistema usa ANCHO 50 mm y ALTO 30 mm, arma dos etiquetas por fila, aplica separación central entre columnas y separación vertical hacia abajo por cada etiqueta.</small>
+ <div class="row3">
+ <div>
+ <label>Separación de intervalos</label>
+ <select id="intervalMultiplier" onchange="guardarConfig(); aplicarConfigVisual(); generarPreview(true)">
+ <option value="1" selected>Normal</option>
+ <option value="2">Doble intervalo</option>
+ </select>
+ </div>
+ <div>
+ <label>Preset etiqueta pequeña</label>
+ <button type="button" class="ghost" onclick="setSmallLabel30x50()">Aplicar 30 x 50 + doble intervalo</button>
+ </div>
+ <div>
+ <label>Separación efectiva impresión</label>
+ <input id="effectiveGapInfo" value="2 x 2 mm" readonly>
+ </div>
+ </div>
+ <small class="help">Modo intervalo deja separación externa real entre etiquetas, sin crear saltos de página. Para etiquetas pequeñas 30 x 50 mm puedes activar doble intervalo: mantiene la etiqueta sin margen interno y duplica solo la separación externa.</small>
+ <div class="row3">
+ <div>
+ <label>Escala real al imprimir</label>
+ <select id="printAutoScale" onchange="guardarConfig()">
+ <option value="1" selected>Activada</option>
+ <option value="0">Desactivada</option>
+ </select>
+ </div>
+ <div>
+ <label>Escala mínima impresión</label>
+ <input id="printScaleMin" type="number" min="0.40" max="1" step="0.05" value="0.70" oninput="guardarConfig()">
+ </div>
+ <div>
+ <label>Escala máxima impresión</label>
+ <input id="printScaleMax" type="number" min="1" max="2" step="0.05" value="1.35" oninput="guardarConfig()">
+ </div>
+ </div>
+ <small class="help">Al imprimir, el sistema respeta el ancho y alto real de la etiqueta en milímetros y escala el contenido para ocupar mejor el espacio interno sin salirse.</small>
+ <div class="row3">
+ <div>
+ <label>Zoom contenido interno</label>
+ <input id="contentZoom" type="number" min="0.50" max="1.80" step="0.05" value="1" oninput="guardarConfig(); generarPreview(true)">
+ </div>
+ <div>
+ <label>Alto barras mm</label>
+ <input id="barHeightMm" type="number" min="6" step="1" value="18" oninput="guardarConfig()">
+ </div>
+ <div>
+ <label>Tamaño QR/PDF px</label>
+ <input id="qrSize" type="number" min="40" step="10" value="90" oninput="guardarConfig()">
+ </div>
+ <div>
+ <label>Zoom interfaz</label>
+ <select id="uiZoom" onchange="guardarConfig(); aplicarConfigVisual()">
+ <option value=".84">84%</option>
+ <option value=".88">88%</option>
+ <option value=".90" selected>90%</option>
+ <option value=".95">95%</option>
+ <option value="1">100%</option>
+ </select>
+ </div>
+ </div>
+ <div class="row3">
+ <div>
+ <label>Fuente código px</label>
+ <input id="fontCodigo" type="number" min="8" value="18" oninput="guardarConfig()">
+ </div>
+ <div>
+ <label>Fuente descripción px</label>
+ <input id="fontDesc" type="number" min="7" value="12" oninput="guardarConfig()">
+ </div>
+ <div>
+ <label>Fuente unidades px</label>
+ <input id="fontUnd" type="number" min="7" value="12" oninput="guardarConfig()">
+ </div>
+ </div>
+
+ <label class="check-option" for="showUnitsOnLabel">
+ <input id="showUnitsOnLabel" type="checkbox" checked onchange="guardarConfig(); generarPreview(true)">
+ <span>Mostrar unidades en la etiqueta impresa
+ <small>Desactiva esta opción para que no salga “UND” ni la cantidad en la vista previa, impresión o PDF.</small>
+ </span>
+ </label>
+
+ <div class="btnline">
+ <button onclick="guardarConfigLocalManual(); closeModal('configModal'); generarPreview(true)">Guardar configuración local y cerrar</button>
+ <button class="secondary" onclick="resetConfig()">Restablecer</button>
+ </div>
+ </div>
+</div>
+
+
+<div class="modal" id="maestraAdminModal" onclick="closeModalOnBg(event,'maestraAdminModal')">
+ <div class="modal-content maestra-wide">
   <div class="modal-head">
-   <h3>⚙️ Configuración del generador</h3>
-   <button class="xbtn" onclick="closeModal('configModal')">X</button>
+   <h3>📦 Administración local de MAESTRA</h3>
+   <button class="xbtn" onclick="closeModal('maestraAdminModal')">X</button>
+  </div>
+  <p style="color:#475569;font-weight:700;line-height:1.45;margin-top:0">
+   Aquí puedes ver la MAESTRA guardada en memoria local, agregar códigos nuevos, editar registros existentes o eliminarlos. Los cambios quedan guardados en IndexedDB para mantener la búsqueda rápida.
+  </p>
+
+  <div class="maestra-admin-grid">
+   <div class="maestra-form-card">
+    <h3 style="margin-top:0">✍️ Agregar / editar código</h3>
+    <input id="maestraEditIndex" type="hidden" value="-1">
+
+    <label>Código</label>
+    <input id="maestraCodigo" placeholder="Ej: 000123" autocomplete="off">
+
+    <label>Descripción</label>
+    <input id="maestraDescripcion" placeholder="Descripción del producto" autocomplete="off">
+
+    <div class="row">
+     <div>
+      <label>Unidades</label>
+      <input id="maestraUnidades" value="1">
+     </div>
+     <div>
+      <label>Copias</label>
+      <input id="maestraCant" type="number" min="1" step="1" value="1">
+     </div>
+    </div>
+
+    <label>Tipo de código</label>
+    <select id="maestraTipo">
+     <option value="QR">QR</option>
+     <option value="PDF417">PDF417</option>
+     <option value="CODE128" selected>CODE128</option>
+     <option value="CODE39">CODE39</option>
+     <option value="EAN13">EAN13</option>
+     <option value="EAN8">EAN8</option>
+     <option value="UPC">UPC</option>
+     <option value="ITF14">ITF14</option>
+     <option value="MSI">MSI</option>
+     <option value="codabar">CODABAR</option>
+    </select>
+
+    <div class="row">
+     <div>
+      <label>Ancho mm</label>
+      <input id="maestraAncho" type="number" min="10" step="1" value="50">
+     </div>
+     <div>
+      <label>Alto mm</label>
+      <input id="maestraAlto" type="number" min="10" step="1" value="30">
+     </div>
+    </div>
+
+    <div class="action-grid" style="margin-top:10px">
+     <button class="dark" onclick="guardarProductoMaestraManual()">Guardar código en MAESTRA</button>
+     <button class="secondary" onclick="limpiarFormMaestra(true)">Nuevo / limpiar</button>
+     <button class="ghost" onclick="cargarMedidaActualMaestra()">Usar medida actual</button>
+     <button class="ghost" onclick="openModal('pasteMaestraModal')">Pegar MAESTRA</button>
+    </div>
+    <small class="help">Si el código ya existe, el sistema pregunta si deseas actualizarlo. Los ceros a la izquierda se conservan.</small>
+   </div>
+
+   <div class="maestra-table-card">
+    <div class="maestra-admin-toolbar">
+     <label style="margin-top:0">Buscar en MAESTRA
+      <input id="maestraAdminSearch" placeholder="Código o descripción" oninput="renderMaestraAdmin()" autocomplete="off">
+     </label>
+     <span class="maestra-admin-count" id="maestraAdminCount">0 productos</span>
+     <button class="ghost" onclick="renderMaestraAdmin()">Actualizar</button>
+    </div>
+    <div id="maestraAdminList" class="maestra-table-wrap">
+     <div class="empty">No hay productos en MAESTRA.</div>
+    </div>
+    <small class="help">Para mantener rápido el sistema, la tabla muestra hasta 300 registros por búsqueda. Usa el buscador para ubicar códigos específicos.</small>
+   </div>
+  </div>
+ </div>
+</div>
+
+<div class="modal" id="pasteMaestraModal" onclick="closeModalOnBg(event,'pasteMaestraModal')">
+ <div class="modal-content maestra-wide">
+  <div class="modal-head">
+   <h3>⚡ Importar MAESTRA por copiar y pegar</h3>
+   <button class="xbtn" onclick="closeModal('pasteMaestraModal')">X</button>
   </div>
 
-  <h3 style="margin-top:4px">📐 Medida, papel y formato</h3>
-  <div class="row">
-   <div>
-    <label>Papel</label>
-    <select id="paper" onchange="guardarConfig(); actualizarResumenConfig()">
-     <option value="termico">Papel térmico</option>
-     <option value="normal">Papel normal</option>
-    </select>
-   </div>
-   <div>
-    <label>Tamaño rápido</label>
-    <select id="template" onchange="setTemplate(this.value); actualizarResumenConfig()">
-     <option value="">Personalizado</option>
-     <option value="30x50">30 x 50 mm - etiqueta pequeña</option>
-     <option value="50x30">50 x 30 mm</option>
-     <option value="60x40">60 x 40 mm</option>
-     <option value="80x50" selected>80 x 50 mm</option>
-     <option value="100x70">100 x 70 mm</option>
-    </select>
-   </div>
-  </div>
+  <p style="color:#475569;font-weight:700;line-height:1.45;margin-top:0">
+   Copia la tabla desde Excel o Google Sheets y pégala completa aquí. El sistema procesa todo el bloque, conserva ceros a la izquierda y guarda la MAESTRA en IndexedDB para búsquedas rápidas.
+  </p>
+
   <div class="row3">
    <div>
-    <label>Ancho etiqueta mm</label>
-    <input id="w" type="number" min="10" step="1" value="80" oninput="guardarConfig(); actualizarResumenConfig()">
+    <label>Destino</label>
+    <select id="pasteTarget">
+     <option value="memoria" selected>Solo MAESTRA en memoria</option>
+     <option value="lista">Solo listado para imprimir</option>
+     <option value="ambas">MAESTRA + listado</option>
+    </select>
    </div>
    <div>
-    <label>Alto etiqueta mm</label>
-    <input id="h" type="number" min="10" step="1" value="50" oninput="guardarConfig(); actualizarResumenConfig()">
+    <label>Operación en MAESTRA</label>
+    <select id="pasteOperation">
+     <option value="reemplazar" selected>Reemplazar MAESTRA actual</option>
+     <option value="fusionar">Fusionar por código</option>
+    </select>
    </div>
    <div>
-    <label>Rellenar ceros a la izquierda</label>
-    <input id="padLength" type="number" min="0" step="1" value="0" oninput="guardarConfig()">
+    <label>Formato esperado</label>
+    <input value="CODIGO | DESCRIPCION | UNIDADES | CANTIDAD | TIPO" readonly>
    </div>
-  </div>
-  <small class="help">La etiqueta se arma centrada dentro del ancho y alto configurado. El sistema reduce texto, QR o barras si el espacio es pequeño para evitar que se salga.</small>
-
-  <div class="btnline">
-   <button onclick="guardarConfigLocalManual()">Guardar configuración local</button>
-   <button class="secondary" onclick="aplicarConfigVisual(); actualizarResumenConfig(); generarPreview(true)">Aplicar a vista previa</button>
   </div>
 
-  <h3 style="margin-top:16px">🔗 Conexión Apps Script / MAESTRA</h3>
-  <label>URL Web App Apps Script</label>
-  <input id="apiUrl" placeholder="https://script.google.com/macros/s/.../exec" oninput="guardarConfig()">
-  <div class="row">
-   <div>
-    <label>BD remota / hoja</label>
-    <input id="remoteSheet" value="MAESTRA" oninput="guardarConfig()">
-   </div>
-   <div>
-    <label>Acción GET opcional</label>
-    <input id="remoteAction" placeholder="maestra / listarMaestra / vacío" oninput="guardarConfig()">
-   </div>
+  <label>Pega aquí la MAESTRA completa</label>
+  <textarea id="maestraPaste" class="paste-box" placeholder="CODIGO&#9;DESCRIPCION&#9;UNIDADES&#9;CANTIDAD&#9;TIPO&#10;000123&#9;Producto ejemplo&#9;1&#9;2&#9;CODE128"></textarea>
+
+  <div class="action-grid">
+   <button class="ghost" onclick="pegarDesdePortapapeles()">Pegar desde portapapeles</button>
+   <button class="secondary" onclick="previsualizarPegadoMaestra()">Validar pegado</button>
+   <button class="danger" onclick="limpiarPegadoMaestra()">Limpiar pegado</button>
   </div>
-  <small class="help">La sincronización consulta Apps Script y guarda la MAESTRA en IndexedDB, una memoria local grande. Así evita el error de cuota de localStorage y permite buscar código y descripción rápidamente sin consultar la URL en cada búsqueda.</small>
-  <div class="btnline">
-   <button class="dark" onclick="guardarConfig(); sincronizarBD(true)">Sincronizar ahora</button>
-   <button class="ghost" onclick="limpiarMemoriaMaestra()">Limpiar memoria MAESTRA</button>
+
+  <div class="import-stats">
+   <div><b id="pasteTotal">0</b>Registros detectados</div>
+   <div><b id="pasteValidos">0</b>Productos válidos</div>
+   <div><b id="pasteInvalidos">0</b>Filas omitidas</div>
   </div>
-  <div class="row3">
-   <div>
-    <label>Margen interno etiqueta mm</label>
-    <input id="paddingMm" type="number" min="0" step="0.5" value="0" oninput="guardarConfig()">
-   </div>
-   <div>
-    <label>Separación pantalla mm</label>
-    <input id="gapMm" type="number" min="0" step="0.5" value="0" oninput="guardarConfig(); aplicarConfigVisual()">
-   </div>
-   <div>
-    <label>Margen impresión mm</label>
-    <input id="printMarginMm" type="number" min="0" step="0.5" value="0" oninput="guardarConfig(); aplicarConfigVisual()">
-   </div>
+
+  <div id="pastePreview" class="sample-table">
+   <div class="empty">Pega la MAESTRA y presiona “Validar pegado”.</div>
   </div>
-  <div class="row3">
-   <div>
-    <label>Modo impresión etiquetas</label>
-    <select id="printMode" onchange="guardarConfig(); aplicarConfigVisual(); generarPreview(true)">
-     <option value="intervalo" selected>Con intervalo entre etiquetas</option>
-     <option value="continuo">Continuo sin intervalo</option>
-    </select>
-   </div>
-   <div>
-    <label>Intervalo horizontal mm</label>
-    <input id="printGapXmm" type="number" min="0" step="0.5" value="2" oninput="guardarConfig(); aplicarConfigVisual()">
-   </div>
-   <div>
-    <label>Intervalo vertical mm</label>
-    <input id="printGapYmm" type="number" min="0" step="0.5" value="2" oninput="guardarConfig(); aplicarConfigVisual()">
-   </div>
-  </div>
-  <div class="row3">
-   <div>
-    <label>Separación de intervalos</label>
-    <select id="intervalMultiplier" onchange="guardarConfig(); aplicarConfigVisual(); generarPreview(true)">
-     <option value="1" selected>Normal</option>
-     <option value="2">Doble intervalo</option>
-    </select>
-   </div>
-   <div>
-    <label>Preset etiqueta pequeña</label>
-    <button type="button" class="ghost" onclick="setSmallLabel30x50()">Aplicar 30 x 50 + doble intervalo</button>
-   </div>
-   <div>
-    <label>Separación efectiva impresión</label>
-    <input id="effectiveGapInfo" value="2 x 2 mm" readonly>
-   </div>
-  </div>
-  <small class="help">Modo intervalo deja separación externa real entre etiquetas, sin crear saltos de página. Para etiquetas pequeñas 30 x 50 mm puedes activar doble intervalo: mantiene la etiqueta sin margen interno y duplica solo la separación externa.</small>
-  <div class="row3">
-   <div>
-    <label>Escala real al imprimir</label>
-    <select id="printAutoScale" onchange="guardarConfig()">
-     <option value="1" selected>Activada</option>
-     <option value="0">Desactivada</option>
-    </select>
-   </div>
-   <div>
-    <label>Escala mínima impresión</label>
-    <input id="printScaleMin" type="number" min="0.40" max="1" step="0.05" value="0.70" oninput="guardarConfig()">
-   </div>
-   <div>
-    <label>Escala máxima impresión</label>
-    <input id="printScaleMax" type="number" min="1" max="2" step="0.05" value="1.35" oninput="guardarConfig()">
-   </div>
-  </div>
-  <small class="help">Al imprimir, el sistema respeta el ancho y alto real de la etiqueta en milímetros y escala el contenido para ocupar mejor el espacio interno sin salirse.</small>
-  <div class="row3">
-   <div>
-    <label>Zoom contenido interno</label>
-    <input id="contentZoom" type="number" min="0.50" max="1.80" step="0.05" value="1" oninput="guardarConfig(); generarPreview(true)">
-   </div>
-   <div>
-    <label>Alto barras mm</label>
-    <input id="barHeightMm" type="number" min="6" step="1" value="18" oninput="guardarConfig()">
-   </div>
-   <div>
-    <label>Tamaño QR/PDF px</label>
-    <input id="qrSize" type="number" min="40" step="10" value="90" oninput="guardarConfig()">
-   </div>
-   <div>
-    <label>Zoom interfaz</label>
-    <select id="uiZoom" onchange="guardarConfig(); aplicarConfigVisual()">
-     <option value=".84">84%</option>
-     <option value=".88">88%</option>
-     <option value=".90" selected>90%</option>
-     <option value=".95">95%</option>
-     <option value="1">100%</option>
-    </select>
-   </div>
-  </div>
-  <div class="row3">
-   <div>
-    <label>Fuente código px</label>
-    <input id="fontCodigo" type="number" min="8" value="18" oninput="guardarConfig()">
-   </div>
-   <div>
-    <label>Fuente descripción px</label>
-    <input id="fontDesc" type="number" min="7" value="12" oninput="guardarConfig()">
-   </div>
-   <div>
-    <label>Fuente unidades px</label>
-    <input id="fontUnd" type="number" min="7" value="12" oninput="guardarConfig()">
-   </div>
-  </div>
-  <div class="btnline">
-   <button onclick="guardarConfigLocalManual(); closeModal('configModal'); generarPreview(true)">Guardar configuración local y cerrar</button>
-   <button class="secondary" onclick="resetConfig()">Restablecer</button>
+
+  <div class="action-grid">
+   <button class="dark" onclick="importarMaestraPegada()">Cargar pegado rápido</button>
+   <button class="secondary" onclick="importarMaestraPegada('ambas')">Cargar y agregar al listado</button>
   </div>
  </div>
 </div>
 
 <div class="modal" id="importModal" onclick="closeModalOnBg(event,'importModal')">
  <div class="modal-content">
-  <div class="modal-head">
-   <h3>📂 Opciones del importador masivo</h3>
-   <button class="xbtn" onclick="closeModal('importModal')">X</button>
-  </div>
-  <p style="color:#475569;font-weight:700;line-height:1.45;margin-top:0">El archivo puede quedar solo en memoria para ser llamado por búsqueda o scanner, o puede agregarse directo al listado visible para imprimir solamente lo seleccionado.</p>
-  <div class="row">
-   <button onclick="importMode.value='memoria'; closeModal('importModal'); importarXLSX()">Importar solo a memoria</button>
-   <button class="secondary" onclick="importMode.value='lista'; closeModal('importModal'); importarXLSX()">Agregar al listado</button>
-  </div>
-  <button class="dark" onclick="importMode.value='ambas'; closeModal('importModal'); importarXLSX()">Memoria + listado de impresión</button>
-  <button class="ghost" onclick="descargarFormato()">Descargar formato XLSX</button>
+ <div class="modal-head">
+ <h3>📂 Opciones del importador masivo</h3>
+ <button class="xbtn" onclick="closeModal('importModal')">X</button>
+ </div>
+ <p style="color:#475569;font-weight:700;line-height:1.45;margin-top:0">El archivo puede quedar solo en memoria para ser llamado por búsqueda o scanner, o puede agregarse directo al listado visible para imprimir solamente lo seleccionado.</p>
+ <div class="row">
+ <button onclick="importMode.value='memoria'; closeModal('importModal'); importarXLSX()">Importar solo a memoria</button>
+ <button class="secondary" onclick="importMode.value='lista'; closeModal('importModal'); importarXLSX()">Agregar al listado</button>
+ </div>
+ <button class="dark" onclick="importMode.value='ambas'; closeModal('importModal'); importarXLSX()">Memoria + listado de impresión</button>
+ <button class="secondary" onclick="closeModal('importModal'); openModal('pasteMaestraModal')">Pegar MAESTRA rápido</button>
+ <button class="ghost" onclick="descargarFormato()">Descargar formato XLSX</button>
  </div>
 </div>
 
@@ -958,6 +1626,8 @@ const IDB_BUFFER="buffer_impresion";
 
 let productos=[];
 let indice=[];
+let resultadosBusqueda=[];
+let seleccionBusqueda=new Map();
 let buffer=[];
 let scanner=null;
 let lastScan="";
@@ -1073,6 +1743,10 @@ function getConfig(){
   gapMm: num("gapMm",4),
   printMarginMm: num("printMarginMm",0),
   printMode: ($("printMode")?.value || "continuo"),
+  printLayout: ($("printLayout")?.value || "normal"),
+  rollColumns: Math.max(1,Math.min(4,parseInt($("rollColumns")?.value || "2",10) || 2)),
+  rollColumnGapMm: num("rollColumnGapMm",3),
+  rollRowGapMm: num("rollRowGapMm",2),
   printGapXmm: num("printGapXmm",0),
   printGapYmm: num("printGapYmm",0),
   intervalMultiplier: Number($("intervalMultiplier")?.value || 1) || 1,
@@ -1085,7 +1759,8 @@ function getConfig(){
   uiZoom: $("uiZoom").value || ".90",
   fontCodigo: intNum("fontCodigo",18),
   fontDesc: intNum("fontDesc",12),
-  fontUnd: intNum("fontUnd",12)
+  fontUnd: intNum("fontUnd",12),
+  showUnitsOnLabel: $("showUnitsOnLabel") ? $("showUnitsOnLabel").checked : true
  };
 }
 function aplicarConfigVisual(){
@@ -1098,9 +1773,20 @@ function aplicarConfigVisual(){
  const mul=Math.max(1,Number(c.intervalMultiplier || 1));
  const effGapX=(c.printMode==="intervalo" ? Number(c.printGapXmm || 0)*mul : 0);
  const effGapY=(c.printMode==="intervalo" ? Number(c.printGapYmm || 0)*mul : 0);
+ const rollCols=Math.max(1,Math.min(4,Number(c.rollColumns || 2)));
+ const rollGapX=Math.max(0,Number(c.rollColumnGapMm || 0));
+ const rollGapY=Math.max(0,Number(c.rollRowGapMm || 0));
+ const rollTotalW=(Number(c.w || 50)*rollCols)+(rollGapX*(rollCols-1));
  document.documentElement.style.setProperty("--print-gap-x",effGapX+"mm");
  document.documentElement.style.setProperty("--print-gap-y",effGapY+"mm");
+ document.documentElement.style.setProperty("--roll-column-gap",rollGapX+"mm");
+ document.documentElement.style.setProperty("--roll-row-gap",rollGapY+"mm");
+ document.documentElement.style.setProperty("--roll-total-width",rollTotalW+"mm");
+ document.documentElement.style.setProperty("--roll-label-w",Number(c.w || 50)+"mm");
+ document.documentElement.style.setProperty("--roll-label-h",Number(c.h || 30)+"mm");
+ if($("preview")) $("preview").classList.toggle("roll-2cols",c.printLayout==="roll2");
  if($("effectiveGapInfo")) $("effectiveGapInfo").value=`${effGapX} x ${effGapY} mm`;
+ if($("rollEffectiveInfo")) $("rollEffectiveInfo").value=`${rollTotalW} mm (${rollCols} col.)`;
  document.documentElement.style.setProperty("--ui-zoom",c.uiZoom);
  document.documentElement.style.setProperty("--content-zoom",c.contentZoom);
  actualizarEstiloImpresion(c);
@@ -1116,7 +1802,17 @@ function actualizarEstiloImpresion(c=getConfig()){
  const mul=Math.max(1,Number(c.intervalMultiplier || 1));
  const gapX=(c.printMode==="intervalo") ? Number(c.printGapXmm||0)*mul : 0;
  const gapY=(c.printMode==="intervalo") ? Number(c.printGapYmm||0)*mul : 0;
- st.textContent=`@page{margin:${c.printMarginMm}mm;}\n@media print{.sheet{text-align:center!important;gap:${gapY}mm ${gapX}mm!important;padding:0!important}.label{flex:0 0 auto!important;margin:0 calc(${gapX}mm / 2) ${gapY}mm calc(${gapX}mm / 2)!important}}`;
+ const rollCols=Math.max(1,Math.min(4,Number(c.rollColumns || 2)));
+ const rollGapX=Math.max(0,Number(c.rollColumnGapMm || 0));
+ const rollGapY=Math.max(0,Number(c.rollRowGapMm || 0));
+ const labelW=Number(c.w || 50);
+ const labelH=Number(c.h || 30);
+ const rollTotalW=(labelW*rollCols)+(rollGapX*(rollCols-1));
+ if(c.printLayout==="roll2"){
+  st.textContent=`@page{margin:${c.printMarginMm}mm;}\n@media print{#preview.sheet.roll-2cols{display:grid!important;grid-template-columns:repeat(${rollCols},${labelW}mm)!important;column-gap:${rollGapX}mm!important;row-gap:${rollGapY}mm!important;width:${rollTotalW}mm!important;max-width:${rollTotalW}mm!important;min-width:${rollTotalW}mm!important;margin:0 auto!important;padding:0!important;justify-content:start!important;align-content:start!important;align-items:start!important;text-align:left!important;font-size:initial!important;line-height:normal!important;white-space:normal!important;overflow:visible!important;}#preview.sheet.roll-2cols .label{display:block!important;width:${labelW}mm!important;height:${labelH}mm!important;min-width:${labelW}mm!important;max-width:${labelW}mm!important;min-height:${labelH}mm!important;max-height:${labelH}mm!important;margin:0!important;padding:0!important;page-break-inside:avoid!important;break-inside:avoid!important;overflow:hidden!important;position:relative!important;}#preview.sheet.roll-2cols .label-inner{position:absolute!important;left:50%!important;top:50%!important;width:100%!important;height:100%!important;transform-origin:center center!important;}}`;
+ }else{
+  st.textContent=`@page{margin:${c.printMarginMm}mm;}\n@media print{.sheet{text-align:center!important;gap:${gapY}mm ${gapX}mm!important;padding:0!important}.label{flex:0 0 auto!important;margin:0 calc(${gapX}mm / 2) ${gapY}mm calc(${gapX}mm / 2)!important}}`;
+ }
 }
 function guardarConfig(){
  const c=getConfig();
@@ -1125,7 +1821,11 @@ function guardarConfig(){
 }
 function actualizarResumenConfig(){
  const c=getConfig();
- if($("resumenMedida")) $("resumenMedida").textContent=`${c.w} x ${c.h} mm`;
+ const cmW=Number(c.w)/10;
+ const cmH=Number(c.h)/10;
+ const fmtCm=n=>Number.isInteger(n)?String(n):String(Number(n.toFixed(2)));
+ const cmTxt=(Number.isFinite(cmW)&&Number.isFinite(cmH)) ? ` (${fmtCm(cmW)} x ${fmtCm(cmH)} cm)` : '';
+ if($("resumenMedida")) $("resumenMedida").textContent=`${c.w} x ${c.h} mm${cmTxt}`;
  if($("resumenPapel")) $("resumenPapel").textContent=c.paper==="normal"?"Normal":"Térmico";
  if($("resumenMemoria")) $("resumenMemoria").textContent=`${productos.length} productos`;
 }
@@ -1154,6 +1854,10 @@ function cargarConfig(){
   if(c.gapMm!==undefined) $("gapMm").value=c.gapMm;
   if(c.printMarginMm!==undefined) $("printMarginMm").value=c.printMarginMm; else $("printMarginMm").value=0;
   if(c.printMode!==undefined && $("printMode")) $("printMode").value=c.printMode || "continuo";
+  if(c.printLayout!==undefined && $("printLayout")) $("printLayout").value=c.printLayout || "normal";
+  if(c.rollColumns!==undefined && $("rollColumns")) $("rollColumns").value=c.rollColumns || 2;
+  if(c.rollColumnGapMm!==undefined && $("rollColumnGapMm")) $("rollColumnGapMm").value=c.rollColumnGapMm;
+  if(c.rollRowGapMm!==undefined && $("rollRowGapMm")) $("rollRowGapMm").value=c.rollRowGapMm;
   if(c.printGapXmm!==undefined && $("printGapXmm")) $("printGapXmm").value=c.printGapXmm;
   if(c.printGapYmm!==undefined && $("printGapYmm")) $("printGapYmm").value=c.printGapYmm;
   if(c.intervalMultiplier!==undefined && $("intervalMultiplier")) $("intervalMultiplier").value=String(c.intervalMultiplier || 1);
@@ -1167,6 +1871,7 @@ function cargarConfig(){
   if(c.fontCodigo!==undefined) $("fontCodigo").value=c.fontCodigo;
   if(c.fontDesc!==undefined) $("fontDesc").value=c.fontDesc;
   if(c.fontUnd!==undefined) $("fontUnd").value=c.fontUnd;
+  if($("showUnitsOnLabel")) $("showUnitsOnLabel").checked = (c.showUnitsOnLabel !== false);
  }catch(e){}
  aplicarConfigVisual();
  actualizarEstadoMemoria();
@@ -1178,17 +1883,59 @@ function resetConfig(){
  if($("remoteAction")) $("remoteAction").value="";
  $("paper").value="termico"; $("template").value="80x50"; $("w").value=80; $("h").value=50;
  $("tipo").value="CODE128"; $("padLength").value=0; $("paddingMm").value=0; $("gapMm").value=4; $("printMarginMm").value=0;
- if($("printMode")) $("printMode").value="intervalo"; if($("printGapXmm")) $("printGapXmm").value=2; if($("printGapYmm")) $("printGapYmm").value=2; if($("intervalMultiplier")) $("intervalMultiplier").value="1";
+ if($("printMode")) $("printMode").value="intervalo"; if($("printLayout")) $("printLayout").value="normal"; if($("rollColumns")) $("rollColumns").value=2; if($("rollColumnGapMm")) $("rollColumnGapMm").value=3; if($("rollRowGapMm")) $("rollRowGapMm").value=2; if($("printGapXmm")) $("printGapXmm").value=2; if($("printGapYmm")) $("printGapYmm").value=2; if($("intervalMultiplier")) $("intervalMultiplier").value="1";
  if($("printAutoScale")) $("printAutoScale").value="1"; if($("printScaleMin")) $("printScaleMin").value=0.70; if($("printScaleMax")) $("printScaleMax").value=1.35; if($("contentZoom")) $("contentZoom").value=1;
  $("barHeightMm").value=18; $("qrSize").value=90; $("uiZoom").value=".90"; $("fontCodigo").value=18; $("fontDesc").value=12; $("fontUnd").value=12;
+ if($("showUnitsOnLabel")) $("showUnitsOnLabel").checked=true;
  guardarConfig(); generarPreview(true); toast("Configuración restablecida","verde");
 }
 function setPaper(v){guardarConfig();actualizarResumenConfig();}
+function numeroMedidaEtiqueta(v,def){
+ const n=parseFloat(v);
+ return Number.isFinite(n) && n>0 ? n : def;
+}
+function esRollo50x30Activo(){
+ const w=numeroMedidaEtiqueta($("w")?.value,50);
+ const h=numeroMedidaEtiqueta($("h")?.value,30);
+ return ($("template")?.value === "50x30") || (($("printLayout")?.value || "normal") === "roll2" && Math.round(w)===50 && Math.round(h)===30);
+}
+function resolverMedidaProducto(p){
+ const cfg=getConfig();
+ if(esRollo50x30Activo()) return {w:50,h:30};
+ return {
+  w:numeroMedidaEtiqueta(p?.ANCHO_MM,cfg.w),
+  h:numeroMedidaEtiqueta(p?.ALTO_MM,cfg.h)
+ };
+}
+function aplicarMedidaAListado(ancho,alto,soloSeleccionados=true){
+ const cfg=getConfig();
+ const w=numeroMedidaEtiqueta(ancho,cfg.w);
+ const h=numeroMedidaEtiqueta(alto,cfg.h);
+ const haySeleccion=buffer.some(b=>b.selected);
+ let actualizados=0;
+ buffer.forEach(b=>{
+  if(soloSeleccionados && haySeleccion && !b.selected) return;
+  b.w=w;
+  b.h=h;
+  b.barHeightMm=cfg.barHeightMm;
+  b.qrSize=cfg.qrSize;
+  b.contentZoom=cfg.contentZoom;
+  b.fontCodigo=cfg.fontCodigo;
+  b.fontDesc=cfg.fontDesc;
+  b.fontUnd=cfg.fontUnd;
+  actualizados++;
+ });
+ return actualizados;
+}
 function setTemplate(v){
  if(!v) return;
  const [a,b]=v.split("x");
- $("w").value=a; $("h").value=b;
+ const ancho=numeroMedidaEtiqueta(a,80);
+ const alto=numeroMedidaEtiqueta(b,50);
+ $("w").value=ancho;
+ $("h").value=alto;
  if(v==="30x50"){
+  if($("printLayout")) $("printLayout").value="normal";
   if($("printMode")) $("printMode").value="intervalo";
   if($("intervalMultiplier")) $("intervalMultiplier").value="2";
   if($("printGapXmm") && Number($("printGapXmm").value || 0)<2) $("printGapXmm").value=2;
@@ -1199,15 +1946,37 @@ function setTemplate(v){
   if($("fontDesc")) $("fontDesc").value="8";
   if($("fontUnd")) $("fontUnd").value="8";
  }
+ if(v==="50x30"){
+  $("w").value=50;
+  $("h").value=30;
+  if($("printLayout")) $("printLayout").value="roll2";
+  if($("rollColumns")) $("rollColumns").value="2";
+  if($("rollColumnGapMm")) $("rollColumnGapMm").value="3";
+  if($("rollRowGapMm")) $("rollRowGapMm").value="2";
+  if($("printMode")) $("printMode").value="intervalo";
+  if($("printGapXmm")) $("printGapXmm").value="0";
+  if($("printGapYmm")) $("printGapYmm").value="0";
+  if($("intervalMultiplier")) $("intervalMultiplier").value="1";
+  if($("contentZoom")) $("contentZoom").value="0.86";
+  if($("barHeightMm")) $("barHeightMm").value="12";
+  if($("qrSize")) $("qrSize").value="70";
+  if($("fontCodigo")) $("fontCodigo").value="12";
+  if($("fontDesc")) $("fontDesc").value="8";
+  if($("fontUnd")) $("fontUnd").value="8";
+ }
+ const cambios=aplicarMedidaAListado($("w").value,$("h").value,true);
  guardarConfig();
+ if(cambios) guardarBuffer();
  aplicarConfigVisual();
  actualizarResumenConfig();
+ renderLista();
  generarPreview(true);
 }
 function setSmallLabel30x50(){
  if($("template")) $("template").value="30x50";
  $("w").value=30;
  $("h").value=50;
+ if($("printLayout")) $("printLayout").value="normal";
  if($("printMode")) $("printMode").value="intervalo";
  if($("printGapXmm")) $("printGapXmm").value=2;
  if($("printGapYmm")) $("printGapYmm").value=2;
@@ -1217,11 +1986,42 @@ function setSmallLabel30x50(){
  if($("fontCodigo")) $("fontCodigo").value="12";
  if($("fontDesc")) $("fontDesc").value="8";
  if($("fontUnd")) $("fontUnd").value="8";
+ const cambios=aplicarMedidaAListado(30,50,true);
  guardarConfig();
+ if(cambios) guardarBuffer();
  aplicarConfigVisual();
  actualizarResumenConfig();
+ renderLista();
  generarPreview(true);
- toast("Etiqueta pequeña 30 x 50 con doble intervalo aplicada","verde");
+ toast("Etiqueta pequeña aplicada: ancho 30 mm x alto 50 mm con doble intervalo","verde");
+}
+
+function setRoll50x30TwoColumns(){
+ if($("template")) $("template").value="50x30";
+ $("w").value=50;
+ $("h").value=30;
+ if($("printLayout")) $("printLayout").value="roll2";
+ if($("rollColumns")) $("rollColumns").value="2";
+ if($("rollColumnGapMm")) $("rollColumnGapMm").value="3";
+ if($("rollRowGapMm")) $("rollRowGapMm").value="2";
+ if($("printMode")) $("printMode").value="intervalo";
+ if($("printGapXmm")) $("printGapXmm").value="0";
+ if($("printGapYmm")) $("printGapYmm").value="0";
+ if($("intervalMultiplier")) $("intervalMultiplier").value="1";
+ if($("contentZoom")) $("contentZoom").value="0.86";
+ if($("barHeightMm")) $("barHeightMm").value="12";
+ if($("qrSize")) $("qrSize").value="70";
+ if($("fontCodigo")) $("fontCodigo").value="12";
+ if($("fontDesc")) $("fontDesc").value="8";
+ if($("fontUnd")) $("fontUnd").value="8";
+ const cambios=aplicarMedidaAListado(50,30,true);
+ guardarConfig();
+ if(cambios) guardarBuffer();
+ aplicarConfigVisual();
+ actualizarResumenConfig();
+ renderLista();
+ generarPreview(true);
+ toast("Rollo 5 x 3 cm aplicado: ancho 50 mm x alto 30 mm, en 2 columnas","verde");
 }
 
 function firstValue(row,names){
@@ -1386,6 +2186,327 @@ async function sincronizarBD(manual=false){
  return false;
 }
 
+
+/* ADMINISTRACIÓN LOCAL DE MAESTRA */
+function openMaestraAdmin(){
+ try{closeModal("configModal");}catch(e){}
+ cargarMedidaActualMaestra(false);
+ limpiarFormMaestra(false);
+ renderMaestraAdmin();
+ openModal("maestraAdminModal");
+}
+function cargarMedidaActualMaestra(showToast=true){
+ if($("maestraAncho")) $("maestraAncho").value=$("w")?.value || 50;
+ if($("maestraAlto")) $("maestraAlto").value=$("h")?.value || 30;
+ if($("maestraTipo")) $("maestraTipo").value=mapTipo($("tipo")?.value || "CODE128");
+ if(showToast) toast("Medida actual aplicada al formulario MAESTRA","verde");
+}
+function limpiarFormMaestra(showToast=true){
+ if($("maestraEditIndex")) $("maestraEditIndex").value="-1";
+ if($("maestraCodigo")) $("maestraCodigo").value="";
+ if($("maestraDescripcion")) $("maestraDescripcion").value="";
+ if($("maestraUnidades")) $("maestraUnidades").value="1";
+ if($("maestraCant")) $("maestraCant").value="1";
+ if($("maestraTipo")) $("maestraTipo").value=mapTipo($("tipo")?.value || "CODE128");
+ if($("maestraAncho")) $("maestraAncho").value=$("w")?.value || 50;
+ if($("maestraAlto")) $("maestraAlto").value=$("h")?.value || 30;
+ if(showToast) toast("Formulario MAESTRA limpio","verde");
+}
+function productoDesdeFormMaestra(){
+ return normalizarProducto({
+  CODIGO: $("maestraCodigo")?.value || "",
+  DESCRIPCION: $("maestraDescripcion")?.value || "",
+  UNIDADES: $("maestraUnidades")?.value || "1",
+  CANTIDAD: $("maestraCant")?.value || "1",
+  TIPO: $("maestraTipo")?.value || "CODE128",
+  ANCHO_MM: $("maestraAncho")?.value || $("w")?.value || "50",
+  ALTO_MM: $("maestraAlto")?.value || $("h")?.value || "30"
+ });
+}
+async function guardarProductoMaestraManual(){
+ const item=productoDesdeFormMaestra();
+ if(!item || !String(item.CODIGO||"").trim()){
+  toast("Ingrese un código válido para guardar en MAESTRA","rojo");
+  return;
+ }
+ const editIndex=parseInt($("maestraEditIndex")?.value || "-1",10);
+ const codigo=String(item.CODIGO).trim();
+ try{
+  if(editIndex>=0 && productos[editIndex]){
+   productos[editIndex]=item;
+  }else{
+   const existe=productos.findIndex(p=>String(p?.CODIGO || "").trim()===codigo);
+   if(existe>=0){
+    if(!confirm(`El código ${codigo} ya existe. ¿Deseas actualizarlo?`)) return;
+    productos[existe]=item;
+   }else{
+    productos.unshift(item);
+   }
+  }
+  await guardarProductos();
+  guardarMetaMaestra("Edición manual");
+  limpiarFormMaestra(false);
+  renderMaestraAdmin();
+  buscar();
+  toast("Código guardado en MAESTRA","verde");
+ }catch(e){
+  console.error(e);
+  toast("No se pudo guardar el código en MAESTRA. "+(e.message||e),"rojo");
+ }
+}
+function editarProductoMaestra(index){
+ const p=productos[index];
+ if(!p){toast("Producto no encontrado en MAESTRA","rojo");return;}
+ $("maestraEditIndex").value=String(index);
+ $("maestraCodigo").value=p.CODIGO || "";
+ $("maestraDescripcion").value=p.DESCRIPCION || "";
+ $("maestraUnidades").value=p.UNIDADES || "1";
+ $("maestraCant").value=p.CANT || "1";
+ $("maestraTipo").value=mapTipo(p.TIPO || $("tipo")?.value || "CODE128");
+ $("maestraAncho").value=p.ANCHO_MM || $("w")?.value || 50;
+ $("maestraAlto").value=p.ALTO_MM || $("h")?.value || 30;
+ $("maestraCodigo").focus();
+ toast("Producto cargado para edición","verde");
+}
+async function eliminarProductoMaestra(index){
+ const p=productos[index];
+ if(!p){toast("Producto no encontrado en MAESTRA","rojo");return;}
+ const codigo=String(p.CODIGO || "").trim();
+ if(!confirm(`¿Eliminar el código ${codigo || "seleccionado"} de la MAESTRA local?`)) return;
+ try{
+  productos.splice(index,1);
+  await guardarProductos();
+  guardarMetaMaestra("Eliminación manual");
+  limpiarFormMaestra(false);
+  renderMaestraAdmin();
+  buscar();
+  toast("Código eliminado de MAESTRA","verde");
+ }catch(e){
+  console.error(e);
+  toast("No se pudo eliminar el código. "+(e.message||e),"rojo");
+ }
+}
+function agregarProductoMaestraAListado(index){
+ const p=productos[index];
+ if(!p){toast("Producto no encontrado en MAESTRA","rojo");return;}
+ buffer.push(crearItem({
+  codigo:p.CODIGO,
+  descripcion:p.DESCRIPCION,
+  unidades:p.UNIDADES || 1,
+  cant:parseInt(p.CANT || 1,10) || 1,
+  tipo:p.TIPO || $("tipo")?.value || "CODE128",
+  w:parseFloat(p.ANCHO_MM || $("w")?.value || 50) || 50,
+  h:parseFloat(p.ALTO_MM || $("h")?.value || 30) || 30
+ }));
+ guardarBuffer();
+ renderLista();
+ generarPreview(true);
+ toast("Producto agregado al listado de impresión","verde");
+}
+function usarProductoMaestraEnCaptura(index){
+ const p=productos[index];
+ if(!p){toast("Producto no encontrado en MAESTRA","rojo");return;}
+ seleccionar(p.CODIGO,p.DESCRIPCION,p.UNIDADES||1,p.TIPO||$("tipo")?.value);
+ if(p.ANCHO_MM) $("w").value=p.ANCHO_MM;
+ if(p.ALTO_MM) $("h").value=p.ALTO_MM;
+ aplicarConfigVisual();
+ toast("Producto cargado en captura","verde");
+}
+function renderMaestraAdmin(){
+ const box=$("maestraAdminList");
+ if(!box) return;
+ const q=normText($("maestraAdminSearch")?.value || "");
+ const matches=[];
+ for(let i=0;i<productos.length;i++){
+  const p=productos[i] || {};
+  const text=normText(`${p.CODIGO || ""} ${p.DESCRIPCION || ""} ${p.UNIDADES || ""} ${p.TIPO || ""}`);
+  if(!q || text.includes(q)) matches.push({p,index:i});
+ }
+ if($("maestraAdminCount")) $("maestraAdminCount").textContent=`${matches.length} de ${productos.length} productos`;
+ if(!matches.length){
+  box.innerHTML='<div class="empty">No hay productos para mostrar. Puedes agregar uno nuevo desde el formulario.</div>';
+  return;
+ }
+ const limit=300;
+ const rows=matches.slice(0,limit);
+ box.innerHTML=`
+  <table class="maestra-table">
+   <thead>
+    <tr>
+     <th>Código</th><th>Descripción</th><th>Unidades</th><th>Copias</th><th>Tipo</th><th>Medida</th><th>Acciones</th>
+    </tr>
+   </thead>
+   <tbody>
+    ${rows.map(({p,index})=>`
+     <tr>
+      <td><span class="code-chip">${esc(p.CODIGO || "")}</span></td>
+      <td>${esc(p.DESCRIPCION || "-")}</td>
+      <td>${esc(p.UNIDADES || "1")}</td>
+      <td>${esc(p.CANT || "1")}</td>
+      <td><span class="tipo-chip">${esc(p.TIPO || "CODE128")}</span></td>
+      <td>${esc(p.ANCHO_MM || $("w")?.value || "50")} x ${esc(p.ALTO_MM || $("h")?.value || "30")} mm</td>
+      <td>
+       <div class="maestra-actions">
+        <button class="ghost" onclick="usarProductoMaestraEnCaptura(${index})">Usar</button>
+        <button class="secondary" onclick="agregarProductoMaestraAListado(${index})">Agregar</button>
+        <button class="warn" onclick="editarProductoMaestra(${index})">Editar</button>
+        <button class="danger" onclick="eliminarProductoMaestra(${index})">Eliminar</button>
+       </div>
+      </td>
+     </tr>
+    `).join("")}
+   </tbody>
+  </table>
+  ${matches.length>limit ? `<div class="empty">Mostrando ${limit} de ${matches.length}. Usa el buscador para filtrar mejor.</div>` : ""}
+ `;
+}
+function detectarSeparadorLinea(linea){
+ if(linea.includes("\t")) return "\t";
+ if(linea.includes(";")) return ";";
+ if(linea.includes("|")) return "|";
+ if(linea.includes(",")) return ",";
+ return null;
+}
+function parseCSVSimpleLine(linea,sep){
+ if(!sep) return [linea];
+ const out=[]; let cur=""; let quote=false;
+ for(let i=0;i<linea.length;i++){
+  const ch=linea[i];
+  if(ch==='"'){
+   if(quote && linea[i+1]==='"'){cur+='"';i++;}
+   else quote=!quote;
+  }else if(ch===sep && !quote){
+   out.push(cur.trim()); cur="";
+  }else cur+=ch;
+ }
+ out.push(cur.trim());
+ return out;
+}
+function textoPegadoAObjetos(txt){
+ const lines=String(txt || "").replace(/\r/g,"").split("\n").filter(l=>l.trim());
+ if(!lines.length) return [];
+ const sep=detectarSeparadorLinea(lines[0]) || detectarSeparadorLinea(lines.find(l=>detectarSeparadorLinea(l)) || "") || "\t";
+ const first=parseCSVSimpleLine(lines[0],sep).map(x=>String(x||"").trim());
+ const firstNorm=first.map(normText);
+ const looksHeader=firstNorm.some(h=>["codigo","codigo barra","sku","cod","barcode","ean","barra","descripcion","detalle","producto","nombre","articulo","cantidad","cant","tipo"].includes(h));
+ const headers=looksHeader ? first : ["CODIGO","DESCRIPCION","UNIDADES","CANTIDAD","TIPO","ANCHO_MM","ALTO_MM"];
+ const dataLines=looksHeader ? lines.slice(1) : lines;
+ return dataLines.map(line=>{
+  const cols=parseCSVSimpleLine(line,sep);
+  const obj={};
+  headers.forEach((h,i)=>obj[h || `COL_${i+1}`]=cols[i] ?? "");
+  return obj;
+ });
+}
+function obtenerItemsPegados(){
+ const rows=textoPegadoAObjetos($("maestraPaste")?.value || "");
+ const items=rows.map(normalizarProducto).filter(Boolean);
+ return {rows,items};
+}
+function mergeProductosPorCodigo(base,nuevos){
+ const map=new Map();
+ (base || []).forEach(p=>{
+  const k=String(p?.CODIGO || "").trim();
+  if(k) map.set(k,p);
+ });
+ (nuevos || []).forEach(p=>{
+  const k=String(p?.CODIGO || "").trim();
+  if(k) map.set(k,p);
+ });
+ return Array.from(map.values());
+}
+function pintarPreviewPegado(items, rowsTotal){
+ if($("pasteTotal")) $("pasteTotal").textContent=String(rowsTotal || 0);
+ if($("pasteValidos")) $("pasteValidos").textContent=String(items.length || 0);
+ if($("pasteInvalidos")) $("pasteInvalidos").textContent=String(Math.max(0,(rowsTotal || 0)-items.length));
+ const box=$("pastePreview");
+ if(!box) return;
+ if(!items.length){
+  box.innerHTML='<div class="empty">No se detectaron productos válidos. Revisa que exista código o descripción.</div>';
+  return;
+ }
+ const sample=items.slice(0,12);
+ box.innerHTML=`
+  <table>
+   <thead>
+    <tr><th>Código</th><th>Descripción</th><th>Unidades</th><th>Copias</th><th>Tipo</th><th>Medida</th></tr>
+   </thead>
+   <tbody>
+    ${sample.map(p=>`
+     <tr>
+      <td><span class="code-chip">${esc(p.CODIGO)}</span></td>
+      <td>${esc(p.DESCRIPCION || "-")}</td>
+      <td>${esc(p.UNIDADES || "1")}</td>
+      <td>${esc(p.CANT || "1")}</td>
+      <td>${esc(p.TIPO || $("tipo").value)}</td>
+      <td>${esc(p.ANCHO_MM || $("w").value)} x ${esc(p.ALTO_MM || $("h").value)} mm</td>
+     </tr>
+    `).join("")}
+   </tbody>
+  </table>
+  ${items.length>sample.length ? `<div class="empty">Vista previa parcial: ${sample.length} de ${items.length} productos.</div>` : ""}
+ `;
+}
+function previsualizarPegadoMaestra(){
+ try{
+  const {rows,items}=obtenerItemsPegados();
+  pintarPreviewPegado(items,rows.length);
+  if(items.length) toast(`Pegado validado: ${items.length} productos válidos`,"verde");
+  else toast("No se detectaron productos válidos en el pegado","rojo");
+  return items;
+ }catch(e){
+  console.error(e);
+  toast("No se pudo leer el pegado. Revisa separadores o encabezados.","rojo");
+  return [];
+ }
+}
+async function pegarDesdePortapapeles(){
+ try{
+  const txt=await navigator.clipboard.readText();
+  $("maestraPaste").value=txt || "";
+  previsualizarPegadoMaestra();
+ }catch(e){
+  toast("No se pudo leer el portapapeles. Pega manualmente con Ctrl+V dentro del cuadro.","amarillo");
+  $("maestraPaste")?.focus();
+ }
+}
+function limpiarPegadoMaestra(){
+ if($("maestraPaste")) $("maestraPaste").value="";
+ pintarPreviewPegado([],0);
+ toast("Cuadro de pegado limpio","verde");
+}
+async function importarMaestraPegada(targetOverride){
+ const {rows,items}=obtenerItemsPegados();
+ pintarPreviewPegado(items,rows.length);
+ if(!items.length){toast("No hay productos válidos para importar","rojo");return;}
+ const target=targetOverride || $("pasteTarget")?.value || "memoria";
+ const operation=$("pasteOperation")?.value || "reemplazar";
+ setEstado("Cargando MAESTRA pegada en bloque...","amarillo");
+ progress(20);
+ try{
+  if(target==="memoria" || target==="ambas"){
+   productos = operation==="fusionar" ? mergeProductosPorCodigo(productos,items) : items;
+   progress(55);
+   await guardarProductos();
+   guardarMetaMaestra("Pegado rápido");
+  }
+  if(target==="lista" || target==="ambas"){
+   progress(75);
+   agregarMasivo(items);
+  }
+  buildIndex();
+  renderLista();
+  renderMaestraAdmin();
+  generarPreview(true);
+  progress(100);
+  toast(`Pegado rápido cargado: ${items.length} productos procesados`,"verde");
+  closeModal("pasteMaestraModal");
+ }catch(e){
+  console.error(e);
+  toast("No se pudo guardar el pegado en memoria local. "+(e.message||e),"rojo");
+ }
+}
+
 function importarXLSX(){
  const f=$("file").files[0];
  if(!f){toast("Seleccione un archivo XLSX primero","rojo");return;}
@@ -1425,8 +2546,7 @@ function agregarMasivo(items){
    unidades:p.UNIDADES || 1,
    cant:parseInt(p.CANT || 1,10) || 1,
    tipo:p.TIPO || cfg.tipo,
-   w:parseFloat(p.ANCHO_MM || cfg.w) || cfg.w,
-   h:parseFloat(p.ALTO_MM || cfg.h) || cfg.h
+   ...resolverMedidaProducto(p)
   }));
  });
  guardarBuffer();
@@ -1444,20 +2564,116 @@ function descargarFormato(){
  XLSX.writeFile(wb,"formato_importacion_etiquetas.xlsx");
 }
 
+function keyProductoBusqueda(p){
+ return String(p?.CODIGO ?? "").trim();
+}
+function productoPorCodigo(codigoBuscado){
+ const cb=String(codigoBuscado ?? "").trim();
+ return productos.find(x=>String(x.CODIGO).trim()===cb);
+}
+function renderToolbarBusqueda(total=0){
+ return `
+  <div class="search-toolbar">
+   <span class="counter" id="searchVisibleCount">${total} resultados</span>
+   <span class="counter" id="searchSelectedCount">${seleccionBusqueda.size} marcados</span>
+   <button type="button" class="ghost" onclick="seleccionarResultadosVisibles()">Marcar visibles</button>
+   <button type="button" class="dark" onclick="agregarSeleccionBusqueda()">Agregar selección</button>
+   <button type="button" class="secondary" onclick="limpiarSeleccionBusqueda()">Limpiar marcas</button>
+  </div>`;
+}
+function renderResultadosBusqueda(out){
+ const q=String($("search").value || "").trim();
+ if(!q && !seleccionBusqueda.size){
+  $("results").innerHTML="";
+  return;
+ }
+ const toolbar=renderToolbarBusqueda(out.length);
+ const hint=out.length ? `<div class="search-hint">Marca varios códigos con el check y luego presiona Agregar selección. Si pinchas la fila, solo carga ese producto para edición manual.</div>` : "";
+ const body=out.length ? out.map((p)=>{
+  const codigo=keyProductoBusqueda(p);
+  const marcado=seleccionBusqueda.has(codigo);
+  return `
+  <div class="result search-result ${marcado?'active':''}" data-codigo="${esc(codigo)}" onclick="seleccionarResultadoDesdeElemento(this)">
+   <div class="result-line">
+    <input type="checkbox" class="result-check" ${marcado?'checked':''} onclick="event.stopPropagation()" onchange="toggleSeleccionBusquedaDesdeElemento(this)">
+    <div>
+     <b>${esc(p.CODIGO)}</b>
+     <span>${esc(p.DESCRIPCION)} · UND: ${esc(p.UNIDADES||1)} · Tipo: ${esc(p.TIPO||$("tipo").value)}</span>
+    </div>
+   </div>
+  </div>`;
+ }).join("") : `<div class="empty">Sin resultados. Puedes agregar el código manualmente.</div>`;
+ $("results").innerHTML=toolbar+hint+body;
+}
 function buscar(){
  const q=normText($("search").value);
- if(!q){$("results").innerHTML="";return;}
+ if(!q){
+  resultadosBusqueda=[];
+  renderResultadosBusqueda([]);
+  return;
+ }
  const out=[];
  for(const it of indice){
-  if(it.text.includes(q)){out.push(productos[it.i]); if(out.length>=12) break;}
+  if(it.text.includes(q)){out.push(productos[it.i]); if(out.length>=100) break;}
  }
- $("results").innerHTML=out.length ? out.map((p,idx)=>`
-  <div class="result" data-codigo="${esc(p.CODIGO)}" onclick="seleccionarResultado('${esc(p.CODIGO).replace(/'/g,"&#39;")}')">
-   <b>${esc(p.CODIGO)}</b><span>${esc(p.DESCRIPCION)} · UND: ${esc(p.UNIDADES||1)}</span>
-  </div>`).join("") : `<div class="empty">Sin resultados. Puedes agregar el código manualmente.</div>`;
+ resultadosBusqueda=out;
+ renderResultadosBusqueda(out);
+}
+function seleccionarResultadoDesdeElemento(el){
+ const codigo=el?.dataset?.codigo || "";
+ seleccionarResultado(codigo);
+}
+function toggleSeleccionBusquedaDesdeElemento(chk){
+ const row=chk.closest(".result");
+ const codigo=row?.dataset?.codigo || "";
+ toggleSeleccionBusqueda(codigo,chk.checked);
+}
+function toggleSeleccionBusqueda(codigoBuscado,marcar){
+ const p=productoPorCodigo(codigoBuscado);
+ if(!p) return;
+ const key=keyProductoBusqueda(p);
+ if(marcar) seleccionBusqueda.set(key,p);
+ else seleccionBusqueda.delete(key);
+ renderResultadosBusqueda(resultadosBusqueda);
+}
+function seleccionarResultadosVisibles(){
+ if(!resultadosBusqueda.length){toast("No hay resultados visibles para marcar","amarillo");return;}
+ resultadosBusqueda.forEach(p=>{
+  const key=keyProductoBusqueda(p);
+  if(key) seleccionBusqueda.set(key,p);
+ });
+ renderResultadosBusqueda(resultadosBusqueda);
+ toast(`${resultadosBusqueda.length} resultados visibles marcados`,"verde");
+}
+function limpiarSeleccionBusqueda(){
+ seleccionBusqueda.clear();
+ renderResultadosBusqueda(resultadosBusqueda);
+ toast("Selección del buscador limpiada","verde");
+}
+function agregarSeleccionBusqueda(){
+ const items=[...seleccionBusqueda.values()];
+ if(!items.length){toast("Marca uno o varios códigos del buscador","rojo");return;}
+ const cantBase=Math.max(1,parseInt($("cant").value,10)||1);
+ items.forEach(p=>{
+  buffer.push(crearItem({
+   codigo:p.CODIGO,
+   descripcion:p.DESCRIPCION,
+   unidades:p.UNIDADES || 1,
+   cant:cantBase,
+   tipo:p.TIPO || $("tipo").value,
+   ...resolverMedidaProducto(p)
+  }));
+ });
+ guardarBuffer();
+ renderLista();
+ generarPreview(true);
+ const total=items.length;
+ seleccionBusqueda.clear();
+ renderResultadosBusqueda(resultadosBusqueda);
+ toast(`${total} código${total===1?'':'s'} agregado${total===1?'':'s'} al listado`,"verde");
 }
 function seleccionarResultado(codigoBuscado){
- const p=productos.find(x=>String(x.CODIGO)===String(codigoBuscado));
+ const p=productoPorCodigo(codigoBuscado);
  if(!p) return;
  seleccionar(p.CODIGO,p.DESCRIPCION,p.UNIDADES||1,p.TIPO||$("tipo").value);
 }
@@ -1471,7 +2687,7 @@ function seleccionar(c,d,u,t){
 }
 function seleccionarPorCodigo(txt){
  const c=formatCodigo(txt);
- const p=productos.find(x=>String(x.CODIGO).trim()===c);
+ const p=productoPorCodigo(c);
  if(p){seleccionar(p.CODIGO,p.DESCRIPCION,p.UNIDADES||1,p.TIPO||$("tipo").value);return true;}
  $("codigo").value=c;
  $("search").value=c;
@@ -1591,6 +2807,7 @@ function mmToPx(mm){return Number(mm||0)*3.7795275591;}
 function clamp(n,min,max){return Math.max(min,Math.min(max,n));}
 function calcLayoutEtiqueta(b){
  const cfg=getConfig();
+ const mostrarUnidades = cfg.showUnitsOnLabel !== false;
  const w=Number(b.w||cfg.w||80), h=Number(b.h||cfg.h||50), pad=0;
  const innerWmm=Math.max(6,w-(pad*2));
  const innerHmm=Math.max(6,h-(pad*2));
@@ -1601,28 +2818,28 @@ function calcLayoutEtiqueta(b){
  const descLen=Math.max(1,desc.length);
  let fontCodigo=Number(b.fontCodigo||cfg.fontCodigo||18);
  let fontDesc=Number(b.fontDesc||cfg.fontDesc||12);
- let fontUnd=Number(b.fontUnd||cfg.fontUnd||12);
+ let fontUnd=mostrarUnidades ? Number(b.fontUnd||cfg.fontUnd||12) : 0;
  const maxCodeByWidth=Math.floor(innerWpx/(Math.min(codeLen,42)*0.57));
  fontCodigo=clamp(Math.min(fontCodigo,maxCodeByWidth||fontCodigo,innerHpx*.24),6,Number(b.fontCodigo||cfg.fontCodigo||18));
  const descLines=(h<=22 || innerHmm<=16) ? 1 : (h<=36 ? 2 : 3);
  const maxDescByWidth=Math.floor((innerWpx*descLines)/(Math.min(descLen,90)*0.48));
  fontDesc=clamp(Math.min(fontDesc,maxDescByWidth||fontDesc,innerHpx*.13),6,Number(b.fontDesc||cfg.fontDesc||12));
- fontUnd=clamp(Math.min(fontUnd,innerHpx*.11),6,Number(b.fontUnd||cfg.fontUnd||12));
+ if(mostrarUnidades) fontUnd=clamp(Math.min(fontUnd,innerHpx*.11),6,Number(b.fontUnd||cfg.fontUnd||12));
  let gapPx=mmToPx(h<=25?.35:.7);
- let textPx=(fontCodigo*1.05)+(fontDesc*1.10*descLines)+(fontUnd*1.05)+(gapPx*3);
+ let textPx=(fontCodigo*1.05)+(fontDesc*1.10*descLines)+(mostrarUnidades ? (fontUnd*1.05)+(gapPx*3) : (gapPx*2));
  let codeAreaPx=innerHpx-textPx;
  if(codeAreaPx<mmToPx(7)){
   fontDesc=clamp(fontDesc-2,5,fontDesc);
   fontCodigo=clamp(fontCodigo-2,6,fontCodigo);
-  fontUnd=clamp(fontUnd-1,5,fontUnd);
-  textPx=(fontCodigo*1.02)+(fontDesc*1.05*Math.max(1,descLines-1))+(fontUnd*1.02)+(gapPx*2);
+  if(mostrarUnidades) fontUnd=clamp(fontUnd-1,5,fontUnd);
+  textPx=(fontCodigo*1.02)+(fontDesc*1.05*Math.max(1,descLines-1))+(mostrarUnidades ? (fontUnd*1.02)+(gapPx*2) : gapPx);
   codeAreaPx=innerHpx-textPx;
  }
  codeAreaPx=clamp(codeAreaPx,mmToPx(6),innerHpx*.70);
  const qrPx=Math.floor(clamp(Math.min(innerWpx*.92,codeAreaPx*.98,Number(b.qrSize||cfg.qrSize||90)),28,Math.min(innerWpx,codeAreaPx)));
  const barHeightPx=Math.floor(clamp(Math.min(mmToPx(Number(b.barHeightMm||cfg.barHeightMm||18)),codeAreaPx*.96),18,codeAreaPx));
  const barModule=clamp(innerWpx/(Math.max(20,codeLen*11)),.55,2.1);
- return {innerWpx,innerHpx,fontCodigo,fontDesc,fontUnd,descLines,codeAreaPx,qrPx,barHeightPx,barModule,gapPx,tooSmall:innerHmm<16||innerWmm<24};
+ return {innerWpx,innerHpx,fontCodigo,fontDesc,fontUnd,descLines,codeAreaPx,qrPx,barHeightPx,barModule,gapPx,tooSmall:innerHmm<16||innerWmm<24,mostrarUnidades};
 }
 
 function centrarNodoCodigo(container){
@@ -1818,6 +3035,9 @@ function generarPreview(onlySelected=true){
   for(let i=0;i<n;i++){
    total++;
    const layout=calcLayoutEtiqueta(b);
+   const mostrarUnidades = layout.mostrarUnidades !== false;
+   const unidadesHtml = mostrarUnidades ? `<div class="unidades" style="font-size:${layout.fontUnd}px;width:100%;text-align:center;justify-self:center">UND: ${esc(b.unidades || 1)}</div>` : "";
+   const gridRows = mostrarUnidades ? "auto minmax(0,1fr) auto auto" : "auto minmax(0,1fr) auto";
    const l=document.createElement("div");
    const contentZoom=Number(b.contentZoom ?? getConfig().contentZoom ?? 1) || 1;
    l.className="label fit-label";
@@ -1838,11 +3058,11 @@ function generarPreview(onlySelected=true){
    l.dataset.h=String(labelHmm);
    l.style.flex="0 0 auto";
    l.innerHTML=`
-    <div class="label-inner" style="--content-zoom:${contentZoom};--print-fit-scale:1;gap:${layout.gapPx}px;display:grid;grid-template-rows:auto minmax(0,1fr) auto auto;place-items:center;place-content:center;align-content:center;justify-items:center;text-align:center;width:100%;height:100%;margin:auto;transform-origin:center center">
+    <div class="label-inner" style="--content-zoom:${contentZoom};--print-fit-scale:1;gap:${layout.gapPx}px;display:grid;grid-template-rows:${gridRows};place-items:center;place-content:center;align-content:center;justify-items:center;text-align:center;width:100%;height:100%;margin:auto;transform-origin:center center">
      <div class="codigo" style="font-size:${layout.fontCodigo}px;width:100%;text-align:center;justify-self:center">${esc(b.codigo)}</div>
      <div class="code" style="height:${layout.codeAreaPx}px;max-height:${layout.codeAreaPx}px;width:100%;display:flex;align-items:center;justify-content:center;text-align:center;margin-left:auto;margin-right:auto;justify-self:center;align-self:center"></div>
      <div class="descripcion" style="font-size:${layout.fontDesc}px;-webkit-line-clamp:${layout.descLines};width:100%;text-align:center;justify-self:center">${esc(b.descripcion || "")}</div>
-     <div class="unidades" style="font-size:${layout.fontUnd}px;width:100%;text-align:center;justify-self:center">UND: ${esc(b.unidades || 1)}</div>
+     ${unidadesHtml}
     </div>`;
    if(layout.tooSmall) l.classList.add('too-small');
    cont.appendChild(l);
