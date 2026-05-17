@@ -55,6 +55,75 @@ input:focus,select:focus,textarea:focus{border-color:var(--accent);box-shadow:0 
 button{background:var(--accent);color:#fff;font-weight:800;border:none;cursor:pointer;transition:.15s transform,.15s opacity,.15s filter}
 button:hover{filter:brightness(.97);transform:translateY(-1px)}
 button:disabled{opacity:.55;cursor:not-allowed;transform:none}
+
+
+/* =========================================================
+   LOADER GLOBAL PARA TODOS LOS BOTONES
+   Cada botón muestra spinner, queda bloqueado temporalmente
+   y evita doble clic mientras ejecuta su acción.
+   ========================================================= */
+button{
+ position:relative!important;
+ overflow:hidden!important;
+ isolation:isolate!important;
+}
+button.btn-loading{
+ cursor:progress!important;
+ pointer-events:none!important;
+ opacity:.88!important;
+ filter:saturate(.92) brightness(.98)!important;
+ padding-left:32px!important;
+}
+button.btn-loading::before{
+ content:"";
+ position:absolute;
+ left:10px;
+ top:50%;
+ width:14px;
+ height:14px;
+ margin-top:-7px;
+ border-radius:50%;
+ border:2px solid rgba(255,255,255,.42);
+ border-top-color:currentColor;
+ animation:btnSpin .7s linear infinite;
+ z-index:2;
+}
+button.btn-loading::after{
+ content:"";
+ position:absolute;
+ inset:0;
+ background:linear-gradient(90deg,transparent,rgba(255,255,255,.18),transparent);
+ transform:translateX(-100%);
+ animation:btnShimmer 1.05s ease-in-out infinite;
+ pointer-events:none;
+ z-index:1;
+}
+button.ghost.btn-loading::before,
+button.warn.btn-loading::before{
+ border-color:rgba(15,23,42,.20);
+ border-top-color:currentColor;
+}
+button.xbtn.btn-loading{
+ padding-left:30px!important;
+}
+button.mini-btn.btn-loading,
+.maestra-actions button.btn-loading{
+ padding-left:26px!important;
+}
+button.mini-btn.btn-loading::before,
+.maestra-actions button.btn-loading::before{
+ left:7px;
+ width:12px;
+ height:12px;
+ margin-top:-6px;
+ border-width:2px;
+}
+@keyframes btnSpin{to{transform:rotate(360deg)}}
+@keyframes btnShimmer{to{transform:translateX(100%)}}
+@media print{
+ button.btn-loading::before,
+ button.btn-loading::after{display:none!important}
+}
 .secondary{background:#64748b}
 .dark{background:#0f172a}
 .danger{background:#ef4444}
@@ -1023,6 +1092,472 @@ button:disabled{opacity:.55;cursor:not-allowed;transform:none}
  .import-stats{grid-template-columns:1fr}
 }
 
+
+/* =========================================================
+   VISTA PREVIA EN MODAL
+   La previsualización ya no ocupa espacio permanente debajo del sistema.
+   Se abre solo cuando el usuario presiona Ver vista previa.
+   ========================================================= */
+.preview-modal{
+ z-index:1200;
+ padding:10px;
+}
+.preview-modal-content{
+ width:min(1250px,98vw)!important;
+ max-height:94vh!important;
+ overflow:hidden!important;
+ padding:0!important;
+ display:flex;
+ flex-direction:column;
+}
+.preview-modal-head{
+ padding:14px 16px 10px;
+ margin:0!important;
+ border-bottom:1px solid #e2e8f0;
+ background:#fff;
+}
+.preview-modal-tools{
+ display:flex;
+ align-items:center;
+ justify-content:space-between;
+ gap:10px;
+ flex-wrap:wrap;
+ padding:10px 16px;
+ border-bottom:1px solid #e2e8f0;
+ background:#f8fafc;
+}
+.preview-modal-tools .left,
+.preview-modal-tools .right{
+ display:flex;
+ align-items:center;
+ gap:8px;
+ flex-wrap:wrap;
+}
+.preview-modal-tools button{
+ width:auto!important;
+ margin:0!important;
+ padding:8px 12px!important;
+}
+.preview-modal-body{
+ flex:1 1 auto;
+ overflow:auto;
+ padding:16px;
+ background:#f1f5f9;
+ -webkit-overflow-scrolling:touch;
+}
+.modal-sheet-wrap{
+ padding:12px!important;
+ background:#fff;
+ border:1px solid #e2e8f0;
+ border-radius:18px;
+ min-height:260px;
+ box-shadow:0 14px 35px rgba(15,23,42,.08);
+}
+.modal-sheet-wrap #preview.sheet{
+ border:0!important;
+ min-height:220px;
+ border-radius:14px;
+}
+.preview-open-card{
+ margin-top:10px;
+ border:1px solid #bae6fd;
+ background:linear-gradient(180deg,#f0f9ff,#ecfeff);
+ border-radius:16px;
+ padding:12px;
+}
+.preview-open-card strong{
+ display:block;
+ color:#0f172a;
+ margin-bottom:4px;
+}
+.preview-open-card small{
+ display:block;
+ color:#475569;
+ font-weight:700;
+ line-height:1.35;
+ margin-bottom:10px;
+}
+@media(max-width:700px){
+ .preview-modal{padding:6px;}
+ .preview-modal-content{width:99vw!important;max-height:96dvh!important;border-radius:16px!important;}
+ .preview-modal-head{padding:12px;}
+ .preview-modal-tools{padding:10px 12px;align-items:stretch;}
+ .preview-modal-tools .left,
+ .preview-modal-tools .right{width:100%;}
+ .preview-modal-tools button{flex:1 1 140px;}
+ .preview-modal-body{padding:10px;}
+ .modal-sheet-wrap{padding:8px!important;border-radius:14px;}
+}
+@media print{
+ body > #previewModal{
+  display:block!important;
+  visibility:visible!important;
+  position:static!important;
+  inset:auto!important;
+  width:auto!important;
+  height:auto!important;
+  min-height:0!important;
+  padding:0!important;
+  margin:0!important;
+  background:#fff!important;
+  overflow:visible!important;
+ }
+ body > *:not(#previewModal){
+  display:none!important;
+  visibility:hidden!important;
+  height:0!important;
+  min-height:0!important;
+  overflow:hidden!important;
+ }
+ #previewModal .modal-content,
+ #previewModal .preview-modal-body,
+ #previewModal .sheet-wrap{
+  display:block!important;
+  visibility:visible!important;
+  position:static!important;
+  width:auto!important;
+  max-width:none!important;
+  height:auto!important;
+  max-height:none!important;
+  min-height:0!important;
+  padding:0!important;
+  margin:0!important;
+  border:0!important;
+  box-shadow:none!important;
+  background:#fff!important;
+  overflow:visible!important;
+ }
+ #previewModal .modal-head,
+ #previewModal .preview-modal-tools{
+  display:none!important;
+  visibility:hidden!important;
+ }
+ #previewModal *{visibility:visible!important;}
+}
+
+
+/* =========================================================
+   MEJORA FINAL: BOTONES ORDENADOS EN LA ÚLTIMA SECCIÓN
+   Evita botones montados, duplica menos acciones y mejora móvil.
+   ========================================================= */
+.final-output-section .section-body.final-print-panel{
+ padding:12px!important;
+}
+.final-actions-grid{
+ display:grid!important;
+ grid-template-columns:repeat(2,minmax(0,1fr))!important;
+ gap:12px!important;
+ align-items:stretch!important;
+ margin:2px 0 0!important;
+}
+.final-action-btn{
+ margin:0!important;
+ min-height:74px!important;
+ border-radius:16px!important;
+ padding:13px 14px!important;
+ display:grid!important;
+ grid-template-columns:36px minmax(0,1fr)!important;
+ grid-template-rows:auto auto!important;
+ column-gap:11px!important;
+ row-gap:3px!important;
+ align-items:center!important;
+ text-align:left!important;
+ white-space:normal!important;
+ line-height:1.18!important;
+ box-shadow:0 10px 24px rgba(15,23,42,.10)!important;
+}
+.final-action-btn .ico{
+ grid-row:1 / span 2!important;
+ width:34px!important;
+ height:34px!important;
+ border-radius:13px!important;
+ display:grid!important;
+ place-items:center!important;
+ font-size:18px!important;
+ background:rgba(255,255,255,.16)!important;
+ flex:0 0 auto!important;
+}
+.final-action-btn .btn-title{
+ display:block!important;
+ min-width:0!important;
+ overflow:hidden!important;
+ text-overflow:ellipsis!important;
+ font-size:13px!important;
+ font-weight:900!important;
+ line-height:1.15!important;
+}
+.final-action-btn small{
+ display:block!important;
+ min-width:0!important;
+ margin:0!important;
+ color:inherit!important;
+ opacity:.88!important;
+ font-size:11px!important;
+ font-weight:700!important;
+ line-height:1.25!important;
+}
+.final-action-btn.btn-loading{
+ padding-left:48px!important;
+}
+.final-action-btn.btn-loading::before{
+ left:18px!important;
+}
+.final-action-btn.btn-loading .ico{
+ opacity:.18!important;
+}
+.final-action-note{
+ display:block!important;
+ margin-top:10px!important;
+ padding:9px 10px!important;
+ border:1px dashed #cbd5e1!important;
+ border-radius:13px!important;
+ background:#f8fafc!important;
+ color:#475569!important;
+ font-weight:800!important;
+ line-height:1.35!important;
+}
+.list-actions-section .action-grid{
+ grid-template-columns:repeat(4,minmax(0,1fr))!important;
+ gap:10px!important;
+}
+.list-actions-section .action-grid button{
+ margin:0!important;
+ min-height:46px!important;
+ padding:10px 12px!important;
+ border-radius:13px!important;
+ white-space:normal!important;
+ line-height:1.16!important;
+}
+.preview-modal-tools .right{
+ display:grid!important;
+ grid-template-columns:repeat(2,minmax(150px,1fr))!important;
+ gap:8px!important;
+ width:min(420px,100%)!important;
+}
+.preview-modal-tools .right button{
+ width:100%!important;
+ min-height:40px!important;
+ white-space:normal!important;
+ line-height:1.15!important;
+}
+@media(max-width:900px){
+ .final-actions-grid{
+  grid-template-columns:1fr!important;
+ }
+ .final-action-btn{
+  min-height:68px!important;
+ }
+ .list-actions-section .action-grid{
+  grid-template-columns:repeat(2,minmax(0,1fr))!important;
+ }
+ .preview-modal-tools .right{
+  width:100%!important;
+ }
+}
+@media(max-width:520px){
+ .final-output-section .section-body.final-print-panel{
+  padding:10px!important;
+ }
+ .final-actions-grid{
+  gap:9px!important;
+ }
+ .final-action-btn{
+  grid-template-columns:32px minmax(0,1fr)!important;
+  min-height:64px!important;
+  padding:11px 12px!important;
+  border-radius:14px!important;
+ }
+ .final-action-btn .ico{
+  width:30px!important;
+  height:30px!important;
+  border-radius:11px!important;
+  font-size:16px!important;
+ }
+ .final-action-btn .btn-title{
+  font-size:12.5px!important;
+ }
+ .final-action-btn small{
+  font-size:10.5px!important;
+ }
+ .list-actions-section .action-grid,
+ .preview-modal-tools .right{
+  grid-template-columns:1fr!important;
+ }
+}
+
+
+/* =========================================================
+   ACCIONES DEL LISTADO FUERA DE LA TABLA
+   Usa el espacio lateral disponible para que la tabla quede limpia,
+   sin botones montados encima del scroll ni del encabezado.
+   ========================================================= */
+.list-card{
+ overflow:visible!important;
+}
+.list-toolbar-clean{
+ justify-content:flex-start!important;
+ align-items:center!important;
+ margin-bottom:12px!important;
+}
+.list-toolbar-clean .left{
+ width:100%!important;
+ display:flex!important;
+ align-items:center!important;
+ gap:10px!important;
+ flex-wrap:wrap!important;
+}
+.list-area-grid{
+ display:grid!important;
+ grid-template-columns:minmax(0,1fr) minmax(250px,320px)!important;
+ gap:12px!important;
+ align-items:start!important;
+}
+.list-area-grid .lista{
+ min-width:0!important;
+ width:100%!important;
+}
+.list-side-actions{
+ min-width:0!important;
+ width:100%!important;
+ position:sticky!important;
+ top:12px!important;
+ align-self:start!important;
+}
+.list-actions-panel{
+ border:1px solid #e2e8f0!important;
+ border-radius:18px!important;
+ background:linear-gradient(180deg,#ffffff,#f8fafc)!important;
+ box-shadow:0 12px 28px rgba(15,23,42,.06)!important;
+ padding:12px!important;
+}
+.list-actions-head{
+ display:flex!important;
+ align-items:flex-start!important;
+ justify-content:space-between!important;
+ gap:8px!important;
+ margin-bottom:10px!important;
+}
+.list-actions-head h3{
+ margin:0!important;
+ font-size:15px!important;
+ line-height:1.2!important;
+}
+.list-actions-head span{
+ background:#ccfbf1!important;
+ border:1px solid #99f6e4!important;
+ color:#0f766e!important;
+ font-weight:900!important;
+ font-size:10.5px!important;
+ white-space:nowrap!important;
+ border-radius:999px!important;
+ padding:5px 8px!important;
+}
+.list-actions-buttons{
+ display:grid!important;
+ grid-template-columns:1fr!important;
+ gap:9px!important;
+ margin-top:0!important;
+}
+.list-actions-buttons button{
+ width:100%!important;
+ min-height:44px!important;
+ margin:0!important;
+ padding:10px 12px!important;
+ border-radius:13px!important;
+ white-space:normal!important;
+ line-height:1.15!important;
+ text-align:center!important;
+}
+.list-actions-note{
+ display:block!important;
+ margin-top:10px!important;
+ color:#64748b!important;
+ font-weight:800!important;
+ line-height:1.35!important;
+}
+@media(max-width:1180px){
+ .list-area-grid{
+  grid-template-columns:1fr!important;
+ }
+ .list-side-actions{
+  position:static!important;
+  order:-1!important;
+ }
+ .list-actions-buttons{
+  grid-template-columns:repeat(2,minmax(0,1fr))!important;
+ }
+}
+@media(max-width:520px){
+ .list-actions-head{
+  display:block!important;
+ }
+ .list-actions-head span{
+  display:inline-flex!important;
+  margin-top:7px!important;
+ }
+ .list-actions-buttons{
+  grid-template-columns:1fr!important;
+ }
+ .list-actions-buttons button{
+  min-height:46px!important;
+ }
+}
+
+
+/* =========================================================
+   ENVÍO A MAESTRA REMOTA POR COPIAR Y PEGAR
+   Permite tomar el bloque pegado, validarlo y enviarlo por POST
+   al Apps Script configurado sin perder ceros a la izquierda.
+   ========================================================= */
+.remote-push-panel{
+ margin-top:12px!important;
+ border:1px solid #99f6e4!important;
+ background:linear-gradient(180deg,#ecfeff,#f8fafc)!important;
+ border-radius:18px!important;
+ padding:12px!important;
+ box-shadow:0 12px 26px rgba(15,23,42,.06)!important;
+}
+.remote-push-panel h3{
+ margin:0 0 8px!important;
+ font-size:15px!important;
+ color:#0f172a!important;
+}
+.remote-push-panel p{
+ margin:0 0 10px!important;
+ color:#475569!important;
+ font-weight:700!important;
+ line-height:1.4!important;
+}
+.remote-push-actions{
+ display:grid!important;
+ grid-template-columns:repeat(3,minmax(0,1fr))!important;
+ gap:9px!important;
+ margin-top:10px!important;
+}
+.remote-push-actions button{
+ margin:0!important;
+ min-height:44px!important;
+ border-radius:13px!important;
+ white-space:normal!important;
+ line-height:1.15!important;
+}
+.remote-status-box{
+ margin-top:10px!important;
+ border:1px dashed #7dd3fc!important;
+ background:#f0f9ff!important;
+ color:#075985!important;
+ font-weight:800!important;
+ border-radius:14px!important;
+ padding:10px!important;
+ line-height:1.35!important;
+}
+.remote-status-box.ok{border-color:#86efac!important;background:#f0fdf4!important;color:#166534!important;}
+.remote-status-box.warn{border-color:#facc15!important;background:#fffbeb!important;color:#92400e!important;}
+.remote-status-box.err{border-color:#fca5a5!important;background:#fef2f2!important;color:#991b1b!important;}
+@media(max-width:900px){
+ .remote-push-actions{grid-template-columns:1fr!important;}
+}
+
 </style>
 </head>
 
@@ -1175,57 +1710,80 @@ button:disabled{opacity:.55;cursor:not-allowed;transform:none}
  </div>
  </details>
 
- <details class="ui-section">
+ <details class="ui-section final-output-section">
  <summary><span>🖨️ Vista previa e impresión</span><em>Salida final</em></summary>
- <div class="section-body">
- <div class="action-grid">
- <button class="secondary" onclick="generarPreview(true)">Actualizar vista previa</button>
- <button class="dark" onclick="imprimir()">Imprimir / Guardar PDF</button>
- </div>
+ <div class="section-body final-print-panel">
+  <div class="final-actions-grid">
+   <button class="secondary final-action-btn" onclick="abrirVistaPrevia()">
+    <span class="ico">👁️</span>
+    <span class="btn-title">Ver vista previa</span>
+    <small>Abre las etiquetas en una ventana modal sin ocupar espacio fijo.</small>
+   </button>
+   <button class="dark final-action-btn" onclick="imprimir()">
+    <span class="ico">🖨️</span>
+    <span class="btn-title">Imprimir / Guardar PDF</span>
+    <small>Genera la vista previa y abre el cuadro de impresión.</small>
+   </button>
+  </div>
+  <small class="final-action-note">La vista previa se mantiene oculta hasta que la abras, evitando que los botones se monten o queden apretados.</small>
  </div>
  </details>
  </div>
 
- <div class="card full">
- <div class="lista-toolbar compact-toolbar">
+ <div class="card full list-card">
+ <div class="lista-toolbar compact-toolbar list-toolbar-clean">
  <div class="left">
  <h3 style="margin:0">📋 Listado agregado visible</h3>
  <span class="counter" id="bufferCount">0 agregados</span>
  <span class="counter" id="selectedCount">0 seleccionados</span>
  </div>
- <div class="right">
- <details class="ui-section list-actions-section">
- <summary><span>🧰 Acciones del listado</span><em>Selección / limpieza</em></summary>
- <div class="section-body">
- <div class="action-grid">
- <button class="ghost" onclick="seleccionarTodos(true)">Seleccionar todo el listado</button>
- <button class="ghost" onclick="seleccionarTodos(false)">Quitar selección del listado</button>
- <button class="warn" onclick="duplicarSeleccionados()">Duplicar seleccionados</button>
- <button class="danger" onclick="limpiarLista()">Limpiar listado completo</button>
  </div>
+
+ <div class="list-area-grid">
+  <div class="lista" id="lista"></div>
+
+  <aside class="list-side-actions" aria-label="Acciones del listado">
+   <div class="list-actions-panel">
+    <div class="list-actions-head">
+     <h3>🧰 Acciones del listado</h3>
+     <span>Fuera de la tabla</span>
+    </div>
+    <div class="action-grid list-actions-buttons">
+     <button class="ghost" onclick="seleccionarTodos(true)">Seleccionar todo el listado</button>
+     <button class="ghost" onclick="seleccionarTodos(false)">Quitar selección del listado</button>
+     <button class="warn" onclick="duplicarSeleccionados()">Duplicar seleccionados</button>
+     <button class="danger" onclick="limpiarLista()">Limpiar listado completo</button>
+    </div>
+    <small class="list-actions-note">Las acciones quedan separadas del scroll de la tabla para evitar que se monten sobre los registros.</small>
+   </div>
+  </aside>
  </div>
- </details>
- </div>
- </div>
- <div class="lista" id="lista"></div>
  </div>
 
 </div>
 
-<div class="sheet-wrap">
- <div class="sheet-title compact-sheet-title">
- <h3>👁️ Vista previa de etiquetas</h3>
- <details class="ui-section sheet-actions-section">
- <summary><span>🖨️ Acciones de vista previa</span><em>Imprimir</em></summary>
- <div class="section-body">
- <div class="action-grid">
- <button class="secondary" onclick="generarPreview(true)">Actualizar vista previa</button>
- <button class="dark" onclick="imprimir()">Imprimir / Guardar PDF</button>
+<div class="modal preview-modal" id="previewModal" onclick="closeModalOnBg(event,'previewModal')">
+ <div class="modal-content preview-modal-content">
+  <div class="modal-head preview-modal-head">
+   <h3>👁️ Vista previa de etiquetas</h3>
+   <button class="xbtn" onclick="closeModal('previewModal')">X</button>
+  </div>
+  <div class="preview-modal-tools">
+   <div class="left">
+    <span class="counter" id="previewCounterInfo">Vista previa en modal</span>
+    <small class="help" style="margin:0">La vista previa se mantiene oculta para no ocupar espacio en pantalla.</small>
+   </div>
+   <div class="right">
+    <button class="secondary" onclick="generarPreview(true)">Actualizar vista previa</button>
+    <button class="dark" onclick="imprimir()">Imprimir / Guardar PDF</button>
+   </div>
+  </div>
+  <div class="preview-modal-body">
+   <div class="sheet-wrap modal-sheet-wrap">
+    <div class="sheet" id="preview"></div>
+   </div>
+  </div>
  </div>
- </div>
- </details>
- </div>
- <div class="sheet" id="preview"></div>
 </div>
 
 <div class="modal" id="configModal" onclick="closeModalOnBg(event,'configModal')">
@@ -1280,7 +1838,7 @@ button:disabled{opacity:.55;cursor:not-allowed;transform:none}
  <h3 style="margin-top:16px">🔗 Conexión Apps Script / MAESTRA</h3>
  <label>URL Web App Apps Script</label>
  <input id="apiUrl" placeholder="https://script.google.com/macros/s/.../exec" oninput="guardarConfig()">
- <div class="row">
+ <div class="row3">
  <div>
  <label>BD remota / hoja</label>
  <input id="remoteSheet" value="MAESTRA" oninput="guardarConfig()">
@@ -1289,8 +1847,12 @@ button:disabled{opacity:.55;cursor:not-allowed;transform:none}
  <label>Acción GET opcional</label>
  <input id="remoteAction" placeholder="maestra / listarMaestra / vacío" oninput="guardarConfig()">
  </div>
+ <div>
+ <label>Acción POST para guardar</label>
+ <input id="remotePostAction" value="guardarMaestra" placeholder="guardarMaestra / importarMaestra" oninput="guardarConfig()">
  </div>
- <small class="help">La sincronización consulta Apps Script y guarda la MAESTRA en IndexedDB, una memoria local grande. Así evita el error de cuota de localStorage y permite buscar código y descripción rápidamente sin consultar la URL en cada búsqueda.</small>
+ </div>
+ <small class="help">La sincronización consulta Apps Script y guarda la MAESTRA en IndexedDB. La acción POST se usa para enviar productos pegados o la MAESTRA local hacia la BD remota.</small>
  <div class="btnline">
  <button class="dark" onclick="guardarConfig(); sincronizarBD(true)">Sincronizar ahora</button>
  <button class="ghost" onclick="limpiarMemoriaMaestra()">Limpiar memoria MAESTRA</button>
@@ -1516,6 +2078,7 @@ button:disabled{opacity:.55;cursor:not-allowed;transform:none}
      <button class="secondary" onclick="limpiarFormMaestra(true)">Nuevo / limpiar</button>
      <button class="ghost" onclick="cargarMedidaActualMaestra()">Usar medida actual</button>
      <button class="ghost" onclick="openModal('pasteMaestraModal')">Pegar MAESTRA</button>
+     <button class="dark" onclick="enviarMaestraLocalRemota()">Enviar local a remota</button>
     </div>
     <small class="help">Si el código ya existe, el sistema pregunta si deseas actualizarlo. Los ceros a la izquierda se conservan.</small>
    </div>
@@ -1545,7 +2108,7 @@ button:disabled{opacity:.55;cursor:not-allowed;transform:none}
   </div>
 
   <p style="color:#475569;font-weight:700;line-height:1.45;margin-top:0">
-   Copia la tabla desde Excel o Google Sheets y pégala completa aquí. El sistema procesa todo el bloque, conserva ceros a la izquierda y guarda la MAESTRA en IndexedDB para búsquedas rápidas.
+   Copia la tabla desde Excel o Google Sheets y pégala completa aquí. El sistema procesa todo el bloque, conserva ceros a la izquierda, puede guardarlo en memoria local y también enviarlo a la MAESTRA remota configurada.
   </p>
 
   <div class="row3">
@@ -1560,8 +2123,8 @@ button:disabled{opacity:.55;cursor:not-allowed;transform:none}
    <div>
     <label>Operación en MAESTRA</label>
     <select id="pasteOperation">
-     <option value="reemplazar" selected>Reemplazar MAESTRA actual</option>
-     <option value="fusionar">Fusionar por código</option>
+     <option value="fusionar" selected>Agregar nuevos y reemplazar existentes por código</option>
+     <option value="reemplazar">Reemplazar MAESTRA local actual</option>
     </select>
    </div>
    <div>
@@ -1589,6 +2152,37 @@ button:disabled{opacity:.55;cursor:not-allowed;transform:none}
    <div class="empty">Pega la MAESTRA y presiona “Validar pegado”.</div>
   </div>
 
+  <div class="remote-push-panel">
+   <h3>☁️ Enviar pegado a MAESTRA remota</h3>
+   <p>Valida el bloque pegado y envíalo por POST al Apps Script configurado. Modo seguro: no borra la MAESTRA de destino; agrega códigos nuevos y reemplaza solo los códigos que ya existen.</p>
+   <div class="row3">
+    <div>
+     <label>Operación remota segura</label>
+     <select id="remotePasteOperation">
+      <option value="fusionar" selected>Agregar nuevos y reemplazar existentes por código</option>
+     </select>
+    </div>
+    <div>
+     <label>Enviar también a memoria local</label>
+     <select id="remoteAlsoLocal">
+      <option value="1" selected>Sí, guardar local después de enviar</option>
+      <option value="0">No, solo enviar a remota</option>
+     </select>
+    </div>
+    <div>
+     <label>BD destino</label>
+     <input id="remotePasteSheetPreview" value="MAESTRA" readonly>
+    </div>
+   </div>
+   <div class="remote-push-actions">
+    <button class="dark" onclick="enviarMaestraPegadaRemota()">Enviar pegado a MAESTRA remota</button>
+    <button class="secondary" onclick="enviarMaestraPegadaRemota(true)">Enviar + guardar local</button>
+    <button class="ghost" onclick="sincronizarBD(true)">Verificar sincronizando</button>
+   </div>
+   <div id="remotePushStatus" class="remote-status-box">Pendiente: pega datos, valida y presiona “Enviar pegado a MAESTRA remota”. La operación no elimina registros existentes.</div>
+   <small class="section-note">Regla aplicada: CODIGO existente = se reemplaza esa fila; CODIGO nuevo = se agrega al final; CODIGO remoto no enviado = queda intacto.</small>
+  </div>
+
   <div class="action-grid">
    <button class="dark" onclick="importarMaestraPegada()">Cargar pegado rápido</button>
    <button class="secondary" onclick="importarMaestraPegada('ambas')">Cargar y agregar al listado</button>
@@ -1614,7 +2208,7 @@ button:disabled{opacity:.55;cursor:not-allowed;transform:none}
 </div>
 
 <script>
-const DEFAULT_API="https://script.google.com/macros/s/AKfycbwOx6mRhIPWQLXXeH5s_Fsw3A6A_dZv-ATUxQpybSR5jsoaH34i8c62eIhipmNy--ug/exec";
+const DEFAULT_API="https://script.google.com/macros/s/AKfycbywBeBrFgOH39e_5nZBus8NwTwjj6B8g19j795goSqwF84Rx1cUZuoBIDl5URRDwQ-t/exec";
 const LS_PRODUCTOS="etiquetas_productos_cache_v4_maestra"; // Legacy: se limpia para evitar cuota llena
 const LS_BUFFER="etiquetas_buffer_v4_maestra"; // Legacy: se limpia para evitar cuota llena
 const LS_CONFIG="etiquetas_config_v4_maestra";
@@ -1634,6 +2228,84 @@ let lastScan="";
 let lastScanAt=0;
 
 const $=id=>document.getElementById(id);
+
+
+/* LOADER GLOBAL PARA BOTONES */
+function startButtonLoader(btn){
+ if(!btn || btn.classList.contains("btn-loading")) return ()=>{};
+ btn.dataset.loaderStartedAt=String(Date.now());
+ btn.dataset.originalDisabled=btn.disabled ? "1" : "0";
+ btn.classList.add("btn-loading");
+ btn.disabled=true;
+ return ()=>stopButtonLoader(btn);
+}
+function stopButtonLoader(btn){
+ if(!btn) return;
+ const started=Number(btn.dataset.loaderStartedAt || Date.now());
+ const elapsed=Date.now()-started;
+ const minMs=520;
+ const finish=()=>{
+  btn.classList.remove("btn-loading");
+  if(btn.dataset.originalDisabled!=="1") btn.disabled=false;
+  delete btn.dataset.loaderStartedAt;
+  delete btn.dataset.originalDisabled;
+ };
+ if(elapsed<minMs) setTimeout(finish,minMs-elapsed);
+ else finish();
+}
+function buildButtonAction(code){
+ const raw=String(code || "").trim();
+ if(!raw) return null;
+ let cleaned=raw.replace(/;\s*$/g,"").trim();
+ const parts=cleaned.split(";").map(x=>x.trim()).filter(Boolean);
+ const last=parts[parts.length-1] || "";
+ const canReturnLast=/^[A-Za-z_$][\w$\.]*\s*\([^;]*\)$/.test(last);
+ if(canReturnLast){
+  const before=parts.slice(0,-1).join(";\n");
+  return (before ? before+";\n" : "") + "return ("+last+");";
+ }
+ return raw;
+}
+function runButtonActionWithLoader(ev){
+ const btn=ev.target.closest("button");
+ if(!btn || btn.dataset.noLoader==="1") return;
+ const code=btn.getAttribute("onclick");
+ if(!code) return;
+ if(btn.classList.contains("btn-loading")){
+  ev.preventDefault();
+  ev.stopPropagation();
+  ev.stopImmediatePropagation();
+  return;
+ }
+ ev.preventDefault();
+ ev.stopPropagation();
+ ev.stopImmediatePropagation();
+ const stop=startButtonLoader(btn);
+ const body=buildButtonAction(code);
+ requestAnimationFrame(()=>{
+  setTimeout(()=>{
+   let result;
+   try{
+    result=new Function("event", body).call(btn, ev);
+   }catch(err){
+    console.error("Error ejecutando acción del botón:", err);
+    if(typeof toast==="function") toast("Error en acción del botón: "+(err.message || err),"rojo");
+    stop();
+    return;
+   }
+   const done=(result && typeof result.then==="function")
+    ? Promise.race([result,new Promise(resolve=>setTimeout(resolve,18000))])
+    : new Promise(resolve=>setTimeout(resolve,680));
+   Promise.resolve(done)
+    .catch(err=>{
+     console.error("Error en acción del botón:", err);
+     if(typeof toast==="function") toast("Error en acción del botón: "+(err.message || err),"rojo");
+    })
+    .finally(stop);
+  },25);
+ });
+}
+document.addEventListener("click",runButtonActionWithLoader,true);
 
 function esc(v){
  return String(v ?? "").replace(/[&<>'"]/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;","'":"&#39;",'"':"&quot;"}[m]));
@@ -1725,15 +2397,27 @@ async function migrarLegacyAIndexedDB(){
  }catch(e){try{localStorage.removeItem(LS_BUFFER);}catch(_){}}
 }
 
-function openModal(id){$(id).classList.add("show");}
+function openModal(id){
+ $(id).classList.add("show");
+ if(id==="pasteMaestraModal") actualizarVistaDestinoRemoto();
+}
 function closeModal(id){$(id).classList.remove("show");}
 function closeModalOnBg(ev,id){if(ev.target.id===id) closeModal(id);}
+function abrirVistaPrevia(){
+ openModal("previewModal");
+ requestAnimationFrame(()=>{
+  generarPreview(true);
+  const body=document.querySelector("#previewModal .preview-modal-body");
+  if(body) body.scrollTop=0;
+ });
+}
 
 function getConfig(){
  return {
   apiUrl: ($("apiUrl")?.value || DEFAULT_API).trim(),
   remoteSheet: ($("remoteSheet")?.value || "MAESTRA").trim(),
   remoteAction: ($("remoteAction")?.value || "").trim(),
+  remotePostAction: ($("remotePostAction")?.value || "guardarMaestra").trim(),
   paper: $("paper").value,
   w: num("w",80),
   h: num("h",50),
@@ -1817,6 +2501,7 @@ function actualizarEstiloImpresion(c=getConfig()){
 function guardarConfig(){
  const c=getConfig();
  localStorage.setItem(LS_CONFIG,JSON.stringify(c));
+ actualizarVistaDestinoRemoto();
  aplicarConfigVisual();
 }
 function actualizarResumenConfig(){
@@ -1838,6 +2523,7 @@ function cargarConfig(){
  if($("apiUrl")) $("apiUrl").value=DEFAULT_API;
  if($("remoteSheet")) $("remoteSheet").value="MAESTRA";
  if($("remoteAction")) $("remoteAction").value="";
+ if($("remotePostAction")) $("remotePostAction").value="guardarMaestra";
  const raw=localStorage.getItem(LS_CONFIG);
  if(!raw){aplicarConfigVisual();actualizarEstadoMemoria();return;}
  try{
@@ -1845,6 +2531,7 @@ function cargarConfig(){
   if(c.apiUrl!==undefined && $("apiUrl")) $("apiUrl").value=c.apiUrl || DEFAULT_API;
   if(c.remoteSheet!==undefined && $("remoteSheet")) $("remoteSheet").value=c.remoteSheet || "MAESTRA";
   if(c.remoteAction!==undefined && $("remoteAction")) $("remoteAction").value=c.remoteAction || "";
+  if(c.remotePostAction!==undefined && $("remotePostAction")) $("remotePostAction").value=c.remotePostAction || "guardarMaestra";
   if(c.paper) $("paper").value=c.paper;
   if(c.w) $("w").value=c.w;
   if(c.h) $("h").value=c.h;
@@ -2187,6 +2874,243 @@ async function sincronizarBD(manual=false){
 }
 
 
+function actualizarVistaDestinoRemoto(){
+ const sheet=($("remoteSheet")?.value || "MAESTRA").trim() || "MAESTRA";
+ if($("remotePasteSheetPreview")) $("remotePasteSheetPreview").value=sheet;
+}
+function setRemotePushStatus(txt,tipo="warn"){
+ const box=$("remotePushStatus");
+ if(!box) return;
+ box.classList.remove("ok","warn","err");
+ box.classList.add(tipo);
+ box.textContent=txt;
+}
+function productosParaEnvioRemoto(items){
+ const fecha=new Date().toISOString();
+ return (items || []).map(p=>{
+  const codigo=String(p?.CODIGO ?? "").trim();
+  const descripcion=String(p?.DESCRIPCION ?? "").trim();
+  const unidades=String(p?.UNIDADES ?? "1").trim() || "1";
+  const cant=String(p?.CANT ?? p?.CANTIDAD ?? "1").trim() || "1";
+  const tipo=mapTipo(p?.TIPO || $("tipo")?.value || "CODE128");
+  const ancho=String(p?.ANCHO_MM ?? $("w")?.value ?? "50").trim();
+  const alto=String(p?.ALTO_MM ?? $("h")?.value ?? "30").trim();
+  return {
+   CODIGO:codigo,
+   CÓDIGO:codigo,
+   DESCRIPCION:descripcion,
+   DESCRIPCIÓN:descripcion,
+   UNIDADES:unidades,
+   CANT:cant,
+   CANTIDAD:cant,
+   TIPO:tipo,
+   ANCHO_MM:ancho,
+   ALTO_MM:alto,
+   FECHA_ACTUALIZACION:fecha
+  };
+ }).filter(p=>p.CODIGO || p.DESCRIPCION);
+}
+function buildRemotePostUrls(actionOverride){
+ const cfg=getConfig();
+ const base=(cfg.apiUrl || DEFAULT_API).trim();
+ const sep=base.includes("?") ? "&" : "?";
+ const sheet=encodeURIComponent(cfg.remoteSheet || "MAESTRA");
+ const action=encodeURIComponent(actionOverride || cfg.remotePostAction || "guardarMaestra");
+ return [...new Set([
+  `${base}${sep}action=${action}&sheet=${sheet}`,
+  `${base}${sep}accion=${action}&sheet=${sheet}`,
+  `${base}${sep}action=importarMaestra&sheet=${sheet}`,
+  `${base}${sep}accion=importarMaestra&sheet=${sheet}`,
+  `${base}${sep}action=guardarMaestra&sheet=${sheet}`,
+  base
+ ])];
+}
+function crearPayloadMaestraRemota(items, operacion){
+ const cfg=getConfig();
+ const action=cfg.remotePostAction || "guardarMaestra";
+ const productosRemotos=productosParaEnvioRemoto(items);
+ const operacionSegura="fusionar"; // Modo seguro: no borra destino; agrega nuevos y reemplaza existentes por CODIGO.
+ return {
+  action,
+  accion:action,
+  tipo:"MAESTRA",
+  modulo:"MAESTRA",
+  sheet:cfg.remoteSheet || "MAESTRA",
+  bd:cfg.remoteSheet || "MAESTRA",
+  hoja:cfg.remoteSheet || "MAESTRA",
+  operacion:operacionSegura,
+  operation:operacionSegura,
+  modo:"copiar_pegar",
+  origen:"generador_etiquetas",
+  llave:"CODIGO",
+  keyField:"CODIGO",
+  mergeBy:"CODIGO",
+  upsert:true,
+  insertarNuevos:true,
+  actualizarExistentes:true,
+  reemplazarExistentes:true,
+  deleteMissing:false,
+  borrarFaltantes:false,
+  noBorrarExistentes:true,
+  productos:productosRemotos,
+  items:productosRemotos,
+  rows:productosRemotos,
+  total:productosRemotos.length,
+  headers:["CODIGO","DESCRIPCION","UNIDADES","CANTIDAD","TIPO","ANCHO_MM","ALTO_MM"],
+  timestamp:new Date().toISOString()
+ };
+}
+function interpretarRespuestaRemota(txt){
+ const raw=String(txt || "").trim();
+ if(!raw) return {ok:true,mensaje:"Respuesta vacía recibida desde Apps Script"};
+ let data=null;
+ try{data=JSON.parse(raw);}catch(e){}
+ if(data){
+  if(data.ok===false || data.success===false || data.error){
+   throw new Error(data.error || data.message || data.mensaje || "Apps Script rechazó la carga");
+  }
+  const total=data.total || data.count || data.insertados || data.actualizados || data.procesados || data.rows || "";
+  return {ok:true,mensaje:data.message || data.mensaje || (total ? `Registros procesados: ${total}` : "Respuesta OK desde Apps Script"),data};
+ }
+ if(/error|exception|no valida|inv[aá]lid/i.test(raw)) throw new Error(raw.slice(0,220));
+ return {ok:true,mensaje:raw.slice(0,220)};
+}
+async function postMaestraRemotaJson(url,payload){
+ const r=await fetch(url,{
+  method:"POST",
+  headers:{"Content-Type":"text/plain;charset=utf-8"},
+  body:JSON.stringify(payload),
+  cache:"no-store",
+  redirect:"follow"
+ });
+ const txt=await r.text().catch(()=>"");
+ if(!r.ok) throw new Error(`HTTP ${r.status}: ${txt.slice(0,180)}`);
+ return interpretarRespuestaRemota(txt);
+}
+async function postMaestraRemotaForm(url,payload){
+ const form=new URLSearchParams();
+ form.set("action",payload.action);
+ form.set("accion",payload.accion);
+ form.set("sheet",payload.sheet);
+ form.set("bd",payload.bd);
+ form.set("hoja",payload.hoja);
+ form.set("operacion",payload.operacion);
+ form.set("operation",payload.operation);
+ form.set("llave",payload.llave || "CODIGO");
+ form.set("keyField",payload.keyField || "CODIGO");
+ form.set("mergeBy",payload.mergeBy || "CODIGO");
+ form.set("upsert",String(payload.upsert));
+ form.set("insertarNuevos",String(payload.insertarNuevos));
+ form.set("actualizarExistentes",String(payload.actualizarExistentes));
+ form.set("reemplazarExistentes",String(payload.reemplazarExistentes));
+ form.set("deleteMissing",String(payload.deleteMissing));
+ form.set("borrarFaltantes",String(payload.borrarFaltantes));
+ form.set("noBorrarExistentes",String(payload.noBorrarExistentes));
+ form.set("tipo",payload.tipo);
+ form.set("modulo",payload.modulo);
+ form.set("modo",payload.modo);
+ form.set("total",String(payload.total));
+ form.set("data",JSON.stringify(payload));
+ form.set("payload",JSON.stringify(payload));
+ form.set("productos",JSON.stringify(payload.productos));
+ form.set("items",JSON.stringify(payload.items));
+ form.set("rows",JSON.stringify(payload.rows));
+ const r=await fetch(url,{
+  method:"POST",
+  headers:{"Content-Type":"application/x-www-form-urlencoded;charset=UTF-8"},
+  body:form.toString(),
+  cache:"no-store",
+  redirect:"follow"
+ });
+ const txt=await r.text().catch(()=>"");
+ if(!r.ok) throw new Error(`HTTP ${r.status}: ${txt.slice(0,180)}`);
+ return interpretarRespuestaRemota(txt);
+}
+async function postMaestraRemotaNoCors(url,payload){
+ await fetch(url,{
+  method:"POST",
+  mode:"no-cors",
+  headers:{"Content-Type":"text/plain;charset=utf-8"},
+  body:JSON.stringify(payload),
+  cache:"no-store"
+ });
+ return {ok:true,opaque:true,mensaje:"Solicitud enviada en modo no-cors. Sin confirmación de respuesta del Apps Script."};
+}
+async function enviarProductosMaestraRemota(items, operacion){
+ const clean=productosParaEnvioRemoto(items);
+ if(!clean.length) throw new Error("No hay productos válidos para enviar a la MAESTRA remota");
+ const payload=crearPayloadMaestraRemota(clean, "fusionar");
+ const urls=buildRemotePostUrls(payload.action);
+ let ultimoError="";
+ for(const url of urls){
+  try{return await postMaestraRemotaJson(url,payload);}catch(e){ultimoError=e.message || String(e);}
+  try{return await postMaestraRemotaForm(url,payload);}catch(e){ultimoError=e.message || String(e);}
+ }
+ try{
+  const res=await postMaestraRemotaNoCors(urls[0],payload);
+  return res;
+ }catch(e){
+  ultimoError=e.message || String(e);
+ }
+ throw new Error(ultimoError || "No se pudo enviar a MAESTRA remota");
+}
+async function enviarMaestraPegadaRemota(forzarGuardarLocal=false){
+ actualizarVistaDestinoRemoto();
+ const {rows,items}=obtenerItemsPegados();
+ pintarPreviewPegado(items,rows.length);
+ if(!items.length){
+  setRemotePushStatus("No hay productos válidos para enviar. Revisa el pegado y valida nuevamente.","err");
+  toast("No hay productos válidos para enviar a MAESTRA remota","rojo");
+  return false;
+ }
+ const operacion="fusionar"; // Siempre modo seguro: agregar nuevos y reemplazar existentes por código.
+ const guardarLocal=forzarGuardarLocal || (($("remoteAlsoLocal")?.value || "1")==="1");
+ setEstado("Enviando productos pegados a MAESTRA remota en modo seguro...","amarillo");
+ setRemotePushStatus(`Enviando ${items.length} productos a la MAESTRA remota. No se eliminará la data existente; se agregan nuevos y se reemplazan coincidencias por código.`,"warn");
+ progress(20);
+ try{
+  const res=await enviarProductosMaestraRemota(items,operacion);
+  progress(72);
+  if(guardarLocal){
+   productos = mergeProductosPorCodigo(productos,items);
+   await guardarProductos();
+   guardarMetaMaestra("Pegado remoto");
+   buildIndex();
+   renderMaestraAdmin();
+   buscar();
+  }
+  progress(100);
+  const extra=res?.opaque ? " Solicitud enviada sin confirmación por CORS; sincroniza para verificar." : "";
+  setRemotePushStatus(`Envío remoto completado en modo seguro: ${items.length} productos enviados para agregar nuevos y reemplazar existentes por código.${extra}`,res?.opaque?"warn":"ok");
+  toast(`MAESTRA remota actualizada sin borrar existentes: ${items.length} productos enviados`,res?.opaque?"amarillo":"verde");
+  return true;
+ }catch(e){
+  console.error(e);
+  setRemotePushStatus("Error al enviar a MAESTRA remota: "+(e.message||e),"err");
+  toast("No se pudo enviar a MAESTRA remota. "+(e.message||e),"rojo");
+  return false;
+ }
+}
+async function enviarMaestraLocalRemota(){
+ if(!productos.length){toast("No hay productos en MAESTRA local para enviar","rojo");return false;}
+ if(!confirm(`¿Enviar ${productos.length} productos de la MAESTRA local a la remota?`)) return false;
+ setEstado("Enviando MAESTRA local a remota...","amarillo");
+ progress(20);
+ try{
+  const res=await enviarProductosMaestraRemota(productos,"fusionar");
+  progress(100);
+  const msg=res?.opaque ? "Solicitud enviada a MAESTRA remota sin confirmación por CORS" : "MAESTRA local enviada a remota";
+  toast(`${msg}: ${productos.length} productos`,res?.opaque?"amarillo":"verde");
+  return true;
+ }catch(e){
+  console.error(e);
+  toast("No se pudo enviar la MAESTRA local a remota. "+(e.message||e),"rojo");
+  return false;
+ }
+}
+
+
+
 /* ADMINISTRACIÓN LOCAL DE MAESTRA */
 function openMaestraAdmin(){
  try{closeModal("configModal");}catch(e){}
@@ -2480,7 +3404,7 @@ async function importarMaestraPegada(targetOverride){
  pintarPreviewPegado(items,rows.length);
  if(!items.length){toast("No hay productos válidos para importar","rojo");return;}
  const target=targetOverride || $("pasteTarget")?.value || "memoria";
- const operation=$("pasteOperation")?.value || "reemplazar";
+ const operation=$("pasteOperation")?.value || "fusionar";
  setEstado("Cargando MAESTRA pegada en bloque...","amarillo");
  progress(20);
  try{
@@ -3026,6 +3950,8 @@ function generarPreview(onlySelected=true){
  const items=buffer.filter(b=>!onlySelected || b.selected);
  if(!items.length){
   cont.innerHTML='<div class="empty">No hay etiquetas seleccionadas para previsualizar.</div>';
+  const pc=$("previewCounterInfo");
+  if(pc) pc.textContent="0 etiquetas en vista previa";
   return false;
  }
  setEstado("Generando vista previa ajustada...","amarillo"); progress(20);
@@ -3073,6 +3999,8 @@ function generarPreview(onlySelected=true){
  });
  progress(100);
  setTimeout(()=>progress(0),500);
+ const pc=$("previewCounterInfo");
+ if(pc) pc.textContent=`${total} etiqueta(s) en vista previa`;
  setEstado(`${total} etiqueta(s) listas y ajustadas` ,"verde");
  return true;
 }
@@ -3224,6 +4152,8 @@ window.addEventListener("beforeprint",()=>{
 window.addEventListener("afterprint",()=>limpiarEscalaRealImpresion());
 
 async function imprimir(){
+ openModal("previewModal");
+ await esperarRenderImpresion();
  const ok=generarPreview(true);
  if(!ok){toast("Seleccione etiquetas para imprimir","rojo");return;}
  setEstado("Centrando etiquetas y abriendo diálogo de impresión...","amarillo");
