@@ -1505,9 +1505,9 @@ button.mini-btn.btn-loading::before,
 
 
 /* =========================================================
-   ENVÍO A MAESTRA REMOTA POR COPIAR Y PEGAR
-   Permite tomar el bloque pegado, validarlo y enviarlo por POST
-   al Apps Script configurado sin perder ceros a la izquierda.
+   ENVÍO SEGURO A MAESTRA REMOTA
+   Regla: agrega códigos nuevos y reemplaza/actualiza solo los códigos existentes.
+   Nunca borra registros de la MAESTRA destino que no vienen en el pegado.
    ========================================================= */
 .remote-push-panel{
  margin-top:12px!important;
@@ -1517,46 +1517,15 @@ button.mini-btn.btn-loading::before,
  padding:12px!important;
  box-shadow:0 12px 26px rgba(15,23,42,.06)!important;
 }
-.remote-push-panel h3{
- margin:0 0 8px!important;
- font-size:15px!important;
- color:#0f172a!important;
-}
-.remote-push-panel p{
- margin:0 0 10px!important;
- color:#475569!important;
- font-weight:700!important;
- line-height:1.4!important;
-}
-.remote-push-actions{
- display:grid!important;
- grid-template-columns:repeat(3,minmax(0,1fr))!important;
- gap:9px!important;
- margin-top:10px!important;
-}
-.remote-push-actions button{
- margin:0!important;
- min-height:44px!important;
- border-radius:13px!important;
- white-space:normal!important;
- line-height:1.15!important;
-}
-.remote-status-box{
- margin-top:10px!important;
- border:1px dashed #7dd3fc!important;
- background:#f0f9ff!important;
- color:#075985!important;
- font-weight:800!important;
- border-radius:14px!important;
- padding:10px!important;
- line-height:1.35!important;
-}
+.remote-push-panel h3{margin:0 0 8px!important;font-size:15px!important;color:#0f172a!important;}
+.remote-push-panel p{margin:0 0 10px!important;color:#475569!important;font-weight:700!important;line-height:1.4!important;}
+.remote-push-actions{display:grid!important;grid-template-columns:repeat(3,minmax(0,1fr))!important;gap:9px!important;margin-top:10px!important;}
+.remote-push-actions button{margin:0!important;min-height:44px!important;border-radius:13px!important;white-space:normal!important;line-height:1.15!important;}
+.remote-status-box{margin-top:10px!important;border:1px dashed #7dd3fc!important;background:#f0f9ff!important;color:#075985!important;font-weight:800!important;border-radius:14px!important;padding:10px!important;line-height:1.35!important;}
 .remote-status-box.ok{border-color:#86efac!important;background:#f0fdf4!important;color:#166534!important;}
 .remote-status-box.warn{border-color:#facc15!important;background:#fffbeb!important;color:#92400e!important;}
 .remote-status-box.err{border-color:#fca5a5!important;background:#fef2f2!important;color:#991b1b!important;}
-@media(max-width:900px){
- .remote-push-actions{grid-template-columns:1fr!important;}
-}
+@media(max-width:900px){.remote-push-actions{grid-template-columns:1fr!important;}}
 
 </style>
 </head>
@@ -1638,6 +1607,7 @@ button.mini-btn.btn-loading::before,
  <button class="dark" onclick="sincronizarBD(true)">Sincronizar MAESTRA remota</button>
  <button class="ghost" onclick="openModal('configModal')">Configurar URL / BD</button>
  <button class="secondary" onclick="openMaestraAdmin()">Ver / administrar MAESTRA</button>
+ <button class="ghost" onclick="enviarMaestraLocalRemota()">Enviar local a remota</button>
  </div>
  <small class="section-note">La MAESTRA remota se guarda en memoria local grande para buscar códigos sin consultar la URL a cada momento.</small>
  </div>
@@ -1751,6 +1721,7 @@ button.mini-btn.btn-loading::before,
     <div class="action-grid list-actions-buttons">
      <button class="ghost" onclick="seleccionarTodos(true)">Seleccionar todo el listado</button>
      <button class="ghost" onclick="seleccionarTodos(false)">Quitar selección del listado</button>
+     <button class="secondary" onclick="aplicarConfigGuardadaAlListado(true)">Aplicar medida configurada</button>
      <button class="warn" onclick="duplicarSeleccionados()">Duplicar seleccionados</button>
      <button class="danger" onclick="limpiarLista()">Limpiar listado completo</button>
     </div>
@@ -1810,7 +1781,10 @@ button.mini-btn.btn-loading::before,
  <option value="50x30">5 x 3 cm - ancho 50 x alto 30 mm</option>
  <option value="60x40">60 x 40 mm</option>
  <option value="80x50" selected>80 x 50 mm</option>
+ <option value="100x40">100 x 40 mm</option>
+ <option value="100x50">100 x 50 mm</option>
  <option value="100x70">100 x 70 mm</option>
+ <option value="100x100">100 x 100 mm</option>
  </select>
  </div>
  </div>
@@ -1832,7 +1806,7 @@ button.mini-btn.btn-loading::before,
 
  <div class="btnline">
  <button onclick="guardarConfigLocalManual()">Guardar configuración local</button>
- <button class="secondary" onclick="aplicarConfigVisual(); actualizarResumenConfig(); generarPreview(true)">Aplicar a vista previa</button>
+ <button class="secondary" onclick="aplicarConfigGuardadaAlListado(true)">Aplicar a vista previa</button>
  </div>
 
  <h3 style="margin-top:16px">🔗 Conexión Apps Script / MAESTRA</h3>
@@ -1849,10 +1823,10 @@ button.mini-btn.btn-loading::before,
  </div>
  <div>
  <label>Acción POST para guardar</label>
- <input id="remotePostAction" value="guardarMaestra" placeholder="guardarMaestra / importarMaestra" oninput="guardarConfig()">
+ <input id="remotePostAction" value="guardarMaestra" placeholder="guardarMaestra / upsertMaestra" oninput="guardarConfig()">
  </div>
  </div>
- <small class="help">La sincronización consulta Apps Script y guarda la MAESTRA en IndexedDB. La acción POST se usa para enviar productos pegados o la MAESTRA local hacia la BD remota.</small>
+ <small class="help">La sincronización consulta Apps Script y guarda la MAESTRA en IndexedDB. El POST seguro agrega códigos nuevos y reemplaza solo los códigos existentes por CODIGO, sin borrar registros remotos.</small>
  <div class="btnline">
  <button class="dark" onclick="guardarConfig(); sincronizarBD(true)">Sincronizar ahora</button>
  <button class="ghost" onclick="limpiarMemoriaMaestra()">Limpiar memoria MAESTRA</button>
@@ -2108,7 +2082,7 @@ button.mini-btn.btn-loading::before,
   </div>
 
   <p style="color:#475569;font-weight:700;line-height:1.45;margin-top:0">
-   Copia la tabla desde Excel o Google Sheets y pégala completa aquí. El sistema procesa todo el bloque, conserva ceros a la izquierda, puede guardarlo en memoria local y también enviarlo a la MAESTRA remota configurada.
+   Copia la tabla desde Excel o Google Sheets y pégala completa aquí. El sistema procesa todo el bloque, conserva ceros a la izquierda y permite cargarlo en memoria local o enviarlo a la MAESTRA remota sin borrar la data existente.
   </p>
 
   <div class="row3">
@@ -2154,7 +2128,7 @@ button.mini-btn.btn-loading::before,
 
   <div class="remote-push-panel">
    <h3>☁️ Enviar pegado a MAESTRA remota</h3>
-   <p>Valida el bloque pegado y envíalo por POST al Apps Script configurado. Modo seguro: no borra la MAESTRA de destino; agrega códigos nuevos y reemplaza solo los códigos que ya existen.</p>
+   <p>Modo seguro: no elimina lo que ya existe en destino. Si el CODIGO no existe lo agrega; si ya existe, reemplaza/actualiza esa fila.</p>
    <div class="row3">
     <div>
      <label>Operación remota segura</label>
@@ -2208,7 +2182,7 @@ button.mini-btn.btn-loading::before,
 </div>
 
 <script>
-const DEFAULT_API="https://script.google.com/macros/s/AKfycbywBeBrFgOH39e_5nZBus8NwTwjj6B8g19j795goSqwF84Rx1cUZuoBIDl5URRDwQ-t/exec";
+const DEFAULT_API="https://script.google.com/macros/s/AKfycbwOx6mRhIPWQLXXeH5s_Fsw3A6A_dZv-ATUxQpybSR5jsoaH34i8c62eIhipmNy--ug/exec";
 const LS_PRODUCTOS="etiquetas_productos_cache_v4_maestra"; // Legacy: se limpia para evitar cuota llena
 const LS_BUFFER="etiquetas_buffer_v4_maestra"; // Legacy: se limpia para evitar cuota llena
 const LS_CONFIG="etiquetas_config_v4_maestra";
@@ -2499,6 +2473,7 @@ function actualizarEstiloImpresion(c=getConfig()){
  }
 }
 function guardarConfig(){
+ actualizarTemplateDesdeMedida();
  const c=getConfig();
  localStorage.setItem(LS_CONFIG,JSON.stringify(c));
  actualizarVistaDestinoRemoto();
@@ -2515,9 +2490,7 @@ function actualizarResumenConfig(){
  if($("resumenMemoria")) $("resumenMemoria").textContent=`${productos.length} productos`;
 }
 function guardarConfigLocalManual(){
- guardarConfig();
- actualizarResumenConfig();
- toast("Configuración local guardada","verde");
+ aplicarConfigGuardadaAlListado(true);
 }
 function cargarConfig(){
  if($("apiUrl")) $("apiUrl").value=DEFAULT_API;
@@ -2560,6 +2533,7 @@ function cargarConfig(){
   if(c.fontUnd!==undefined) $("fontUnd").value=c.fontUnd;
   if($("showUnitsOnLabel")) $("showUnitsOnLabel").checked = (c.showUnitsOnLabel !== false);
  }catch(e){}
+ actualizarTemplateDesdeMedida();
  aplicarConfigVisual();
  actualizarEstadoMemoria();
 }
@@ -2568,6 +2542,7 @@ function resetConfig(){
  if($("apiUrl")) $("apiUrl").value=DEFAULT_API;
  if($("remoteSheet")) $("remoteSheet").value="MAESTRA";
  if($("remoteAction")) $("remoteAction").value="";
+ if($("remotePostAction")) $("remotePostAction").value="guardarMaestra";
  $("paper").value="termico"; $("template").value="80x50"; $("w").value=80; $("h").value=50;
  $("tipo").value="CODE128"; $("padLength").value=0; $("paddingMm").value=0; $("gapMm").value=4; $("printMarginMm").value=0;
  if($("printMode")) $("printMode").value="intervalo"; if($("printLayout")) $("printLayout").value="normal"; if($("rollColumns")) $("rollColumns").value=2; if($("rollColumnGapMm")) $("rollColumnGapMm").value=3; if($("rollRowGapMm")) $("rollRowGapMm").value=2; if($("printGapXmm")) $("printGapXmm").value=2; if($("printGapYmm")) $("printGapYmm").value=2; if($("intervalMultiplier")) $("intervalMultiplier").value="1";
@@ -2581,14 +2556,24 @@ function numeroMedidaEtiqueta(v,def){
  const n=parseFloat(v);
  return Number.isFinite(n) && n>0 ? n : def;
 }
+function actualizarTemplateDesdeMedida(){
+ const tpl=$("template");
+ if(!tpl) return;
+ const w=Math.round(numeroMedidaEtiqueta($("w")?.value,80));
+ const h=Math.round(numeroMedidaEtiqueta($("h")?.value,50));
+ const val=`${w}x${h}`;
+ const existe=[...tpl.options].some(o=>o.value===val);
+ tpl.value=existe ? val : "";
+}
 function esRollo50x30Activo(){
  const w=numeroMedidaEtiqueta($("w")?.value,50);
  const h=numeroMedidaEtiqueta($("h")?.value,30);
  return ($("template")?.value === "50x30") || (($("printLayout")?.value || "normal") === "roll2" && Math.round(w)===50 && Math.round(h)===30);
 }
-function resolverMedidaProducto(p){
+function resolverMedidaProducto(p,usarMedidaConfigurada=false){
  const cfg=getConfig();
  if(esRollo50x30Activo()) return {w:50,h:30};
+ if(usarMedidaConfigurada) return {w:cfg.w,h:cfg.h};
  return {
   w:numeroMedidaEtiqueta(p?.ANCHO_MM,cfg.w),
   h:numeroMedidaEtiqueta(p?.ALTO_MM,cfg.h)
@@ -2614,6 +2599,21 @@ function aplicarMedidaAListado(ancho,alto,soloSeleccionados=true){
  });
  return actualizados;
 }
+function aplicarConfigGuardadaAlListado(mostrarToast=false){
+ actualizarTemplateDesdeMedida();
+ guardarConfig();
+ const cambios=aplicarMedidaAListado($("w").value,$("h").value,true);
+ if(cambios) guardarBuffer();
+ aplicarConfigVisual();
+ actualizarResumenConfig();
+ renderLista();
+ generarPreview(true);
+ if(mostrarToast){
+  const detalle=cambios ? ` y aplicada a ${cambios} producto${cambios===1?'':'s'} del listado` : '';
+  toast(`Configuración local guardada${detalle}`,'verde');
+ }
+ return cambios;
+}
 function setTemplate(v){
  if(!v) return;
  const [a,b]=v.split("x");
@@ -2621,6 +2621,18 @@ function setTemplate(v){
  const alto=numeroMedidaEtiqueta(b,50);
  $("w").value=ancho;
  $("h").value=alto;
+ if(v!=="50x30"){
+  if($("printLayout")) $("printLayout").value="normal";
+  if($("intervalMultiplier")) $("intervalMultiplier").value="1";
+ }
+ if(["60x40","80x50","100x40","100x50","100x70","100x100"].includes(v)){
+  if($("contentZoom")) $("contentZoom").value="1";
+  if($("qrSize")) $("qrSize").value=(alto>=100 ? "150" : "95");
+  if($("barHeightMm")) $("barHeightMm").value=(alto>=100 ? "28" : (alto<=40 ? "15" : "18"));
+  if($("fontCodigo")) $("fontCodigo").value=(alto>=100 ? "22" : (alto<=40 ? "16" : "18"));
+  if($("fontDesc")) $("fontDesc").value=(alto>=100 ? "15" : (alto<=40 ? "10" : "12"));
+  if($("fontUnd")) $("fontUnd").value=(alto>=100 ? "14" : (alto<=40 ? "10" : "12"));
+ }
  if(v==="30x50"){
   if($("printLayout")) $("printLayout").value="normal";
   if($("printMode")) $("printMode").value="intervalo";
@@ -2919,17 +2931,16 @@ function buildRemotePostUrls(actionOverride){
  return [...new Set([
   `${base}${sep}action=${action}&sheet=${sheet}`,
   `${base}${sep}accion=${action}&sheet=${sheet}`,
-  `${base}${sep}action=importarMaestra&sheet=${sheet}`,
-  `${base}${sep}accion=importarMaestra&sheet=${sheet}`,
-  `${base}${sep}action=guardarMaestra&sheet=${sheet}`,
+  `${base}${sep}action=upsertMaestra&sheet=${sheet}`,
+  `${base}${sep}accion=upsertMaestra&sheet=${sheet}`,
+  `${base}${sep}action=importar&sheet=${sheet}`,
   base
  ])];
 }
-function crearPayloadMaestraRemota(items, operacion){
+function crearPayloadMaestraRemota(items){
  const cfg=getConfig();
  const action=cfg.remotePostAction || "guardarMaestra";
  const productosRemotos=productosParaEnvioRemoto(items);
- const operacionSegura="fusionar"; // Modo seguro: no borra destino; agrega nuevos y reemplaza existentes por CODIGO.
  return {
   action,
   accion:action,
@@ -2938,8 +2949,8 @@ function crearPayloadMaestraRemota(items, operacion){
   sheet:cfg.remoteSheet || "MAESTRA",
   bd:cfg.remoteSheet || "MAESTRA",
   hoja:cfg.remoteSheet || "MAESTRA",
-  operacion:operacionSegura,
-  operation:operacionSegura,
+  operacion:"fusionar",
+  operation:"fusionar",
   modo:"copiar_pegar",
   origen:"generador_etiquetas",
   llave:"CODIGO",
@@ -2955,8 +2966,9 @@ function crearPayloadMaestraRemota(items, operacion){
   productos:productosRemotos,
   items:productosRemotos,
   rows:productosRemotos,
+  data:productosRemotos,
   total:productosRemotos.length,
-  headers:["CODIGO","DESCRIPCION","UNIDADES","CANTIDAD","TIPO","ANCHO_MM","ALTO_MM"],
+  headers:["CODIGO","DESCRIPCION","UNIDADES","CANTIDAD","TIPO","ANCHO_MM","ALTO_MM","FECHA_ACTUALIZACION"],
   timestamp:new Date().toISOString()
  };
 }
@@ -2969,89 +2981,53 @@ function interpretarRespuestaRemota(txt){
   if(data.ok===false || data.success===false || data.error){
    throw new Error(data.error || data.message || data.mensaje || "Apps Script rechazó la carga");
   }
-  const total=data.total || data.count || data.insertados || data.actualizados || data.procesados || data.rows || "";
+  const total=data.total || data.totalRecibidos || data.count || data.insertados || data.actualizados || data.procesados || data.rows || "";
   return {ok:true,mensaje:data.message || data.mensaje || (total ? `Registros procesados: ${total}` : "Respuesta OK desde Apps Script"),data};
  }
  if(/error|exception|no valida|inv[aá]lid/i.test(raw)) throw new Error(raw.slice(0,220));
  return {ok:true,mensaje:raw.slice(0,220)};
 }
 async function postMaestraRemotaJson(url,payload){
- const r=await fetch(url,{
-  method:"POST",
-  headers:{"Content-Type":"text/plain;charset=utf-8"},
-  body:JSON.stringify(payload),
-  cache:"no-store",
-  redirect:"follow"
- });
+ const r=await fetch(url,{method:"POST",headers:{"Content-Type":"text/plain;charset=utf-8"},body:JSON.stringify(payload),cache:"no-store",redirect:"follow"});
  const txt=await r.text().catch(()=>"");
  if(!r.ok) throw new Error(`HTTP ${r.status}: ${txt.slice(0,180)}`);
  return interpretarRespuestaRemota(txt);
 }
 async function postMaestraRemotaForm(url,payload){
  const form=new URLSearchParams();
- form.set("action",payload.action);
- form.set("accion",payload.accion);
- form.set("sheet",payload.sheet);
- form.set("bd",payload.bd);
- form.set("hoja",payload.hoja);
- form.set("operacion",payload.operacion);
- form.set("operation",payload.operation);
- form.set("llave",payload.llave || "CODIGO");
- form.set("keyField",payload.keyField || "CODIGO");
- form.set("mergeBy",payload.mergeBy || "CODIGO");
- form.set("upsert",String(payload.upsert));
- form.set("insertarNuevos",String(payload.insertarNuevos));
- form.set("actualizarExistentes",String(payload.actualizarExistentes));
- form.set("reemplazarExistentes",String(payload.reemplazarExistentes));
- form.set("deleteMissing",String(payload.deleteMissing));
- form.set("borrarFaltantes",String(payload.borrarFaltantes));
- form.set("noBorrarExistentes",String(payload.noBorrarExistentes));
- form.set("tipo",payload.tipo);
- form.set("modulo",payload.modulo);
- form.set("modo",payload.modo);
- form.set("total",String(payload.total));
+ Object.entries({
+  action:payload.action, accion:payload.accion, sheet:payload.sheet, bd:payload.bd, hoja:payload.hoja,
+  operacion:payload.operacion, operation:payload.operation, tipo:payload.tipo, modulo:payload.modulo,
+  modo:payload.modo, total:String(payload.total), llave:payload.llave, keyField:payload.keyField, mergeBy:payload.mergeBy,
+  upsert:String(payload.upsert), insertarNuevos:String(payload.insertarNuevos), actualizarExistentes:String(payload.actualizarExistentes),
+  reemplazarExistentes:String(payload.reemplazarExistentes), deleteMissing:String(payload.deleteMissing), borrarFaltantes:String(payload.borrarFaltantes),
+  noBorrarExistentes:String(payload.noBorrarExistentes)
+ }).forEach(([k,v])=>form.set(k,v ?? ""));
  form.set("data",JSON.stringify(payload));
  form.set("payload",JSON.stringify(payload));
  form.set("productos",JSON.stringify(payload.productos));
  form.set("items",JSON.stringify(payload.items));
  form.set("rows",JSON.stringify(payload.rows));
- const r=await fetch(url,{
-  method:"POST",
-  headers:{"Content-Type":"application/x-www-form-urlencoded;charset=UTF-8"},
-  body:form.toString(),
-  cache:"no-store",
-  redirect:"follow"
- });
+ const r=await fetch(url,{method:"POST",headers:{"Content-Type":"application/x-www-form-urlencoded;charset=UTF-8"},body:form.toString(),cache:"no-store",redirect:"follow"});
  const txt=await r.text().catch(()=>"");
  if(!r.ok) throw new Error(`HTTP ${r.status}: ${txt.slice(0,180)}`);
  return interpretarRespuestaRemota(txt);
 }
 async function postMaestraRemotaNoCors(url,payload){
- await fetch(url,{
-  method:"POST",
-  mode:"no-cors",
-  headers:{"Content-Type":"text/plain;charset=utf-8"},
-  body:JSON.stringify(payload),
-  cache:"no-store"
- });
+ await fetch(url,{method:"POST",mode:"no-cors",headers:{"Content-Type":"text/plain;charset=utf-8"},body:JSON.stringify(payload),cache:"no-store"});
  return {ok:true,opaque:true,mensaje:"Solicitud enviada en modo no-cors. Sin confirmación de respuesta del Apps Script."};
 }
-async function enviarProductosMaestraRemota(items, operacion){
+async function enviarProductosMaestraRemota(items){
  const clean=productosParaEnvioRemoto(items);
  if(!clean.length) throw new Error("No hay productos válidos para enviar a la MAESTRA remota");
- const payload=crearPayloadMaestraRemota(clean, "fusionar");
+ const payload=crearPayloadMaestraRemota(clean);
  const urls=buildRemotePostUrls(payload.action);
  let ultimoError="";
  for(const url of urls){
   try{return await postMaestraRemotaJson(url,payload);}catch(e){ultimoError=e.message || String(e);}
   try{return await postMaestraRemotaForm(url,payload);}catch(e){ultimoError=e.message || String(e);}
  }
- try{
-  const res=await postMaestraRemotaNoCors(urls[0],payload);
-  return res;
- }catch(e){
-  ultimoError=e.message || String(e);
- }
+ try{return await postMaestraRemotaNoCors(urls[0],payload);}catch(e){ultimoError=e.message || String(e);}
  throw new Error(ultimoError || "No se pudo enviar a MAESTRA remota");
 }
 async function enviarMaestraPegadaRemota(forzarGuardarLocal=false){
@@ -3063,16 +3039,15 @@ async function enviarMaestraPegadaRemota(forzarGuardarLocal=false){
   toast("No hay productos válidos para enviar a MAESTRA remota","rojo");
   return false;
  }
- const operacion="fusionar"; // Siempre modo seguro: agregar nuevos y reemplazar existentes por código.
  const guardarLocal=forzarGuardarLocal || (($("remoteAlsoLocal")?.value || "1")==="1");
  setEstado("Enviando productos pegados a MAESTRA remota en modo seguro...","amarillo");
- setRemotePushStatus(`Enviando ${items.length} productos a la MAESTRA remota. No se eliminará la data existente; se agregan nuevos y se reemplazan coincidencias por código.`,"warn");
+ setRemotePushStatus(`Enviando ${items.length} productos. No se eliminará la data existente; se agregan nuevos y se reemplazan coincidencias por código.`,"warn");
  progress(20);
  try{
-  const res=await enviarProductosMaestraRemota(items,operacion);
+  const res=await enviarProductosMaestraRemota(items);
   progress(72);
   if(guardarLocal){
-   productos = mergeProductosPorCodigo(productos,items);
+   productos=mergeProductosPorCodigo(productos,items);
    await guardarProductos();
    guardarMetaMaestra("Pegado remoto");
    buildIndex();
@@ -3093,13 +3068,13 @@ async function enviarMaestraPegadaRemota(forzarGuardarLocal=false){
 }
 async function enviarMaestraLocalRemota(){
  if(!productos.length){toast("No hay productos en MAESTRA local para enviar","rojo");return false;}
- if(!confirm(`¿Enviar ${productos.length} productos de la MAESTRA local a la remota?`)) return false;
- setEstado("Enviando MAESTRA local a remota...","amarillo");
+ if(!confirm(`¿Enviar ${productos.length} productos de la MAESTRA local a la remota? No se borrará la data existente.`)) return false;
+ setEstado("Enviando MAESTRA local a remota en modo seguro...","amarillo");
  progress(20);
  try{
-  const res=await enviarProductosMaestraRemota(productos,"fusionar");
+  const res=await enviarProductosMaestraRemota(productos);
   progress(100);
-  const msg=res?.opaque ? "Solicitud enviada a MAESTRA remota sin confirmación por CORS" : "MAESTRA local enviada a remota";
+  const msg=res?.opaque ? "Solicitud enviada a MAESTRA remota sin confirmación por CORS" : "MAESTRA local enviada a remota sin borrar existentes";
   toast(`${msg}: ${productos.length} productos`,res?.opaque?"amarillo":"verde");
   return true;
  }catch(e){
@@ -3219,8 +3194,7 @@ function agregarProductoMaestraAListado(index){
   unidades:p.UNIDADES || 1,
   cant:parseInt(p.CANT || 1,10) || 1,
   tipo:p.TIPO || $("tipo")?.value || "CODE128",
-  w:parseFloat(p.ANCHO_MM || $("w")?.value || 50) || 50,
-  h:parseFloat(p.ALTO_MM || $("h")?.value || 30) || 30
+  ...resolverMedidaProducto(p,true)
  }));
  guardarBuffer();
  renderLista();
@@ -3231,10 +3205,9 @@ function usarProductoMaestraEnCaptura(index){
  const p=productos[index];
  if(!p){toast("Producto no encontrado en MAESTRA","rojo");return;}
  seleccionar(p.CODIGO,p.DESCRIPCION,p.UNIDADES||1,p.TIPO||$("tipo")?.value);
- if(p.ANCHO_MM) $("w").value=p.ANCHO_MM;
- if(p.ALTO_MM) $("h").value=p.ALTO_MM;
+ actualizarTemplateDesdeMedida();
  aplicarConfigVisual();
- toast("Producto cargado en captura","verde");
+ toast("Producto cargado en captura sin cambiar la medida configurada","verde");
 }
 function renderMaestraAdmin(){
  const box=$("maestraAdminList");
@@ -3585,7 +3558,7 @@ function agregarSeleccionBusqueda(){
    unidades:p.UNIDADES || 1,
    cant:cantBase,
    tipo:p.TIPO || $("tipo").value,
-   ...resolverMedidaProducto(p)
+   ...resolverMedidaProducto(p,true)
   }));
  });
  guardarBuffer();
