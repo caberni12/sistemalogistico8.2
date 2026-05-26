@@ -1,4 +1,4 @@
-const API_URL='https://script.google.com/macros/s/AKfycbzMCtHIfVrCjRkBlPSeAxI8ngbfAxm_0Qe6c-yzZ2RZhaBAaF1GSM5Yl9KFl2FlkEMKoA/exec';
+const API_URL='https://script.google.com/macros/s/AKfycbxZ2GtzJPlMX3TO0Nj7kfNZV0Roqn_CSHMiNCWydDYl940zuR3HymkZVv2tOgzXM_71mQ/exec';
 const AUTO_SYNC_ORDEN_KEY='orden_pedidos_auto_sync_2s';
 const ALERT_SYNC_WEB_KEY='orden_pedidos_alert_tokens_web_v2';
 const ALERT_POLL_MS=2000;
@@ -256,7 +256,9 @@ function limpiarMetricasOrdenSinCarga(){
 
 function bind(){
   instalarEdicionPedidoUI();
+  instalarSeguimientoPedidoUI();
   $('btnCargar')?.addEventListener('click',withLoaderEvent(()=>cargarTodo()));
+  $('btnAnularPedido')?.addEventListener('click',withLoaderEvent(()=>anularPedidoSeleccionado()));
   $('btnSync')?.addEventListener('click',withLoaderEvent(()=>cargarTodo()));
   $('btnSyncMaestra')?.addEventListener('click',withLoaderEvent(()=>cargarMaestra(false)));
   $('btnSyncUbicaciones')?.addEventListener('click',withLoaderEvent(()=>sincronizarUbicacionesManual(false)));
@@ -1200,6 +1202,128 @@ function abrirModal(key){
   $('modalPedido').classList.add('show');
 }
 function cerrarModal(){ activarEdicionPedido(false); $('modalPedido').classList.remove('show'); }
+
+
+
+
+/* ================= SEGUIMIENTO VISUAL DE PEDIDO ================= */
+function instalarSeguimientoPedidoUI(){
+  if(!$('btnSeguimientoPedido')){
+    const actions=document.querySelector('#modalPedido .modal-actions-top');
+    if(actions){
+      const btn=document.createElement('button');
+      btn.id='btnSeguimientoPedido';
+      btn.type='button';
+      btn.className='info';
+      btn.textContent='🧭 Seguimiento';
+      actions.insertBefore(btn, $('btnPreparar') || actions.firstChild);
+      btn.addEventListener('click',e=>{abrirSeguimientoPedidoActual();stopClickedLoader(e);});
+    }
+  }
+  if(!$('modalSeguimientoOrden')){
+    document.body.insertAdjacentHTML('beforeend', `
+      <div id="modalSeguimientoOrden" class="modal modal-seguimiento-orden" role="dialog" aria-modal="true">
+        <div class="modal-box seguimiento-box">
+          <div class="modal-head seguimiento-head">
+            <div>
+              <h2 id="segOrdenTitle">Seguimiento de pedido</h2>
+              <div id="segOrdenSub" class="status-line">Línea de tiempo del pedido seleccionado.</div>
+            </div>
+            <button id="btnCerrarSeguimientoOrden" class="close" type="button">×</button>
+          </div>
+          <div class="modal-body seguimiento-body">
+            <div id="seguimientoOrdenContenido"></div>
+          </div>
+        </div>
+      </div>`);
+    $('btnCerrarSeguimientoOrden')?.addEventListener('click',e=>{cerrarSeguimientoOrden();stopClickedLoader(e);});
+    $('modalSeguimientoOrden')?.addEventListener('click',e=>{if(e.target.id==='modalSeguimientoOrden')cerrarSeguimientoOrden();});
+  }
+  if(!document.getElementById('cssSeguimientoPedidoOrden')){
+    const st=document.createElement('style');
+    st.id='cssSeguimientoPedidoOrden';
+    st.textContent=`
+      .seguimiento-box{width:min(980px,100%)}
+      .seguimiento-head{background:linear-gradient(135deg,#0f172a,#1e3a8a);color:#fff}.seguimiento-head .status-line{color:#cbd5e1}
+      .seguimiento-body{background:#f8fafc}.seguimiento-summary{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin-bottom:16px}.seguimiento-card{background:#fff;border:1px solid #e2e8f0;border-radius:16px;padding:12px;min-width:0}.seguimiento-card .l{font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:#64748b;font-weight:900}.seguimiento-card .v{font-size:15px;font-weight:950;margin-top:5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.timeline-panel{background:#fff;border:1px solid #dbeafe;border-radius:20px;padding:18px;box-shadow:0 12px 30px rgba(15,23,42,.08)}.timeline-legend{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;margin-bottom:22px}.timeline-legend h3{margin:0;font-size:20px;color:#0f172a}.timeline-legend p{margin:5px 0 0;color:#475569;line-height:1.45}.timeline-percent{min-width:82px;height:82px;border-radius:999px;background:linear-gradient(135deg,#0f766e,#2563eb);color:#fff;display:grid;place-items:center;text-align:center;font-weight:950;box-shadow:0 14px 30px rgba(37,99,235,.24)}.timeline-percent span{display:block;font-size:22px}.timeline-track{position:relative;padding:24px 8px 8px}.timeline-line{position:absolute;top:42px;left:7%;right:7%;height:7px;background:#e2e8f0;border-radius:999px;overflow:hidden}.timeline-fill{height:100%;background:linear-gradient(90deg,#0f766e,#2563eb);border-radius:999px;transition:width .35s ease}.timeline-marker{position:absolute;top:25px;left:0;transform:translateX(-50%);width:40px;height:40px;border-radius:999px;background:#fff;border:6px solid #2563eb;box-shadow:0 12px 28px rgba(37,99,235,.25);display:grid;place-items:center;font-weight:950;color:#1d4ed8;transition:left .35s ease}.timeline-steps{position:relative;display:grid;grid-template-columns:repeat(5,1fr);gap:8px}.timeline-step{text-align:center;min-width:0}.timeline-dot{width:42px;height:42px;border-radius:999px;margin:0 auto 10px;background:#f1f5f9;border:3px solid #cbd5e1;display:grid;place-items:center;font-weight:950;color:#64748b;position:relative;z-index:2}.timeline-step.done .timeline-dot{background:#dcfce7;border-color:#22c55e;color:#166534}.timeline-step.active .timeline-dot{background:#dbeafe;border-color:#2563eb;color:#1d4ed8;box-shadow:0 0 0 8px rgba(37,99,235,.1)}.timeline-step.cancel .timeline-dot{background:#fee2e2;border-color:#ef4444;color:#991b1b}.timeline-label{font-size:12px;font-weight:950;color:#334155;text-transform:uppercase}.timeline-desc{font-size:11px;color:#64748b;margin-top:4px;line-height:1.35}.timeline-current{margin-top:18px;background:#eff6ff;border:1px solid #bfdbfe;border-radius:16px;padding:14px;color:#1e3a8a;font-weight:850;line-height:1.45}.timeline-current b{color:#0f172a}@media(max-width:780px){.seguimiento-summary{grid-template-columns:1fr 1fr}.timeline-legend{flex-direction:column}.timeline-percent{width:74px;height:74px;min-width:74px}.timeline-track{padding:8px 0}.timeline-line,.timeline-fill,.timeline-marker{display:none}.timeline-steps{grid-template-columns:1fr;gap:10px}.timeline-step{display:grid;grid-template-columns:48px 1fr;text-align:left;align-items:start;gap:10px}.timeline-dot{margin:0}.timeline-label{text-align:left}.timeline-desc{text-align:left}}@media(max-width:480px){.seguimiento-summary{grid-template-columns:1fr}.seguimiento-card .v{white-space:normal}.seguimiento-box{height:calc(100dvh - 12px)}}
+    `;
+    document.head.appendChild(st);
+  }
+}
+function etapasSeguimientoPedido(){
+  return [
+    {estado:'PENDIENTE',titulo:'Pedido recibido',desc:'Solicitud registrada y pendiente de preparación.'},
+    {estado:'PREPARACION',titulo:'En preparación',desc:'Pedido asignado y siendo preparado.'},
+    {estado:'RECIBIDO',titulo:'Recibido',desc:'Pedido recepcionado para continuar el flujo.'},
+    {estado:'DESPACHADO',titulo:'Despachado',desc:'Pedido listo para salida o despacho.'},
+    {estado:'TERMINADO',titulo:'Terminado',desc:'Proceso finalizado correctamente.'}
+  ];
+}
+function estadoSeguimientoSeguro(v){
+  v=String(v||'PENDIENTE').toUpperCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').trim();
+  if(v.includes('PREPAR'))return 'PREPARACION';
+  if(v.includes('RECIB')||v.includes('RECEPC'))return 'RECIBIDO';
+  if(v.includes('DESP'))return 'DESPACHADO';
+  if(v.includes('TERMIN')||v.includes('ENTREG'))return 'TERMINADO';
+  if(v.includes('CANCEL')||v.includes('ANUL'))return 'CANCELADO';
+  return 'PENDIENTE';
+}
+function datosSeguimientoPedido(p){
+  const etapas=etapasSeguimientoPedido();
+  const estado=estadoSeguimientoSeguro(p?.status||p?.estado);
+  const idx=estado==='CANCELADO' ? -1 : Math.max(0,etapas.findIndex(x=>x.estado===estado));
+  const avance=estado==='CANCELADO' ? 0 : Math.round((idx/(etapas.length-1))*100);
+  const actual=estado==='CANCELADO' ? {estado:'CANCELADO',titulo:'Pedido cancelado',desc:'El pedido fue cancelado y no continúa la preparación.'} : etapas[idx];
+  return {etapas,estado,idx,avance,actual};
+}
+function leyendaSeguimientoPedido(p,d){
+  const pedido=p?.pedido||'-', cliente=p?.cliente||'-', pk=pikeadorVisible(p?.pikeador)||'sin pikeador asignado';
+  if(d.estado==='PREPARACION') return `El pedido ${pedido} está en preparación para ${cliente}. Pikeador: ${pk}.`;
+  if(d.estado==='PENDIENTE') return `El pedido ${pedido} fue recibido y está pendiente de pasar a preparación.`;
+  if(d.estado==='RECIBIDO') return `El pedido ${pedido} ya fue recibido dentro del flujo operativo.`;
+  if(d.estado==='DESPACHADO') return `El pedido ${pedido} está despachado y avanzó a la etapa de salida.`;
+  if(d.estado==='TERMINADO') return `El pedido ${pedido} está terminado. La preparación fue finalizada.`;
+  if(d.estado==='CANCELADO') return `El pedido ${pedido} está cancelado.`;
+  return `Estado actual del pedido ${pedido}: ${d.estado}.`;
+}
+function renderSeguimientoPedidoModal(p){
+  instalarSeguimientoPedidoUI();
+  const cont=$('seguimientoOrdenContenido');
+  if(!cont || !p) return;
+  const d=datosSeguimientoPedido(p);
+  const left=Math.min(96,Math.max(4,d.avance));
+  $('segOrdenTitle').textContent='Seguimiento pedido '+(p.pedido||'-');
+  $('segOrdenSub').textContent=(p.cliente||'-')+' · '+d.estado+' · '+d.avance+'%';
+  cont.innerHTML=`
+    <div class="seguimiento-summary">
+      <div class="seguimiento-card"><div class="l">Pedido</div><div class="v">${esc(p.pedido||'-')}</div></div>
+      <div class="seguimiento-card"><div class="l">Cliente</div><div class="v">${esc(p.cliente||'-')}</div></div>
+      <div class="seguimiento-card"><div class="l">Pikeador</div><div class="v">${esc(pikeadorVisible(p.pikeador)||'-')}</div></div>
+      <div class="seguimiento-card"><div class="l">Estado actual</div><div class="v">${esc(d.estado)}</div></div>
+      <div class="seguimiento-card"><div class="l">Inicio preparación</div><div class="v">${esc(horaCorta(p.hora_inicio)||'-')}</div></div>
+      <div class="seguimiento-card"><div class="l">Término</div><div class="v">${esc(horaCorta(p.hora_termino)||'-')}</div></div>
+      <div class="seguimiento-card"><div class="l">Tiempo prep.</div><div class="v">${esc(tiempoPreparacionTexto(p)||'-')}</div></div>
+      <div class="seguimiento-card"><div class="l">Unidades</div><div class="v">${esc(p.total_unidades||0)}</div></div>
+    </div>
+    <div class="timeline-panel">
+      <div class="timeline-legend"><div><h3>${esc(d.actual.titulo)}</h3><p>${esc(leyendaSeguimientoPedido(p,d))}</p></div><div class="timeline-percent"><span>${d.avance}%</span><small>avance</small></div></div>
+      <div class="timeline-track">
+        <div class="timeline-line"><div class="timeline-fill" style="width:${d.avance}%"></div></div>
+        <div class="timeline-marker" style="left:${left}%">${d.idx+1>0?d.idx+1:'!'}</div>
+        <div class="timeline-steps">
+          ${d.etapas.map((x,i)=>`<div class="timeline-step ${d.estado==='CANCELADO'?'cancel':(i<d.idx?'done':(i===d.idx?'active':''))}"><div class="timeline-dot">${d.estado==='CANCELADO'?'!':(i<d.idx?'✓':i+1)}</div><div><div class="timeline-label">${esc(x.estado)}</div><div class="timeline-desc">${esc(x.desc)}</div></div></div>`).join('')}
+        </div>
+      </div>
+      <div class="timeline-current"><b>Leyenda actual:</b> ${esc(leyendaSeguimientoPedido(p,d))}</div>
+    </div>`;
+}
+function abrirSeguimientoPedidoActual(){
+  const p=state.sel || (state.selectedKey ? state.pedidos.find(x=>x.key===state.selectedKey||x.pedido===state.selectedKey) : null);
+  if(!p) return toast('Selecciona o abre un pedido para ver el seguimiento');
+  renderSeguimientoPedidoModal(p);
+  $('modalSeguimientoOrden')?.classList.add('show');
+}
+function cerrarSeguimientoOrden(){ $('modalSeguimientoOrden')?.classList.remove('show'); }
 
 
 /* ================= EDICIÓN COMPLETA PEDIDO ================= */
@@ -2675,3 +2799,29 @@ function numPed(v){const m=String(v||'').match(/\d+/g);return m?Number(m.join(''
 function esc(v){return String(v??'').replace(/[&<>'"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]))}
 function safe(v){return String(v||'pedido').replace(/[^a-z0-9_-]+/gi,'_')}
 function short(v,n){v=String(v||''); return v.length>n?v.slice(0,n-1)+'…':v;}
+
+
+async function anularPedidoSeleccionado(){
+  const pedido = state.sel;
+  if(!pedido){ toast('Selecciona un pedido'); return; }
+  const numero = String(pedido.pedido || pedido.numero || '').trim();
+  if(!numero){ toast('Pedido inválido'); return; }
+  const ok = confirm('¿Deseas anular y eliminar el pedido '+numero+'?');
+  if(!ok) return;
+  try{
+    pedido.estado='CANCELADO';
+    pedido.status='CANCELADO';
+    state.pedidos = (state.pedidos || []).filter(x => String(x.pedido || x.numero || '').trim() !== numero);
+    state.filtrados = (state.filtrados || []).filter(x => String(x.pedido || x.numero || '').trim() !== numero);
+    renderTabla?.();
+    renderMobile?.();
+    try{
+      await fetch(API_URL+'?accion=eliminar_pedido&pedido='+encodeURIComponent(numero),{method:'POST',mode:'no-cors'});
+    }catch(e){ console.warn(e); }
+    cerrarModal?.();
+    toast('Pedido '+numero+' anulado correctamente');
+  }catch(e){
+    console.warn(e);
+    toast('No se pudo anular el pedido');
+  }
+}
