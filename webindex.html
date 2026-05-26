@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Tienda Cliente</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;650;750;850;950&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body class="client-store-body">
+  <header class="site-header">
+    <div class="container navbar">
+      <a href="#inicio" class="brand">
+        <span class="brand-mark" id="brandMark">W</span>
+        <span id="brandName">Mi Web</span>
+      </a>
+
+      <nav class="nav-links" id="navLinks"></nav>
+
+      <div class="nav-actions">
+        <button class="menu-toggle" id="menuToggle" aria-label="Abrir menú">☰</button>
+      </div>
+    </div>
+  </header>
+
+  <main id="inicio">
+    <div class="home-view" id="homeView">
+      <section class="hero" id="portadaTienda">
+        <div class="container carousel" id="carousel">
+          <div id="slides"></div>
+          <div class="carousel-controls" id="carouselDots"></div>
+        </div>
+      </section>
+
+      <section class="section section-soft" id="resumen">
+        <div class="container">
+          <div class="section-head">
+            <div>
+              <div class="section-kicker">Sitio administrable</div>
+              <h2 id="siteSlogan">Soluciones modernas</h2>
+            </div>
+            <p id="siteDescription">Administra contenido desde el CPanel.</p>
+          </div>
+          <div class="grid grid-3" id="quickModules"></div>
+        </div>
+      </section>
+
+      <div id="dynamicModules"></div>
+
+      <section class="section" id="servicios">
+        <div class="container">
+          <div class="section-head">
+            <div>
+              <div class="section-kicker">Servicios</div>
+              <h2>Servicios destacados</h2>
+            </div>
+            <p>Estos servicios se administran desde el CPanel. Puedes agregar, editar, ordenar y desactivar tarjetas.</p>
+          </div>
+          <div class="grid grid-3" id="servicesGrid"></div>
+        </div>
+      </section>
+
+      <section class="section section-soft" id="contacto">
+        <div class="container">
+          <div class="section-head">
+            <div>
+              <div class="section-kicker">Contacto</div>
+              <h2>Comunicación directa</h2>
+            </div>
+            <p>Actualiza teléfono, correo, WhatsApp y dirección desde el CPanel.</p>
+          </div>
+          <div class="contact-grid">
+            <div class="card">
+              <h3 id="contactTitle">Tu Empresa</h3>
+              <p id="contactDescription">Comunícate con nosotros para cotizaciones y soporte.</p>
+              <div class="contact-box">
+                <div class="contact-row"><strong>📞</strong><span id="contactPhone"></span></div>
+                <div class="contact-row"><strong>✉️</strong><span id="contactEmail"></span></div>
+                <div class="contact-row"><strong>📍</strong><span id="contactAddress"></span></div>
+              </div>
+            </div>
+            <div class="card">
+              <h3>Atención rápida</h3>
+              <p>Usa el botón para abrir WhatsApp con los datos administrados desde el panel.</p>
+              <a class="btn" id="whatsappLink" target="_blank" rel="noopener">Escribir por WhatsApp</a>
+            </div>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <section class="section section-soft client-catalog-first catalog-view" id="catalogo" aria-label="Catálogo de productos">
+      <div class="container client-shop-container">
+        <div class="catalog-toolbar catalog-toolbar-full">
+          <div class="search-box">
+            <span>🔎</span>
+            <input type="search" id="productSearch" placeholder="Buscar producto, código o categoría..." />
+          </div>
+          <select id="categoryFilter" class="form-control" aria-label="Filtrar categoría"></select>
+        </div>
+
+        <div class="grid grid-3 products-grid-full" id="productsGrid"></div>
+      </div>
+    </section>
+
+
+    <a class="floating-whatsapp-btn" id="floatingWhatsapp" href="#" target="_blank" rel="noopener noreferrer" aria-label="Abrir WhatsApp">
+      <svg viewBox="0 0 32 32" aria-hidden="true" focusable="false">
+        <path d="M16.04 3C9.42 3 4.04 8.38 4.04 15c0 2.22.6 4.32 1.73 6.18L4 29l8.03-1.7A11.9 11.9 0 0 0 16.04 27c6.62 0 12-5.38 12-12S22.66 3 16.04 3Zm0 21.8c-1.35 0-2.67-.27-3.9-.8l-.42-.18-4.22.9.9-4.08-.22-.42A9.75 9.75 0 0 1 6.25 15c0-5.4 4.39-9.8 9.79-9.8 5.4 0 9.8 4.4 9.8 9.8s-4.4 9.8-9.8 9.8Zm5.62-7.32c-.3-.15-1.77-.87-2.04-.97-.27-.1-.47-.15-.67.15-.2.3-.77.97-.95 1.17-.17.2-.35.22-.65.07-.3-.15-1.27-.47-2.42-1.5-.9-.8-1.5-1.78-1.67-2.08-.18-.3-.02-.47.13-.62.13-.13.3-.35.45-.52.15-.18.2-.3.3-.5.1-.2.05-.37-.02-.52-.08-.15-.68-1.62-.93-2.22-.24-.58-.49-.5-.67-.5h-.57c-.2 0-.52.07-.8.37-.27.3-1.05 1.03-1.05 2.5s1.08 2.9 1.23 3.1c.15.2 2.13 3.25 5.16 4.56.72.31 1.28.5 1.72.64.72.23 1.38.2 1.9.12.58-.09 1.77-.72 2.02-1.42.25-.7.25-1.3.17-1.42-.07-.13-.27-.2-.57-.35Z"/>
+      </svg>
+    </a>
+
+    <button class="floating-tracking-btn" type="button" id="openTrackingModal" aria-label="Abrir seguimiento de pedido">
+      <span class="floating-tracking-icon">🧭</span>
+      <span class="floating-tracking-text">Seguimiento</span>
+    </button>
+
+    <button class="floating-cart-btn" type="button" id="openCartModal" aria-label="Abrir carrito de compra">
+      <span class="floating-cart-icon">🛒</span>
+      <span class="floating-cart-text">Carrito</span>
+      <span id="cartBadge">0</span>
+    </button>
+
+    <div class="tracking-modal" id="trackingModal" aria-hidden="true">
+      <div class="tracking-backdrop" data-close-tracking></div>
+      <section class="tracking-dialog" role="dialog" aria-modal="true" aria-labelledby="trackingTitle">
+        <header class="tracking-header">
+          <div>
+            <div class="section-kicker">Seguimiento de pedido</div>
+            <h2 id="trackingTitle">Consulta tu pedido en preparación</h2>
+            <p>Ingresa el número del pedido para ver la línea de tiempo y la etapa actual.</p>
+          </div>
+          <button class="modal-close" type="button" id="closeTrackingModal" aria-label="Cerrar seguimiento">×</button>
+        </header>
+        <div class="tracking-body">
+          <div class="tracking-form">
+            <label><span>Número de pedido</span><input id="trackingPedido" placeholder="Ej: P-1025 o 1025" autocomplete="off"></label>
+            <label><span>Cliente / RUT opcional</span><input id="trackingCliente" placeholder="Opcional" autocomplete="off"></label>
+            <button class="btn" type="button" id="btnBuscarTracking">Buscar seguimiento</button>
+          </div>
+          <div id="trackingStatus" class="tracking-status">Ingresa el número de pedido para consultar.</div>
+          <div id="trackingError" class="tracking-error"></div>
+          <div id="trackingResult" class="tracking-result"></div>
+        </div>
+      </section>
+    </div>
+
+    <div class="shop-cart-modal" id="cartModal" aria-hidden="true">
+      <div class="shop-cart-backdrop" data-close-cart></div>
+      <section class="shop-cart-dialog" role="dialog" aria-modal="true" aria-labelledby="cartModalTitle">
+        <header class="shop-cart-header">
+          <div>
+            <div class="section-kicker">Carrito de compra</div>
+            <h2 id="cartModalTitle">Cotizar o crear pedido</h2>
+            <p>Revisa los productos seleccionados, completa los datos del cliente y envía la solicitud.</p>
+          </div>
+          <button class="modal-close" type="button" id="closeCartModal" aria-label="Cerrar carrito">×</button>
+        </header>
+
+        <div class="shop-cart-body">
+          <aside class="cart-panel cart-panel-modal" id="cotizacion">
+            <div class="cart-modal-grid">
+              <div class="cart-review-card">
+                <h3>Productos seleccionados</h3>
+                <p class="helper">Puedes ajustar cantidades antes de enviar.</p>
+                <div class="cart-list" id="cartList"></div>
+                <div class="cart-total">
+                  <span>Total</span>
+                  <strong id="cartTotal">$0</strong>
+                </div>
+              </div>
+
+              <form class="quote-form quote-form-modal" id="quoteForm">
+                <h3>Datos de solicitud</h3>
+                <select id="qTipo" class="form-control" aria-label="Tipo de solicitud">
+                  <option value="cotizacion">Enviar como cotización</option>
+                  <option value="pedido">Crear pedido</option>
+                </select>
+                <select id="qFormatoPdf" class="form-control" aria-label="Formato PDF">
+                  <option value="A4">PDF Carta A4</option>
+                  <option value="80MM">Ticket 80MM</option>
+                </select>
+                <div id="pedidoGeneradoBox" class="tracking-result"></div>
+                <input required id="qNombre" placeholder="Nombre / empresa" />
+                <input id="qRut" placeholder="RUT" />
+                <input required id="qTelefono" placeholder="Teléfono" />
+                <input id="qCorreo" placeholder="Correo" type="email" />
+                <input id="qDireccion" placeholder="Dirección de entrega / despacho" />
+                <textarea id="qMensaje" placeholder="Mensaje u observación"></textarea>
+                <div class="quote-actions-modal">
+                  <button class="btn" type="submit" id="btnEnviarSolicitud">Enviar solicitud</button>
+                  <button class="btn-outline" type="button" id="clearCart">Vaciar carrito</button>
+                </div>
+              </form>
+            </div>
+          </aside>
+        </div>
+      </section>
+    </div>
+  </main>
+
+  <footer class="footer">
+    <div class="container footer-inner footer-store-inner">
+      <div class="footer-copy">
+        <strong id="footerBrand">Mi Web</strong>
+        <span>Tienda online · Google Sheets / Apps Script</span>
+      </div>
+      <nav class="footer-social" aria-label="Redes sociales">
+        <a href="#" data-social="instagram" target="_blank" rel="noopener noreferrer">Instagram</a>
+        <a href="#" data-social="facebook" target="_blank" rel="noopener noreferrer">Facebook</a>
+        <a href="#" data-social="tiktok" target="_blank" rel="noopener noreferrer">TikTok</a>
+        <a href="#" data-social="linkedin" target="_blank" rel="noopener noreferrer">LinkedIn</a>
+        <a href="#" data-social="whatsapp" target="_blank" rel="noopener noreferrer">WhatsApp</a>
+      </nav>
+    </div>
+  </footer>
+
+  <div class="toast" id="toast"></div>
+
+  <script src="config.default.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

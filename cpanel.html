@@ -1,0 +1,519 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CPanel Administrador</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;650;750;850;950&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="assets/css/styles.css" />
+</head>
+<body class="admin-body">
+  <div class="admin-shell">
+    <aside class="admin-sidebar">
+      <div class="admin-logo">
+        <span class="brand-mark">CP</span>
+        <div>
+          <strong>CPanel Web</strong>
+          <div class="helper">Tema claro · sin clave</div>
+        </div>
+      </div>
+
+      <nav class="admin-nav" id="adminNav">
+        <button class="active" data-tab="dashboard">📊 Dashboard</button>
+        <button data-tab="general">🏢 Datos generales</button>
+        <button data-tab="banners">🖼️ Banners</button>
+        <button data-tab="modulos">🧩 Módulos</button>
+        <button data-tab="servicios">✨ Servicios</button>
+        <button data-tab="productos">🛒 Productos</button>
+        <button data-tab="integracion">🔗 Apps Script</button>
+        <button data-tab="preview">👁️ Vista cliente</button>
+      </nav>
+    </aside>
+
+    <main class="admin-main">
+      <div class="admin-topbar">
+        <div>
+          <h1 id="adminTitle">Panel administrador</h1>
+          <p id="adminSubtitle">Administra la configuración de la página cliente, banners, módulos, servicios, productos e integración.</p>
+        </div>
+        <div class="admin-actions">
+          <a href="index.html" target="_blank" class="btn-outline">Abrir cliente</a>
+          <button class="btn" id="btnPublishWeb" type="button">Guardar y publicar web</button>
+          <button class="btn-outline" id="btnExport">Exportar JSON</button>
+          <label class="btn-outline" style="cursor:pointer">
+            Importar JSON
+            <input type="file" id="importFile" accept="application/json" hidden>
+          </label>
+        </div>
+      </div>
+
+      <section class="admin-section active" id="tab-dashboard">
+        <div class="stats-grid" id="statsGrid"></div>
+        <div class="panel">
+          <h2>Funciones activas del CPanel</h2>
+          <div class="grid grid-3">
+            <div class="card"><h3>Crear módulos</h3><p>Agrega módulos tipo contenido, tarjetas, catálogo, galería, contacto o HTML.</p></div>
+            <div class="card"><h3>Administrar catálogo</h3><p>Crea productos con código, categoría, precio, stock, imagen y estado activo.</p></div>
+            <div class="card"><h3>Conectar BD</h3><p>Guarda y carga datos desde Google Sheets mediante el archivo Apps Script incluido.</p></div>
+          </div>
+        </div>
+      </section>
+
+      <section class="admin-section" id="tab-general">
+        <div class="admin-grid">
+          <div class="panel">
+            <h2>Datos de la empresa</h2>
+            <form id="siteForm" class="form-grid">
+              <label><span>Nombre del sitio</span><input id="siteNombre" required></label>
+              <label><span>Texto del logo</span><input id="siteLogoTexto" required></label>
+              <label><span>Slogan</span><input id="siteSloganInput"></label>
+              <label><span>Descripción</span><textarea id="siteDescripcion" rows="4"></textarea></label>
+              <div class="form-row">
+                <label><span>Teléfono</span><input id="siteTelefono"></label>
+                <label><span>WhatsApp sin +</span><input id="siteWhatsapp"></label>
+              </div>
+              <div class="form-row">
+                <label><span>Correo</span><input id="siteCorreo" type="email"></label>
+                <label><span>Dirección</span><input id="siteDireccion"></label>
+              </div>
+              <div class="form-row">
+                <label><span>Instagram</span><input id="siteInstagram" placeholder="https://instagram.com/..."></label>
+                <label><span>Facebook</span><input id="siteFacebook" placeholder="https://facebook.com/..."></label>
+              </div>
+              <div class="form-row">
+                <label><span>TikTok</span><input id="siteTiktok" placeholder="https://tiktok.com/@..."></label>
+                <label><span>LinkedIn</span><input id="siteLinkedin" placeholder="https://linkedin.com/..."></label>
+              </div>
+              <div class="form-row">
+                <label><span>Botón principal</span><input id="siteBotonPrincipal"></label>
+                <label><span>Botón secundario</span><input id="siteBotonSecundario"></label>
+              </div>
+              <div class="form-row">
+                <label><span>Color primario</span><input id="siteColorPrimario" type="color"></label>
+                <label><span>Color secundario</span><input id="siteColorSecundario" type="color"></label>
+              </div>
+              <div class="form-row">
+                <label><span>Color acento</span><input id="siteColorAcento" type="color"></label>
+                <label><span>Fondo</span><input id="siteFondo" type="color"></label>
+              </div>
+              <div class="admin-actions">
+                <button class="btn" type="submit">Guardar datos generales</button>
+                <button class="btn-outline" type="button" id="btnResetLocal">Restablecer demo</button>
+              </div>
+            </form>
+          </div>
+          <div class="panel">
+            <h2>Resultado rápido</h2>
+            <p class="helper">Los cambios se guardan en el navegador, se ven en la vista previa y puedes publicarlos en Apps Script para que la página cliente los cargue automáticamente.</p>
+            <div class="card">
+              <h3 id="generalPreviewTitle"></h3>
+              <p id="generalPreviewDesc"></p>
+              <div class="admin-actions">
+                <span class="badge on" id="generalPreviewColor">Color principal</span>
+                <span class="badge">Página cliente</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="admin-section" id="tab-banners">
+        <div class="admin-grid">
+          <div class="panel">
+            <h2 id="bannerFormTitle">Crear banner</h2>
+            <form id="bannerForm" class="form-grid">
+              <input type="hidden" id="bannerId">
+              <label><span>Título</span><input id="bannerTitulo" required></label>
+              <label><span>Subtítulo</span><textarea id="bannerSubtitulo" rows="3"></textarea></label>
+              <div class="form-row">
+                <label><span>Texto botón</span><input id="bannerBoton"></label>
+                <label><span>Link botón</span><input id="bannerLink" placeholder="#catalogo"></label>
+              </div>
+              <label><span>Imagen / URL</span><input id="bannerImagen" placeholder="assets/img/banner-1.svg o URL"></label>
+              <div class="form-row">
+                <label><span>Orden</span><input id="bannerOrden" type="number" value="1"></label>
+                <label><span>Estado</span><select id="bannerActivo"><option value="true">Activo</option><option value="false">Inactivo</option></select></label>
+              </div>
+              <div class="admin-actions">
+                <button class="btn" type="submit">Guardar banner</button>
+                <button class="btn-outline" type="button" id="btnClearBanner">Limpiar</button>
+              </div>
+            </form>
+          </div>
+          <div class="panel">
+            <h2>Banners creados</h2>
+            <div class="table-wrap">
+              <table class="admin-table">
+                <thead><tr><th>Orden</th><th>Título</th><th>Estado</th><th>Imagen</th><th>Acciones</th></tr></thead>
+                <tbody id="bannersTable"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="admin-section" id="tab-modulos">
+        <div class="admin-grid">
+          <div class="panel">
+            <h2 id="moduleFormTitle">Crear módulo</h2>
+            <form id="moduleForm" class="form-grid">
+              <input type="hidden" id="moduleId">
+              <label><span>Título del módulo</span><input id="moduleTitulo" required></label>
+              <div class="form-row">
+                <label><span>Tipo</span>
+                  <select id="moduleTipo">
+                    <option value="contenido">Contenido simple</option>
+                    <option value="servicios">Tarjetas servicios</option>
+                    <option value="catalogo">Catálogo productos</option>
+                    <option value="cotizaciones">Cotizaciones / carrito</option>
+                    <option value="contacto">Contacto</option>
+                    <option value="galeria">Galería</option>
+                    <option value="html">HTML personalizado</option>
+                  </select>
+                </label>
+                <label><span>Icono</span><input id="moduleIcono" placeholder="🧩"></label>
+              </div>
+              <label><span>Descripción</span><textarea id="moduleDescripcion" rows="3"></textarea></label>
+              <label><span>Contenido / HTML</span><textarea id="moduleContenido" rows="5"></textarea></label>
+              <div class="form-row">
+                <label><span>Texto botón</span><input id="moduleBoton"></label>
+                <label><span>Link botón</span><input id="moduleLink" placeholder="#contacto"></label>
+              </div>
+              <div class="form-row">
+                <label><span>Orden</span><input id="moduleOrden" type="number" value="1"></label>
+                <label><span>Estado</span><select id="moduleActivo"><option value="true">Activo</option><option value="false">Inactivo</option></select></label>
+              </div>
+              <div class="admin-actions">
+                <button class="btn" type="submit">Guardar módulo</button>
+                <button class="btn-outline" type="button" id="btnClearModule">Limpiar</button>
+              </div>
+            </form>
+          </div>
+          <div class="panel">
+            <h2>Módulos disponibles</h2>
+            <p class="helper">Desde aquí puedes crear módulos adicionales para la página cliente. Los tipos catálogo y cotizaciones activan productos, carrito y formulario.</p>
+            <div class="table-wrap">
+              <table class="admin-table">
+                <thead><tr><th>Orden</th><th>Título</th><th>Tipo</th><th>Estado</th><th>Acciones</th></tr></thead>
+                <tbody id="modulesTable"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="admin-section" id="tab-servicios">
+        <div class="admin-grid">
+          <div class="panel">
+            <h2 id="serviceFormTitle">Crear servicio</h2>
+            <form id="serviceForm" class="form-grid">
+              <input type="hidden" id="serviceId">
+              <label><span>Título</span><input id="serviceTitulo" required></label>
+              <label><span>Descripción</span><textarea id="serviceDescripcion" rows="3"></textarea></label>
+              <div class="form-row">
+                <label><span>Icono</span><input id="serviceIcono" placeholder="✨"></label>
+                <label><span>Precio / texto</span><input id="servicePrecio"></label>
+              </div>
+              <div class="form-row">
+                <label><span>Orden</span><input id="serviceOrden" type="number" value="1"></label>
+                <label><span>Estado</span><select id="serviceActivo"><option value="true">Activo</option><option value="false">Inactivo</option></select></label>
+              </div>
+              <div class="admin-actions">
+                <button class="btn" type="submit">Guardar servicio</button>
+                <button class="btn-outline" type="button" id="btnClearService">Limpiar</button>
+              </div>
+            </form>
+          </div>
+          <div class="panel">
+            <h2>Servicios creados</h2>
+            <div class="table-wrap">
+              <table class="admin-table">
+                <thead><tr><th>Orden</th><th>Título</th><th>Precio</th><th>Estado</th><th>Acciones</th></tr></thead>
+                <tbody id="servicesTable"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="admin-section" id="tab-productos">
+        <div class="panel product-admin-panel">
+          <div class="section-head product-head">
+            <div>
+              <h2>Productos</h2>
+              <p>Catálogo administrable conectado a la página cliente. El módulo se mantiene ancho, limpio y sin desbordes.</p>
+            </div>
+            <div class="admin-actions product-head-actions">
+              <button class="btn" type="button" id="btnOpenProductModal">+ Crear producto</button>
+              <button class="btn-success" type="button" id="btnOpenImportProducts">Importar listado</button>
+              <button class="btn-outline" type="button" id="btnSyncProductsRemote">Sincronizar productos</button>
+              <button class="btn-outline" type="button" id="btnClearProductListView">Actualizar vista local</button>
+            </div>
+          </div>
+
+          <div class="product-summary-grid" aria-label="Resumen de productos">
+            <div class="product-summary-card"><span>Total productos</span><strong id="productStatTotal">0</strong></div>
+            <div class="product-summary-card"><span>Activos</span><strong id="productStatActive">0</strong></div>
+            <div class="product-summary-card"><span>Categorías</span><strong id="productStatCategories">0</strong></div>
+            <div class="product-summary-card"><span>Stock total</span><strong id="productStatStock">0</strong></div>
+          </div>
+
+          <div class="product-local-sync-status" id="productLocalSyncStatus" data-tone="warn">Productos pendientes de cargar en memoria local.</div>
+
+          <div class="product-toolbar">
+            <label class="product-search-box">
+              <span>Buscar producto</span>
+              <input id="productSearch" type="search" placeholder="Código, nombre, categoría o descripción">
+            </label>
+            <label class="product-filter-box">
+              <span>Categoría</span>
+              <select id="productCategoryFilter"><option value="">Todas las categorías</option></select>
+            </label>
+            <div class="product-toolbar-note">
+              <strong id="productResultCount">0</strong>
+              <span>productos visibles</span>
+            </div>
+          </div>
+
+          <div class="product-import-panel" id="productImportPanel" hidden>
+            <div class="product-import-card">
+              <div>
+                <h3>Importar productos desde Excel / CSV</h3>
+                <p>Usa los mismos campos del formulario: <strong>CODIGO, NOMBRE, CATEGORIA, DESCRIPCION, PRECIO, STOCK, IMAGEN, ACTIVO, ORDEN</strong>.</p>
+                <p class="helper">Si el código ya existe, el producto se actualiza. Si no existe, se crea uno nuevo. El código se conserva como texto para respetar ceros adelante.</p>
+              </div>
+              <div class="admin-actions import-actions">
+                <a class="btn-outline" href="base_datos/plantilla_importacion_productos.xlsx" download>Descargar plantilla XLSX</a>
+                <button class="btn-outline" type="button" id="btnDownloadProductTemplate">Generar plantilla</button>
+                <label class="btn file-button">
+                  Seleccionar archivo
+                  <input type="file" id="productImportFile" accept=".xlsx,.xls,.csv" hidden>
+                </label>
+                <button class="btn-outline" type="button" id="btnCloseImportProducts">Cerrar importador</button>
+              </div>
+            </div>
+            <div class="import-preview-wrap" id="productImportPreviewWrap" hidden>
+              <div class="section-head import-preview-head">
+                <div>
+                  <h3>Vista previa de importación</h3>
+                  <p id="productImportSummary" class="helper"></p>
+                </div>
+                <div class="admin-actions">
+                  <button class="btn-success" type="button" id="btnApplyProductImport">Aplicar importación</button>
+                  <button class="btn-outline" type="button" id="btnCancelProductImport">Cancelar</button>
+                </div>
+              </div>
+              <div class="table-wrap product-table-wrap">
+                <table class="admin-table products-wide-table import-preview-table">
+                  <thead><tr><th>Acción</th><th>Código</th><th>Nombre</th><th>Categoría</th><th>Precio</th><th>Stock</th><th>Estado</th><th>Observación</th></tr></thead>
+                  <tbody id="productImportPreview"></tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+
+          <div class="product-table-shell">
+            <div class="product-table-title">
+              <div>
+                <h3>Listado de productos</h3>
+                <p class="helper">En escritorio se mantiene como tabla ancha con scroll horizontal seguro. En móvil cambia a tarjetas ordenadas.</p>
+              </div>
+            </div>
+            <div class="table-wrap product-table-wrap">
+              <table class="admin-table products-wide-table product-master-table">
+                <thead>
+                  <tr>
+                    <th>Producto</th>
+                    <th>Código</th>
+                    <th>Categoría</th>
+                    <th>Precio</th>
+                    <th>Stock</th>
+                    <th>Orden</th>
+                    <th>Estado</th>
+                    <th>Acciones</th>
+                  </tr>
+                </thead>
+                <tbody id="productsTable"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="admin-section admin-section-disabled" id="tab-cotizaciones" hidden aria-hidden="true" style="display:none!important">
+        <div class="panel">
+          <div class="section-head" style="margin-bottom:16px">
+            <div>
+              <h2>Cotizaciones recibidas</h2>
+              <p>Se registran cuando un cliente envía el carrito desde la página cliente.</p>
+            </div>
+            <div class="admin-actions">
+              <button class="btn-outline" id="btnLoadQuotes">Cargar desde Apps Script</button>
+              <button class="btn-danger" id="btnClearQuotes">Limpiar locales</button>
+            </div>
+          </div>
+          <div class="table-wrap">
+            <table class="admin-table">
+              <thead><tr><th>Fecha</th><th>N°</th><th>Cliente</th><th>Teléfono</th><th>Items</th><th>Total</th><th>Estado</th><th>Acciones</th></tr></thead>
+              <tbody id="quotesTable"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <section class="admin-section admin-section-disabled" id="tab-pedidos" hidden aria-hidden="true" style="display:none!important">
+        <div class="panel">
+          <div class="section-head" style="margin-bottom:16px">
+            <div>
+              <h2>Pedidos recibidos</h2>
+              <p>Se registran cuando el cliente selecciona <strong>Crear pedido</strong> desde el carrito de la página web.</p>
+            </div>
+            <div class="admin-actions">
+              <button class="btn-outline" id="btnLoadOrders">Cargar desde Apps Script</button>
+              <button class="btn-danger" id="btnClearOrders">Limpiar locales</button>
+            </div>
+          </div>
+          <div class="order-watch-card">
+            <div>
+              <h3>Detector automático de pedidos</h3>
+              <p>El CPanel revisa Apps Script cada 8 segundos. Cuando cae un pedido nuevo, muestra aviso y emite voz.</p>
+              <div class="status-line" id="orderWatcherStatus">Monitoreo pendiente de iniciar.</div>
+            </div>
+            <div class="admin-actions order-watch-actions">
+              <button class="btn-success" type="button" id="btnEnableOrderVoice">Activar voz</button>
+              <button class="btn-outline" type="button" id="btnDisableOrderVoice">Desactivar voz</button>
+            </div>
+          </div>
+          <div class="table-wrap">
+            <table class="admin-table">
+              <thead><tr><th>Fecha</th><th>N°</th><th>Cliente</th><th>Teléfono</th><th>Dirección</th><th>Items</th><th>Total</th><th>Estado</th><th>Acciones</th></tr></thead>
+              <tbody id="ordersTable"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <section class="admin-section" id="tab-integracion">
+        <div class="admin-grid">
+          <div class="panel">
+            <h2>Conexión con Apps Script</h2>
+            <form id="integrationForm" class="form-grid">
+              <label><span>URL del Web App `/exec`</span><input id="appsScriptUrl" placeholder="https://script.google.com/macros/s/AKfycbxZ2GtzJPlMX3TO0Nj7kfNZV0Roqn_CSHMiNCWydDYl940zuR3HymkZVv2tOgzXM_71mQ/exec"></label>
+              <label><span>Sincronización automática al guardar</span>
+                <select id="syncAuto"><option value="false">No</option><option value="true">Sí</option></select>
+              </label>
+              <div class="admin-actions">
+                <button class="btn" type="submit">Guardar URL</button>
+                <button class="btn-outline" type="button" id="btnPing">Probar conexión</button>
+                <button class="btn-outline" type="button" id="btnSetup">Crear hojas BD</button>
+                <button class="btn-success" type="button" id="btnPushRemote">Enviar todo a Apps Script</button>
+                <button class="btn-outline" type="button" id="btnPullRemote">Cargar desde Apps Script</button>
+              </div>
+              <div class="status-line" id="integrationStatus"></div>
+            </form>
+          </div>
+          <div class="panel">
+            <h2>Instalación rápida</h2>
+            <ol class="helper">
+              <li>Crea un Google Sheets nuevo.</li>
+              <li>Abre Extensiones → Apps Script.</li>
+              <li>Pega el archivo <strong>apps_script/Code.gs</strong>.</li>
+              <li>Coloca el ID de tu Google Sheets en la variable <strong>SPREADSHEET_ID</strong>.</li>
+              <li>Ejecuta <strong>setup()</strong>.</li>
+              <li>Publica como Web App y pega la URL `/exec` aquí.</li>
+            </ol>
+            <p class="helper">El archivo Excel `base_datos/estructura_hojas.xlsx` contiene la estructura de hojas sugerida.</p>
+          </div>
+        </div>
+      </section>
+
+      <section class="admin-section" id="tab-preview">
+        <div class="panel">
+          <div class="section-head" style="margin-bottom:16px">
+            <div>
+              <h2>Vista cliente</h2>
+              <p>Previsualiza la página pública con los cambios guardados.</p>
+            </div>
+            <button class="btn-outline" id="btnReloadPreview">Recargar vista</button>
+          </div>
+          <iframe src="index.html" class="preview-frame" id="previewFrame"></iframe>
+        </div>
+      </section>
+    </main>
+  </div>
+
+
+  <div class="admin-modal" id="productModal" aria-hidden="true">
+    <div class="admin-modal-backdrop" data-close-product-modal></div>
+    <div class="admin-modal-card product-modal-card" role="dialog" aria-modal="true" aria-labelledby="productFormTitle">
+      <div class="admin-modal-header">
+        <div>
+          <h2 id="productFormTitle">Crear producto</h2>
+          <p>Completa la ficha del producto. El modal usa casi todo el ancho disponible para trabajar cómodo.</p>
+        </div>
+        <button class="modal-close" type="button" id="btnCloseProductModal" aria-label="Cerrar modal">×</button>
+      </div>
+      <form id="productForm" class="form-grid product-form-grid">
+        <input type="hidden" id="productId">
+        <div class="product-form-layout">
+          <div class="product-form-card product-form-main">
+            <h3>Información principal</h3>
+            <div class="form-row form-row-2">
+              <label><span>Código</span><input id="productCodigo" required placeholder="Ej: 000123"></label>
+              <label><span>Nombre</span><input id="productNombre" required placeholder="Nombre del producto"></label>
+            </div>
+            <div class="form-row form-row-2">
+              <label><span>Categoría</span><input id="productCategoria" required placeholder="Ej: General"></label>
+              <label><span>Estado</span><select id="productActivo"><option value="true">Activo</option><option value="false">Inactivo</option></select></label>
+            </div>
+            <label><span>Descripción</span><textarea id="productDescripcion" rows="6" placeholder="Detalle visible para el cliente"></textarea></label>
+          </div>
+          <div class="product-form-card product-form-side">
+            <h3>Venta y control</h3>
+            <label><span>Precio</span><input id="productPrecio" type="number" min="0" step="1" required></label>
+            <label><span>Stock</span><input id="productStock" type="number" min="0" step="1"></label>
+            <label><span>Orden</span><input id="productOrden" type="number" value="1"></label>
+            <label><span>Imagen / URL</span><input id="productImagen" placeholder="assets/img/producto-1.svg o URL"></label>
+            <p class="helper">El código se guarda como texto, por eso conserva ceros a la izquierda.</p>
+          </div>
+        </div>
+        <div class="admin-actions modal-actions product-modal-actions">
+          <button class="btn" type="submit">Guardar producto</button>
+          <button class="btn-outline" type="button" id="btnClearProduct">Limpiar formulario</button>
+          <button class="btn-outline" type="button" id="btnCancelProduct">Cerrar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+
+
+  <div class="admin-modal" id="documentModal" aria-hidden="true">
+    <div class="admin-modal-backdrop" data-close-document-modal></div>
+    <div class="admin-modal-card document-modal-card" role="dialog" aria-modal="true" aria-labelledby="documentModalTitle">
+      <div class="admin-modal-header">
+        <div>
+          <h2 id="documentModalTitle">Detalle solicitado</h2>
+          <p id="documentModalSubtitle">Revisa el detalle del cliente, productos y total antes de generar PDF.</p>
+        </div>
+        <button class="modal-close" type="button" id="btnCloseDocumentModal" aria-label="Cerrar modal">×</button>
+      </div>
+      <div class="document-modal-body" id="documentModalBody"></div>
+      <div class="admin-actions modal-actions document-modal-actions">
+        <button class="btn" type="button" id="btnDocPdfA4">Generar PDF A4</button>
+        <button class="btn-success" type="button" id="btnDocPdfTicket">Generar ticket 80 mm</button>
+        <button class="btn-outline" type="button" id="btnCloseDocumentModalFooter">Cerrar</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <script src="config.default.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
+  <script src="cpanel.js"></script>
+</body>
+</html>
