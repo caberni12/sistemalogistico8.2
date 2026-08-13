@@ -1,0 +1,684 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <base target="_top">
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Registro de empresas</title>
+  <style>
+    :root {
+      color-scheme: light;
+      font-family: Inter, Arial, sans-serif;
+      --principal: #087067;
+      --principal-oscuro: #064b46;
+      --principal-suave: #e3f3f1;
+      --texto: #173532;
+      --texto-suave: #667c78;
+      --borde: #d4e4e1;
+      --fondo: #eff6f5;
+      --blanco: #ffffff;
+      --peligro: #b9323c;
+      --exito: #087657;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      min-height: 100vh;
+      margin: 0;
+      color: var(--texto);
+      background:
+        radial-gradient(circle at top right, #ccebe6 0, transparent 34%),
+        var(--fondo);
+    }
+
+    .encabezado {
+      padding: 30px clamp(18px, 5vw, 58px);
+      color: var(--blanco);
+      background: linear-gradient(135deg, var(--principal-oscuro), var(--principal));
+      box-shadow: 0 12px 30px #073c3824;
+    }
+
+    .encabezado-contenido {
+      max-width: 850px;
+      margin: auto;
+    }
+
+    .encabezado h1 {
+      margin: 0;
+      font-size: clamp(25px, 5vw, 38px);
+    }
+
+    .encabezado p {
+      margin: 8px 0 0;
+      color: #d5efeb;
+      line-height: 1.5;
+    }
+
+    main {
+      width: min(850px, calc(100% - 28px));
+      margin: 24px auto 40px;
+    }
+
+    .tarjeta {
+      padding: clamp(20px, 4vw, 32px);
+      border: 1px solid var(--borde);
+      border-radius: 24px;
+      background: var(--blanco);
+      box-shadow: 0 18px 50px #17494318;
+    }
+
+    .titulo-formulario {
+      display: flex;
+      gap: 13px;
+      align-items: center;
+      margin-bottom: 24px;
+    }
+
+    .icono-empresa {
+      display: grid;
+      place-items: center;
+      width: 48px;
+      height: 48px;
+      border-radius: 15px;
+      color: var(--principal);
+      background: var(--principal-suave);
+      font-size: 24px;
+    }
+
+    .titulo-formulario h2 {
+      margin: 0;
+      font-size: 22px;
+    }
+
+    .titulo-formulario p {
+      margin: 4px 0 0;
+      color: var(--texto-suave);
+      font-size: 13px;
+    }
+
+    .formulario {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 17px;
+    }
+
+    label.campo {
+      display: grid;
+      gap: 7px;
+      font-size: 13px;
+      font-weight: 800;
+    }
+
+    .completo { grid-column: 1 / -1; }
+
+    input,
+    select {
+      width: 100%;
+      min-height: 49px;
+      padding: 0 14px;
+      border: 1px solid var(--borde);
+      border-radius: 13px;
+      outline: none;
+      color: var(--texto);
+      background: #fbfdfd;
+      font: inherit;
+      transition: border-color .2s, box-shadow .2s;
+    }
+
+    input:focus,
+    select:focus {
+      border-color: var(--principal);
+      box-shadow: 0 0 0 4px #08706718;
+    }
+
+    input[readonly] {
+      color: var(--principal-oscuro);
+      background: var(--principal-suave);
+      font-weight: 800;
+    }
+
+    .entrada-url {
+      position: relative;
+    }
+
+    .entrada-url input { padding-right: 52px; }
+
+    .ver-url {
+      position: absolute;
+      top: 5px;
+      right: 5px;
+      width: 39px;
+      height: 39px;
+      border: 0;
+      border-radius: 10px;
+      color: var(--principal);
+      background: var(--principal-suave);
+      cursor: pointer;
+      font-size: 18px;
+    }
+
+    .ayuda {
+      margin-top: -1px;
+      color: var(--texto-suave);
+      font-size: 12px;
+      font-weight: 500;
+      line-height: 1.45;
+    }
+
+    .confirmar-datos {
+      display: flex;
+      gap: 10px;
+      align-items: flex-start;
+      padding: 14px;
+      border: 1px solid var(--borde);
+      border-radius: 13px;
+      background: #f7fbfa;
+      color: var(--texto);
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    .confirmar-datos input {
+      flex: 0 0 auto;
+      width: 19px;
+      min-height: 19px;
+      margin: 0;
+      accent-color: var(--principal);
+    }
+
+    .acciones {
+      display: flex;
+      gap: 11px;
+      flex-wrap: wrap;
+      margin-top: 3px;
+    }
+
+    .boton {
+      display: inline-flex;
+      min-height: 47px;
+      align-items: center;
+      justify-content: center;
+      gap: 9px;
+      padding: 0 20px;
+      border: 0;
+      border-radius: 13px;
+      color: var(--blanco);
+      background: var(--principal);
+      font-weight: 900;
+      cursor: pointer;
+      transition: transform .15s, opacity .15s;
+    }
+
+    .boton:hover { transform: translateY(-1px); }
+    .boton:disabled { cursor: not-allowed; opacity: .65; transform: none; }
+    .boton.cargando { cursor: wait; }
+    .boton.secundario { color: var(--principal); background: var(--principal-suave); }
+    .boton.peligro { color: var(--blanco); background: var(--peligro); }
+
+    .rut-consulta {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 8px;
+    }
+
+    .rut-consulta .boton {
+      min-height: 49px;
+      padding-inline: 16px;
+    }
+
+    .loader {
+      display: none;
+      width: 18px;
+      height: 18px;
+      border: 2px solid currentColor;
+      border-right-color: transparent;
+      border-radius: 50%;
+      animation: girar .7s linear infinite;
+    }
+
+    .boton.cargando .loader { display: inline-block; }
+
+    .mensaje {
+      display: none;
+      margin: 0 0 18px;
+      padding: 13px 15px;
+      border-radius: 13px;
+      font-size: 13px;
+      font-weight: 700;
+      line-height: 1.45;
+    }
+
+    .mensaje.visible { display: block; }
+    .mensaje.error { color: var(--peligro); background: #ffeaec; }
+    .mensaje.info { color: var(--principal-oscuro); background: var(--principal-suave); }
+
+    .confirmacion {
+      position: fixed;
+      inset: 0;
+      z-index: 100;
+      display: grid;
+      place-items: center;
+      padding: 20px;
+      visibility: hidden;
+      opacity: 0;
+      background: #062e2a70;
+      transition: .2s;
+    }
+
+    .confirmacion.visible {
+      visibility: visible;
+      opacity: 1;
+    }
+
+    .confirmacion-contenido {
+      width: min(370px, 94vw);
+      padding: 30px 24px;
+      border-radius: 23px;
+      text-align: center;
+      background: var(--blanco);
+      box-shadow: 0 25px 70px #062e2a55;
+      transform: scale(.94) translateY(12px);
+      transition: .22s;
+    }
+
+    .confirmacion.visible .confirmacion-contenido { transform: none; }
+
+    .check {
+      display: grid;
+      place-items: center;
+      width: 76px;
+      height: 76px;
+      margin: 0 auto 16px;
+      border-radius: 50%;
+      color: var(--exito);
+      background: #ddf7ec;
+      font-size: 44px;
+      font-weight: 900;
+      animation: entrarCheck .38s ease-out;
+    }
+
+    .confirmacion h3 { margin: 0; font-size: 22px; }
+    .confirmacion p { margin: 9px 0 0; color: var(--texto-suave); line-height: 1.45; }
+
+    .pie {
+      margin-top: 17px;
+      color: var(--texto-suave);
+      text-align: center;
+      font-size: 12px;
+    }
+
+    @keyframes girar { to { transform: rotate(360deg); } }
+    @keyframes entrarCheck {
+      0% { opacity: 0; transform: scale(.4); }
+      70% { transform: scale(1.12); }
+      100% { opacity: 1; transform: scale(1); }
+    }
+
+    @media (max-width: 650px) {
+      .formulario { grid-template-columns: 1fr; }
+      .completo { grid-column: auto; }
+      .acciones .boton { flex: 1; }
+      .rut-consulta { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <header class="encabezado">
+    <div class="encabezado-contenido">
+      <h1>Registro de empresas</h1>
+      <p>Panel para registrar, consultar, actualizar o eliminar empresas en Google Sheets.</p>
+    </div>
+  </header>
+
+  <main>
+    <section class="tarjeta">
+      <div class="titulo-formulario">
+        <div class="icono-empresa" aria-hidden="true">▦</div>
+        <div>
+          <h2>Datos de la empresa</h2>
+          <p>Consulte por RUT; el ID interno se genera automáticamente.</p>
+        </div>
+      </div>
+
+      <div id="mensaje" class="mensaje" role="alert"></div>
+
+      <form id="formulario" class="formulario">
+        <label class="campo completo">
+          <span>ID único de la empresa</span>
+          <input id="idEmpresa" name="idEmpresa" readonly placeholder="Se genera automáticamente al guardar">
+        </label>
+
+        <label class="campo">
+          <span>Nombre de la empresa</span>
+          <input id="nombre" name="nombre" required maxlength="160" autocomplete="organization">
+        </label>
+
+        <label class="campo">
+          <span>RUT de la empresa</span>
+          <span class="rut-consulta">
+            <input id="rut" name="rut" required maxlength="14" placeholder="76.123.456-0" inputmode="text">
+            <button id="consultar" class="boton secundario" type="button">
+              <span class="loader" aria-hidden="true"></span>
+              <span class="texto-boton">Consultar</span>
+            </button>
+          </span>
+        </label>
+
+        <label class="campo completo">
+          <span>URL de conexión</span>
+          <div class="entrada-url">
+            <input id="urlConexion" name="urlConexion" type="password" required autocomplete="off" aria-label="URL que será registrada o actualizada">
+            <button id="verUrl" class="ver-url" type="button" aria-label="Mostrar u ocultar URL">◉</button>
+          </div>
+          <span class="ayuda">Esta dirección se registra en URL_CONEXION. Si guarda nuevamente el mismo RUT con otra URL, la fila existente se actualiza. El panel no consulta ni valida servicios externos.</span>
+        </label>
+
+        <label class="campo">
+          <span>Estado de la empresa</span>
+          <select id="estado" name="estado">
+            <option value="ACTIVA">ACTIVA</option>
+            <option value="BLOQUEADA">BLOQUEADA</option>
+          </select>
+        </label>
+
+        <label class="confirmar-datos">
+          <input id="confirmar" type="checkbox" required>
+          <span>Confirmo que el nombre, RUT, URL y estado son correctos.</span>
+        </label>
+
+        <div class="acciones completo">
+          <button id="guardar" class="boton" type="submit">
+            <span class="loader" aria-hidden="true"></span>
+            <span class="texto-boton">Guardar o actualizar</span>
+          </button>
+          <button id="eliminar" class="boton peligro" type="button" disabled>
+            <span class="loader" aria-hidden="true"></span>
+            <span class="texto-boton">Eliminar</span>
+          </button>
+          <button id="limpiar" class="boton secundario" type="button">Limpiar formulario</button>
+        </div>
+      </form>
+    </section>
+
+    <p class="pie">Sistema de Gestión de Flotas · Panel de registro empresarial</p>
+  </main>
+
+  <div id="confirmacion" class="confirmacion" role="status" aria-live="polite" aria-hidden="true">
+    <div class="confirmacion-contenido">
+      <div class="check" aria-hidden="true">✓</div>
+      <h3 id="tituloConfirmacion">Operación completada</h3>
+      <p id="textoConfirmacion">La información fue registrada correctamente en Google Sheets.</p>
+    </div>
+  </div>
+
+  <script>
+    const URL_APPS_SCRIPT = 'https://script.google.com/macros/s/AKfycbxERKUkwacuXxIqZmo-oTSMrSJv-TobhVoCEd7i9ASPYvxCa4lnaEppe8G4fOS6sS0vJw/exec';
+    const $ = selector => document.querySelector(selector);
+    const estadoPanel = { rutConsultado: '' };
+
+    function normalizarRut(valor) {
+      return String(valor || '').toUpperCase().replace(/[^0-9K]/g, '');
+    }
+
+    function rutValido(valor) {
+      const rut = normalizarRut(valor);
+      if (!/^[0-9]{7,8}[0-9K]$/.test(rut)) return false;
+      const cuerpo = rut.slice(0, -1);
+      const verificador = rut.slice(-1);
+      let suma = 0;
+      let multiplicador = 2;
+
+      for (let indice = cuerpo.length - 1; indice >= 0; indice -= 1) {
+        suma += Number(cuerpo[indice]) * multiplicador;
+        multiplicador = multiplicador === 7 ? 2 : multiplicador + 1;
+      }
+
+      const resultado = 11 - (suma % 11);
+      const esperado = resultado === 11 ? '0' : resultado === 10 ? 'K' : String(resultado);
+      return verificador === esperado;
+    }
+
+    function formatearRut(valor) {
+      const rut = normalizarRut(valor);
+      if (rut.length < 2) return rut;
+      const cuerpo = rut.slice(0, -1).replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+      return cuerpo + '-' + rut.slice(-1);
+    }
+
+    function mostrarMensaje(texto, tipo) {
+      const mensaje = $('#mensaje');
+      mensaje.textContent = texto;
+      mensaje.className = 'mensaje visible ' + (tipo || 'info');
+      mensaje.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+
+    function ocultarMensaje() {
+      const mensaje = $('#mensaje');
+      mensaje.textContent = '';
+      mensaje.className = 'mensaje';
+    }
+
+    function establecerCarga(id, activa) {
+      const etiquetas = {
+        consultar: ['Consultar', 'Consultando…'],
+        guardar: ['Guardar o actualizar', 'Guardando…'],
+        eliminar: ['Eliminar', 'Eliminando…']
+      };
+      ['consultar', 'guardar', 'eliminar', 'limpiar'].forEach(nombre => {
+        $('#' + nombre).disabled = activa;
+      });
+
+      const boton = $('#' + id);
+      boton.classList.toggle('cargando', activa);
+      boton.querySelector('.texto-boton').textContent = etiquetas[id][activa ? 1 : 0];
+
+      if (!activa) {
+        $('#eliminar').disabled = !estadoPanel.rutConsultado;
+      }
+    }
+
+    function mostrarConfirmacion(titulo, texto) {
+      const modal = $('#confirmacion');
+      $('#tituloConfirmacion').textContent = titulo;
+      $('#textoConfirmacion').textContent = texto;
+      modal.classList.add('visible');
+      modal.setAttribute('aria-hidden', 'false');
+      window.clearTimeout(window.__cerrarConfirmacion);
+      window.__cerrarConfirmacion = window.setTimeout(() => {
+        modal.classList.remove('visible');
+        modal.setAttribute('aria-hidden', 'true');
+      }, 2600);
+    }
+
+    function mensajeDeError(codigo, predeterminado) {
+      const mensajes = {
+        RUT_INVALIDO: 'El RUT ingresado no es válido.',
+        NOMBRE_EMPRESA_REQUERIDO: 'Ingrese el nombre de la empresa.',
+        URL_SERVICIO_INVALIDA: 'La URL de conexión no es válida.',
+        ESTADO_EMPRESA_INVALIDO: 'El estado de la empresa no es válido.',
+        EMPRESA_NO_REGISTRADA: 'No existe una empresa registrada con ese RUT.',
+        ACCION_NO_DISPONIBLE: 'La versión publicada de Apps Script no incluye esta operación.'
+      };
+      return mensajes[codigo] || predeterminado || 'No fue posible completar la operación.';
+    }
+
+    async function enviarSolicitud(accion, datos) {
+      const respuestaHttp = await fetch(URL_APPS_SCRIPT, {
+        method: 'POST',
+        redirect: 'follow',
+        credentials: 'omit',
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        body: JSON.stringify(Object.assign({ accion: accion }, datos || {}))
+      });
+      const texto = await respuestaHttp.text();
+      let respuesta;
+      try {
+        respuesta = JSON.parse(texto);
+      } catch (errorJson) {
+        throw new Error('El Apps Script todavía no tiene publicada la versión CRUD de doPost.');
+      }
+      if (!respuesta || respuesta.ok !== true) {
+        throw new Error(mensajeDeError(respuesta && respuesta.error));
+      }
+      return respuesta;
+    }
+
+    function desvincularConsulta() {
+      estadoPanel.rutConsultado = '';
+      $('#eliminar').disabled = true;
+    }
+
+    function limpiarFormulario() {
+      $('#formulario').reset();
+      $('#idEmpresa').value = '';
+      $('#urlConexion').value = '';
+      $('#urlConexion').type = 'password';
+      $('#estado').value = 'ACTIVA';
+      $('#confirmar').checked = false;
+      desvincularConsulta();
+      ocultarMensaje();
+      $('#nombre').focus();
+    }
+
+    $('#limpiar').addEventListener('click', limpiarFormulario);
+    $('#verUrl').addEventListener('click', () => {
+      const campo = $('#urlConexion');
+      campo.type = campo.type === 'password' ? 'url' : 'password';
+    });
+
+    $('#rut').addEventListener('input', evento => {
+      if (
+        estadoPanel.rutConsultado &&
+        normalizarRut(evento.target.value) !== estadoPanel.rutConsultado
+      ) {
+        desvincularConsulta();
+      }
+    });
+
+    $('#rut').addEventListener('blur', evento => {
+      if (evento.target.value && rutValido(evento.target.value)) {
+        evento.target.value = formatearRut(evento.target.value);
+      } else if (evento.target.value) {
+        mostrarMensaje('Ingrese un RUT chileno válido.', 'error');
+      }
+    });
+
+    $('#consultar').addEventListener('click', async () => {
+      ocultarMensaje();
+      const rut = $('#rut').value.trim();
+      if (!rutValido(rut)) {
+        mostrarMensaje('Ingrese un RUT chileno válido antes de consultar.', 'error');
+        $('#rut').focus();
+        return;
+      }
+
+      establecerCarga('consultar', true);
+      try {
+        const respuesta = await enviarSolicitud('consultarEmpresaExterna', { rut: rut });
+        const empresa = respuesta.empresa || {};
+        $('#idEmpresa').value = empresa.idEmpresa || '';
+        $('#nombre').value = empresa.nombre || '';
+        $('#rut').value = empresa.rut || formatearRut(rut);
+        $('#urlConexion').value = empresa.urlConexion || '';
+        $('#estado').value = empresa.estado || 'ACTIVA';
+        $('#confirmar').checked = false;
+        estadoPanel.rutConsultado = normalizarRut(empresa.rut || rut);
+
+        const fechas = [
+          empresa.fechaCreacion ? 'Creada: ' + empresa.fechaCreacion : '',
+          empresa.actualizadoEn ? 'Actualizada: ' + empresa.actualizadoEn : ''
+        ].filter(Boolean).join(' · ');
+        mostrarMensaje('Empresa encontrada. ' + fechas, 'info');
+      } catch (error) {
+        desvincularConsulta();
+        mostrarMensaje(String(error && error.message ? error.message : error), 'error');
+      } finally {
+        establecerCarga('consultar', false);
+      }
+    });
+
+    $('#formulario').addEventListener('submit', async evento => {
+      evento.preventDefault();
+      ocultarMensaje();
+
+      const nombre = $('#nombre').value.trim();
+      const rut = $('#rut').value.trim();
+      const urlConexion = $('#urlConexion').value.trim();
+      const estado = $('#estado').value;
+
+      if (!rutValido(rut)) {
+        mostrarMensaje('Ingrese un RUT chileno válido antes de guardar.', 'error');
+        $('#rut').focus();
+        return;
+      }
+
+      if (!$('#confirmar').checked) {
+        mostrarMensaje('Marque la confirmación de los datos antes de guardar.', 'error');
+        return;
+      }
+
+      const actualizando = estadoPanel.rutConsultado === normalizarRut(rut);
+      establecerCarga('guardar', true);
+      try {
+        const respuesta = await enviarSolicitud(
+          actualizando ? 'actualizarEmpresaExterna' : 'registrarEmpresaExterna',
+          {
+            nombre: nombre,
+            rut: rut,
+            urlConexion: urlConexion,
+            estado: estado
+          }
+        );
+        const empresa = respuesta.empresa || {};
+        mostrarConfirmacion(
+          actualizando ? 'Empresa actualizada' : 'Empresa registrada',
+          (empresa.nombre || nombre) + ' · ' + (empresa.rut || rut) +
+            (actualizando ? ' fue actualizada correctamente.' : ' fue registrada correctamente.') +
+            (empresa.idEmpresa ? ' ID: ' + empresa.idEmpresa : '')
+        );
+        limpiarFormulario();
+      } catch (error) {
+        mostrarMensaje(
+          String(error && error.message ? error.message : error || 'No fue posible enviar la información.'),
+          'error'
+        );
+      } finally {
+        establecerCarga('guardar', false);
+      }
+    });
+
+    $('#eliminar').addEventListener('click', async () => {
+      const rut = $('#rut').value.trim();
+      const nombre = $('#nombre').value.trim() || 'esta empresa';
+      if (!estadoPanel.rutConsultado || normalizarRut(rut) !== estadoPanel.rutConsultado) {
+        mostrarMensaje('Primero consulte el RUT que desea eliminar.', 'error');
+        return;
+      }
+      if (!window.confirm('¿Eliminar definitivamente a ' + nombre + ' (' + rut + ')?')) return;
+
+      ocultarMensaje();
+      establecerCarga('eliminar', true);
+      try {
+        const respuesta = await enviarSolicitud('eliminarEmpresaExterna', { rut: rut });
+        const empresa = respuesta.empresa || {};
+        limpiarFormulario();
+        mostrarConfirmacion(
+          'Empresa eliminada',
+          (empresa.nombre || nombre) + ' · ' + (empresa.rut || rut) + ' fue eliminada de Google Sheets.'
+        );
+      } catch (error) {
+        mostrarMensaje(
+          String(error && error.message ? error.message : error || 'No fue posible eliminar la empresa.'),
+          'error'
+        );
+      } finally {
+        establecerCarga('eliminar', false);
+      }
+    });
+
+    limpiarFormulario();
+  </script>
+</body>
+</html>
