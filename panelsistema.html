@@ -1,686 +1,428 @@
 <!doctype html>
 <html lang="es">
 <head>
-<script src="auth.js"></script>
-
-  <base target="_top">
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>Registro de empresas</title>
+  <title>SGF · cPanel Empresarial Supabase 2.2.0</title>
   <style>
-    :root {
-      color-scheme: light;
-      font-family: Inter, Arial, sans-serif;
-      --principal: #087067;
-      --principal-oscuro: #064b46;
-      --principal-suave: #e3f3f1;
-      --texto: #173532;
-      --texto-suave: #667c78;
-      --borde: #d4e4e1;
-      --fondo: #eff6f5;
-      --blanco: #ffffff;
-      --peligro: #b9323c;
-      --exito: #087657;
-    }
-
-    * { box-sizing: border-box; }
-
-    body {
-      min-height: 100vh;
-      margin: 0;
-      color: var(--texto);
-      background:
-        radial-gradient(circle at top right, #ccebe6 0, transparent 34%),
-        var(--fondo);
-    }
-
-    .encabezado {
-      padding: 30px clamp(18px, 5vw, 58px);
-      color: var(--blanco);
-      background: linear-gradient(135deg, var(--principal-oscuro), var(--principal));
-      box-shadow: 0 12px 30px #073c3824;
-    }
-
-    .encabezado-contenido {
-      max-width: 850px;
-      margin: auto;
-    }
-
-    .encabezado h1 {
-      margin: 0;
-      font-size: clamp(25px, 5vw, 38px);
-    }
-
-    .encabezado p {
-      margin: 8px 0 0;
-      color: #d5efeb;
-      line-height: 1.5;
-    }
-
-    main {
-      width: min(850px, calc(100% - 28px));
-      margin: 24px auto 40px;
-    }
-
-    .tarjeta {
-      padding: clamp(20px, 4vw, 32px);
-      border: 1px solid var(--borde);
-      border-radius: 24px;
-      background: var(--blanco);
-      box-shadow: 0 18px 50px #17494318;
-    }
-
-    .titulo-formulario {
-      display: flex;
-      gap: 13px;
-      align-items: center;
-      margin-bottom: 24px;
-    }
-
-    .icono-empresa {
-      display: grid;
-      place-items: center;
-      width: 48px;
-      height: 48px;
-      border-radius: 15px;
-      color: var(--principal);
-      background: var(--principal-suave);
-      font-size: 24px;
-    }
-
-    .titulo-formulario h2 {
-      margin: 0;
-      font-size: 22px;
-    }
-
-    .titulo-formulario p {
-      margin: 4px 0 0;
-      color: var(--texto-suave);
-      font-size: 13px;
-    }
-
-    .formulario {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 17px;
-    }
-
-    label.campo {
-      display: grid;
-      gap: 7px;
-      font-size: 13px;
-      font-weight: 800;
-    }
-
-    .completo { grid-column: 1 / -1; }
-
-    input,
-    select {
-      width: 100%;
-      min-height: 49px;
-      padding: 0 14px;
-      border: 1px solid var(--borde);
-      border-radius: 13px;
-      outline: none;
-      color: var(--texto);
-      background: #fbfdfd;
-      font: inherit;
-      transition: border-color .2s, box-shadow .2s;
-    }
-
-    input:focus,
-    select:focus {
-      border-color: var(--principal);
-      box-shadow: 0 0 0 4px #08706718;
-    }
-
-    input[readonly] {
-      color: var(--principal-oscuro);
-      background: var(--principal-suave);
-      font-weight: 800;
-    }
-
-    .entrada-url {
-      position: relative;
-    }
-
-    .entrada-url input { padding-right: 52px; }
-
-    .ver-url {
-      position: absolute;
-      top: 5px;
-      right: 5px;
-      width: 39px;
-      height: 39px;
-      border: 0;
-      border-radius: 10px;
-      color: var(--principal);
-      background: var(--principal-suave);
-      cursor: pointer;
-      font-size: 18px;
-    }
-
-    .ayuda {
-      margin-top: -1px;
-      color: var(--texto-suave);
-      font-size: 12px;
-      font-weight: 500;
-      line-height: 1.45;
-    }
-
-    .confirmar-datos {
-      display: flex;
-      gap: 10px;
-      align-items: flex-start;
-      padding: 14px;
-      border: 1px solid var(--borde);
-      border-radius: 13px;
-      background: #f7fbfa;
-      color: var(--texto);
-      font-size: 13px;
-      font-weight: 700;
-      cursor: pointer;
-    }
-
-    .confirmar-datos input {
-      flex: 0 0 auto;
-      width: 19px;
-      min-height: 19px;
-      margin: 0;
-      accent-color: var(--principal);
-    }
-
-    .acciones {
-      display: flex;
-      gap: 11px;
-      flex-wrap: wrap;
-      margin-top: 3px;
-    }
-
-    .boton {
-      display: inline-flex;
-      min-height: 47px;
-      align-items: center;
-      justify-content: center;
-      gap: 9px;
-      padding: 0 20px;
-      border: 0;
-      border-radius: 13px;
-      color: var(--blanco);
-      background: var(--principal);
-      font-weight: 900;
-      cursor: pointer;
-      transition: transform .15s, opacity .15s;
-    }
-
-    .boton:hover { transform: translateY(-1px); }
-    .boton:disabled { cursor: not-allowed; opacity: .65; transform: none; }
-    .boton.cargando { cursor: wait; }
-    .boton.secundario { color: var(--principal); background: var(--principal-suave); }
-    .boton.peligro { color: var(--blanco); background: var(--peligro); }
-
-    .rut-consulta {
-      display: grid;
-      grid-template-columns: minmax(0, 1fr) auto;
-      gap: 8px;
-    }
-
-    .rut-consulta .boton {
-      min-height: 49px;
-      padding-inline: 16px;
-    }
-
-    .loader {
-      display: none;
-      width: 18px;
-      height: 18px;
-      border: 2px solid currentColor;
-      border-right-color: transparent;
-      border-radius: 50%;
-      animation: girar .7s linear infinite;
-    }
-
-    .boton.cargando .loader { display: inline-block; }
-
-    .mensaje {
-      display: none;
-      margin: 0 0 18px;
-      padding: 13px 15px;
-      border-radius: 13px;
-      font-size: 13px;
-      font-weight: 700;
-      line-height: 1.45;
-    }
-
-    .mensaje.visible { display: block; }
-    .mensaje.error { color: var(--peligro); background: #ffeaec; }
-    .mensaje.info { color: var(--principal-oscuro); background: var(--principal-suave); }
-
-    .confirmacion {
-      position: fixed;
-      inset: 0;
-      z-index: 100;
-      display: grid;
-      place-items: center;
-      padding: 20px;
-      visibility: hidden;
-      opacity: 0;
-      background: #062e2a70;
-      transition: .2s;
-    }
-
-    .confirmacion.visible {
-      visibility: visible;
-      opacity: 1;
-    }
-
-    .confirmacion-contenido {
-      width: min(370px, 94vw);
-      padding: 30px 24px;
-      border-radius: 23px;
-      text-align: center;
-      background: var(--blanco);
-      box-shadow: 0 25px 70px #062e2a55;
-      transform: scale(.94) translateY(12px);
-      transition: .22s;
-    }
-
-    .confirmacion.visible .confirmacion-contenido { transform: none; }
-
-    .check {
-      display: grid;
-      place-items: center;
-      width: 76px;
-      height: 76px;
-      margin: 0 auto 16px;
-      border-radius: 50%;
-      color: var(--exito);
-      background: #ddf7ec;
-      font-size: 44px;
-      font-weight: 900;
-      animation: entrarCheck .38s ease-out;
-    }
-
-    .confirmacion h3 { margin: 0; font-size: 22px; }
-    .confirmacion p { margin: 9px 0 0; color: var(--texto-suave); line-height: 1.45; }
-
-    .pie {
-      margin-top: 17px;
-      color: var(--texto-suave);
-      text-align: center;
-      font-size: 12px;
-    }
-
-    @keyframes girar { to { transform: rotate(360deg); } }
-    @keyframes entrarCheck {
-      0% { opacity: 0; transform: scale(.4); }
-      70% { transform: scale(1.12); }
-      100% { opacity: 1; transform: scale(1); }
-    }
-
-    @media (max-width: 650px) {
-      .formulario { grid-template-columns: 1fr; }
-      .completo { grid-column: auto; }
-      .acciones .boton { flex: 1; }
-      .rut-consulta { grid-template-columns: 1fr; }
-    }
+    :root{font-family:Inter,system-ui,Segoe UI,Arial,sans-serif;color-scheme:light;--p:#087067;--pd:#064b46;--ps:#e3f3f1;--txt:#173532;--mut:#667c78;--bd:#d4e4e1;--bg:#eff6f5;--w:#fff;--bad:#b9323c;--ok:#087657;--warn:#b87908;--info:#315e9b;--shadow:0 18px 50px #17494318}
+    *{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--txt)}button,input,select{font:inherit}.shell{min-height:100vh}.top{background:linear-gradient(135deg,var(--pd),var(--p));color:#fff;padding:22px clamp(16px,4vw,48px)}.topin{max-width:1280px;margin:auto;display:flex;align-items:center;justify-content:space-between;gap:16px}.brand h1{margin:0;font-size:clamp(22px,3.6vw,34px)}.brand p{margin:6px 0 0;color:#d8f1ee;font-size:13px}.top-actions{display:flex;gap:8px;flex-wrap:wrap}.btn{position:relative;display:inline-flex;align-items:center;justify-content:center;gap:8px;border:0;border-radius:12px;padding:11px 15px;cursor:pointer;font-weight:800;background:var(--p);color:#fff}.btn.loading{pointer-events:none}.btn.loading::before{content:'';width:16px;height:16px;flex:0 0 16px;border:2px solid currentColor;border-right-color:transparent;border-radius:50%;animation:girarLoader .65s linear infinite}.btn.sm.loading::before{width:13px;height:13px;flex-basis:13px}.btn.secondary{background:var(--ps);color:var(--pd)}.btn.ghost{background:#ffffff18;color:#fff;border:1px solid #ffffff38}.btn.danger{background:var(--bad)}.btn.warn{background:var(--warn)}.btn.sm{padding:8px 10px;font-size:12px}.btn:disabled{opacity:.55;cursor:not-allowed}.main{max-width:1280px;margin:22px auto 44px;padding:0 14px}.notice{display:none;padding:12px 14px;border-radius:12px;margin-bottom:14px;font-size:13px;font-weight:700}.notice.show{display:block}.notice.err{background:#ffeaec;color:var(--bad)}.notice.inf{background:var(--ps);color:var(--pd)}.metrics{display:grid;grid-template-columns:repeat(6,minmax(130px,1fr));gap:10px;margin-bottom:16px}.metric{background:#fff;border:1px solid var(--bd);border-radius:16px;padding:15px}.metric small{color:var(--mut);font-weight:700}.metric strong{display:block;margin-top:5px;font-size:25px}.panel{background:#fff;border:1px solid var(--bd);border-radius:20px;box-shadow:var(--shadow);overflow:hidden}.toolbar{display:flex;gap:10px;align-items:center;justify-content:space-between;padding:14px;border-bottom:1px solid var(--bd);flex-wrap:wrap}.filters{display:flex;gap:8px;flex:1;flex-wrap:wrap}.input,.select{min-height:42px;border:1px solid var(--bd);border-radius:11px;padding:0 12px;background:#fbfdfd;color:var(--txt);outline:none}.input:focus,.select:focus{border-color:var(--p);box-shadow:0 0 0 3px #08706718}.search{min-width:260px;flex:1}.table-wrap{overflow:auto}.table{width:100%;border-collapse:collapse;min-width:1000px}.table th,.table td{padding:12px 13px;border-bottom:1px solid #edf3f2;text-align:left;font-size:13px;vertical-align:middle}.table th{position:sticky;top:0;background:#f7fbfa;color:var(--mut);font-size:11px;text-transform:uppercase;letter-spacing:.04em}.name{font-weight:900}.sub{font-size:11px;color:var(--mut);margin-top:3px}.badge{display:inline-flex;align-items:center;border-radius:999px;padding:5px 8px;font-size:11px;font-weight:900}.green{background:#e2f5ee;color:var(--ok)}.red{background:#ffeaec;color:var(--bad)}.yellow{background:#fff3d8;color:#8b5a00}.blue{background:#e8f0fb;color:var(--info)}.actions{display:flex;gap:6px;flex-wrap:wrap}.empty{padding:36px;text-align:center;color:var(--mut)}.drawer{position:fixed;inset:0;display:none;background:#062e2a70;z-index:80}.drawer.open{display:block}.drawer-card{position:absolute;top:0;right:0;height:100%;width:min(620px,100%);background:#fff;overflow:auto;padding:22px;box-shadow:-18px 0 50px #062e2a40}.drawer-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:18px}.drawer-head h2{margin:0}.drawer-head p{margin:5px 0 0;color:var(--mut);font-size:12px}.x{border:0;background:#eef6f5;border-radius:10px;width:38px;height:38px;cursor:pointer;font-size:20px}.form{display:grid;grid-template-columns:1fr 1fr;gap:13px}.field{display:grid;gap:6px;font-size:12px;font-weight:800}.full{grid-column:1/-1}.field input,.field select{min-height:45px;border:1px solid var(--bd);border-radius:11px;padding:0 12px}.field input[readonly]{background:var(--ps);color:var(--pd);font-weight:800}.section{margin-top:20px;padding-top:18px;border-top:1px solid var(--bd)}.section h3{margin:0 0 10px;font-size:15px}.keybox{background:#f7fbfa;border:1px solid var(--bd);border-radius:14px;padding:13px}.keygrid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:10px}.keyitem small{display:block;color:var(--mut)}.keyitem strong{font-size:13px}.modal{position:fixed;inset:0;display:none;place-items:center;padding:18px;background:#062e2a78;z-index:100}.modal.open{display:grid}.modal-card{width:min(520px,96vw);background:#fff;border-radius:20px;padding:24px;box-shadow:0 25px 70px #062e2a55}.modal-card h3{margin-top:0}.secret{padding:15px;border:1px dashed var(--p);border-radius:13px;background:var(--ps);font-family:ui-monospace,SFMono-Regular,Consolas,monospace;font-size:17px;font-weight:900;word-break:break-all}.warnbox{margin-top:10px;padding:10px;border-radius:10px;background:#fff3d8;color:#7b5307;font-size:12px;font-weight:700}.audit{display:grid;gap:8px}.audit-item{border-left:3px solid var(--p);padding:8px 10px;background:#f8fbfb;border-radius:8px}.audit-item strong{display:block;font-size:12px}.audit-item span{font-size:11px;color:var(--mut)}.loginbar{display:flex;align-items:center;gap:8px}.loginbar input{width:190px;min-height:38px;border-radius:10px;border:1px solid #ffffff55;background:#ffffff12;color:#fff;padding:0 10px}.loginbar input::placeholder{color:#d8eeeb}@keyframes girarLoader{to{transform:rotate(360deg)}}.footer{text-align:center;color:var(--mut);font-size:11px;margin-top:14px}
+    .users-overlay{position:fixed;inset:0;display:none;background:#062e2a82;z-index:120;padding:16px}.users-overlay.open{display:block}.users-shell{height:calc(100vh - 32px);max-width:1500px;margin:auto;background:#fff;border-radius:22px;box-shadow:0 30px 90px #042f2a66;overflow:hidden;display:grid;grid-template-rows:auto 1fr}.users-head{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:17px 20px;border-bottom:1px solid var(--bd);background:#f8fbfb}.users-head h2{margin:0;font-size:20px}.users-head p{margin:4px 0 0;color:var(--mut);font-size:12px}.users-tools{display:flex;gap:8px;align-items:center;flex-wrap:wrap}.users-body{min-height:0;display:grid;grid-template-columns:minmax(430px,44%) 1fr}.users-list{min-width:0;border-right:1px solid var(--bd);display:grid;grid-template-rows:auto 1fr}.users-filter{padding:12px;display:grid;grid-template-columns:1fr 150px 135px;gap:8px;border-bottom:1px solid var(--bd)}.users-scroll{overflow:auto}.users-table{width:100%;border-collapse:collapse;min-width:680px}.users-table th,.users-table td{padding:10px 11px;border-bottom:1px solid #edf3f2;text-align:left;font-size:12px;vertical-align:middle}.users-table th{position:sticky;top:0;background:#f7fbfa;color:var(--mut);font-size:10px;text-transform:uppercase;z-index:2}.user-row{cursor:pointer}.user-row:hover{background:#f2f9f7}.user-row.active{background:#e8f6f3}.role-badge{display:inline-flex;padding:4px 7px;border-radius:999px;background:#edf4ff;color:#315e9b;font-size:10px;font-weight:900}.editor{min-width:0;overflow:auto;padding:18px 20px}.editor-empty{min-height:55vh;display:grid;place-items:center;text-align:center;color:var(--mut)}.editor-grid{display:grid;grid-template-columns:1fr 1fr;gap:11px}.editor-grid .wide{grid-column:1/-1}.editor-grid label{display:grid;gap:5px;font-size:11px;font-weight:900}.editor-grid input,.editor-grid select{min-height:42px;border:1px solid var(--bd);border-radius:10px;padding:0 11px;background:#fbfdfd}.editor-section{margin-top:18px;padding-top:15px;border-top:1px solid var(--bd)}.editor-section h3{margin:0 0 10px;font-size:14px}.permission-toolbar{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:10px}.permission-grid{display:grid;grid-template-columns:repeat(2,minmax(260px,1fr));gap:9px}.perm-card{border:1px solid var(--bd);border-radius:13px;padding:10px;background:#fbfdfd}.perm-card h4{margin:0 0 7px;font-size:11px;color:var(--pd)}.perm-list{display:grid;gap:5px}.perm-item{display:flex;align-items:flex-start;gap:7px;font-size:11px;font-weight:700;line-height:1.25}.perm-item input{margin-top:2px}.perm-key{display:block;color:var(--mut);font-size:9px;font-weight:600}.status-line{display:flex;gap:8px;align-items:center;flex-wrap:wrap;padding:9px 11px;border:1px solid var(--bd);border-radius:11px;background:#f8fbfb;font-size:11px;margin-bottom:12px}.danger-zone{padding:11px;border:1px solid #f0c6ca;border-radius:12px;background:#fff7f8}.small-note{font-size:10px;color:var(--mut);line-height:1.4}.switchline{display:flex!important;grid-template-columns:none!important;align-items:center;gap:8px}.switchline input{min-height:auto;width:17px;height:17px}.user-kpis{display:flex;gap:8px;flex-wrap:wrap}.user-kpi{padding:6px 9px;border-radius:9px;background:var(--ps);font-size:10px;font-weight:900;color:var(--pd)}
+    @media(max-width:1100px){.users-body{grid-template-columns:1fr}.users-list{max-height:42vh;border-right:0;border-bottom:1px solid var(--bd)}.permission-grid{grid-template-columns:1fr}}
+    @media(max-width:720px){.users-overlay{padding:0}.users-shell{height:100vh;border-radius:0}.users-filter{grid-template-columns:1fr}.editor-grid{grid-template-columns:1fr}.editor-grid .wide{grid-column:auto}}
+    @media(max-width:1000px){.metrics{grid-template-columns:repeat(3,1fr)}}@media(max-width:700px){.topin{align-items:flex-start;flex-direction:column}.metrics{grid-template-columns:repeat(2,1fr)}.form{grid-template-columns:1fr}.full{grid-column:auto}.keygrid{grid-template-columns:1fr}.search{min-width:100%}}
   </style>
 </head>
 <body>
-  <header class="encabezado">
-    <div class="encabezado-contenido">
-      <h1>Registro de empresas</h1>
-      <p>Panel para registrar, consultar, actualizar o eliminar empresas en Google Sheets.</p>
-    </div>
-  </header>
-
-  <main>
-    <section class="tarjeta">
-      <div class="titulo-formulario">
-        <div class="icono-empresa" aria-hidden="true">▦</div>
-        <div>
-          <h2>Datos de la empresa</h2>
-          <p>Consulte por RUT; el ID interno se genera automáticamente.</p>
-        </div>
+<div class="shell">
+  <header class="top"><div class="topin">
+    <div class="brand"><h1>SGF · cPanel Empresarial</h1><p>Empresas, activaciones, claves de instalación, auditoría y reportes · Directorio central Supabase · bdempresaflota-api 1.2.0 · Supabase Auth.</p><p style="margin-top:4px;font-size:11px;opacity:.82">API: mykndxvshtfydsetcync.supabase.co · bdempresaflota-api</p></div>
+    <div class="top-actions">
+      <div class="loginbar" id="loginBar">
+        <input id="adminEmail" type="email" autocomplete="username" placeholder="Correo administrador">
+        <input id="adminPassword" type="password" autocomplete="current-password" placeholder="Contraseña">
+        <button class="btn ghost" id="entrarAdmin" type="button">Entrar</button>
       </div>
-
-      <div id="mensaje" class="mensaje" role="alert"></div>
-
-      <form id="formulario" class="formulario">
-        <label class="campo completo">
-          <span>ID único de la empresa</span>
-          <input id="idEmpresa" name="idEmpresa" readonly placeholder="Se genera automáticamente al guardar">
-        </label>
-
-        <label class="campo">
-          <span>Nombre de la empresa</span>
-          <input id="nombre" name="nombre" required maxlength="160" autocomplete="organization">
-        </label>
-
-        <label class="campo">
-          <span>RUT de la empresa</span>
-          <span class="rut-consulta">
-            <input id="rut" name="rut" required maxlength="14" placeholder="76.123.456-0" inputmode="text">
-            <button id="consultar" class="boton secundario" type="button">
-              <span class="loader" aria-hidden="true"></span>
-              <span class="texto-boton">Consultar</span>
-            </button>
-          </span>
-        </label>
-
-        <label class="campo completo">
-          <span>URL de conexión</span>
-          <div class="entrada-url">
-            <input id="urlConexion" name="urlConexion" type="password" required autocomplete="off" aria-label="URL que será registrada o actualizada">
-            <button id="verUrl" class="ver-url" type="button" aria-label="Mostrar u ocultar URL">◉</button>
-          </div>
-          <span class="ayuda">Esta dirección se registra en URL_CONEXION. Si guarda nuevamente el mismo RUT con otra URL, la fila existente se actualiza. El panel no consulta ni valida servicios externos.</span>
-        </label>
-
-        <label class="campo">
-          <span>Estado de la empresa</span>
-          <select id="estado" name="estado">
-            <option value="ACTIVA">ACTIVA</option>
-            <option value="BLOQUEADA">BLOQUEADA</option>
-          </select>
-        </label>
-
-        <label class="confirmar-datos">
-          <input id="confirmar" type="checkbox" required>
-          <span>Confirmo que el nombre, RUT, URL y estado son correctos.</span>
-        </label>
-
-        <div class="acciones completo">
-          <button id="guardar" class="boton" type="submit">
-            <span class="loader" aria-hidden="true"></span>
-            <span class="texto-boton">Guardar o actualizar</span>
-          </button>
-          <button id="eliminar" class="boton peligro" type="button" disabled>
-            <span class="loader" aria-hidden="true"></span>
-            <span class="texto-boton">Eliminar</span>
-          </button>
-          <button id="limpiar" class="boton secundario" type="button">Limpiar formulario</button>
-        </div>
-      </form>
+      <div class="loginbar" id="sessionBar" style="display:none">
+        <span id="adminSesion" style="font-size:12px;font-weight:800"></span>
+        <button class="btn ghost" id="salirAdmin" type="button">Cerrar sesión</button>
+      </div>
+      <button class="btn ghost" id="reporteGeneral">Reporte general PDF</button>
+      <button class="btn ghost" id="refrescar">Actualizar</button>
+      <button class="btn" id="nuevaEmpresa">+ Nueva empresa</button>
+    </div>
+  </div></header>
+  <main class="main"><div class="notice inf show" style="display:block;margin-bottom:12px">
+      API configurada: <strong>bdempresaflota-api</strong> · Administración protegida por
+      <strong>Supabase Auth</strong>. La sesión queda recordada en este equipo; ya no existe Clave cPanel.
+    </div>
+    <div id="notice" class="notice"></div>
+    <section class="metrics">
+      <div class="metric"><small>Total empresas</small><strong id="mTotal">0</strong></div>
+      <div class="metric"><small>Activas</small><strong id="mActivas">0</strong></div>
+      <div class="metric"><small>Bloqueadas</small><strong id="mBloqueadas">0</strong></div>
+      <div class="metric"><small>Instalación activada</small><strong id="mActivadas">0</strong></div>
+      <div class="metric"><small>Pendientes</small><strong id="mPendientes">0</strong></div>
+      <div class="metric"><small>Claves bloqueadas/revocadas</small><strong id="mClaves">0</strong></div>
     </section>
-
-    <p class="pie">Sistema de Gestión de Flotas · Panel de registro empresarial</p>
+    <section class="panel">
+      <div class="toolbar">
+        <div class="filters">
+          <input class="input search" id="buscar" placeholder="Buscar por empresa, RUT o ID…">
+          <select class="select" id="fEstado"><option value="">Todos los estados</option><option>ACTIVA</option><option>BLOQUEADA</option></select>
+          <select class="select" id="fInstalacion"><option value="">Toda instalación</option><option value="SI">Activada</option><option value="NO">Pendiente</option></select>
+          <select class="select" id="fClave"><option value="">Todas las claves</option><option>ACTIVA</option><option>BLOQUEADA</option><option>REVOCADA</option></select>
+        </div>
+        <div class="sub" id="contador">0 empresas</div>
+      </div>
+      <div class="table-wrap"><table class="table"><thead><tr><th>Empresa</th><th>RUT / ID</th><th>Estado</th><th>Instalación</th><th>Clave</th><th>Actualización</th><th>Acciones</th></tr></thead><tbody id="tbody"></tbody></table><div id="empty" class="empty" style="display:none">No hay empresas que coincidan con los filtros.</div></div>
+    </section>
+    <div class="footer">Sistema de Gestión de Flotas · Directorio empresarial Supabase · cPanel 2.2.0</div>
   </main>
+</div>
 
-  <div id="confirmacion" class="confirmacion" role="status" aria-live="polite" aria-hidden="true">
-    <div class="confirmacion-contenido">
-      <div class="check" aria-hidden="true">✓</div>
-      <h3 id="tituloConfirmacion">Operación completada</h3>
-      <p id="textoConfirmacion">La información fue registrada correctamente en Google Sheets.</p>
+<div class="drawer" id="drawer"><div class="drawer-card">
+  <div class="drawer-head"><div><h2 id="drawerTitle">Nueva empresa</h2><p>El ID interno se genera automáticamente. La clave de instalación se crea en Supabase mediante bdempresaflota-api.</p></div><button class="x" id="cerrarDrawer">×</button></div>
+  <form id="form" class="form">
+    <label class="field full"><span>ID único</span><input id="idEmpresa" readonly placeholder="Se genera al guardar"></label>
+    <label class="field"><span>Nombre empresa</span><input id="nombre" required maxlength="160"></label>
+    <label class="field"><span>RUT empresa</span><input id="rut" required maxlength="14" placeholder="76.123.456-0"></label>
+    <label class="field full"><span>URL real de conexión</span><input id="urlConexion" required type="password" autocomplete="off"></label>
+    <label class="field"><span>Estado empresa</span><select id="estado"><option>ACTIVA</option><option>BLOQUEADA</option></select></label>
+    <div class="full actions"><button class="btn" type="submit" id="guardar">Guardar empresa</button><button class="btn secondary" type="button" id="toggleUrl">Mostrar URL</button><button class="btn danger" type="button" id="eliminar" style="display:none">Eliminar</button></div>
+  </form>
+  <section class="section" id="seguridad" style="display:none">
+    <h3>Seguridad de instalación</h3>
+    <div class="keybox"><div class="keygrid">
+      <div class="keyitem"><small>Estado clave</small><strong id="kEstado">—</strong></div>
+      <div class="keyitem"><small>Instalación activada</small><strong id="kActivada">—</strong></div>
+      <div class="keyitem"><small>Identificador clave</small><strong id="kUltimos">—</strong></div>
+    </div><div class="actions">
+      <button class="btn sm" type="button" id="generarClave">Generar / regenerar clave</button>
+      <button class="btn warn sm" type="button" id="bloquearClave">Bloquear clave</button>
+      <button class="btn secondary sm" type="button" id="reactivarClave">Reactivar clave</button>
+      <button class="btn danger sm" type="button" id="revocarClave">Revocar clave</button>
+      <button class="btn secondary sm" type="button" id="reiniciarActivacion">Requerir clave nuevamente</button>
+      <button class="btn secondary sm" type="button" id="pdfEmpresa">Reporte PDF</button>
+    </div></div>
+  </section>
+  <section class="section" id="auditoriaSec" style="display:none"><h3>Auditoría reciente</h3><div class="audit" id="auditoria"></div></section>
+</div></div>
+
+<div class="users-overlay" id="usuariosOverlay"><div class="users-shell">
+  <div class="users-head">
+    <div><h2 id="usuariosTitulo">Usuarios de empresa</h2><p id="usuariosSubtitulo">Control remoto seguro mediante flotas-api.</p></div>
+    <div class="users-tools">
+      <span class="badge blue" id="usuariosApiEstado">API pendiente</span>
+      <button class="btn secondary sm" id="usuariosRecargar" type="button">Actualizar usuarios</button>
+      <button class="btn sm" id="usuarioNuevo" type="button">+ Nuevo usuario</button>
+      <button class="x" id="usuariosCerrar" type="button">×</button>
     </div>
   </div>
+  <div class="users-body">
+    <section class="users-list">
+      <div class="users-filter">
+        <input class="input" id="usuarioBuscar" placeholder="Buscar nombre o correo">
+        <select class="select" id="usuarioRolFiltro"><option value="">Todos los perfiles</option><option value="ROL-ADMIN">Administrador</option><option value="ROL-GERENCIA">Gerencia</option><option value="ROL-OPERADOR">Operador</option><option value="ROL-CONDUCTOR">Conductor</option><option value="ROL-SYSADMIN">SYSADMIN</option></select>
+        <select class="select" id="usuarioEstadoFiltro"><option value="">Todos los estados</option><option>Activo</option><option>Inactivo</option><option>Bloqueado</option></select>
+      </div>
+      <div class="users-scroll"><table class="users-table"><thead><tr><th>Usuario</th><th>Perfil</th><th>Permisos</th><th>Estado</th><th>Último acceso</th></tr></thead><tbody id="usuariosTbody"></tbody></table><div id="usuariosEmpty" class="empty" style="display:none">No hay usuarios para mostrar.</div></div>
+    </section>
+    <section class="editor" id="usuarioEditor"><div class="editor-empty"><div><strong>Seleccione un usuario</strong><div class="small-note" style="margin-top:6px">Desde aquí puede cambiar nombre, correo, contraseña, perfil, estado y permisos sin entrar al SGF de la empresa.</div></div></div></section>
+  </div>
+</div></div>
 
-  <script>
-    const URL_APPS_SCRIPT = 'https://script.google.com/macros/s/AKfycbxERKUkwacuXxIqZmo-oTSMrSJv-TobhVoCEd7i9ASPYvxCa4lnaEppe8G4fOS6sS0vJw/exec';
-    const $ = selector => document.querySelector(selector);
-    const estadoPanel = { rutConsultado: '' };
+<div class="modal" id="modalClave"><div class="modal-card"><h3>Clave de instalación generada</h3><p>Esta clave se muestra en texto plano una sola vez. Entrégala al administrador responsable de la primera activación.</p><div class="secret" id="secretClave"></div><div class="warnbox">Después de cerrar esta ventana, el directorio conserva únicamente el hash seguro. Si se pierde, debes regenerarla.</div><div class="actions" style="margin-top:14px"><button class="btn" id="copiarClave">Copiar</button><button class="btn secondary" id="cerrarClave">Cerrar</button></div></div></div>
 
-    function normalizarRut(valor) {
-      return String(valor || '').toUpperCase().replace(/[^0-9K]/g, '');
+<script>
+
+  const URL_API_CENTRAL='https://mykndxvshtfydsetcync.supabase.co/functions/v1/bdempresaflota-api';
+  const CLAVE_SESION='SGF_BDEMPRESAFLOTA_AUTH_SESSION_V1';
+  const CLAVE_EMAIL='SGF_BDEMPRESAFLOTA_ADMIN_EMAIL';
+  const $=s=>document.querySelector(s);
+  let empresas=[];
+  let actual=null;
+  let authConfig=null;
+  let sesion=null;
+  let empresaUsuarios=null;
+  let usuariosEmpresa=[];
+  let usuarioActual=null;
+  let catalogoPermisos=null;
+
+  function msg(t,tipo='inf'){
+    const n=$('#notice');
+    n.textContent=t;
+    n.className='notice show '+(tipo==='err'?'err':'inf');
+    setTimeout(()=>n.classList.remove('show'),7000);
+  }
+
+  function normalizarRut(v){return String(v||'').toUpperCase().replace(/[^0-9K]/g,'')}
+  function formatearRut(v){const r=normalizarRut(v);if(r.length<2)return r;return r.slice(0,-1).replace(/\B(?=(\d{3})+(?!\d))/g,'.')+'-'+r.slice(-1)}
+
+  function errMsg(c){
+    const codigo=String(c||'').trim();
+    const upper=codigo.toUpperCase();
+    const m={
+      ADMIN_SESION_REQUERIDA:'Debe iniciar sesión como administrador.',
+      ADMIN_SESION_INVALIDA:'La sesión administrativa expiró o ya no es válida.',
+      CPANEL_USUARIO_NO_AUTORIZADO:'Este usuario de Supabase Auth no está autorizado para administrar el Directorio.',
+      INVALID_LOGIN_CREDENTIALS:'Correo o contraseña incorrectos.',
+      EMAIL_NOT_CONFIRMED:'El correo todavía no está confirmado.',
+      EMPRESA_NO_REGISTRADA:'Empresa no registrada.',
+      RUT_INVALIDO:'RUT inválido.',
+      URL_SERVICIO_INVALIDA:'URL de conexión inválida.',
+      ESTADO_EMPRESA_INVALIDO:'Estado de empresa inválido.',
+      ESTADO_CLAVE_INVALIDO:'Estado de clave inválido.',
+      EMPRESA_BLOQUEADA:'La empresa está bloqueada.',
+      CLAVE_INSTALACION_REQUERIDA:'La empresa requiere clave de instalación en su primera activación.',
+      CLAVE_INSTALACION_INVALIDA:'La clave de instalación es incorrecta.',
+      CLAVE_INSTALACION_BLOQUEADA:'La clave de instalación está bloqueada.',
+      CLAVE_INSTALACION_REVOCADA:'La clave de instalación fue revocada.',
+      CLAVE_INSTALACION_NO_CONFIGURADA:'La empresa no tiene una clave de instalación activa.',
+      ACCION_NO_DISPONIBLE:'La versión publicada de bdempresaflota-api todavía no contiene esta función.',
+      PUBLISHABLE_KEY_NO_DISPONIBLE:'Supabase no entregó la Publishable Key del proyecto.',
+      ERROR_INTERNO:'La Edge Function respondió con ERROR_INTERNO. Revise sus Logs.',
+      CPANEL_SESION_CENTRAL_REQUERIDA:'La flotas-api de la empresa exige la sesión central del cPanel.',
+      CPANEL_SESION_CENTRAL_INVALIDA:'La sesión central del cPanel expiró.',
+      CPANEL_USUARIO_NO_AUTORIZADO:'El usuario autenticado no está autorizado como administrador central.',
+      CPANEL_AUTORIZACION_CENTRAL_RECHAZADA:'La flotas-api no pudo validar esta empresa contra el Directorio central.',
+      CPANEL_CAPACIDAD_REQUERIDA:'La autorización remota del cPanel no fue enviada.',
+      CPANEL_CAPACIDAD_INVALIDA:'La autorización remota del cPanel no es válida.',
+      CPANEL_CAPACIDAD_EXPIRADA:'La autorización remota expiró; vuelva a ejecutar la operación.',
+      CPANEL_CAPACIDAD_ACCION_NO_COINCIDE:'La autorización no corresponde a esta operación.',
+      CPANEL_CAPACIDAD_EMPRESA_NO_COINCIDE:'La autorización no corresponde a la empresa seleccionada.',
+      CPANEL_CAPACIDAD_RUT_NO_COINCIDE:'La autorización no corresponde al RUT seleccionado.',
+      CPANEL_CAPACIDAD_URL_NO_COINCIDE:'La autorización no corresponde a la URL operacional seleccionada.',
+      CPANEL_ACCION_REMOTA_NO_PERMITIDA:'La acción remota solicitada no está permitida por el Directorio central.',
+      CPANEL_EMPRESA_ID_NO_COINCIDE:'La empresa seleccionada no coincide con la base operacional.',
+      CPANEL_EMPRESA_RUT_NO_COINCIDE:'El RUT seleccionado no coincide con la base operacional.',
+      EMPRESA_URL_NO_COINCIDE:'La URL real de flotas-api no coincide con la registrada en el Directorio.',
+      CPANEL_ROL_SYSADMIN_RESERVADO:'ROL-SYSADMIN es un perfil técnico reservado y no puede asignarse desde este administrador de usuarios.',
+      CONTRASENA_DEBIL:'La contraseña debe tener al menos 6 caracteres.',
+      CONTRASENA_MINIMO_8_CARACTERES:'La contraseña debe tener al menos 8 caracteres.',
+      ULTIMO_ADMINISTRADOR_NO_PUEDE_MODIFICARSE:'No puede retirar o desactivar al último Administrador activo.',
+      ULTIMO_ADMINISTRADOR_NO_PUEDE_ELIMINARSE:'No puede eliminar al último Administrador activo.',
+      CORREO_YA_EXISTE:'Ya existe un usuario con ese correo en esta empresa.'
+    };
+    return m[upper]||codigo||'No fue posible completar la operación.';
+  }
+
+  async function conLoader(boton,tarea,texto){
+    if(!boton)return await tarea();
+    if(boton.classList.contains('loading'))return;
+    const html=boton.innerHTML,deshabilitado=boton.disabled;
+    boton.classList.add('loading');boton.disabled=true;boton.setAttribute('aria-busy','true');
+    if(texto)boton.textContent=texto;
+    try{return await tarea()}finally{
+      boton.innerHTML=html;boton.disabled=deshabilitado;boton.classList.remove('loading');boton.removeAttribute('aria-busy');
     }
+  }
 
-    function rutValido(valor) {
-      const rut = normalizarRut(valor);
-      if (!/^[0-9]{7,8}[0-9K]$/.test(rut)) return false;
-      const cuerpo = rut.slice(0, -1);
-      const verificador = rut.slice(-1);
-      let suma = 0;
-      let multiplicador = 2;
+  async function configuracionAuth(){
+    if(authConfig)return authConfig;
+    const r=await fetch(URL_API_CENTRAL+'?accion=configuracionpublica',{method:'GET',credentials:'omit'});
+    const tx=await r.text();
+    let j;try{j=JSON.parse(tx)}catch(_){throw new Error('bdempresaflota-api no devolvió configuración válida. [HTTP '+r.status+']')}
+    if(!r.ok||!j||j.ok!==true)throw new Error(errMsg(j&&j.error)+' [HTTP '+r.status+']');
+    if(!j.supabaseUrl||!j.publishableKey)throw new Error('CONFIGURACION_AUTH_INCOMPLETA');
+    authConfig=j;
+    return j;
+  }
 
-      for (let indice = cuerpo.length - 1; indice >= 0; indice -= 1) {
-        suma += Number(cuerpo[indice]) * multiplicador;
-        multiplicador = multiplicador === 7 ? 2 : multiplicador + 1;
+  function guardarSesion(s){
+    sesion=s||null;
+    if(sesion)localStorage.setItem(CLAVE_SESION,JSON.stringify(sesion));
+    else localStorage.removeItem(CLAVE_SESION);
+    actualizarUiSesion();
+  }
+
+  function cargarSesionLocal(){
+    try{return JSON.parse(localStorage.getItem(CLAVE_SESION)||'null')}catch(_){return null}
+  }
+
+  function actualizarUiSesion(){
+    const activa=Boolean(sesion&&sesion.access_token);
+    $('#loginBar').style.display=activa?'none':'flex';
+    $('#sessionBar').style.display=activa?'flex':'none';
+    $('#adminSesion').textContent=activa?(sesion.user?.email||'Administrador'):'';
+    $('#reporteGeneral').disabled=!activa;
+    $('#refrescar').disabled=!activa;
+    $('#nuevaEmpresa').disabled=!activa;
+  }
+
+  function sesionCasiExpirada(s){
+    const exp=Number(s&&s.expires_at||0);
+    return !exp||Date.now()>=((exp-60)*1000);
+  }
+
+  async function refrescarSesion(){
+    if(!sesion?.refresh_token)return null;
+    const cfg=await configuracionAuth();
+    const r=await fetch(cfg.supabaseUrl+'/auth/v1/token?grant_type=refresh_token',{
+      method:'POST',
+      headers:{'Content-Type':'application/json','apikey':cfg.publishableKey},
+      body:JSON.stringify({refresh_token:sesion.refresh_token})
+    });
+    const j=await r.json().catch(()=>({}));
+    if(!r.ok||!j.access_token){
+      guardarSesion(null);
+      throw new Error(errMsg(j.error_code||j.code||j.msg||j.message||'ADMIN_SESION_INVALIDA'));
+    }
+    guardarSesion(j);
+    return j;
+  }
+
+  async function asegurarSesion(){
+    if(!sesion?.access_token)throw new Error('Debe iniciar sesión como administrador.');
+    if(sesionCasiExpirada(sesion))await refrescarSesion();
+    return sesion;
+  }
+
+  async function iniciarSesion(){
+    const email=$('#adminEmail').value.trim();
+    const password=$('#adminPassword').value;
+    if(!email||!password)throw new Error('Ingrese correo y contraseña.');
+    const cfg=await configuracionAuth();
+    const r=await fetch(cfg.supabaseUrl+'/auth/v1/token?grant_type=password',{
+      method:'POST',
+      headers:{'Content-Type':'application/json','apikey':cfg.publishableKey},
+      body:JSON.stringify({email,password})
+    });
+    const j=await r.json().catch(()=>({}));
+    if(!r.ok||!j.access_token)throw new Error(errMsg(j.error_code||j.code||j.msg||j.message||'INVALID_LOGIN_CREDENTIALS'));
+    guardarSesion(j);
+    localStorage.setItem(CLAVE_EMAIL,email);
+    $('#adminPassword').value='';
+    await cargar($('#entrarAdmin'));
+    msg('Sesión administrativa iniciada y recordada en este equipo.');
+  }
+
+  async function cerrarSesion(){
+    try{
+      if(sesion?.access_token){
+        const cfg=await configuracionAuth();
+        await fetch(cfg.supabaseUrl+'/auth/v1/logout',{
+          method:'POST',
+          headers:{'apikey':cfg.publishableKey,'Authorization':'Bearer '+sesion.access_token}
+        });
       }
+    }catch(_){}
+    guardarSesion(null);
+    empresas=[];renderMetricas({});render();
+    msg('Sesión cerrada.');
+  }
 
-      const resultado = 11 - (suma % 11);
-      const esperado = resultado === 11 ? '0' : resultado === 10 ? 'K' : String(resultado);
-      return verificador === esperado;
-    }
+  async function api(accion,datos={}){
+    await asegurarSesion();
+    let r=await fetch(URL_API_CENTRAL,{
+      method:'POST',
+      credentials:'omit',
+      headers:{'Content-Type':'application/json','Authorization':'Bearer '+sesion.access_token},
+      body:JSON.stringify(Object.assign({accion},datos))
+    });
 
-    function formatearRut(valor) {
-      const rut = normalizarRut(valor);
-      if (rut.length < 2) return rut;
-      const cuerpo = rut.slice(0, -1).replace(/\B(?=(\d{3})+(?!\d))/g, '.');
-      return cuerpo + '-' + rut.slice(-1);
-    }
+    let tx=await r.text();
+    let j=null;try{j=tx?JSON.parse(tx):null}catch(_){}
 
-    function mostrarMensaje(texto, tipo) {
-      const mensaje = $('#mensaje');
-      mensaje.textContent = texto;
-      mensaje.className = 'mensaje visible ' + (tipo || 'info');
-      mensaje.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-    }
-
-    function ocultarMensaje() {
-      const mensaje = $('#mensaje');
-      mensaje.textContent = '';
-      mensaje.className = 'mensaje';
-    }
-
-    function establecerCarga(id, activa) {
-      const etiquetas = {
-        consultar: ['Consultar', 'Consultando…'],
-        guardar: ['Guardar o actualizar', 'Guardando…'],
-        eliminar: ['Eliminar', 'Eliminando…']
-      };
-      ['consultar', 'guardar', 'eliminar', 'limpiar'].forEach(nombre => {
-        $('#' + nombre).disabled = activa;
+    if(r.status===401&&sesion?.refresh_token){
+      await refrescarSesion();
+      r=await fetch(URL_API_CENTRAL,{
+        method:'POST',
+        credentials:'omit',
+        headers:{'Content-Type':'application/json','Authorization':'Bearer '+sesion.access_token},
+        body:JSON.stringify(Object.assign({accion},datos))
       });
-
-      const boton = $('#' + id);
-      boton.classList.toggle('cargando', activa);
-      boton.querySelector('.texto-boton').textContent = etiquetas[id][activa ? 1 : 0];
-
-      if (!activa) {
-        $('#eliminar').disabled = !estadoPanel.rutConsultado;
-      }
+      tx=await r.text();try{j=tx?JSON.parse(tx):null}catch(_){j=null}
     }
 
-    function mostrarConfirmacion(titulo, texto) {
-      const modal = $('#confirmacion');
-      $('#tituloConfirmacion').textContent = titulo;
-      $('#textoConfirmacion').textContent = texto;
-      modal.classList.add('visible');
-      modal.setAttribute('aria-hidden', 'false');
-      window.clearTimeout(window.__cerrarConfirmacion);
-      window.__cerrarConfirmacion = window.setTimeout(() => {
-        modal.classList.remove('visible');
-        modal.setAttribute('aria-hidden', 'true');
-      }, 2600);
+    if(!r.ok||!j||j.ok!==true){
+      const codigo=(j&&(j.error||j.code||j.message||j.msg))||('HTTP_'+r.status);
+      if(r.status===401)guardarSesion(null);
+      throw new Error(errMsg(codigo)+' [HTTP '+r.status+']');
     }
+    return j;
+  }
 
-    function mensajeDeError(codigo, predeterminado) {
-      const mensajes = {
-        RUT_INVALIDO: 'El RUT ingresado no es válido.',
-        NOMBRE_EMPRESA_REQUERIDO: 'Ingrese el nombre de la empresa.',
-        URL_SERVICIO_INVALIDA: 'La URL de conexión no es válida.',
-        ESTADO_EMPRESA_INVALIDO: 'El estado de la empresa no es válido.',
-        EMPRESA_NO_REGISTRADA: 'No existe una empresa registrada con ese RUT.',
-        ACCION_NO_DISPONIBLE: 'La versión publicada de Apps Script no incluye esta operación.'
-      };
-      return mensajes[codigo] || predeterminado || 'No fue posible completar la operación.';
-    }
+  function badge(text,kind){return `<span class="badge ${kind}">${text||'—'}</span>`}
+  function renderMetricas(m={}){$('#mTotal').textContent=m.total||0;$('#mActivas').textContent=m.activas||0;$('#mBloqueadas').textContent=m.bloqueadas||0;$('#mActivadas').textContent=m.activadas||0;$('#mPendientes').textContent=m.pendientes||0;$('#mClaves').textContent=(m.clavesBloqueadas||0)+(m.clavesRevocadas||0)}
+  function filtradas(){const q=$('#buscar').value.trim().toLowerCase(),e=$('#fEstado').value,i=$('#fInstalacion').value,k=$('#fClave').value;return empresas.filter(x=>(!q||[x.nombre,x.rut,x.idEmpresa].join(' ').toLowerCase().includes(q))&&(!e||x.estado===e)&&(!i||x.instalacionActivada===i)&&(!k||x.estadoClave===k))}
+  function render(){const list=filtradas();$('#contador').textContent=list.length+' empresa'+(list.length===1?'':'s');$('#tbody').innerHTML=list.map(e=>`<tr><td><div class="name">${esc(e.nombre)}</div><div class="sub">${esc(host(e.urlConexion))}</div></td><td>${esc(e.rut)}<div class="sub">${esc(e.idEmpresa)}</div></td><td>${badge(e.estado,e.estado==='ACTIVA'?'green':'red')}</td><td>${badge(e.instalacionActivada==='SI'?'ACTIVADA':'PENDIENTE',e.instalacionActivada==='SI'?'green':'yellow')}</td><td>${badge(e.estadoClave,e.estadoClave==='ACTIVA'?'blue':e.estadoClave==='BLOQUEADA'?'yellow':'red')}<div class="sub">${e.claveUltimos4?'••••'+esc(e.claveUltimos4):'Sin clave'}</div></td><td>${esc(e.actualizadoEn||'—')}</td><td><div class="actions"><button class="btn secondary sm" data-edit="${escAttr(e.rut)}">Gestionar</button><button class="btn sm" data-users="${escAttr(e.rut)}">Usuarios</button><button class="btn secondary sm" data-pdf="${escAttr(e.rut)}">PDF</button><button class="btn ${e.estado==='ACTIVA'?'danger':'sm'} sm" data-state="${escAttr(e.rut)}">${e.estado==='ACTIVA'?'Bloquear':'Activar'}</button></div></td></tr>`).join('');$('#empty').style.display=list.length?'none':'block';document.querySelectorAll('[data-edit]').forEach(b=>b.addEventListener('click',()=>abrirEmpresa(b.dataset.edit,b)));document.querySelectorAll('[data-users]').forEach(b=>b.addEventListener('click',()=>abrirUsuariosEmpresa(b.dataset.users,b)));document.querySelectorAll('[data-pdf]').forEach(b=>b.addEventListener('click',()=>pdfEmpresa(b.dataset.pdf,b)));document.querySelectorAll('[data-state]').forEach(b=>b.addEventListener('click',()=>toggleEmpresa(b.dataset.state,b)))}
+  async function cargar(boton){const tarea=async()=>{const r=await api('listarEmpresasExternas');empresas=r.empresas||[];renderMetricas(r.metricas||{});render()};try{return boton?await conLoader(boton,tarea,'Actualizando…'):await tarea()}catch(e){msg(e.message,'err');throw e}}
+  function esc(v){return String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}function escAttr(v){return esc(v)}function host(u){try{return new URL(u).host}catch(e){return u||''}}
+  function limpiarForm(){actual=null;$('#form').reset();$('#idEmpresa').value='';$('#urlConexion').type='password';$('#estado').value='ACTIVA';$('#seguridad').style.display='none';$('#auditoriaSec').style.display='none';$('#eliminar').style.display='none';$('#drawerTitle').textContent='Nueva empresa'}
+  function abrirDrawer(){ $('#drawer').classList.add('open') } function cerrarDrawer(){ $('#drawer').classList.remove('open') }
+  async function abrirEmpresa(rut,boton){return conLoader(boton,async()=>{try{const r=await api('consultarEmpresaExterna',{rut});actual=r.empresa;const e=actual;$('#idEmpresa').value=e.idEmpresa||'';$('#nombre').value=e.nombre||'';$('#rut').value=e.rut||'';$('#urlConexion').value=e.urlConexion||'';$('#estado').value=e.estado||'ACTIVA';$('#drawerTitle').textContent='Gestionar empresa';$('#seguridad').style.display='block';$('#auditoriaSec').style.display='block';$('#eliminar').style.display='inline-flex';actualizarSeguridad(e);abrirDrawer();await cargarAuditoria(e.rut)}catch(e){msg(e.message,'err')}},'Cargando…')}
+  function actualizarSeguridad(e){$('#kEstado').textContent=e.estadoClave||'—';$('#kActivada').textContent=e.instalacionActivada||'NO';$('#kUltimos').textContent=e.claveUltimos4?'••••'+e.claveUltimos4:'Sin clave'}
+  async function cargarAuditoria(rut){try{const r=await api('auditarEmpresaExterna',{rut,limite:20});$('#auditoria').innerHTML=(r.eventos||[]).map(x=>`<div class="audit-item"><strong>${esc(x.accion)}</strong><span>${esc(x.fecha)} · ${esc(x.detalle)}</span></div>`).join('')||'<div class="sub">Sin eventos.</div>'}catch(e){$('#auditoria').innerHTML='<div class="sub">No fue posible cargar auditoría.</div>'}}
+  $('#form').addEventListener('submit',async ev=>{ev.preventDefault();const boton=$('#guardar');await conLoader(boton,async()=>{try{const datos={nombre:$('#nombre').value.trim(),rut:$('#rut').value.trim(),urlConexion:$('#urlConexion').value.trim(),estado:$('#estado').value};const r=await api(actual?'actualizarEmpresaExterna':'registrarEmpresaExterna',datos);msg(actual?'Empresa actualizada.':'Empresa registrada.');if(r.claveInstalacion)mostrarClave(r.claveInstalacion);cerrarDrawer();await cargar()}catch(e){msg(e.message,'err')}},actual?'Guardando…':'Registrando…')})
+  $('#nuevaEmpresa').addEventListener('click',()=>{limpiarForm();abrirDrawer()});$('#cerrarDrawer').addEventListener('click',cerrarDrawer);$('#drawer').addEventListener('click',e=>{if(e.target===$('#drawer'))cerrarDrawer()});
+  $('#toggleUrl').addEventListener('click',()=>{$('#urlConexion').type=$('#urlConexion').type==='password'?'url':'password'});
+  $('#rut').addEventListener('blur',e=>{e.target.value=formatearRut(e.target.value)});
+  $('#eliminar').addEventListener('click',async ev=>{if(!actual||!confirm('¿Eliminar definitivamente esta empresa?'))return;await conLoader(ev.currentTarget,async()=>{try{await api('eliminarEmpresaExterna',{rut:actual.rut});cerrarDrawer();msg('Empresa eliminada.');await cargar()}catch(e){msg(e.message,'err')}},'Eliminando…')});
+  async function accionClave(accion,extra={},boton,texto='Procesando…'){if(!actual)return;return conLoader(boton,async()=>{try{const r=await api(accion,Object.assign({rut:actual.rut},extra));actual=r.empresa||actual;if(r.claveInstalacion)mostrarClave(r.claveInstalacion);actualizarSeguridad(actual);await cargarAuditoria(actual.rut);await cargar();msg('Operación completada.')}catch(e){msg(e.message,'err')}},texto)}
+  $('#generarClave').addEventListener('click',ev=>{if(confirm('Regenerar la clave hará que la próxima activación vuelva a requerir RUT + clave. ¿Continuar?'))accionClave('regenerarClaveInstalacion',{},ev.currentTarget,'Generando…')});
+  $('#bloquearClave').addEventListener('click',ev=>accionClave('cambiarEstadoClaveInstalacion',{estadoClave:'BLOQUEADA'},ev.currentTarget,'Bloqueando…'));$('#reactivarClave').addEventListener('click',ev=>accionClave('cambiarEstadoClaveInstalacion',{estadoClave:'ACTIVA'},ev.currentTarget,'Reactivando…'));$('#revocarClave').addEventListener('click',ev=>{if(confirm('Una clave revocada impedirá nuevas resoluciones hasta generar/reactivar una autorización.'))accionClave('cambiarEstadoClaveInstalacion',{estadoClave:'REVOCADA'},ev.currentTarget,'Revocando…')});$('#reiniciarActivacion').addEventListener('click',ev=>accionClave('reiniciarActivacionInstalacion',{},ev.currentTarget,'Reiniciando…'));
+  function mostrarClave(k){$('#secretClave').textContent=k;$('#modalClave').classList.add('open')}$('#cerrarClave').addEventListener('click',()=>$('#modalClave').classList.remove('open'));$('#copiarClave').addEventListener('click',async ev=>{await conLoader(ev.currentTarget,async()=>{try{await navigator.clipboard.writeText($('#secretClave').textContent);msg('Clave copiada.')}catch(e){msg('Copia manualmente la clave mostrada.','err')}},'Copiando…')})
+  function descargarBase64(nombre,mime,b64){const bin=atob(b64);const arr=new Uint8Array(bin.length);for(let i=0;i<bin.length;i++)arr[i]=bin.charCodeAt(i);const blob=new Blob([arr],{type:mime||'application/pdf'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=nombre||'reporte.pdf';document.body.appendChild(a);a.click();URL.revokeObjectURL(a.href);a.remove()}
+  async function pdfEmpresa(rut,boton){return conLoader(boton,async()=>{try{msg('Generando PDF…');const r=await api('generarReporteEmpresaPdf',{rut});descargarBase64(r.nombreArchivo,r.mimeType,r.base64)}catch(e){msg(e.message,'err')}},'Generando PDF…')}$('#pdfEmpresa').addEventListener('click',ev=>actual&&pdfEmpresa(actual.rut,ev.currentTarget));$('#reporteGeneral').addEventListener('click',async ev=>{await conLoader(ev.currentTarget,async()=>{try{msg('Generando PDF…');const r=await api('generarReporteGeneralPdf');descargarBase64(r.nombreArchivo,r.mimeType,r.base64)}catch(e){msg(e.message,'err')}},'Generando PDF…')})
+  async function toggleEmpresa(rut,boton){const e=empresas.find(x=>normalizarRut(x.rut)===normalizarRut(rut));if(!e)return;return conLoader(boton,async()=>{try{await api('actualizarEmpresaExterna',{nombre:e.nombre,rut:e.rut,urlConexion:e.urlConexion,estado:e.estado==='ACTIVA'?'BLOQUEADA':'ACTIVA'});await cargar();msg('Estado de empresa actualizado.')}catch(err){msg(err.message,'err')}},e.estado==='ACTIVA'?'Bloqueando…':'Activando…')}
 
-    async function enviarSolicitud(accion, datos) {
-      const respuestaHttp = await fetch(URL_APPS_SCRIPT, {
-        method: 'POST',
-        redirect: 'follow',
-        credentials: 'omit',
-        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-        body: JSON.stringify(Object.assign({ accion: accion }, datos || {}))
-      });
-      const texto = await respuestaHttp.text();
-      let respuesta;
-      try {
-        respuesta = JSON.parse(texto);
-      } catch (errorJson) {
-        throw new Error('El Apps Script todavía no tiene publicada la versión CRUD de doPost.');
+
+  function empresaPorRutLocal(rut){return empresas.find(x=>normalizarRut(x.rut)===normalizarRut(rut))||null}
+  function etiquetaRol(rol){return ({'ROL-ADMIN':'Administrador','ROL-GERENCIA':'Gerencia','ROL-OPERADOR':'Operador','ROL-CONDUCTOR':'Conductor','ROL-SYSADMIN':'SYSADMIN'})[String(rol||'').toUpperCase()]||rol||'—'}
+  function empresaPayload(e){return{empresa:{empresaId:e.idEmpresa,empresaRut:e.rut,empresaNombre:e.nombre}}}
+  async function apiEmpresa(accion,datos={}){
+    await asegurarSesion();
+    const e=empresaUsuarios;if(!e)throw new Error('Seleccione una empresa.');
+    const url=String(e.urlConexion||'').replace(/\/+$/,'');
+    if(!/^https:\/\/[^\s]+\/functions\/v1\/flotas-api$/i.test(url))throw new Error('La empresa no tiene una URL flotas-api válida.');
+    const ejecutar=async()=>{
+      // El JWT administrativo central nunca se envía a la URL operacional. Se
+      // solicita una capacidad HMAC de vida corta, ligada a empresa + URL + acción.
+      const autorizacion=await api('emitirAutorizacionCpanelEmpresa',{empresaId:e.idEmpresa,rut:e.rut,urlConexion:url,accionRemota:accion});
+      const capacidad=String(autorizacion.capacidad||'');
+      if(!capacidad)throw new Error('El Directorio no emitió autorización remota para esta operación.');
+      let r;try{r=await fetch(url,{method:'POST',credentials:'omit',headers:{'Content-Type':'application/json','Accept':'application/json'},body:JSON.stringify(Object.assign({accion,cpanelCapability:capacidad},empresaPayload(e),datos))})}catch(error){throw new Error('No fue posible conectar con la flotas-api de '+e.nombre+': '+(error?.message||'error de red'))}
+      const tx=await r.text();let j=null;try{j=tx?JSON.parse(tx):null}catch(_){throw new Error('La flotas-api de la empresa devolvió una respuesta no válida. [HTTP '+r.status+']')}
+      if(!r.ok||!j||j.ok!==true){const codigo=(j&&(j.error||j.code||j.message))||('HTTP_'+r.status);if(String(codigo).includes('ACCION_NO_ENCONTRADA')||String(codigo).includes('AUTENTICACION_REQUERIDA'))throw new Error('Esta empresa todavía usa una flotas-api anterior. Despliegue flotas-api 4.3.62 para habilitar Control de Usuarios.');throw new Error(errMsg(codigo)+' [HTTP '+r.status+']')}
+      $('#usuariosApiEstado').textContent='flotas-api '+(j.version||'OK');
+      $('#usuariosApiEstado').className='badge green';
+      return j.data!==undefined?j.data:j;
+    };
+    try{return await ejecutar()}catch(error){if((String(error.message||'').includes('CAPACIDAD_EXPIRADA')||String(error.message||'').includes('capacidad expirada'))&&sesion?.refresh_token){return await ejecutar()}throw error}
+  }
+  function abrirOverlayUsuarios(){ $('#usuariosOverlay').classList.add('open') }
+  function cerrarOverlayUsuarios(){ $('#usuariosOverlay').classList.remove('open');empresaUsuarios=null;usuariosEmpresa=[];usuarioActual=null;catalogoPermisos=null }
+  async function abrirUsuariosEmpresa(rut,boton){return conLoader(boton,async()=>{const e=empresaPorRutLocal(rut);if(!e)return;empresaUsuarios=e;usuariosEmpresa=[];usuarioActual=null;catalogoPermisos=null;$('#usuariosTitulo').textContent='Usuarios · '+e.nombre;$('#usuariosSubtitulo').textContent=e.rut+' · '+host(e.urlConexion)+' · '+e.idEmpresa;$('#usuariosApiEstado').textContent='Conectando…';$('#usuariosApiEstado').className='badge yellow';abrirOverlayUsuarios();renderEditorVacio();try{await Promise.all([cargarCatalogoPermisos(),cargarUsuariosEmpresa()]);msg('Usuarios cargados desde la base operacional de '+e.nombre+'.')}catch(error){$('#usuariosApiEstado').textContent='API no disponible';$('#usuariosApiEstado').className='badge red';msg(error.message,'err')}},'Usuarios…')}
+  async function cargarCatalogoPermisos(){catalogoPermisos=await apiEmpresa('cpanelCatalogoPermisos');return catalogoPermisos}
+  async function cargarUsuariosEmpresa(){const r=await apiEmpresa('cpanelListarUsuarios',{limite:2000});usuariosEmpresa=r.rows||[];renderUsuarios();if(usuarioActual){const id=usuarioActual.ID||usuarioActual.id;const nuevo=usuariosEmpresa.find(u=>(u.ID||u.id)===id);if(nuevo){usuarioActual=nuevo;renderEditorUsuario(nuevo)}}return r}
+  function usuariosFiltrados(){const q=$('#usuarioBuscar').value.trim().toLowerCase(),rol=$('#usuarioRolFiltro').value,estado=$('#usuarioEstadoFiltro').value;return usuariosEmpresa.filter(u=>{const texto=[u.NOMBRE,u.CORREO,u.TELEFONO,u.ID].join(' ').toLowerCase();return(!q||texto.includes(q))&&(!rol||String(u.ROL_ID_CANONICO||u.ROL_ID||'').toUpperCase()===rol)&&(!estado||String(u.ESTADO||'')===estado)})}
+  function renderUsuarios(){const list=usuariosFiltrados(),activo=String(usuarioActual?.ID||'');$('#usuariosTbody').innerHTML=list.map(u=>{const id=String(u.ID||''),rol=String(u.ROL_ID_CANONICO||u.ROL_ID||''),modo=String(u.MODO_PERMISOS||'ROL');return`<tr class="user-row ${activo===id?'active':''}" data-user-id="${escAttr(id)}"><td><div class="name">${esc(u.NOMBRE||'Sin nombre')}</div><div class="sub">${esc(u.CORREO||'')} · ${esc(id)}</div></td><td><span class="role-badge">${esc(etiquetaRol(rol))}</span></td><td>${badge(modo,modo==='PERSONALIZADO'?'yellow':'blue')}<div class="sub">v${esc(u.VERSION_PERMISOS||'—')}</div></td><td>${badge(u.ESTADO||'—',u.ESTADO==='Activo'?'green':u.ESTADO==='Bloqueado'?'red':'yellow')}</td><td>${esc(u.ULTIMO_ACCESO||'—')}</td></tr>`}).join('');$('#usuariosEmpty').style.display=list.length?'none':'block';document.querySelectorAll('.user-row').forEach(row=>row.addEventListener('click',()=>seleccionarUsuario(row.dataset.userId)))}
+  function seleccionarUsuario(id){const u=usuariosEmpresa.find(x=>String(x.ID||'')===String(id));if(!u)return;usuarioActual=u;renderUsuarios();renderEditorUsuario(u)}
+  function renderEditorVacio(){usuarioActual=null;$('#usuarioEditor').innerHTML='<div class="editor-empty"><div><strong>Seleccione un usuario</strong><div class="small-note" style="margin-top:6px">Puede modificar cuenta, contraseña, perfil y permisos desde este panel central.</div></div></div>';renderUsuarios()}
+  function permisosRol(rol){const arr=catalogoPermisos?.permisosPorRol?.[rol]||[];if(arr.includes('*:*')){const all=[];(catalogoPermisos?.modulos||[]).forEach(m=>(m.acciones||[]).forEach(a=>all.push(a.key)));return all}return arr}
+  function valoresPermisosEditor(){return[...document.querySelectorAll('#permisosGrid input[data-perm]:checked')].map(x=>x.dataset.perm)}
+  function aplicarModoPermisos(){const modo=$('#uModo')?.value||'ROL',rol=$('#uRol')?.value||'ROL-CONDUCTOR',custom=usuarioActual&&String(usuarioActual.MODO_PERMISOS||'ROL')==='PERSONALIZADO'?(usuarioActual.PERMISOS_PERSONALIZADOS||[]):[];const base=modo==='ROL'?permisosRol(rol):custom;const set=new Set(base);document.querySelectorAll('#permisosGrid input[data-perm]').forEach(cb=>{cb.disabled=modo!=='PERSONALIZADO'||rol==='ROL-ADMIN'||rol==='ROL-SYSADMIN';cb.checked=set.has(cb.dataset.perm)||((rol==='ROL-ADMIN')&&modo==='ROL')});const nota=$('#permModoNota');if(nota)nota.textContent=modo==='ROL'?'Se aplican los permisos definidos por el perfil.':'Matriz personalizada: solo se guardan los permisos seleccionados; los permisos técnicos obligatorios los agrega el servidor.'}
+  function renderPermisos(){const grid=$('#permisosGrid');if(!grid)return;const mods=catalogoPermisos?.modulos||[];grid.innerHTML=mods.map(m=>`<div class="perm-card" data-perm-card="${escAttr(m.modulo)}"><h4>${esc(m.modulo.replaceAll('_',' '))}</h4><div class="perm-list">${(m.acciones||[]).map(a=>`<label class="perm-item"><input type="checkbox" data-perm="${escAttr(a.key)}"><span>${esc(a.label)}<small class="perm-key">${esc(a.key)}</small></span></label>`).join('')}</div></div>`).join('');aplicarModoPermisos()}
+  function renderEditorUsuario(u=null,nuevo=false){const rol=String(u?.ROL_ID_CANONICO||u?.ROL_ID||(nuevo?'ROL-CONDUCTOR':'ROL-CONDUCTOR')).toUpperCase(),reservado=rol==='ROL-SYSADMIN';usuarioActual=nuevo?null:u;$('#usuarioEditor').innerHTML=`<div class="status-line"><strong>${nuevo?'Nueva cuenta':esc(u?.NOMBRE||'Usuario')}</strong><span class="badge ${nuevo?'blue':u?.ESTADO==='Activo'?'green':'yellow'}">${nuevo?'NUEVO':esc(u?.ESTADO||'—')}</span>${reservado?'<span class="badge red">SYSADMIN RESERVADO</span>':''}<span class="small-note">${nuevo?'La contraseña inicial es obligatoria.':'La contraseña actual nunca se muestra. Escriba una nueva solo si desea reemplazarla.'}</span></div><form id="usuarioForm"><div class="editor-grid"><label><span>ID</span><input id="uId" readonly value="${escAttr(u?.ID||'Se genera al guardar')}"></label><label><span>Estado</span><select id="uEstado"><option ${u?.ESTADO==='Activo'?'selected':''}>Activo</option><option ${u?.ESTADO==='Inactivo'?'selected':''}>Inactivo</option><option ${u?.ESTADO==='Bloqueado'?'selected':''}>Bloqueado</option></select></label><label><span>Nombre</span><input id="uNombre" required maxlength="180" value="${escAttr(u?.NOMBRE||'')}"></label><label><span>Correo / usuario</span><input id="uCorreo" type="email" required maxlength="220" value="${escAttr(u?.CORREO||'')}"></label><label><span>Teléfono</span><input id="uTelefono" maxlength="80" value="${escAttr(u?.TELEFONO||'')}"></label><label><span>Perfil</span><select id="uRol" ${reservado?'disabled':''}><option value="ROL-ADMIN" ${rol==='ROL-ADMIN'?'selected':''}>Administrador</option><option value="ROL-GERENCIA" ${rol==='ROL-GERENCIA'?'selected':''}>Gerencia</option><option value="ROL-OPERADOR" ${rol==='ROL-OPERADOR'?'selected':''}>Operador</option><option value="ROL-CONDUCTOR" ${rol==='ROL-CONDUCTOR'?'selected':''}>Conductor</option>${reservado?'<option value="ROL-SYSADMIN" selected>SYSADMIN (reservado)</option>':''}</select></label><label class="wide"><span>${nuevo?'Contraseña inicial':'Nueva contraseña (opcional)'}</span><input id="uPassword" type="password" autocomplete="new-password" minlength="8" placeholder="${nuevo?'Mínimo 8 caracteres':'Dejar vacío para conservar la actual'}" ${nuevo?'required':''}></label><label class="wide switchline"><input id="uCerrarSesiones" type="checkbox" checked><span>Cerrar las sesiones activas cuando se cambie la contraseña</span></label></div><div class="actions" style="margin-top:13px"><button class="btn" id="uGuardar" type="submit">${nuevo?'Crear usuario':'Guardar cuenta'}</button>${!nuevo?'<button class="btn secondary" id="uCerrarSesBtn" type="button">Cerrar sesiones</button>':''}${!nuevo&&!reservado?'<button class="btn danger" id="uDesactivar" type="button">Desactivar usuario</button>':''}</div></form><section class="editor-section"><h3>Perfil y permisos</h3><div class="permission-toolbar"><select class="select" id="uModo" ${reservado?'disabled':''}><option value="ROL" ${String(u?.MODO_PERMISOS||'ROL')!=='PERSONALIZADO'?'selected':''}>Permisos del perfil</option><option value="PERSONALIZADO" ${String(u?.MODO_PERMISOS||'ROL')==='PERSONALIZADO'?'selected':''}>Permisos personalizados</option></select><button class="btn secondary sm" id="uPermRol" type="button">Copiar permisos del perfil</button><button class="btn secondary sm" id="uPermVacio" type="button">Vaciar opcionales</button><button class="btn sm" id="uGuardarPermisos" type="button" ${nuevo||reservado?'disabled':''}>Guardar permisos</button><span class="small-note" id="permModoNota"></span></div><input class="input" id="permBuscar" placeholder="Buscar permiso o módulo" style="width:100%;margin-bottom:9px"><div class="permission-grid" id="permisosGrid"></div></section>${!nuevo?'<section class="editor-section danger-zone"><strong>Control de seguridad</strong><div class="small-note" style="margin-top:5px">Desactivar una cuenta realiza eliminación lógica y cierra sus sesiones. El servidor impide eliminar al último Administrador activo.</div></section>':''}`;
+    renderPermisos();
+    $('#uRol')?.addEventListener('change',()=>{if($('#uModo'))$('#uModo').value='ROL';aplicarModoPermisos()});$('#uModo')?.addEventListener('change',aplicarModoPermisos);$('#uPermRol')?.addEventListener('click',()=>{if($('#uModo'))$('#uModo').value='PERSONALIZADO';const set=new Set(permisosRol($('#uRol').value));document.querySelectorAll('#permisosGrid input[data-perm]').forEach(cb=>{cb.disabled=false;cb.checked=set.has(cb.dataset.perm)});aplicarModoPermisos();document.querySelectorAll('#permisosGrid input[data-perm]').forEach(cb=>{if($('#uModo').value==='PERSONALIZADO')cb.checked=set.has(cb.dataset.perm)})});$('#uPermVacio')?.addEventListener('click',()=>{if($('#uModo'))$('#uModo').value='PERSONALIZADO';document.querySelectorAll('#permisosGrid input[data-perm]').forEach(cb=>{cb.disabled=false;cb.checked=false});aplicarModoPermisos();document.querySelectorAll('#permisosGrid input[data-perm]').forEach(cb=>cb.checked=false)});$('#permBuscar')?.addEventListener('input',e=>{const q=e.target.value.toLowerCase();document.querySelectorAll('[data-perm-card]').forEach(card=>card.style.display=!q||card.textContent.toLowerCase().includes(q)?'block':'none')});$('#usuarioForm').addEventListener('submit',guardarCuentaUsuario);$('#uGuardarPermisos')?.addEventListener('click',guardarPermisosUsuario);$('#uCerrarSesBtn')?.addEventListener('click',cerrarSesionesUsuario);$('#uDesactivar')?.addEventListener('click',desactivarUsuario);
+  }
+  async function guardarCuentaUsuario(ev){ev.preventDefault();const nuevo=!usuarioActual,id=usuarioActual?.ID||'',password=$('#uPassword').value;const datos={NOMBRE:$('#uNombre').value.trim(),CORREO:$('#uCorreo').value.trim(),TELEFONO:$('#uTelefono').value.trim(),ROL_ID:$('#uRol').value,ESTADO:$('#uEstado').value,MODO_PERMISOS:$('#uModo').value,PERMISOS_PERSONALIZADOS:valoresPermisosEditor(),CERRAR_SESIONES:$('#uCerrarSesiones').checked?'SI':'NO'};if(password)datos.CONTRASENA=password;if(nuevo&&!password)return msg('Ingrese una contraseña inicial de al menos 8 caracteres.','err');if(password&&password.length<8)return msg('La contraseña debe tener al menos 8 caracteres.','err');const b=$('#uGuardar');await conLoader(b,async()=>{try{let r;if(nuevo)r=await apiEmpresa('cpanelCrearUsuario',{datos});else r=await apiEmpresa('cpanelActualizarUsuario',{identificador:id,datos:Object.assign({USUARIO_ID:id},datos)});const row=r.row||{};if(!nuevo&&String(datos.ROL_ID)!=='ROL-ADMIN'&&String(datos.ROL_ID)!=='ROL-SYSADMIN')await apiEmpresa('cpanelGuardarPermisosUsuario',{identificador:id,datos:{USUARIO_ID:id,MODO_PERMISOS:datos.MODO_PERMISOS,PERMISOS:datos.PERMISOS_PERSONALIZADOS}});await cargarUsuariosEmpresa();const finalId=row.ID||id;const actualizado=usuariosEmpresa.find(x=>String(x.ID)===String(finalId));if(actualizado)seleccionarUsuario(actualizado.ID);msg(nuevo?'Usuario creado correctamente.':'Usuario actualizado correctamente.')}catch(error){msg(error.message,'err')}},nuevo?'Creando…':'Guardando…')}
+  async function guardarPermisosUsuario(){if(!usuarioActual)return;const id=usuarioActual.ID,modo=$('#uModo').value,permisos=valoresPermisosEditor();await conLoader($('#uGuardarPermisos'),async()=>{try{await apiEmpresa('cpanelGuardarPermisosUsuario',{identificador:id,datos:{USUARIO_ID:id,MODO_PERMISOS:modo,PERMISOS:permisos}});await cargarUsuariosEmpresa();const u=usuariosEmpresa.find(x=>x.ID===id);if(u)seleccionarUsuario(id);msg('Permisos actualizados y versionados correctamente.')}catch(error){msg(error.message,'err')}},'Guardando…')}
+  async function cerrarSesionesUsuario(){if(!usuarioActual||!confirm('¿Cerrar todas las sesiones activas de este usuario?'))return;await conLoader($('#uCerrarSesBtn'),async()=>{try{const r=await apiEmpresa('cpanelCerrarSesionesUsuario',{identificador:usuarioActual.ID,datos:{USUARIO_ID:usuarioActual.ID}});msg((r.sesionesCerradas||0)+' sesión(es) cerrada(s).')}catch(error){msg(error.message,'err')}},'Cerrando…')}
+  async function desactivarUsuario(){if(!usuarioActual||!confirm('¿Desactivar este usuario y cerrar sus sesiones?'))return;await conLoader($('#uDesactivar'),async()=>{try{await apiEmpresa('cpanelDesactivarUsuario',{identificador:usuarioActual.ID,datos:{USUARIO_ID:usuarioActual.ID}});await cargarUsuariosEmpresa();renderEditorVacio();msg('Usuario desactivado.')}catch(error){msg(error.message,'err')}},'Desactivando…')}
+  $('#usuariosCerrar').addEventListener('click',cerrarOverlayUsuarios);$('#usuariosOverlay').addEventListener('click',e=>{if(e.target===$('#usuariosOverlay'))cerrarOverlayUsuarios()});$('#usuariosRecargar').addEventListener('click',ev=>conLoader(ev.currentTarget,cargarUsuariosEmpresa,'Actualizando…').catch(e=>msg(e.message,'err')));$('#usuarioNuevo').addEventListener('click',()=>{if(!catalogoPermisos)return msg('Espere que cargue el catálogo de permisos.','err');renderEditorUsuario(null,true)});['usuarioBuscar','usuarioRolFiltro','usuarioEstadoFiltro'].forEach(id=>$('#'+id).addEventListener(id==='usuarioBuscar'?'input':'change',renderUsuarios));
+
+  ['buscar','fEstado','fInstalacion','fClave'].forEach(id=>$('#'+id).addEventListener(id==='buscar'?'input':'change',render));
+  $('#refrescar').addEventListener('click',ev=>cargar(ev.currentTarget));
+  $('#entrarAdmin').addEventListener('click',ev=>conLoader(ev.currentTarget,iniciarSesion,'Entrando…').catch(e=>msg(e.message,'err')));
+  $('#salirAdmin').addEventListener('click',cerrarSesion);
+  $('#adminPassword').addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();conLoader($('#entrarAdmin'),iniciarSesion,'Entrando…').catch(err=>msg(err.message,'err'))}});
+
+  async function iniciar(){
+    $('#adminEmail').value=localStorage.getItem(CLAVE_EMAIL)||'';
+    sesion=cargarSesionLocal();
+    actualizarUiSesion();
+    try{
+      await configuracionAuth();
+      if(sesion?.refresh_token){
+        try{
+          await asegurarSesion();
+          await cargar();
+          msg('Sesión administrativa recuperada automáticamente.');
+        }catch(e){
+          guardarSesion(null);
+          msg('Inicie sesión nuevamente: '+e.message,'err');
+        }
+      }else{
+        msg('Inicie sesión una vez con su usuario de Supabase Auth. La sesión quedará recordada en este equipo.');
       }
-      if (!respuesta || respuesta.ok !== true) {
-        throw new Error(mensajeDeError(respuesta && respuesta.error));
-      }
-      return respuesta;
-    }
+    }catch(e){msg(e.message,'err')}
+  }
 
-    function desvincularConsulta() {
-      estadoPanel.rutConsultado = '';
-      $('#eliminar').disabled = true;
-    }
+  iniciar();
 
-    function limpiarFormulario() {
-      $('#formulario').reset();
-      $('#idEmpresa').value = '';
-      $('#urlConexion').value = '';
-      $('#urlConexion').type = 'password';
-      $('#estado').value = 'ACTIVA';
-      $('#confirmar').checked = false;
-      desvincularConsulta();
-      ocultarMensaje();
-      $('#nombre').focus();
-    }
-
-    $('#limpiar').addEventListener('click', limpiarFormulario);
-    $('#verUrl').addEventListener('click', () => {
-      const campo = $('#urlConexion');
-      campo.type = campo.type === 'password' ? 'url' : 'password';
-    });
-
-    $('#rut').addEventListener('input', evento => {
-      if (
-        estadoPanel.rutConsultado &&
-        normalizarRut(evento.target.value) !== estadoPanel.rutConsultado
-      ) {
-        desvincularConsulta();
-      }
-    });
-
-    $('#rut').addEventListener('blur', evento => {
-      if (evento.target.value && rutValido(evento.target.value)) {
-        evento.target.value = formatearRut(evento.target.value);
-      } else if (evento.target.value) {
-        mostrarMensaje('Ingrese un RUT chileno válido.', 'error');
-      }
-    });
-
-    $('#consultar').addEventListener('click', async () => {
-      ocultarMensaje();
-      const rut = $('#rut').value.trim();
-      if (!rutValido(rut)) {
-        mostrarMensaje('Ingrese un RUT chileno válido antes de consultar.', 'error');
-        $('#rut').focus();
-        return;
-      }
-
-      establecerCarga('consultar', true);
-      try {
-        const respuesta = await enviarSolicitud('consultarEmpresaExterna', { rut: rut });
-        const empresa = respuesta.empresa || {};
-        $('#idEmpresa').value = empresa.idEmpresa || '';
-        $('#nombre').value = empresa.nombre || '';
-        $('#rut').value = empresa.rut || formatearRut(rut);
-        $('#urlConexion').value = empresa.urlConexion || '';
-        $('#estado').value = empresa.estado || 'ACTIVA';
-        $('#confirmar').checked = false;
-        estadoPanel.rutConsultado = normalizarRut(empresa.rut || rut);
-
-        const fechas = [
-          empresa.fechaCreacion ? 'Creada: ' + empresa.fechaCreacion : '',
-          empresa.actualizadoEn ? 'Actualizada: ' + empresa.actualizadoEn : ''
-        ].filter(Boolean).join(' · ');
-        mostrarMensaje('Empresa encontrada. ' + fechas, 'info');
-      } catch (error) {
-        desvincularConsulta();
-        mostrarMensaje(String(error && error.message ? error.message : error), 'error');
-      } finally {
-        establecerCarga('consultar', false);
-      }
-    });
-
-    $('#formulario').addEventListener('submit', async evento => {
-      evento.preventDefault();
-      ocultarMensaje();
-
-      const nombre = $('#nombre').value.trim();
-      const rut = $('#rut').value.trim();
-      const urlConexion = $('#urlConexion').value.trim();
-      const estado = $('#estado').value;
-
-      if (!rutValido(rut)) {
-        mostrarMensaje('Ingrese un RUT chileno válido antes de guardar.', 'error');
-        $('#rut').focus();
-        return;
-      }
-
-      if (!$('#confirmar').checked) {
-        mostrarMensaje('Marque la confirmación de los datos antes de guardar.', 'error');
-        return;
-      }
-
-      const actualizando = estadoPanel.rutConsultado === normalizarRut(rut);
-      establecerCarga('guardar', true);
-      try {
-        const respuesta = await enviarSolicitud(
-          actualizando ? 'actualizarEmpresaExterna' : 'registrarEmpresaExterna',
-          {
-            nombre: nombre,
-            rut: rut,
-            urlConexion: urlConexion,
-            estado: estado
-          }
-        );
-        const empresa = respuesta.empresa || {};
-        mostrarConfirmacion(
-          actualizando ? 'Empresa actualizada' : 'Empresa registrada',
-          (empresa.nombre || nombre) + ' · ' + (empresa.rut || rut) +
-            (actualizando ? ' fue actualizada correctamente.' : ' fue registrada correctamente.') +
-            (empresa.idEmpresa ? ' ID: ' + empresa.idEmpresa : '')
-        );
-        limpiarFormulario();
-      } catch (error) {
-        mostrarMensaje(
-          String(error && error.message ? error.message : error || 'No fue posible enviar la información.'),
-          'error'
-        );
-      } finally {
-        establecerCarga('guardar', false);
-      }
-    });
-
-    $('#eliminar').addEventListener('click', async () => {
-      const rut = $('#rut').value.trim();
-      const nombre = $('#nombre').value.trim() || 'esta empresa';
-      if (!estadoPanel.rutConsultado || normalizarRut(rut) !== estadoPanel.rutConsultado) {
-        mostrarMensaje('Primero consulte el RUT que desea eliminar.', 'error');
-        return;
-      }
-      if (!window.confirm('¿Eliminar definitivamente a ' + nombre + ' (' + rut + ')?')) return;
-
-      ocultarMensaje();
-      establecerCarga('eliminar', true);
-      try {
-        const respuesta = await enviarSolicitud('eliminarEmpresaExterna', { rut: rut });
-        const empresa = respuesta.empresa || {};
-        limpiarFormulario();
-        mostrarConfirmacion(
-          'Empresa eliminada',
-          (empresa.nombre || nombre) + ' · ' + (empresa.rut || rut) + ' fue eliminada de Google Sheets.'
-        );
-      } catch (error) {
-        mostrarMensaje(
-          String(error && error.message ? error.message : error || 'No fue posible eliminar la empresa.'),
-          'error'
-        );
-      } finally {
-        establecerCarga('eliminar', false);
-      }
-    });
-
-    limpiarFormulario();
-  </script>
+</script>
 </body>
 </html>
