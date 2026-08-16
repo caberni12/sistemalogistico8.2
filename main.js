@@ -16,16 +16,29 @@ let CIRCULO = null;
 function restaurarModuloActivo(){
   const data = localStorage.getItem("moduloActivo");
   if(!data) return;
+
   try{
     const {url, titulo} = JSON.parse(data);
+    const permitidos = JSON.parse(sessionStorage.getItem("modulosPermitidos") || "[]");
+    const archivo = (typeof authFileName === "function") ? authFileName(url) : String(url || "").split("?")[0].split("/").pop().toLowerCase();
+
+    // Nunca restaurar un módulo que el usuario actual no tenga autorizado.
+    if(!permitidos.includes(archivo)){
+      localStorage.removeItem("moduloActivo");
+      return;
+    }
+
     const viewer = document.getElementById("viewer");
     const frame = document.getElementById("frame");
     if(viewer && frame){
-      viewer.style.display = "flex";
+      viewer.style.display = "block";
+      viewer.classList.add("abierto");
       frame.src = url;
       if(titulo) document.getElementById("tituloSistema").textContent = titulo;
     }
-  }catch{}
+  }catch{
+    localStorage.removeItem("moduloActivo");
+  }
 }
 
 /***************************************************
@@ -81,7 +94,6 @@ document.addEventListener("DOMContentLoaded", ()=>{
   iniciarProgreso();
 
   // Restaurar módulo inmediatamente
-  restaurarModuloActivo();
 
   // Inicializar IP y reloj sin bloquear UI
   setTimeout(obtenerIP,0);
@@ -93,55 +105,99 @@ document.addEventListener("DOMContentLoaded", ()=>{
 
 async function iniciarSesionRapido(){
   try {
-    let user = sessionStorage.getItem("user");
-    if(user) user = JSON.parse(user);
-    else if(typeof validarSesionGlobal === "function"){
-      user = await validarSesionGlobal();
-      if(!user) return cerrarSesion();
-      sessionStorage.setItem("user", JSON.stringify(user));
-    }
+    // Seguridad: nunca confiar solo en sessionStorage.
+    // Siempre revalidar el token y los permisos actuales en el servidor.
+    if(typeof validarSesionGlobal !== "function") return cerrarSesion();
+
+    const user = await validarSesionGlobal();
+    if(!user) return;
 
     document.getElementById("usuario").textContent = `👤 ${user.nombre} · ${user.rol}`;
-    
-    // Cargar empresa y menú en paralelo
-    const tareas = [];
-    if(typeof cargarEmpresaHeader === "function") tareas.push(cargarEmpresaHeader());
-    tareas.push(cargarMenu(user));
-    Promise.all(tareas).catch(console.error);
 
-  } catch(e){ console.error(e); }
-  finally { finalizarProgreso(); }
+    const tareas = [cargarMenu(user)];
+    if(typeof cargarEmpresaHeader === "function") tareas.push(cargarEmpresaHeader());
+    await Promise.all(tareas);
+
+    // Restaurar únicamente después de conocer los módulos permitidos.
+    restaurarModuloActivo();
+
+  } catch(e){
+    console.error(e);
+    cerrarSesion();
+  } finally {
+    finalizarProgreso();
+  }
 }
 
 /***************************************************
 MENÚ DINÁMICO
 ***************************************************/
 async function cargarMenu(user){
+  const cont = document.getElementById("menuModulos");
+  const permitidos = [];
+
   try{
-    const r = await fetch(`${API}?action=listarModulos`);
+    const token = localStorage.getItem("token") || "";
+    const r = await fetch(
+      `${API}?action=listarModulos&token=${encodeURIComponent(token)}&_=${Date.now()}`,
+      { cache:"no-store" }
+    );
     const res = await r.json();
-    const cont = document.getElementById("menuModulos");
+
+    if(res?.auth === false){
+      cerrarSesion();
+      return permitidos;
+    }
+
     cont.innerHTML = "";
-    if(!Array.isArray(res.data)) return;
+    if(!Array.isArray(res.data)){
+      sessionStorage.setItem("modulosPermitidos", "[]");
+      return permitidos;
+    }
 
     res.data.forEach(m=>{
       const [id,nombre,archivo,icono,permiso,activo] = m;
-      if(activo !== "SI") return;
-      if(user.rol !== "ADMIN" && !user.permisos.includes(permiso)) return;
+      if(String(activo || "").toUpperCase() !== "SI") return;
+
+      const esAdmin = String(user?.rol || "").toUpperCase() === "ADMIN";
+      const permisos = Array.isArray(user?.permisos) ? user.permisos : [];
+      if(!esAdmin && (!permiso || !permisos.includes(permiso))) return;
+
+      const archivoNormalizado = (typeof authFileName === "function")
+        ? authFileName(archivo)
+        : String(archivo || "").split("?")[0].split("/").pop().toLowerCase();
+      permitidos.push(archivoNormalizado);
 
       const item = document.createElement("div");
       item.className = "menu-item";
       item.innerHTML = `${icono || "📦"} ${nombre}`;
-      item.onclick = ()=>{ abrirModulo(archivo,nombre); toggleMenu(); };
+      item.onclick = ()=>{
+        abrirModulo(archivo,nombre);
+        toggleMenu();
+      };
       cont.appendChild(item);
     });
-  }catch(e){ console.error(e); }
+
+    sessionStorage.setItem("modulosPermitidos", JSON.stringify(permitidos));
+    return permitidos;
+  }catch(e){
+    console.error(e);
+    sessionStorage.setItem("modulosPermitidos", "[]");
+    return permitidos;
+  }
 }
 
 /***************************************************
 VISOR DE MÓDULOS
 ***************************************************/
 function abrirModulo(url, titulo){
+  const permitidos = JSON.parse(sessionStorage.getItem("modulosPermitidos") || "[]");
+  const archivo = (typeof authFileName === "function") ? authFileName(url) : String(url || "").split("?")[0].split("/").pop().toLowerCase();
+  if(!permitidos.includes(archivo)){
+    localStorage.removeItem("moduloActivo");
+    return;
+  }
+
   localStorage.setItem("moduloActivo", JSON.stringify({url,titulo}));
   const viewer = document.getElementById("viewer");
   const frame = document.getElementById("frame");
