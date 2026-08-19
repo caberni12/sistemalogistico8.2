@@ -152,7 +152,7 @@ html,body{max-width:100%;overflow-x:hidden}.geo-page,.geo-card,.geo-grid,.geo-tw
 @media(max-width:760px){.geo-checkin-gate{align-items:stretch;flex-direction:column}.geo-checkin-gate .geo-btn{width:100%}.geo-admin-map{height:min(76vh,680px)!important;min-height:520px!important}.geo-check.geo-plan-local{grid-template-columns:26px minmax(0,1fr)}.geo-check-main{grid-column:2}.geo-mini-field{grid-column:2!important;grid-row:auto!important;grid-template-columns:minmax(78px,92px) minmax(0,1fr)}.geo-stage-times{grid-template-columns:1fr!important}}
 
 
-/* E-fleet Web 4.3.78 · R8.2.36 · HOTFIX VISIBILIDAD PLANIFICACION GEO
+/* E-fleet Web 4.3.79 · R8.2.36 · HOTFIX VISIBILIDAD PLANIFICACION GEO
    Evita que Duración / Traslado / Hora objetivo queden recortados u ocultos. */
 .geo-plan-dialog .geo-dialog-body{overflow-y:auto!important;overflow-x:hidden!important}
 .geo-plan-dialog .geo-plan-items{

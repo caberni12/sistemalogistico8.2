@@ -39,7 +39,7 @@
 @media(max-width:1050px){.geo-admin-workspace{grid-template-columns:1fr}.geo-combo-grid{grid-template-columns:1fr 1fr}}@media(max-width:720px){.geo-combo-grid{grid-template-columns:1fr}.geo-map-head{align-items:flex-start;flex-direction:column}.geo-map-card{padding:10px}.geo-map-filter-card{padding:0 10px}.geo-map .mapa-marcador>span{max-width:145px}.geo-map .mapa-marcador>span>small{max-width:130px}.geo-forced-overlay{align-items:flex-end;padding:10px}.geo-forced-card,.geo-modal-box{width:100%;max-height:92vh;border-radius:22px 22px 14px 14px;padding:18px}.geo-forced-card .buttons,.geo-modal-box .buttons{bottom:-18px;margin:16px -18px -18px;padding:12px 18px}.geo-forced-card .buttons .geo-btn,.geo-modal-box .buttons .geo-btn{flex:1 1 44%;min-width:0}}
 
 
-/* E-fleet Web 4.3.78 · R8.2.36 · HOTFIX VISIBILIDAD PLANIFICACION GEO
+/* E-fleet Web 4.3.79 · R8.2.36 · HOTFIX VISIBILIDAD PLANIFICACION GEO
    Evita que Duración / Traslado / Hora objetivo queden recortados u ocultos. */
 .geo-plan-dialog .geo-dialog-body{overflow-y:auto!important;overflow-x:hidden!important}
 .geo-plan-dialog .geo-plan-items{

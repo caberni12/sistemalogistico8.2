@@ -1,0 +1,8 @@
+E-fleet Web responsive 4.3.79 · R8.2.37
+
+Cambios principales:
+- Supervisor GEO reconocido por ROL_ID_CANONICO en Check-in: solo se muestra Escanear QR.
+- La lista de inspección permanece cerrada hasta validar el QR del vehículo asignado; token 15 minutos.
+- Corregido módulo Alertas: eliminado el uso de state.user inexistente; usa currentUser y control de propiedad/rol.
+- Nueva paleta azul clara: fondos blanco/celeste, azul brillante para CTA y colores semánticos reservados a estados.
+- Service Worker y bundle físicos nuevos para evitar caché de R8.2.36.
