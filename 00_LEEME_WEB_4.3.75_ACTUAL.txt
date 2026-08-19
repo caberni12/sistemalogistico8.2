@@ -1,0 +1,11 @@
+E-fleet Management System · Web 4.3.75
+R8.2.33 · NOTIFICACIONES LEÍDAS / GEO LOCAL / CACHE NUEVO
+
+- Notificaciones personales: Operador, Conductor y Supervisor GEO pueden marcar como leídas.
+- Alertas personales: se usa ALERTAS:MARCAR_LEIDA separado de ALERTAS:CERRAR.
+- Los perfiles operacionales no validan/cierra alertas ajenas al marcar lectura.
+- Geo Local recibe los eventos persistentes generados por flotas-api 4.3.81.
+- Service Worker usa cache efleet-static-4.3.75-r833-notices-geo-icon y elimina cachés E-fleet/SGF anteriores.
+- Se conservan QR 15 minutos, Supervisor como conductor operativo y demás correcciones R8.2.32.
+
+Requiere flotas-api 4.3.81. Sin SQL nuevo en R8.2.33.
