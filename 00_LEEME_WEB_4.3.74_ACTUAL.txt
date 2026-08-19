@@ -1,0 +1,9 @@
+E-fleet Management System · Web 4.3.74
+R8.2.32 · Supervisor como perfil conductor operativo para Check-in
+
+- Conductores: selector rápido admite ROL-CONDUCTOR y ROL-SUPERVISOR-GEO.
+- Supervisor GEO vinculado a ficha de conductor recibe su vehículo asignado.
+- Check-in del Supervisor exige QR físico del vehículo asignado antes de mostrar la lista.
+- Autorización QR: 15 minutos.
+- Supervisor mantiene sus funciones GEO Local y utiliza alcance propio en flujos operativos.
+- Requiere flotas-api 4.3.80 y ejecutar 12_SQL_SUPERVISOR_CONDUCTOR_CHECKIN_R8_2_32.sql sobre bases existentes.

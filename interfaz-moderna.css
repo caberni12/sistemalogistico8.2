@@ -798,7 +798,7 @@ body.birthday-day :where(.topbar,.section-heading,.heading){box-shadow:inset 0 -
 
 
 /* ================================================================
-   E-FLEET 4.3.73 · IDENTIDAD MONOCROMÁTICA NEGRO / BLANCO
+   E-FLEET 4.3.74 · IDENTIDAD MONOCROMÁTICA NEGRO / BLANCO
    ================================================================ */
 html:not(.tema-oscuro-inicial) body:not(.dark):not(.oscuro){
   --ui-primary:#000!important;--ui-primary-strong:#111!important;--ui-primary-soft:#f2f2f2!important;
