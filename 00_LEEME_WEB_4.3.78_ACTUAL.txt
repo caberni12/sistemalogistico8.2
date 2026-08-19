@@ -1,0 +1,11 @@
+E-fleet Web responsive 4.3.78
+R8.2.36 · HOTFIX VISIBILIDAD GEO PLANIFICADOR
+
+- Corrige tarjetas de Locales visitados que recortaban Duración, Traslado y Hora objetivo.
+- Cada fila usa altura automática y nunca oculta sus controles.
+- Se elimina el overflow interno que cortaba inputs en determinados zoom/resoluciones.
+- La lista de planificación usa un solo scroll: el cuerpo del diálogo, evitando scroll anidado.
+- Responsive validado para escritorio, tablet y móvil.
+- Conserva GPS tiempo real limpio R8.2.35 y la paleta operacional R8.2.34.
+- Nuevo asset físico: geo-local.4371.css.
+- Service Worker: efleet-static-4.3.78-r836-geo-plan-visible.
