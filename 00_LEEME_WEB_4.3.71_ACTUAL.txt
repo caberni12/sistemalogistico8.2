@@ -1,4 +1,4 @@
-E-fleet Management System · Web responsive 4.3.72 · R8.2.27
+E-fleet Management System · Web responsive 4.3.73 · R8.2.27
 
 MANTENCIONES PREVENTIVAS
 - Vehículos solicita KM actual y próxima mantención (KM).

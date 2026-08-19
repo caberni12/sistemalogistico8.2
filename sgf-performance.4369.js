@@ -1,6 +1,6 @@
 (()=>{
   'use strict';
-  const VERSION='4.3.72';
+  const VERSION='4.3.73';
   const STATIC_MODULES=[
     'panel-principal.html','rutas.html','operaciones.html','checkin-vehicular.html','vehiculos.html','conductores.html',
     'documentos.html','combustible.html','mantenciones.html','notificaciones.html','alertas.html','ubicacion-tiempo-real.html'
@@ -97,7 +97,7 @@
     return {version:VERSION,serviceWorker:stats.serviceWorker,requests:stats.requests,promedioMs:Math.round(avg*10)/10,prefetchRuns:stats.prefetchRuns,last:[...stats.last]};
   }
   preconnect();registrarSW();
-  if(/(?:^|\/)index\.html$/.test(location.pathname)||location.pathname.endsWith('/'))link('prefetch','main.html?v=4.3.72','document');
+  if(/(?:^|\/)index\.html$/.test(location.pathname)||location.pathname.endsWith('/'))link('prefetch','main.html?v=4.3.73','document');
   idle(prefetchEstatico,1000);
   // El bundle puede instalar ConexionFlotas después de este archivo (Blob loader). Reintento corto y no bloqueante.
   let intentos=0;const timer=setInterval(()=>{intentos++;if(instrumentarApi()){clearInterval(timer);programarPrecarga();}else if(intentos>30)clearInterval(timer);},100);

@@ -1,0 +1,11 @@
+E-fleet Management System · Web responsive 4.3.73 · R8.2.31
+
+CAMBIO PRINCIPAL
+- Conductores: búsqueda rápida de cuenta ampliada a usuarios activos Conductor y Supervisor.
+- Supervisor usa ROL-SUPERVISOR-GEO.
+- El selector se ordena por correo y muestra correo + nombre + rol.
+- Al seleccionar una cuenta se autocompletan Nombre, Correo y Teléfono.
+- Se mantiene bloqueo de asociación duplicada de una cuenta con otro conductor.
+
+CACHE
+- Cache E-fleet renovado a 4.3.73 para evitar conservar el formulario anterior.
