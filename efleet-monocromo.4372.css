@@ -1,0 +1,162 @@
+/* E-fleet R8.2.27 · capa final monocromática negro/blanco. */
+:root{
+  --primary:#000000!important;--primary-dark:#111111!important;--accent:#000000!important;
+  --success:#000000!important;--success-dark:#111111!important;--active-green:#000000!important;
+  --active-green-soft:#f2f2f2!important;--geo-primary:#000000!important;--geo-primary-2:#111111!important;
+  --geo-ok:#000000!important;--menu:#000000!important;--menu-2:#111111!important;
+}
+.btn.primary,.boton-principal,.button-primary,.geo-btn.primary,.geo-primary,.action-primary,
+button[data-primary],.theme-preview-button{background:#000!important;color:#fff!important;border-color:#000!important;}
+.btn.primary:hover,.boton-principal:hover,.button-primary:hover,.geo-btn.primary:hover{background:#111!important;color:#fff!important;}
+.tracking-notice.active,.document-auto-approved,.efleet-driver-autofill{border-color:#000!important;background:#f4f4f4!important;color:#000!important;}
+.tracking-notice.active i,.efleet-driver-autofill i{background:#000!important;color:#fff!important;border-color:#000!important;}
+.status.active,.badge.success,.chip.success,.state.success,.geo-status.ok{background:#000!important;color:#fff!important;border-color:#000!important;}
+a,.link-primary{color:#000;}
+body.dark{background:#000!important;color:#fff!important;}
+body.dark .card,body.dark .modal-card,body.dark .panel,body.dark .form-grid,body.dark .tracking-notice,
+body.dark .document-review-panel,body.dark .info-item,body.dark .table-wrap,body.dark .geo-card,
+html.tema-oscuro-inicial body .card{background:#0b0b0b!important;color:#fff!important;border-color:#333!important;}
+body.dark input,body.dark select,body.dark textarea{background:#0b0b0b!important;color:#fff!important;border-color:#444!important;}
+body.dark .btn.primary,body.dark .boton-principal,body.dark .button-primary,body.dark .geo-btn.primary{background:#111!important;color:#fff!important;border:1px solid #555!important;}
+body.dark .tracking-notice.active,body.dark .efleet-driver-autofill{background:#111!important;color:#fff!important;border-color:#666!important;}
+body.dark .tracking-notice.active i,body.dark .efleet-driver-autofill i{background:#fff!important;color:#000!important;border-color:#fff!important;}
+body.dark a,body.dark .link-primary{color:#fff;}
+/* WhatsApp y estados positivos también siguen la identidad monocromática. */
+.btn.whatsapp,.whatsapp-button,[data-whatsapp]{background:#000!important;color:#fff!important;border-color:#000!important;}
+
+
+/* E-fleet R8.2.28 · HOTFIX UI: marca visible, hamburguesa con contraste, modales Geo sin botones ocultos. */
+.efleet-shell-mark{
+  width:42px!important;height:42px!important;flex:0 0 42px!important;object-fit:contain!important;
+  border-radius:11px!important;background:#fff!important;box-shadow:0 0 0 1px rgba(0,0,0,.18)!important;
+}
+html:not(.tema-oscuro-inicial) body:not(.dark):not(.oscuro) .barra-modular{
+  background:#fff!important;color:#000!important;border-bottom-color:#d9d9d9!important;
+}
+html:not(.tema-oscuro-inicial) body:not(.dark):not(.oscuro) .barra-modular .titulo-modular,
+html:not(.tema-oscuro-inicial) body:not(.dark):not(.oscuro) .barra-modular .titulo-modular h1,
+html:not(.tema-oscuro-inicial) body:not(.dark):not(.oscuro) .barra-modular .titulo-modular span{color:#000!important;}
+html:not(.tema-oscuro-inicial) body:not(.dark):not(.oscuro) .abrir-menu,
+html:not(.tema-oscuro-inicial) body:not(.dark):not(.oscuro) .barra-modular .boton-icono{
+  background:#fff!important;color:#000!important;border:1px solid #cfcfcf!important;text-shadow:none!important;
+}
+body.dark .barra-modular,body.oscuro .barra-modular,html.tema-oscuro-inicial body:not(.dark):not(.oscuro) .barra-modular{
+  background:#000!important;color:#fff!important;border-bottom-color:#2c2c2c!important;
+}
+body.dark .barra-modular .titulo-modular h1,body.dark .barra-modular .titulo-modular span,
+body.oscuro .barra-modular .titulo-modular h1,body.oscuro .barra-modular .titulo-modular span,
+html.tema-oscuro-inicial body:not(.dark):not(.oscuro) .barra-modular .titulo-modular h1,
+html.tema-oscuro-inicial body:not(.dark):not(.oscuro) .barra-modular .titulo-modular span{color:#fff!important;}
+body.dark .abrir-menu,body.dark .barra-modular .boton-icono,
+body.oscuro .abrir-menu,body.oscuro .barra-modular .boton-icono,
+html.tema-oscuro-inicial body:not(.dark):not(.oscuro) .abrir-menu,
+html.tema-oscuro-inicial body:not(.dark):not(.oscuro) .barra-modular .boton-icono{
+  background:#090909!important;color:#fff!important;border:1px solid #444!important;text-shadow:none!important;
+}
+.estado-modular.listo i{background:#000!important;box-shadow:0 0 0 4px rgba(0,0,0,.12)!important;}
+body.dark .estado-modular.listo i,body.oscuro .estado-modular.listo i{background:#fff!important;box-shadow:0 0 0 4px rgba(255,255,255,.14)!important;}
+.marca-menu img,.brand img,.login-brand img,#authCompanyLogo,#loginCompanyLogo,#sidebarCompanyLogo{
+  object-fit:contain!important;background:#fff!important;
+}
+
+/* Geo: marca E visible también al abrir módulos independientes de forma directa. */
+.geo-hero-brand{display:flex;align-items:center;gap:15px;min-width:0}.geo-efleet-mark{width:56px;height:56px;flex:0 0 56px;object-fit:contain;border-radius:14px;background:#fff;box-shadow:0 0 0 1px rgba(255,255,255,.26),0 8px 20px rgba(0,0,0,.18)}
+
+/* Geo: el contenedor completo nunca scrollea por encima del footer; solo el cuerpo. */
+.geo-forced-overlay,.geo-modal{overflow:hidden!important;overscroll-behavior:none!important;}
+.geo-forced-card,.geo-modal-box{
+  display:flex!important;flex-direction:column!important;width:min(760px,100%)!important;
+  max-height:calc(100dvh - 36px)!important;overflow:hidden!important;padding:0!important;
+}
+.geo-forced-card>.geo-dialog-head,.geo-modal-box>.geo-dialog-head{flex:0 0 auto!important;}
+.geo-forced-card>.geo-dialog-body,.geo-modal-box>.geo-dialog-body{
+  flex:1 1 auto!important;min-height:0!important;max-height:none!important;overflow-y:auto!important;overflow-x:hidden!important;
+  overscroll-behavior:contain!important;scrollbar-gutter:stable!important;
+}
+.geo-forced-card>.buttons,.geo-modal-box>.buttons{
+  flex:0 0 auto!important;position:relative!important;inset:auto!important;margin:0!important;
+  display:flex!important;visibility:visible!important;opacity:1!important;z-index:5!important;
+  padding:14px 24px calc(14px + env(safe-area-inset-bottom))!important;background:#fff!important;
+  border-top:1px solid #dfe4e8!important;box-shadow:0 -8px 22px rgba(0,0,0,.07)!important;
+}
+.geo-forced-card>.buttons .geo-btn,.geo-modal-box>.buttons .geo-btn{display:inline-flex!important;align-items:center!important;justify-content:center!important;min-height:46px!important;}
+
+/* Los toast del Geo deben quedar por encima del overlay modal, nunca detrás de él. */
+.geo-toast{
+  position:fixed!important;top:max(18px,env(safe-area-inset-top))!important;right:max(18px,env(safe-area-inset-right))!important;
+  bottom:auto!important;z-index:2147483647!important;background:#000!important;color:#fff!important;border:1px solid #555!important;
+}
+
+@media(max-width:720px){
+  .efleet-shell-mark{width:36px!important;height:36px!important;flex-basis:36px!important}.titulo-modular{gap:7px!important}
+  .geo-hero-brand{align-items:flex-start}.geo-efleet-mark{width:48px;height:48px;flex-basis:48px}
+  .geo-forced-card,.geo-modal-box{max-height:calc(100dvh - 16px)!important;}
+  .geo-forced-card>.buttons,.geo-modal-box>.buttons{padding:11px 17px calc(11px + env(safe-area-inset-bottom))!important;}
+  .geo-toast{left:10px!important;right:10px!important;max-width:none!important;}
+}
+
+/* R8.2.28 · cierre visual Geo y contraste total */
+.geo-dialog-icon{background:#000!important;color:#fff!important;border:1px solid #000!important;box-shadow:none!important}
+.geo-dialog-head{background:#fff!important;color:#000!important;border-bottom-color:#dedede!important}
+.geo-dialog-head .geo-eyebrow,.geo-dialog-head h2{color:#000!important}
+.geo-dialog-head p{color:#555!important}
+.geo-dialog-alert:not(.warn){background:#f5f5f5!important;border-color:#d7d7d7!important;color:#111!important}
+.geo-mobility{background:#f7f7f7!important;border-color:#d7d7d7!important}
+.geo-mobility span,.geo-mobility b{color:#111!important}
+.geo-checkin.approved{background:#000!important;color:#fff!important;border-color:#000!important}
+.geo-checkin.pending{background:#fff7ed!important;color:#9a3412!important;border-color:#fed7aa!important}
+.geo-section-icon{background:#f2f2f2!important;color:#000!important;border-color:#d7d7d7!important}
+.geo-badge.info{background:#f3f3f3!important;color:#111!important;border-color:#d8d8d8!important}
+
+/* El pie de cualquier modal Geo es una zona independiente y siempre visible. */
+.geo-forced-card,.geo-modal-box{height:auto!important;min-height:0!important}
+.geo-forced-card>.geo-dialog-body,.geo-modal-box>.geo-dialog-body{padding-bottom:22px!important}
+.geo-forced-card>.buttons,.geo-modal-box>.buttons{min-height:74px!important;align-items:center!important;justify-content:flex-end!important}
+
+/* Tema oscuro Geo completo: negro y blanco, manteniendo naranja/rojo sólo para advertencia/error. */
+body.dark .geo-forced-card,body.dark .geo-modal-box,
+body.oscuro .geo-forced-card,body.oscuro .geo-modal-box,
+html.tema-oscuro-inicial body .geo-forced-card,html.tema-oscuro-inicial body .geo-modal-box{background:#080808!important;color:#fff!important;border-color:#333!important}
+body.dark .geo-dialog-head,body.oscuro .geo-dialog-head,html.tema-oscuro-inicial body .geo-dialog-head{background:#050505!important;border-bottom-color:#333!important}
+body.dark .geo-dialog-head .geo-eyebrow,body.dark .geo-dialog-head h2,body.oscuro .geo-dialog-head .geo-eyebrow,body.oscuro .geo-dialog-head h2,html.tema-oscuro-inicial body .geo-dialog-head .geo-eyebrow,html.tema-oscuro-inicial body .geo-dialog-head h2{color:#fff!important}
+body.dark .geo-dialog-head p,body.oscuro .geo-dialog-head p,html.tema-oscuro-inicial body .geo-dialog-head p{color:#cfcfcf!important}
+body.dark .geo-dialog-icon,body.oscuro .geo-dialog-icon,html.tema-oscuro-inicial body .geo-dialog-icon{background:#fff!important;color:#000!important;border-color:#fff!important}
+body.dark .geo-forced-card>.buttons,body.dark .geo-modal-box>.buttons,body.oscuro .geo-forced-card>.buttons,body.oscuro .geo-modal-box>.buttons,html.tema-oscuro-inicial body .geo-forced-card>.buttons,html.tema-oscuro-inicial body .geo-modal-box>.buttons{background:#050505!important;border-top-color:#333!important;box-shadow:0 -8px 22px rgba(255,255,255,.035)!important}
+body.dark .geo-dialog-alert:not(.warn),body.oscuro .geo-dialog-alert:not(.warn),html.tema-oscuro-inicial body .geo-dialog-alert:not(.warn){background:#111!important;border-color:#3b3b3b!important;color:#fff!important}
+body.dark .geo-mobility,body.oscuro .geo-mobility,html.tema-oscuro-inicial body .geo-mobility{background:#111!important;border-color:#333!important}
+body.dark .geo-mobility span,body.dark .geo-mobility b,body.oscuro .geo-mobility span,body.oscuro .geo-mobility b,html.tema-oscuro-inicial body .geo-mobility span,html.tema-oscuro-inicial body .geo-mobility b{color:#fff!important}
+body.dark .geo-field span,body.oscuro .geo-field span,html.tema-oscuro-inicial body .geo-field span{color:#e5e5e5!important}
+body.dark .geo-forced-overlay input,body.dark .geo-forced-overlay textarea,body.dark .geo-forced-overlay select,
+body.oscuro .geo-forced-overlay input,body.oscuro .geo-forced-overlay textarea,body.oscuro .geo-forced-overlay select,
+html.tema-oscuro-inicial body .geo-forced-overlay input,html.tema-oscuro-inicial body .geo-forced-overlay textarea,html.tema-oscuro-inicial body .geo-forced-overlay select{background-color:#0a0a0a!important;color:#fff!important;border-color:#444!important}
+
+/* El símbolo de menú nunca hereda color blanco en tema claro. */
+html:not(.tema-oscuro-inicial) body:not(.dark):not(.oscuro) #abrirMenu{color:#000!important;-webkit-text-fill-color:#000!important;font-weight:900!important}
+html:not(.tema-oscuro-inicial) body:not(.dark):not(.oscuro) #abrirMenu *{color:#000!important;stroke:#000!important;fill:#000!important}
+
+/* R8.2.28 · menú hamburguesa: tema claro = fondo blanco/letra negra; oscuro = negro/blanco. */
+html:not(.tema-oscuro-inicial) body:not(.dark):not(.oscuro) .menu-lateral{background:#fff!important;color:#000!important;border-right:1px solid #d8d8d8!important;box-shadow:18px 0 45px rgba(0,0,0,.12)!important}
+html:not(.tema-oscuro-inicial) body:not(.dark):not(.oscuro) .marca-menu{border-bottom-color:#dedede!important}
+html:not(.tema-oscuro-inicial) body:not(.dark):not(.oscuro) .marca-menu strong,
+html:not(.tema-oscuro-inicial) body:not(.dark):not(.oscuro) .marca-menu span,
+html:not(.tema-oscuro-inicial) body:not(.dark):not(.oscuro) .etiqueta-menu,
+html:not(.tema-oscuro-inicial) body:not(.dark):not(.oscuro) .boton-modulo,
+html:not(.tema-oscuro-inicial) body:not(.dark):not(.oscuro) .usuario-menu b,
+html:not(.tema-oscuro-inicial) body:not(.dark):not(.oscuro) .usuario-menu small,
+html:not(.tema-oscuro-inicial) body:not(.dark):not(.oscuro) .boton-menu-secundario,
+html:not(.tema-oscuro-inicial) body:not(.dark):not(.oscuro) .preferencias-rapidas-menu summary b,
+html:not(.tema-oscuro-inicial) body:not(.dark):not(.oscuro) .preferencias-rapidas-menu summary small,
+html:not(.tema-oscuro-inicial) body:not(.dark):not(.oscuro) .modo-auto-oficina-menu b,
+html:not(.tema-oscuro-inicial) body:not(.dark):not(.oscuro) .modo-auto-oficina-menu small{color:#000!important}
+html:not(.tema-oscuro-inicial) body:not(.dark):not(.oscuro) .boton-modulo i{background:#f0f0f0!important;color:#000!important}
+html:not(.tema-oscuro-inicial) body:not(.dark):not(.oscuro) .boton-modulo:hover{background:#f2f2f2!important;color:#000!important}
+html:not(.tema-oscuro-inicial) body:not(.dark):not(.oscuro) .boton-modulo.activo{background:#000!important;color:#fff!important}
+html:not(.tema-oscuro-inicial) body:not(.dark):not(.oscuro) .boton-modulo.activo i{background:#fff!important;color:#000!important}
+html:not(.tema-oscuro-inicial) body:not(.dark):not(.oscuro) .cerrar-menu{background:#fff!important;color:#000!important;border-color:#d0d0d0!important}
+html:not(.tema-oscuro-inicial) body:not(.dark):not(.oscuro) .pie-menu{background:#fafafa!important;border-top-color:#dedede!important;color:#000!important}
+html:not(.tema-oscuro-inicial) body:not(.dark):not(.oscuro) .preferencias-rapidas-menu{background:#fff!important;border-color:#dedede!important}
+html:not(.tema-oscuro-inicial) body:not(.dark):not(.oscuro) .preferencias-rapidas-cuerpo,
+html:not(.tema-oscuro-inicial) body:not(.dark):not(.oscuro) .modo-auto-oficina-menu{border-color:#e6e6e6!important}
+html:not(.tema-oscuro-inicial) body:not(.dark):not(.oscuro) .preferencias-rapidas-menu summary>i{background:#f0f0f0!important;color:#000!important}
+html:not(.tema-oscuro-inicial) body:not(.dark):not(.oscuro) .cerrar-sesion{background:#fff1f1!important;color:#a11!important}
+body.dark .menu-lateral,body.oscuro .menu-lateral,html.tema-oscuro-inicial body .menu-lateral{background:#000!important;color:#fff!important}

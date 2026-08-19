@@ -1,0 +1,19 @@
+E-fleet Management System · Web responsive 4.3.72 · R8.2.27
+
+MANTENCIONES PREVENTIVAS
+- Vehículos solicita KM actual y próxima mantención (KM).
+- En alta nueva, el objetivo se propone automáticamente a +10.000 km y sigue siendo editable.
+- Tabla de Vehículos muestra KM actual, objetivo y KM restantes con estado preventivo/crítico.
+- Mantenciones incorpora KM objetivo, KM realizado y siguiente objetivo.
+- Historial visual en tarjetas por vehículo con fecha, taller, costo, KM y observaciones.
+- Combustible y Check-in precargan el odómetro vigente cuando existe.
+- Reportes muestra KPI de combustible, mantenciones, rendimiento y gasto operativo por vehículo.
+- NEXO IA consume las prioridades preventivas calculadas por flotas-api.
+
+Compatible con flotas-api 4.3.77 y SQL R8.2.27.
+
+R8.2.27:
+- Conductores: selector por correo de usuario ROL-CONDUCTOR activo; autocarga Nombre, Correo y Teléfono.
+- Campos que siguen siendo propios del conductor: RUT, clase de licencia y vencimiento. Estado operacional automático.
+- Auditoría visual completa: verdes/teales hardcodeados neutralizados a negro/blanco/grises.
+- Capa final efleet-monocromo.4372.css y nuevos assets físicos 4369/4362 para evitar reutilizar caché anterior.
