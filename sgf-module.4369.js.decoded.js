@@ -3,7 +3,7 @@
  * Conexión rápida a Base de Datos central.
  */
 window.CONFIGURACION_FLOTAS = Object.freeze({
-  VERSION: '4.3.75',
+  VERSION: '4.3.76',
   GPS_AUTOMATICO_OBLIGATORIO: true,
   MODO: 'produccion',
   PRODUCCION_SEGURA: true,
@@ -1227,7 +1227,7 @@ window.CONFIGURACION_FLOTAS = Object.freeze({
           ESTADO:'Activo', TELEFONO:payload.telefono || '', ULTIMO_ACCESO:'', CREADO_EN:iso(), ACTUALIZADO_EN:iso(), ELIMINADO:'NO'
         };
         localDb.users.push(user);
-        if(payload.nombreEmpresa){localDb.companies.push({ID:id('EMP'),RUT:payload.rutEmpresa||'',RAZON_SOCIAL:payload.nombreEmpresa,NOMBRE_FANTASIA:payload.nombreEmpresa,TELEFONO_PRINCIPAL:payload.telefonoEmpresa||payload.telefono||'',CORREO:payload.correo,PAIS:'Chile',ZONA_HORARIA:'America/Santiago',MONEDA:'CLP',UNIDAD_DISTANCIA:'km',COLOR_PRINCIPAL:'#000000',COLOR_SECUNDARIO:'#000000',COLOR_ACENTO:'#3578E5',COLOR_FONDO:'#F3F7FA',COLOR_SUPERFICIE:'#FFFFFF',COLOR_TEXTO:'#173047',COLOR_TEXTO_SECUNDARIO:'#65798B',COLOR_BORDE:'#DCE6EC',COLOR_MENU:'#071725',COLOR_MENU_SECUNDARIO:'#0D2638',COLOR_EXITO:'#000000',COLOR_ADVERTENCIA:'#D89216',COLOR_PELIGRO:'#DC4D60',COLOR_FONDO_OSCURO:'#071725',COLOR_SUPERFICIE_OSCURO:'#0D2638',COLOR_TEXTO_OSCURO:'#E9F1F7',COLOR_TEXTO_SECUNDARIO_OSCURO:'#9EB0BF',COLOR_BORDE_OSCURO:'#214359',TEMA_PREDETERMINADO:'Sistema',ESTADO:'Activo',CREADO_EN:iso(),ACTUALIZADO_EN:iso(),ELIMINADO:'NO'});}
+        if(payload.nombreEmpresa){localDb.companies.push({ID:id('EMP'),RUT:payload.rutEmpresa||'',RAZON_SOCIAL:payload.nombreEmpresa,NOMBRE_FANTASIA:payload.nombreEmpresa,TELEFONO_PRINCIPAL:payload.telefonoEmpresa||payload.telefono||'',CORREO:payload.correo,PAIS:'Chile',ZONA_HORARIA:'America/Santiago',MONEDA:'CLP',UNIDAD_DISTANCIA:'km',COLOR_PRINCIPAL:'#0B1F33',COLOR_SECUNDARIO:'#102A43',COLOR_ACENTO:'#2563EB',COLOR_FONDO:'#F4F7FB',COLOR_SUPERFICIE:'#FFFFFF',COLOR_TEXTO:'#142033',COLOR_TEXTO_SECUNDARIO:'#64748B',COLOR_BORDE:'#D8E1EA',COLOR_MENU:'#0B1F33',COLOR_MENU_SECUNDARIO:'#102A43',COLOR_EXITO:'#047857',COLOR_ADVERTENCIA:'#F59E0B',COLOR_PELIGRO:'#DC2626',COLOR_FONDO_OSCURO:'#06111F',COLOR_SUPERFICIE_OSCURO:'#0D1B2A',COLOR_TEXTO_OSCURO:'#F8FAFC',COLOR_TEXTO_SECUNDARIO_OSCURO:'#B7C4D1',COLOR_BORDE_OSCURO:'#27415B',TEMA_PREDETERMINADO:'Sistema',ESTADO:'Activo',CREADO_EN:iso(),ACTUALIZADO_EN:iso(),ELIMINADO:'NO'});}
         audit(user,'INSTALACION_INICIAL','SEGURIDAD','Preconfiguración automática y administrador inicial creados',user.ID); saveLocal();
         return { initialized:true, user:publicUser(user), companyConfigured:Boolean(payload.nombreEmpresa) };
       }
@@ -8165,8 +8165,8 @@ module.exports = QRCode;
         <input id="removeLogoValue" type="hidden" value="NO">
         <button class="btn soft full" data-remove-company-logo type="button">Quitar logotipo actual</button>
         <div class="brand-colors">
-          <label class="field"><span>Color principal</span><input name="COLOR_PRINCIPAL" type="color" value="${companyValue(company,'COLOR_PRINCIPAL','#000000')}"></label>
-          <label class="field"><span>Color secundario</span><input name="COLOR_SECUNDARIO" type="color" value="${companyValue(company,'COLOR_SECUNDARIO','#000000')}"></label>
+          <label class="field"><span>Color principal</span><input name="COLOR_PRINCIPAL" type="color" value="${companyValue(company,'COLOR_PRINCIPAL','#0B1F33')}"></label>
+          <label class="field"><span>Color secundario</span><input name="COLOR_SECUNDARIO" type="color" value="${companyValue(company,'COLOR_SECUNDARIO','#102A43')}"></label>
         </div>
       </article>
       <div class="company-form-column">

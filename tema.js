@@ -15,16 +15,16 @@
     modo:'TEMA_PREDETERMINADO'
   });
   const PREDETERMINADOS=Object.freeze({
-    COLOR_PRINCIPAL:'#000000',COLOR_SECUNDARIO:'#111111',COLOR_ACENTO:'#000000',
-    COLOR_FONDO:'#FFFFFF',COLOR_SUPERFICIE:'#FFFFFF',COLOR_TEXTO:'#000000',COLOR_TEXTO_SECUNDARIO:'#444444',COLOR_BORDE:'#D9D9D9',
-    COLOR_MENU:'#000000',COLOR_MENU_SECUNDARIO:'#111111',COLOR_EXITO:'#111111',COLOR_ADVERTENCIA:'#B7791F',COLOR_PELIGRO:'#C62828',
-    COLOR_FONDO_OSCURO:'#000000',COLOR_SUPERFICIE_OSCURO:'#0B0B0B',COLOR_TEXTO_OSCURO:'#FFFFFF',COLOR_TEXTO_SECUNDARIO_OSCURO:'#C7C7C7',COLOR_BORDE_OSCURO:'#333333',
+    COLOR_PRINCIPAL:'#0B1F33',COLOR_SECUNDARIO:'#102A43',COLOR_ACENTO:'#2563EB',
+    COLOR_FONDO:'#F4F7FB',COLOR_SUPERFICIE:'#FFFFFF',COLOR_TEXTO:'#142033',COLOR_TEXTO_SECUNDARIO:'#64748B',COLOR_BORDE:'#D8E1EA',
+    COLOR_MENU:'#0B1F33',COLOR_MENU_SECUNDARIO:'#102A43',COLOR_EXITO:'#047857',COLOR_ADVERTENCIA:'#F59E0B',COLOR_PELIGRO:'#DC2626',
+    COLOR_FONDO_OSCURO:'#06111F',COLOR_SUPERFICIE_OSCURO:'#0D1B2A',COLOR_TEXTO_OSCURO:'#F8FAFC',COLOR_TEXTO_SECUNDARIO_OSCURO:'#B7C4D1',COLOR_BORDE_OSCURO:'#27415B',
     TEMA_PREDETERMINADO:'Sistema'
   });
   const PREAJUSTES=Object.freeze({
-    monocromo:{nombre:'E-fleet negro / blanco',valores:{...PREDETERMINADOS}},
-    claro:{nombre:'E-fleet claro',valores:{...PREDETERMINADOS,TEMA_PREDETERMINADO:'Claro'}},
-    oscuro:{nombre:'E-fleet oscuro',valores:{...PREDETERMINADOS,TEMA_PREDETERMINADO:'Oscuro'}}
+    monocromo:{nombre:'E-fleet logística profesional',valores:{...PREDETERMINADOS}},
+    claro:{nombre:'E-fleet claro logístico',valores:{...PREDETERMINADOS,TEMA_PREDETERMINADO:'Claro'}},
+    oscuro:{nombre:'E-fleet oscuro azul marino',valores:{...PREDETERMINADOS,TEMA_PREDETERMINADO:'Oscuro'}}
   });
   function valido(value){return HEX.test(String(value||''));}
   function hex(value,fallback){return valido(value)?String(value).toUpperCase():fallback;}
@@ -39,12 +39,12 @@
       if(campo==='TEMA_PREDETERMINADO')return;
       out[campo]=hex(datos[campo],PREDETERMINADOS[campo]);
     });
-    /* Migra automáticamente la antigua paleta gris predeterminada al nuevo tema claro blanco/negro. */
+    /* Migra automáticamente paletas anteriores a la identidad logística oficial. */
     const migracionesClaro={
-      COLOR_FONDO:new Set(['#F3F7FA','#F3F7F8','#F1F5F9','#EEF5F4']),
-      COLOR_TEXTO:new Set(['#173047','#17312F','#15312F']),
-      COLOR_TEXTO_SECUNDARIO:new Set(['#65798B','#667B79','#667B78']),
-      COLOR_BORDE:new Set(['#DCE6EC','#D9E5E4','#D8E5E3'])
+      COLOR_FONDO:new Set(['#FFFFFF','#F3F7FA','#F3F7F8','#F1F5F9','#EEF5F4']),
+      COLOR_TEXTO:new Set(['#000000','#173047','#17312F','#15312F']),
+      COLOR_TEXTO_SECUNDARIO:new Set(['#444444','#65798B','#667B79','#667B78']),
+      COLOR_BORDE:new Set(['#D9D9D9','#DCE6EC','#D9E5E4','#D8E5E3'])
     };
     if(migracionesClaro.COLOR_FONDO.has(out.COLOR_FONDO))out.COLOR_FONDO=PREDETERMINADOS.COLOR_FONDO;
     if(migracionesClaro.COLOR_TEXTO.has(out.COLOR_TEXTO))out.COLOR_TEXTO=PREDETERMINADOS.COLOR_TEXTO;

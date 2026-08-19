@@ -8,20 +8,20 @@
 :root{
   color-scheme:light;
   --ui-font:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
-  --ui-bg:var(--tema-fondo,#ffffff);
+  --ui-bg:var(--tema-fondo,#F4F7FB);
   --ui-surface:var(--tema-superficie,#ffffff);
   --ui-surface-soft:var(--tema-superficie-2,#ffffff);
   --ui-surface-muted:var(--tema-superficie-3,#ffffff);
-  --ui-text:var(--tema-texto,#111111);
-  --ui-text-soft:var(--tema-texto-suave,#333333);
-  --ui-border:var(--tema-borde,#d9dee2);
-  --ui-primary:var(--tema-principal,#000000);
-  --ui-primary-strong:var(--tema-secundario,#111111);
-  --ui-primary-soft:#f2f2f2;
-  --ui-success:var(--tema-exito,#000000);
-  --ui-warning:var(--tema-advertencia,#c98212);
-  --ui-danger:var(--tema-peligro,#c74655);
-  --ui-info:var(--tema-acento,#3778d4);
+  --ui-text:var(--tema-texto,#142033);
+  --ui-text-soft:var(--tema-texto-suave,#64748B);
+  --ui-border:var(--tema-borde,#D8E1EA);
+  --ui-primary:var(--tema-principal,#0B1F33);
+  --ui-primary-strong:var(--tema-secundario,#102A43);
+  --ui-primary-soft:#E7EEF6;
+  --ui-success:var(--tema-exito,#047857);
+  --ui-warning:var(--tema-advertencia,#F59E0B);
+  --ui-danger:var(--tema-peligro,#DC2626);
+  --ui-info:var(--tema-acento,#2563EB);
   --ui-radius-xs:9px;
   --ui-radius-sm:12px;
   --ui-radius-md:16px;
@@ -75,15 +75,15 @@
   --shadow:var(--ui-shadow-md);
   --sombra:var(--ui-shadow-md);
   --radius:var(--ui-radius-md);
-  --menu-fondo:#000000;
-  --menu-fondo-2:#111111;
-  --tema-fondo-oscuro:#000000;
-  --tema-superficie-oscura:#0b0b0b;
-  --tema-superficie-oscura-2:#141414;
-  --tema-superficie-oscura-3:#1d1d1d;
+  --menu-fondo:#0B1F33;
+  --menu-fondo-2:#102A43;
+  --tema-fondo-oscuro:#06111F;
+  --tema-superficie-oscura:#0D1B2A;
+  --tema-superficie-oscura-2:#13283D;
+  --tema-superficie-oscura-3:#18324A;
   --tema-texto-oscuro:#ffffff;
-  --tema-texto-suave-oscuro:#c7c7c7;
-  --tema-borde-oscuro:#333333;
+  --tema-texto-suave-oscuro:#B7C4D1;
+  --tema-borde-oscuro:#27415B;
 }
 
 /* Expedientes documentales 4.2.48: tarjetas por persona o vehículo. */
@@ -111,7 +111,7 @@ body.oscuro{
   --ui-shadow-md:0 16px 40px rgba(0,0,0,.28);
   --ui-shadow-lg:0 28px 72px rgba(0,0,0,.38);
   --ui-ring:0 0 0 4px rgba(0, 0, 0, .18);
-  --menu-fondo:#000000;
+  --menu-fondo:#0B1F33;
   --menu-fondo-2:#0b0b0b;
 }
 
@@ -798,7 +798,7 @@ body.birthday-day :where(.topbar,.section-heading,.heading){box-shadow:inset 0 -
 
 
 /* ================================================================
-   E-FLEET 4.3.75 · IDENTIDAD MONOCROMÁTICA NEGRO / BLANCO
+   E-FLEET 4.3.76 · BASE COMPATIBLE; PALETA FINAL EN efleet-palette.4376.css
    ================================================================ */
 html:not(.tema-oscuro-inicial) body:not(.dark):not(.oscuro){
   --ui-primary:#000!important;--ui-primary-strong:#111!important;--ui-primary-soft:#f2f2f2!important;

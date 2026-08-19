@@ -1,0 +1,7 @@
+E-fleet Web responsive 4.3.76
+R8.2.34 · PALETA OPERACIONAL LOGÍSTICA
+
+Azul marino: estructura. Azul eléctrico: CTA/foco. Verde/ámbar/rojo/gris: estados funcionales.
+Tema oscuro azul marino profundo. Geo y mapas comparten la misma leyenda operacional.
+Nuevo asset final: efleet-palette.4376.css. Cache: efleet-static-4.3.76-r834-operational-palette.
+No requiere API ni SQL nuevo.

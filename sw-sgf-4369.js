@@ -1,7 +1,7 @@
-const SGF_CACHE='efleet-static-4.3.75-r833-notices-geo-icon';
+const SGF_CACHE='efleet-static-4.3.76-r834-operational-palette';
 const PRECACHE=[
   './','./index.html','./main.html','./logo.svg','./logo-e-fleet.png','./efleet-mark-compact.png','./favicon-efleet.png','./tema.js','./estilos.css','./responsive.css','./interfaz-moderna.css',
-  './menu-principal.css','./sgf-final-4.3.44.css','./efleet-monocromo.4372.css','./sgf-performance.4369.js','./sgf-module.4369.js','./sgf-shell.4362.js',
+  './menu-principal.css','./sgf-final-4.3.44.css','./efleet-palette.4376.css','./sgf-performance.4369.js','./sgf-module.4369.js','./sgf-shell.4362.js',
   './panel-principal.html','./rutas.html','./operaciones.html','./checkin-vehicular.html','./vehiculos.html','./conductores.html',
   './geo-local.html','./geo-local-admin.html','./mapa-geo-local.html','./kpi-geo-locales.html','./malla-turnos.html','./geo-local.4369.css','./geo-local-common.4369.js','./mapa.js'
 ];
